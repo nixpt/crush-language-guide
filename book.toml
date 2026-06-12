@@ -1,0 +1,9 @@
+[book]
+authors = ["nixpt"]
+language = "en"
+src = "src"
+title = "The Crush Language Guide"
+
+[output.html]
+git-repository-url = "https://github.com/nixpt/crush-language-guide"
+edit-url-template = "https://github.com/nixpt/crush-language-guide/edit/main/src/{path}"
