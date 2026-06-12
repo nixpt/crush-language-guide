@@ -15,9 +15,23 @@
 - [Polyglot Programming](crush/polyglot.md)
 - [Standard Library](crush/stdlib.md)
 
+# Examples
+
+- [Overview](examples/README.md)
+- [Fibonacci & Functions](examples/fibonacci.md)
+- [Arrays & Loops](examples/arrays-loops.md)
+- [Exception Handling](examples/exceptions.md)
+- [Concurrency & Structs](examples/concurrency-structs.md)
+- [Lambdas & Pipes](examples/lambdas.md)
+- [Import Styles](examples/imports.md)
+- [System Info Dashboard](examples/sysinfo.md)
+- [Build Pipeline](examples/build-pipeline.md)
+- [Async LLM Dashboard](examples/async-dom.md)
+
 # CAST — Crush Abstract Syntax Tree
 
 - [CAST Specification](cast/README.md)
+- [AI-Native CAST](cast/ai-native.md)
 
 # CASM — Crush Assembly
 
