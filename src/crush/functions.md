@@ -130,7 +130,9 @@ fn main() {
 }
 ```
 
-## Higher-Order Functions (Future Feature)
+## Higher-Order Functions
+
+Functions are first-class values and can be passed as arguments:
 
 ```crush
 fn apply(f: Function, x: Int) -> Int {
@@ -146,18 +148,45 @@ fn main() {
 }
 ```
 
-## Closures (Future Feature)
+## Lambdas and Closures
+
+Anonymous functions use the `|params| { body }` syntax (the `Lambda` AST node):
+
+```crush
+let double = |x| { return x * 2; };
+let result = double(21);  // 42
+
+// Single-expression form
+let square = |x| => x * x;
+```
+
+Closures capture variables from the enclosing scope:
 
 ```crush
 fn make_adder(x: Int) -> Function {
-    return fn(y: Int) -> Int {
-        return x + y;
-    };
+    return |y| { return x + y; };
 }
 
 fn main() {
     let add_five = make_adder(5);
     let result = add_five(10);  // 15
+}
+```
+
+## Async Functions
+
+Use `async`/`await` for asynchronous operations. `spawn` launches a task concurrently:
+
+```crush
+async fn fetch_data(url: String) -> String {
+    let response = await @net.get(url);
+    return response;
+}
+
+fn main() {
+    let task = spawn fetch_data("https://api.example.com/data");
+    let result = await task;
+    @io.print(result);
 }
 ```
 

@@ -1256,6 +1256,11 @@ Yield execution.
 | Control Flow | `jmp`, `jmp_if`, `jmp_if_not`, `call`, `ret`, `break`, `continue` |
 | Arrays | `new_array`, `arr_get`, `arr_set`, `arr_len`, `arr_push`, `arr_pop` |
 | Objects | `new_obj`, `new_struct`, `get_field`, `set_field` |
+| Ranges | `make_range` |
 | Types | `type_of`, `cast` |
+| Exceptions | `enter_try`, `exit_try`, `throw` |
 | Capabilities | `cap_call` |
-| Concurrency | `spawn`, `yield` |
+| Concurrency | `spawn`, `yield`, `await` |
+| Polyglot | `exec_lang` |
+| DOM | `dom_query`, `dom_mutate`, `dom_event_listener` |
+| AI-native | `ai_query`, `ai_tool_chain`, `ai_agent_delegation`, `ai_learning_loop`, `ai_context_aware`, `ai_goal_decl`, `ai_progress_update`, `ai_knowledge_share`, `ai_capability_discovery` |

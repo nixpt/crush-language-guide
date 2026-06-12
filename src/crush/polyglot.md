@@ -22,16 +22,19 @@ fn main() {
 }
 ```
 
-## Supported Languages
+## Walker Implementation Status
 
-| Language | Syntax | Use Cases |
-|----------|--------|-----------|
-| Python | `@python { }` | Data science, ML, scripting |
-| JavaScript | `@javascript { }` | JSON, web APIs, async |
-| Bash | `@bash { }` | System administration |
-| Rust | `@rust { }` | Performance-critical code |
-| C | `@c { }` | Low-level operations |
-| Go | `@go { }` | Concurrency, networking |
+Each language needs a **walker** — a compiler component that parses source code and emits CAST.
+Walkers vary in completeness:
+
+| Language | Syntax | Walker status | Supported constructs |
+|----------|--------|---------------|----------------------|
+| JavaScript | `@javascript { }` | Most complete | Variables, if/while/for, try/catch, throw, break/continue, return, arrays, objects, await |
+| Python | `@python { }` | Partial | Variables, if/while, return, expressions — **missing**: for-in, function defs |
+| Rust | `@rust { }` | Partial | Variables, if, return, expressions — **missing**: for/while, function defs |
+| Bash | `@bash { }` | Minimal stub | Only `NAME=VALUE` assignments and `echo` (regex-based, no real AST parser) |
+| C | `@c { }` | Exists | See walker source |
+| Go | `@go { }` | Exists | See walker source |
 
 ## Polyglot Execution Model
 

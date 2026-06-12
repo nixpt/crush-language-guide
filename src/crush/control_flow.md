@@ -1,6 +1,6 @@
 # Control Flow
 
-Crush provides standard control flow structures: if/else, while loops, and for loops.
+Crush provides standard control flow structures: if/else, while loops, for loops, pattern matching, and exception handling.
 
 ## If Statements
 
@@ -72,11 +72,17 @@ for num in numbers {
 }
 ```
 
-### Range Iteration (Future Feature)
+### Range Iteration
+
+Use the `..` range operator (compiles to `make_range`):
 
 ```crush
-for i in range(0, 10) {
-    @io.print(i);
+for i in 0..10 {
+    @io.print(i);  // 0 through 9
+}
+
+for i in 1..=5 {
+    @io.print(i);  // 1 through 5 (inclusive)
 }
 ```
 
@@ -108,7 +114,9 @@ for i in numbers {
 }
 ```
 
-## Pattern Matching (Future Feature)
+## Pattern Matching
+
+`match` is implemented — the keyword, AST node, and CASM codegen all exist:
 
 ```crush
 match value {
@@ -117,6 +125,38 @@ match value {
     _ => @io.print("Other")
 }
 ```
+
+Pattern forms supported:
+- Literal values (`0`, `"str"`, `true`)
+- Identifier binding (`x => ...` binds to `x`)
+- Struct destructuring
+- Wildcard `_`
+
+## Exception Handling
+
+`try`/`catch`/`throw` are fully implemented:
+
+```crush
+try {
+    let data = @fs.read("file.txt");
+    @io.print(data);
+} catch error {
+    @io.eprint("Failed: " + error);
+}
+```
+
+### Throwing Exceptions
+
+```crush
+fn divide(a: Int, b: Int) -> Int {
+    if b == 0 {
+        throw "division by zero";
+    }
+    return a / b;
+}
+```
+
+The compiler emits `enter_try`/`exit_try`/`throw` CASM instructions for these constructs.
 
 ## Next Steps
 

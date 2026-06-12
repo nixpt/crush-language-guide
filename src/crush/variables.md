@@ -12,6 +12,15 @@ let name = "Alice";
 let active = true;
 ```
 
+### Explicit Mutability
+
+Use `mut` to mark a variable as explicitly mutable (same behavior as `let` today, but signals intent):
+
+```crush
+let mut counter = 0;
+counter = counter + 1;
+```
+
 ### With Type Hints
 
 ```crush
@@ -23,7 +32,7 @@ let flag: Bool = true;
 
 ## Assignment and Reassignment
 
-Variables are mutable by default:
+Variables declared with `let` are mutable by default:
 
 ```crush
 let counter = 0;

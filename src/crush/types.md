@@ -241,9 +241,9 @@ fn calculate(x: Int, y: Int) -> Int {
 
 **Note:** Type hints are currently for documentation only. Runtime type checking is dynamic.
 
-## Structs (Future Feature)
+## Structs
 
-Custom data structures:
+Custom data structures are implemented (`struct` keyword, `StructDef` AST node, `NewStruct` expression):
 
 ```crush
 struct Point {
@@ -257,44 +257,47 @@ fn main() {
 }
 ```
 
-## Enums (Future Feature)
+## Function Type
 
-Enumerated types:
+Functions are first-class values. The `Function` type in hints represents any callable:
 
 ```crush
-enum Status {
-    Pending,
-    Active,
-    Complete
+fn apply(f: Function, x: Int) -> Int {
+    return f(x);
 }
 
-fn main() {
-    let status = Status.Active;
+// Lambda type hint
+let cb: Function = |x| { return x * 2; };
+```
+
+## Optional / Nullable Types
+
+The `Type?` nullable hint syntax is recognized by the parser:
+
+```crush
+let name: String? = null;
+
+if name != null {
+    @io.print(name);
 }
+```
+
+**Note:** The `??` null-coalescing operator is not yet implemented; use an explicit `if` check instead.
+
+## Enums (Future Feature)
+
+Enumerated types are not yet in the AST:
+
+```crush
+// Not yet supported:
+// enum Status { Pending, Active, Complete }
 ```
 
 ## Type Aliases (Future Feature)
 
 ```crush
-type UserId = Int;
-type Callback = Function(Int) -> Bool;
-
-fn process(id: UserId, cb: Callback) {
-    // ...
-}
-```
-
-## Nullable Types (Future Feature)
-
-```crush
-let name: String? = null;  // Nullable string
-
-if name != null {
-    @io.print(name);
-}
-
-// Unwrap with default
-let display_name = name ?? "Unknown";
+// Not yet supported:
+// type UserId = Int;
 ```
 
 ## Type Inference
@@ -336,15 +339,20 @@ let status = "Active: " + true;
 
 ## Type System Summary
 
-| Type | Example | Mutable | Nullable |
-|------|---------|---------|----------|
-| `Int` | `42` | ✓ | ✗ |
-| `Float` | `3.14` | ✓ | ✗ |
-| `String` | `"Hello"` | ✓ | ✗ |
-| `Bool` | `true` | ✓ | ✗ |
-| `Null` | `null` | ✗ | N/A |
-| `Array` | `[1, 2, 3]` | ✓ | ✗ |
-| `Map` | `{"key": "value"}` | ✓ | ✗ |
+| Type | Example | Notes |
+|------|---------|-------|
+| `Int` | `42` | 64-bit signed |
+| `Float` | `3.14` | 64-bit IEEE 754 |
+| `String` | `"Hello"` | UTF-8 |
+| `Bool` | `true` | |
+| `Null` | `null` | absence of value |
+| `Void` | — | function return type only |
+| `Any` | — | dynamic/untyped hint |
+| `Array` | `[1, 2, 3]` | |
+| `Map` | `{"key": "value"}` | |
+| `Struct(Name)` | `Point { x: 1.0, y: 2.0 }` | user-defined |
+| `Function` | `\|x\| { ... }` | first-class callable |
+| `Optional(T)` | `T?` | nullable hint |
 
 ## Best Practices
 

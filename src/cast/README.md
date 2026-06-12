@@ -1,4 +1,11 @@
-# Crush AST (CAST) Specification v0.3
+# Crush AST (CAST) Specification
+
+> **Version note:** This document describes the v0.3 base spec. The Rust struct
+> implementation (`crush-cast/src/lib.rs`) is more complete: it adds `TryCatch`,
+> `Throw`, `LangBlock`, `StructDef`, `Break`, `Continue`, `DomMutate`,
+> `DomEventListener`, `DomQuery`, `Spawn`, `Await`, `Lambda`, `Pipeline`,
+> `Range`, `Match`, and AI-native statement/expression nodes. Walkers in the
+> repo declare `cast_version` values of `"0.1"` (Rust/Bash) or `"0.2"` (Python/JS).
 
 ## Overview
 CAST is the intermediate representation used by Crush to enable polyglot programming. Language walkers translate source code into CAST, and the Crush compiler translates CAST into CASM bytecode.

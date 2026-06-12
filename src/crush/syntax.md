@@ -44,10 +44,12 @@ let counter123 = 4;
 Reserved keywords in Crush:
 
 ```text
-fn          let         if          else        while
-for         in          return      break       continue
-import      export      as          true        false
-null        spawn       yield       struct      match
+fn          let         mut         if          else
+while       for         in          return      break
+continue    import      export      use         as
+true        false       null        spawn       yield
+struct      match       try         catch       throw
+capability  async       await       lang
 ```
 
 ### Literals
