@@ -1,7 +1,7 @@
 # Examples
 
-Real Crush programs drawn from the exosphere workspace. Each demonstrates a
-distinct pattern or capability domain.
+Real Crush programs drawn from the exosphere workspace and the broader
+Crush ecosystem. Each demonstrates a distinct pattern or capability domain.
 
 | Example | Pattern |
 |---------|---------|
@@ -15,9 +15,9 @@ distinct pattern or capability domain.
 | [Build Pipeline](build-pipeline.md) | Multi-function decomposition, event sourcing, fail-fast |
 | [Async LLM Dashboard](async-dom.md) | async/await, DOM API, seahorse LLM integration |
 
-Source locations in `exosphere/`:
-- `crates/core/crush-lang/tests/fixtures/` — core language fixtures
-- `tests/language/` — integration tests
-- `examples/crush-pipefish-dashboard/` — real app
+Source locations:
+- `exosphere/crates/core/crush-lang/tests/fixtures/` — core language fixtures (exosphere repo)
+- `exosphere/tests/language/` — integration tests
+- `exosphere/examples/crush-pipefish-dashboard/` — real app
 - `exosphere-apps/crates/apps/super-surfer/apps/` — web apps
-- `crates/core/crush-lang/examples/` — documented examples
+- `exosphere/crates/core/crush-lang/examples/` — documented examples

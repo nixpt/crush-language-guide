@@ -42,6 +42,13 @@ explicit permission in the program manifest.
 
 ## Where the source lives
 
-The language implementation is in the `exosphere` monorepo at
-`crates/core/crush-lang/`. This guide is the standalone documentation extracted from the
-`docs/crushed-book/` mdBook.
+The language implementation is the standalone
+[crush-ast](https://github.com/nixpt/crush-ast) repository, extracted from
+the exosphere agent-native OS monorepo on 2026-06-12. It contains the CAST
+intermediate representation, tree-sitter grammar, polyglot walkers, compiler
+frontend, VM runtime, package manager, and installer.
+
+The upstream [exosphere](https://github.com/nixpt/exosphere) project retains
+a subprocess-based walker registry that invokes the crush-ast walker binaries,
+and its own `crush-cast`/`casm`/`nanovm` crates for the Crush language
+compiler running inside the agent-native OS.

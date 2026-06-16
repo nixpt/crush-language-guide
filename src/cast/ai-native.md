@@ -405,6 +405,6 @@ It is the canonical reference for all five AI expression and statement types tog
 
 ## See Also
 
-- [`examples/cast/`](https://github.com/nixpt/exosphere/tree/main/examples/cast) — canonical example corpus in the exosphere repo
+- [`examples/cast/`](https://github.com/nixpt/crush-ast/tree/main/examples/cast) — canonical CAST example corpus
 - [CAST Base Spec](README.md) — statement and expression node reference (v0.3 base)
 - [CASM Instruction Reference](../casm/instructions.md) — the `ai_*` instruction category
