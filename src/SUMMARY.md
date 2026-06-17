@@ -1,6 +1,7 @@
 # Summary
 
 - [Introduction](README.md)
+- [Getting Started](getting-started.md)
 
 # The Crush Language
 

@@ -52,3 +52,8 @@ The upstream [exosphere](https://github.com/nixpt/exosphere) project retains
 a subprocess-based walker registry that invokes the crush-ast walker binaries,
 and its own `crush-cast`/`casm`/`nanovm` crates for the Crush language
 compiler running inside the agent-native OS.
+
+## License
+
+Licensed under either of [MIT](../LICENSE-MIT) or
+[Apache License 2.0](../LICENSE-APACHE) at your option.
