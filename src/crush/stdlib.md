@@ -2,6 +2,13 @@
 
 The Crush standard library provides additional capabilities and utilities beyond the core language.
 
+> **Host-provided, not bundled.** The capability framework and a small set of primitives
+> (`io.print`, `io.eprint`, `io.read`) are built into crush-vm. Everything else — `fs.*`,
+> `net.*`, `sys.*`, and the full corecaps suite — must be registered by the **embedding
+> host**. The bare crush-ast crates ship the *interface*, not the implementation. When
+> embedding crush-ast, only the capabilities your host explicitly registers are available
+> at runtime.
+
 ## Importing Modules
 
 ```crush

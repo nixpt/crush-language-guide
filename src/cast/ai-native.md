@@ -11,7 +11,7 @@ This is the **AI-native doctrine** (s107 / EXO-175): the primary authoring surfa
 for AI agents in Exosphere is CAST, not Crush source code.
 
 ```
-Agent output (JSON)  →  compile_cast()  →  CASM  →  NanoVM
+Agent output (JSON)  →  compile_cast()  →  CASM  →  crush-vm (CVM1)
                 ↑
     No lexer, no parser, no walker.
     The agent IS the front-end.
@@ -20,7 +20,11 @@ Agent output (JSON)  →  compile_cast()  →  CASM  →  NanoVM
 Validation before compilation:
 
 ```rust
+// standalone crush-ast
 crush_cast::validate_json(&cast_json)?;  // schema check
+let casm = crush_frontend::compile(&cast_json)?;
+
+// exosphere embedding (crush_lang re-exports the same pipeline)
 let casm = crush_lang::compile_cast(&cast_json)?;
 ```
 

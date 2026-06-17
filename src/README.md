@@ -26,7 +26,7 @@ Source (.crush / .py / .rs / ...)
          │
     CASM  (Crush Assembly — JSON / binary .castb)
          │
-    NanoVM  (execution)
+    crush-vm  (CVM1 — bytecode VM)
 ```
 
 ## Hello, Crush

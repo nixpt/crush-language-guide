@@ -62,6 +62,13 @@ Capabilities must be declared in the program manifest:
 
 ## Standard Capabilities
 
+> **Host-provided, not bundled.** crush-vm registers `io.print`, `io.eprint`, and `io.read`
+> as built-in primitives. All other capabilities listed here (`fs.*`, `net.*`, `sys.*`) are
+> **host-provided** — they must be registered by the embedding host process. The bare
+> crush-ast crates define the capability *interface*; the implementation comes from the host
+> (e.g. exosphere's `corecaps`, or a custom host registration). If a cap is not registered,
+> the call fails at runtime regardless of what the manifest declares.
+
 ### I/O Capabilities
 
 | Capability | Description | Arguments | Returns | Scope |
