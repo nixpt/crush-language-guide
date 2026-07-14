@@ -268,11 +268,26 @@ not exist."**
 Examples using these will **not run**. They are retained here as intent, not as documentation
 of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.
 
-## A note on syntax
+## A note on syntax: what `@` means in Crush
 
 Capability calls are written **unprefixed**: `io.print("hi")`, not `@io.print("hi")`. Earlier
 revisions of this guide used an `@` sigil; the parser has never accepted it in expression
 position, and every example here has been corrected.
 
-The `@` sigil **is** correct — and required — for polyglot blocks: `@python { ... }`,
-`@javascript { ... }`. Those are a different construct entirely.
+That correction is narrow, and it is important not to over-generalise it. **`@` is a real and
+load-bearing sigil in Crush — it just does not introduce a capability call.** It is overloaded
+across several distinct constructs, and stripping it blindly will corrupt them:
+
+| form | example | what it is |
+|---|---|---|
+| **polyglot block** | `@python { ... }`, `@javascript { ... }` | embed another language; the `@` is **required** |
+| **compiler directive** | `@gpu`, `@kernel`, `@target` | steer the backend (e.g. the PTX/GPU path) |
+| **AST / AI annotation** | `@invariant`, `@decision`, `@covers`, `@writes`, `@synthesize` | typed metadata attached to CAST nodes |
+| **capability call** | ~~`@io.print(...)`~~ → `io.print(...)` | **no sigil.** This is the one that was wrong. |
+
+The lexer emits a single `AtIdent` token for all of these; what a given `@name` *means* is
+decided by the parser from context, not by the sigil.
+
+So: if you are writing a tool that rewrites Crush source, **do not treat `@` as a single
+construct.** Note in particular that some annotations carry a dot (`@wip.started_by`), so a
+"strip `@` from anything shaped like `@x.y`" rule will silently eat them.
