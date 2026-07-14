@@ -8,7 +8,7 @@ Functions are first-class values in Crush. This chapter covers function definiti
 
 ```crush
 fn greet() {
-    @io.print("Hello!");
+    io.print("Hello!");
 }
 ```
 
@@ -16,7 +16,7 @@ fn greet() {
 
 ```crush
 fn greet(name: String) {
-    @io.print("Hello, " + name + "!");
+    io.print("Hello, " + name + "!");
 }
 ```
 
@@ -86,7 +86,7 @@ Functions without return values:
 
 ```crush
 fn log_message(msg: String) {
-    @io.print("[LOG] " + msg);
+    io.print("[LOG] " + msg);
     // No return statement
 }
 ```
@@ -107,7 +107,7 @@ create_user("Alice", 30, true);
 
 ```crush
 fn greet(name: String = "Guest") {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 greet();         // "Hello, Guest"
@@ -126,7 +126,7 @@ fn factorial(n: Int) -> Int {
 
 fn main() {
     let result = factorial(5);  // 120
-    @io.print(result);
+    io.print(result);
 }
 ```
 
@@ -179,14 +179,14 @@ Use `async`/`await` for asynchronous operations. `spawn` launches a task concurr
 
 ```crush
 async fn fetch_data(url: String) -> String {
-    let response = await @net.get(url);
+    let response = await net.get(url);
     return response;
 }
 
 fn main() {
     let task = spawn fetch_data("https://api.example.com/data");
     let result = await task;
-    @io.print(result);
+    io.print(result);
 }
 ```
 

@@ -31,7 +31,7 @@ greet("Alice")
 **Crush:**
 ```crush
 fn greet(name: String) {
-    @io.print("Hello, " + name + "!");
+    io.print("Hello, " + name + "!");
 }
 
 greet("Alice");
@@ -66,7 +66,8 @@ greet("Alice");
 | Type System | Dynamic | Static, strict |
 | Memory Safety | VM-managed | Borrow checker |
 | Polyglot | ✓ | ✗ |
-| Compilation | To bytecode | To native code |
+| Compilation | To bytecode + AOT native | To native code |
+| AOT Performance | Near-native via `crush-aotc` | Native |
 
 ## Crush vs Bash
 
@@ -84,6 +85,25 @@ greet("Alice");
 | Syntax | Modern | Unix shell |
 | Error Handling | Better | Limited |
 
+## Performance
+
+Crush has five execution tiers spanning interpreter to native code:
+
+| Tier | Speed vs CVM1 (simple) | Speed vs CVM1 (compute) |
+|------|------------------------|------------------------|
+| CVM1 (interpreter) | 1.0× | 1.0× |
+| FastVM | 0.09× | 0.5× |
+| AOT Rust (rustc) | 42× | 130× |
+| AOT C (gcc -O3) | 54× | 317× |
+| AOT C (clang -O3) | 55× | 378× |
+
+AOT-compiled Crush achieves **near-C performance** — LLVM and GCC constant-fold
+the stack machine operations into direct native code. For compute-bound Crush programs,
+`crush-aotc` produces `.so` files that run within 2-5× of hand-written C.
+
+See the [crush-ast benchmarks](https://github.com/nixpt/crush-ast/tree/main/docs/benchmarks)
+for detailed cross-language comparisons.
+
 ## When to Use Crush
 
 ✅ **Use Crush when:**
@@ -91,9 +111,9 @@ greet("Alice");
 - Security and isolation are important
 - You want capability-based permissions
 - You're building polyglot applications
+- You need native performance with scripting ergonomics (`crush-aotc`)
 
 ❌ **Consider alternatives when:**
-- You need maximum performance (use Rust/C)
 - You have a large existing codebase in another language
 - You need mature ecosystem (Python/JavaScript)
 - You're building web frontends (use JavaScript/TypeScript)
@@ -103,7 +123,7 @@ greet("Alice");
 ### From Python
 
 1. Add type hints to function signatures
-2. Replace `print()` with `@io.print()`
+2. Replace `print()` with `io.print()`
 3. Add capability permissions to manifest
 4. Keep Python code in `@python {}` blocks during transition
 
@@ -111,7 +131,7 @@ greet("Alice");
 
 1. Change `function` to `fn`
 2. Add semicolons
-3. Replace `console.log()` with `@io.print()`
+3. Replace `console.log()` with `io.print()`
 4. Keep JavaScript in `@javascript {}` blocks
 
 ### From Bash

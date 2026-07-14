@@ -16,7 +16,7 @@ This chapter covers the fundamental syntax and grammar rules of the Crush langua
 
 fn main() {
     // Comments can appear anywhere
-    @io.print("Hello");  // Including after statements
+    io.print("Hello");  // Including after statements
 }
 ```
 
@@ -92,16 +92,16 @@ let x = 42;
 
 // Function definition
 fn greet() {
-    @io.print("Hello");
+    io.print("Hello");
 }
 
 // Control flow
 if x > 0 {
-    @io.print("Positive");
+    io.print("Positive");
 }
 
 // Expression statement
-@io.print("Hello");
+io.print("Hello");
 ```
 
 ### Expressions
@@ -125,7 +125,7 @@ Semicolons are **required** at the end of statements:
 
 ```crush
 let x = 42;
-@io.print(x);
+io.print(x);
 return x;
 ```
 
@@ -149,18 +149,18 @@ Blocks are delimited by curly braces `{}`:
 {
     let x = 10;
     let y = 20;
-    @io.print(x + y);
+    io.print(x + y);
 }
 
 fn main() {
     // Function body is a block
     let message = "Hello";
-    @io.print(message);
+    io.print(message);
 }
 
 if condition {
     // If body is a block
-    @io.print("True");
+    io.print("True");
 }
 ```
 
@@ -184,7 +184,7 @@ let c = 3;
 ```crush
 // Basic function
 fn greet() {
-    @io.print("Hello!");
+    io.print("Hello!");
 }
 
 // With parameters
@@ -295,7 +295,7 @@ while condition {
 }
 
 while i < 10 {
-    @io.print(i);
+    io.print(i);
     i = i + 1;
 }
 ```
@@ -308,7 +308,7 @@ for item in collection {
 }
 
 for i in range(0, 10) {
-    @io.print(i);
+    io.print(i);
 }
 ```
 
@@ -332,16 +332,16 @@ Capability calls use the `@` prefix:
 
 ```crush
 // Basic capability call
-@io.print("Hello");
+io.print("Hello");
 
 // With multiple arguments
-@fs.write("file.txt", "content");
+fs.write("file.txt", "content");
 
 // Storing result
-let content = @fs.read("file.txt");
+let content = fs.read("file.txt");
 
 // Chaining (if result is an object)
-let data = @net.http("https://api.example.com").json();
+let data = net.http("https://api.example.com").json();
 ```
 
 ## Language Blocks
@@ -383,7 +383,7 @@ import std.fs as filesystem;
 > ```crush
 > import std.io as console;
 > 
-> @console.print("Hello");  // ✓ Correct
+> console.print("Hello");  // ✓ Correct
 > // console.print("Hello");  // ✗ Error: missing @
 > ```
 
@@ -481,7 +481,7 @@ Use 4 spaces (not tabs):
 fn main() {
     if condition {
         while loop {
-            @io.print("Nested");
+            io.print("Nested");
         }
     }
 }

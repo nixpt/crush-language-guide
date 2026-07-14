@@ -58,12 +58,12 @@ Variables declared in a function are local to that function:
 ```crush
 fn example() {
     let x = 10;  // Local to example()
-    @io.print(x);
+    io.print(x);
 }
 
 fn main() {
     example();
-    // @io.print(x);  // Error: x not in scope
+    // io.print(x);  // Error: x not in scope
 }
 ```
 
@@ -77,12 +77,12 @@ fn main() {
     
     if true {
         let y = 20;  // Local to if block
-        @io.print(x);  // Can access outer x
-        @io.print(y);
+        io.print(x);  // Can access outer x
+        io.print(y);
     }
     
-    @io.print(x);  // OK
-    // @io.print(y);  // Error: y not in scope
+    io.print(x);  // OK
+    // io.print(y);  // Error: y not in scope
 }
 ```
 
@@ -98,7 +98,7 @@ fn get_config() -> String {
 }
 
 fn main() {
-    @io.print(GLOBAL_CONFIG);
+    io.print(GLOBAL_CONFIG);
 }
 ```
 
@@ -109,14 +109,14 @@ Inner scopes can shadow outer variables:
 ```crush
 fn main() {
     let x = 10;
-    @io.print(x);  // 10
+    io.print(x);  // 10
     
     {
         let x = 20;  // Shadows outer x
-        @io.print(x);  // 20
+        io.print(x);  // 20
     }
     
-    @io.print(x);  // 10 (outer x restored)
+    io.print(x);  // 10 (outer x restored)
 }
 ```
 
@@ -134,8 +134,8 @@ export config = {"mode": "production"};
 
 ```crush
 // capsule_b.crush
-let data = @import.var("capsule_a", "result");
-let cfg = @import.var("capsule_a", "config");
+let data = import.var("capsule_a", "result");
+let cfg = import.var("capsule_a", "config");
 ```
 
 ## Constants (Future Feature)

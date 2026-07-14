@@ -74,7 +74,7 @@ then compile and run it through the SDK.
 ## A note on capabilities
 
 Crush is **capability-gated**: a program can only call host functions
-(`@io.print`, `@fs.read`, `@net.get`, …) that it declares a permission for and
+(`io.print`, `fs.read`, `net.get`, …) that it declares a permission for and
 that the host has actually registered. The published crates give you:
 
 - the **capability framework** — `HostCaps` / `HostCap` and the SDK's

@@ -56,10 +56,10 @@ let message: String = "Hello, World!";
 let full_name = first + " " + last;
 
 // Length (via capability)
-let len = @str.length(name);
+let len = str.len(name);
 
 // Substring (via capability)
-let sub = @str.substring(text, 0, 5);
+let sub = str.substring(text, 0, 5);
 ```
 
 ### Bool
@@ -77,6 +77,30 @@ let flag: Bool = true;
 let result = x > 10;  // Bool
 ```
 
+### Bytes
+
+Raw byte buffers for binary data:
+
+```crush
+let data = b"hello";
+
+// Type hint
+let buf: Bytes = b"data";
+```
+
+### Error
+
+First-class error values for exception handling:
+
+```crush
+let err = Error("file not found");
+
+// Check error
+if type.of(result) == "Error" {
+    io.print("Failed: " + result.message);
+}
+```
+
 ### Null
 
 Represents absence of a value:
@@ -89,7 +113,7 @@ let optional: String? = null;  // Future feature
 
 // Checking for null
 if value == null {
-    @io.print("No value");
+    io.print("No value");
 }
 ```
 
@@ -119,17 +143,17 @@ let first = numbers[0];
 let last = numbers[4];
 
 // Length
-let len = @array.length(numbers);
+let len = array.length(numbers);
 
 // Append
-@array.push(numbers, 6);
+array.push(numbers, 6);
 
 // Remove last
-let popped = @array.pop(numbers);
+let popped = array.pop(numbers);
 
 // Iterate
 for item in numbers {
-    @io.print(item);
+    io.print(item);
 }
 ```
 
@@ -164,14 +188,14 @@ person["email"] = "alice@example.com";
 person.phone = "555-1234";
 
 // Check key exists
-if @map.has_key(person, "email") {
-    @io.print("Email exists");
+if map.has_key(person, "email") {
+    io.print("Email exists");
 }
 
 // Iterate
-for key in @map.keys(person) {
+for key in map.keys(person) {
     let value = person[key];
-    @io.print(key + ": " + value);
+    io.print(key + ": " + value);
 }
 ```
 
@@ -181,16 +205,16 @@ for key in @map.keys(person) {
 
 ```crush
 // Int to String
-let str = @convert.to_string(42);
+let str = conv.to_string(42);
 
 // String to Int
-let num = @convert.to_int("42");
+let num = conv.to_int("42");
 
 // Float to Int
-let rounded = @convert.to_int(3.14);
+let rounded = conv.to_int(3.14);
 
 // Int to Float
-let decimal = @convert.to_float(42);
+let decimal = conv.to_float(42);
 ```
 
 ### Implicit Conversion
@@ -210,10 +234,10 @@ let result = "Pi is " + 3.14;  // "Pi is 3.14"
 let value = 42;
 
 // Check type
-let type_name = @type.of(value);  // "Int"
+let type_name = type.of(value);  // "Int"
 
 if type_name == "Int" {
-    @io.print("It's an integer");
+    io.print("It's an integer");
 }
 ```
 
@@ -230,7 +254,7 @@ let active: Bool = true;
 
 // Function parameter types
 fn greet(name: String, age: Int) {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 // Function return type
@@ -253,7 +277,7 @@ struct Point {
 
 fn main() {
     let p = Point { x: 10.0, y: 20.0 };
-    @io.print(p.x);
+    io.print(p.x);
 }
 ```
 
@@ -278,7 +302,7 @@ The `Type?` nullable hint syntax is recognized by the parser:
 let name: String? = null;
 
 if name != null {
-    @io.print(name);
+    io.print(name);
 }
 ```
 
@@ -324,7 +348,7 @@ let f: Float = 3.14;
 let sum: Float = i + f;  // 45.14
 
 // Float to Int requires explicit conversion
-let rounded: Int = @convert.to_int(f);
+let rounded: Int = conv.to_int(f);
 ```
 
 ### String Concatenation
@@ -345,6 +369,8 @@ let status = "Active: " + true;
 | `Float` | `3.14` | 64-bit IEEE 754 |
 | `String` | `"Hello"` | UTF-8 |
 | `Bool` | `true` | |
+| `Bytes` | `b"data"` | raw binary buffer |
+| `Error` | `Error("msg")` | first-class error |
 | `Null` | `null` | absence of value |
 | `Void` | — | function return type only |
 | `Any` | — | dynamic/untyped hint |
@@ -385,7 +411,7 @@ let mixed = [1, "two", 3.0];
 ```crush
 if value != null {
     // Safe to use value
-    @io.print(value);
+    io.print(value);
 }
 ```
 
@@ -410,11 +436,11 @@ Common type-related errors:
 let result = 10 / 0;  // Runtime error
 
 // Invalid conversion
-let num = @convert.to_int("abc");  // Runtime error
+let num = conv.to_int("abc");  // Runtime error
 
 // Null access
 let value = null;
-@io.print(value.field);  // Runtime error
+io.print(value.field);  // Runtime error
 ```
 
 ## Next Steps

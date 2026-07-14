@@ -8,7 +8,7 @@ Crush provides standard control flow structures: if/else, while loops, for loops
 
 ```crush
 if condition {
-    @io.print("Condition is true");
+    io.print("Condition is true");
 }
 ```
 
@@ -16,9 +16,9 @@ if condition {
 
 ```crush
 if x > 0 {
-    @io.print("Positive");
+    io.print("Positive");
 } else {
-    @io.print("Non-positive");
+    io.print("Non-positive");
 }
 ```
 
@@ -26,13 +26,13 @@ if x > 0 {
 
 ```crush
 if score >= 90 {
-    @io.print("A");
+    io.print("A");
 } else if score >= 80 {
-    @io.print("B");
+    io.print("B");
 } else if score >= 70 {
-    @io.print("C");
+    io.print("C");
 } else {
-    @io.print("F");
+    io.print("F");
 }
 ```
 
@@ -43,7 +43,7 @@ if score >= 90 {
 ```crush
 let i = 0;
 while i < 5 {
-    @io.print(i);
+    io.print(i);
     i = i + 1;
 }
 ```
@@ -56,7 +56,7 @@ while true {
     if counter >= 10 {
         break;
     }
-    @io.print(counter);
+    io.print(counter);
     counter = counter + 1;
 }
 ```
@@ -68,7 +68,7 @@ while true {
 ```crush
 let numbers = [1, 2, 3, 4, 5];
 for num in numbers {
-    @io.print(num);
+    io.print(num);
 }
 ```
 
@@ -78,11 +78,11 @@ Use the `..` range operator (compiles to `make_range`):
 
 ```crush
 for i in 0..10 {
-    @io.print(i);  // 0 through 9
+    io.print(i);  // 0 through 9
 }
 
 for i in 1..=5 {
-    @io.print(i);  // 1 through 5 (inclusive)
+    io.print(i);  // 1 through 5 (inclusive)
 }
 ```
 
@@ -110,7 +110,7 @@ for i in numbers {
     if i % 2 == 0 {
         continue;  // Skip even numbers
     }
-    @io.print(i);
+    io.print(i);
 }
 ```
 
@@ -120,9 +120,9 @@ for i in numbers {
 
 ```crush
 match value {
-    0 => @io.print("Zero"),
-    1 => @io.print("One"),
-    _ => @io.print("Other")
+    0 => io.print("Zero"),
+    1 => io.print("One"),
+    _ => io.print("Other")
 }
 ```
 
@@ -138,10 +138,10 @@ Pattern forms supported:
 
 ```crush
 try {
-    let data = @fs.read("file.txt");
-    @io.print(data);
+    let data = fs.read("file.txt");
+    io.print(data);
 } catch error {
-    @io.eprint("Failed: " + error);
+    io.eprint("Failed: " + error);
 }
 ```
 

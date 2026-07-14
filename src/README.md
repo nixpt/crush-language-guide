@@ -1,4 +1,11 @@
-# The Crush Language Guide
+<p align="center">
+  <img src="assets/hero.png" alt="Crush Banner" width="100%" />
+</p>
+
+<h1 align="center">
+  <img src="assets/logo.png" alt="Crush Logo" width="40" height="40" style="vertical-align: middle;" />
+  The Crush Language Guide
+</h1>
 
 **Crush** is a capability-based, polyglot programming language and virtual runtime. It lets you
 write in multiple languages (Python, Rust, Bash, C, Go) within a single program while enforcing
@@ -31,9 +38,11 @@ Source (.crush / .py / .rs / ...)
 
 ## Hello, Crush
 
+[![Run in Codebucket (Codespaces)](https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github)](https://codespaces.new/nixpt/crush-website)
+
 ```crush
 fn main() {
-    @io.print("Hello, Crush!");
+    io.print("Hello, Crush!");
 }
 ```
 

@@ -44,7 +44,7 @@ let name: String = "Alice";
 ### Functions
 ```crush
 fn greet(name: String) {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 fn add(a: Int, b: Int) -> Int {
@@ -71,9 +71,9 @@ for item in collection {
 
 ### Capabilities
 ```crush
-@io.print("Hello");
-@fs.read("file.txt");
-@net.http("https://api.example.com");
+io.print("Hello");
+fs.read("file.txt");
+net.http("https://api.example.com");
 ```
 
 ### Polyglot
@@ -95,24 +95,24 @@ for item in collection {
 
 ### Read File
 ```crush
-if @fs.exists("file.txt") {
-    let content = @fs.read("file.txt");
-    @io.print(content);
+if fs.exists("file.txt") {
+    let content = fs.read("file.txt");
+    io.print(content);
 }
 ```
 
 ### HTTP Request
 ```crush
-let response = @net.get("https://api.example.com/data");
-@io.print(response);
+let response = net.get("https://api.example.com/data");
+io.print(response);
 ```
 
 ### Command-Line Args
 ```crush
-let args = @sys.args();
+let args = sys.args();
 if args.length < 2 {
-    @io.eprint("Usage: program <arg>");
-    @sys.exit(1);
+    io.eprint("Usage: program <arg>");
+    sys.exit(1);
 }
 ```
 

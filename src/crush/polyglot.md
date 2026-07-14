@@ -29,12 +29,14 @@ Walkers vary in completeness:
 
 | Language | Syntax | Walker status | Supported constructs |
 |----------|--------|---------------|----------------------|
-| JavaScript | `@javascript { }` | Most complete | Variables, if/while/for, try/catch, throw, break/continue, return, arrays, objects, await |
-| Python | `@python { }` | Partial | Variables, if/while, return, expressions — **missing**: for-in, function defs |
-| Rust | `@rust { }` | Partial | Variables, if, return, expressions — **missing**: for/while, function defs |
-| Bash | `@bash { }` | Minimal stub | Only `NAME=VALUE` assignments and `echo` (regex-based, no real AST parser) |
-| C | `@c { }` | Exists | See walker source |
-| Go | `@go { }` | Exists | See walker source |
+| JavaScript/TypeScript | `@javascript { }` | Complete | Dual-backend (`swc` primary, `boa` optional). Full JS + TS + JSX/TSX |
+| Python | `@python { }` | Complete | Native frontend via `rustpython-parser` |
+| Rust | `@rust { }` | Complete | Native frontend via `syn` |
+| Bash | `@bash { }` | Complete | Full AST parsing via `brush-parser` |
+| C / C++ | `@c { }` | Mature | Tree-sitter-c and tree-sitter-cpp |
+| Go | `@go { }` | Mature | Tree-sitter-based walker |
+| Zig | `@zig { }` | Mature | Tree-sitter-based walker |
+| Wasm | `@wasm { }` | Mature | Integration tested with `.wat` and WASI |
 
 ## Polyglot Execution Model
 
@@ -76,6 +78,8 @@ Each polyglot block executes inside a **WebAssembly (WASM) sandbox** using the *
 - **Sandboxed**: Cannot escape the capsule boundary or access host system directly
 
 ### Example
+
+[![Run in Codebucket (Codespaces)](https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github)](https://codespaces.new/nixpt/crush-website)
 
 ```crush
 fn main() {
@@ -120,8 +124,8 @@ fn main() {
         obj = MyClass()  # ✗ Not shareable
     }
     
-    @io.print(result);  // ✓ Works: result is Int
-    // @io.print(obj);  // ✗ Error: obj not CASM-compatible
+    io.print(result);  // ✓ Works: result is Int
+    // io.print(obj);  // ✗ Error: obj not CASM-compatible
 }
 ```
 
@@ -248,7 +252,7 @@ Bash blocks execute in a **restricted shell environment** with only capability-b
     let result = fibonacci(20);
 }
 
-@io.print("Fibonacci: " + result);
+io.print("Fibonacci: " + result);
 ```
 
 ### Capability Calls from Rust
@@ -298,7 +302,7 @@ Rust capsules **cannot access host `std` directly**. They must use capability ca
     }
 }
 
-@io.print("Sum: " + sum);
+io.print("Sum: " + sum);
 ```
 
 ## Go Integration
@@ -368,7 +372,7 @@ fn main() {
     }
     
     // Output
-    @io.print(formatted);
+    io.print(formatted);
     
     // Save with Bash
     @bash {
@@ -430,7 +434,7 @@ fn main() {
 }
 
 if error_msg != null {
-    @io.eprint("Python error: " + error_msg);
+    io.eprint("Python error: " + error_msg);
 }
 ```
 

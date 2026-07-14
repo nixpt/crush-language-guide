@@ -17,7 +17,7 @@ The Crush language provides a clean, expression-oriented syntax that acts as the
 
 ```crush
 fn main() {
-    @io.print("Hello, Crush!");
+    io.print("Hello, Crush!");
 }
 ```
 
@@ -25,7 +25,7 @@ fn main() {
 In Crush, the `@` prefix is used to denote a **Capability Call**. This visual marker identifies code that crosses the VM boundary to interact with the host or other capsules.
 
 ```crush
-@fs.read("config.json");  // Crossing the boundary to the filesystem
+fs.read("config.json");  // Crossing the boundary to the filesystem
 let x = 1 + 2;             // Internal VM computation (no @)
 ```
 

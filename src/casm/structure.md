@@ -297,11 +297,11 @@ This corresponds to the Crush source:
 
 ```crush
 fn main() {
-    @io.print("What's your name?");
-    let name = @io.read();
+    io.print("What's your name?");
+    let name = io.read();
     
     let greeting = "Hello, " + name + "!";
-    @io.print(greeting);
+    io.print(greeting);
 }
 ```
 

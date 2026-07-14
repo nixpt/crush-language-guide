@@ -31,36 +31,36 @@ import std.io as console;
 
 Input/output operations:
 
-- `@io.print(message)` - Print to stdout
-- `@io.read()` - Read from stdin
-- `@io.eprint(message)` - Print to stderr
+- `io.print(message)` - Print to stdout
+- `io.read()` - Read from stdin
+- `io.eprint(message)` - Print to stderr
 
 ### Filesystem Module (`std.fs`)
 
 File and directory operations:
 
-- `@fs.read(path)` - Read file
-- `@fs.write(path, content)` - Write file
-- `@fs.exists(path)` - Check if exists
-- `@fs.delete(path)` - Delete file
-- `@fs.list(path)` - List directory
+- `fs.read(path)` - Read file
+- `fs.write(path, content)` - Write file
+- `fs.exists(path)` - Check if exists
+- `fs.delete(path)` - Delete file
+- `fs.list(path)` - List directory
 
 ### System Module (`std.sys`)
 
 System-level operations:
 
-- `@sys.exec(command)` - Execute command
-- `@sys.env(name)` - Get environment variable
-- `@sys.args()` - Get command-line arguments
-- `@sys.exit(code)` - Exit program
+- `sys.exec(command)` - Execute command
+- `sys.env(name)` - Get environment variable
+- `sys.args()` - Get command-line arguments
+- `sys.exit(code)` - Exit program
 
 ### Network Module (`std.net`)
 
 Network operations:
 
-- `@net.http(url)` - HTTP request
-- `@net.get(url)` - HTTP GET
-- `@net.post(url, body)` - HTTP POST
+- `net.http(url)` - HTTP request
+- `net.get(url)` - HTTP GET
+- `net.post(url, body)` - HTTP POST
 
 ## Example Usage
 
@@ -71,22 +71,22 @@ import std.sys;
 
 fn main() {
     // Get command-line arguments
-    let args = @sys.args();
+    let args = sys.args();
 
     if args.length < 2 {
-        @io.eprint("Usage: program <filename>");
-        @sys.exit(1);
+        io.eprint("Usage: program <filename>");
+        sys.exit(1);
     }
 
     let filename = args[1];
 
     // Check if file exists
-    if @fs.exists(filename) {
-        let content = @fs.read(filename);
-        @io.print(content);
+    if fs.exists(filename) {
+        let content = fs.read(filename);
+        io.print(content);
     } else {
-        @io.eprint("File not found: " + filename);
-        @sys.exit(1);
+        io.eprint("File not found: " + filename);
+        sys.exit(1);
     }
 }
 ```

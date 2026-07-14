@@ -78,7 +78,7 @@ let check = !(x == 0);
 
 ```crush
 for i in 0..10 {
-    @io.print(i);  // 0, 1, ..., 9
+    io.print(i);  // 0, 1, ..., 9
 }
 
 let r = 1..5;  // range from 1 to 5 (exclusive)
@@ -92,7 +92,7 @@ let r = 1..5;  // range from 1 to 5 (exclusive)
 let result = data |> process |> format;
 // Equivalent to: format(process(data))
 
-let cleaned = "  hello  " |> @str.trim |> @str.to_upper;
+let cleaned = "  hello  " |> str.trim |> str.to_upper;
 ```
 
 ## Operator Precedence

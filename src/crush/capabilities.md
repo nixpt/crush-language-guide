@@ -18,21 +18,21 @@ Capabilities are **permissions** that grant access to external resources:
 Use the `@` prefix to call capabilities:
 
 ```crush
-@io.print("Hello, World!");
+io.print("Hello, World!");
 ```
 
 ### With Arguments
 
 ```crush
-@fs.write("file.txt", "content");
-let content = @fs.read("file.txt");
+fs.write("file.txt", "content");
+let content = fs.read("file.txt");
 ```
 
 ### Storing Results
 
 ```crush
-let user_input = @io.read();
-let file_data = @fs.read("config.json");
+let user_input = io.read();
+let file_data = fs.read("config.json");
 ```
 
 ## Declaring Permissions
@@ -80,9 +80,9 @@ Capabilities must be declared in the program manifest:
 **Example:**
 
 ```crush
-@io.print("Enter your name:");
-let name = @io.read();
-@io.print("Hello, " + name);
+io.print("Enter your name:");
+let name = io.read();
+io.print("Hello, " + name);
 ```
 
 ### Filesystem Capabilities
@@ -98,11 +98,11 @@ let name = @io.read();
 **Example:**
 
 ```crush
-if @fs.exists("config.json") {
-    let config = @fs.read("config.json");
-    @io.print(config);
+if fs.exists("config.json") {
+    let config = fs.read("config.json");
+    io.print(config);
 } else {
-    @fs.write("config.json", "{}");
+    fs.write("config.json", "{}");
 }
 ```
 
@@ -118,10 +118,10 @@ if @fs.exists("config.json") {
 **Example:**
 
 ```crush
-let args = @sys.args();
+let args = sys.args();
 if args.length < 2 {
-    @io.eprint("Usage: program <file>");
-    @sys.exit(1);
+    io.eprint("Usage: program <file>");
+    sys.exit(1);
 }
 ```
 
@@ -136,8 +136,8 @@ if args.length < 2 {
 **Example:**
 
 ```crush
-let response = @net.get("https://api.example.com/data");
-@io.print(response);
+let response = net.get("https://api.example.com/data");
+io.print(response);
 ```
 
 ## Security Model
@@ -173,8 +173,8 @@ If a program calls a capability it doesn't have:
 // Manifest: {"permissions": ["io.print"]}
 
 fn main() {
-    @io.print("Hello");  // ✓ Allowed
-    @fs.read("file.txt");  // ✗ Runtime error: Permission denied
+    io.print("Hello");  // ✓ Allowed
+    fs.read("file.txt");  // ✗ Runtime error: Permission denied
 }
 ```
 
@@ -197,10 +197,10 @@ fn main() {
 ### 2. Check Before Using
 
 ```crush
-if @fs.exists("config.json") {
-    let config = @fs.read("config.json");
+if fs.exists("config.json") {
+    let config = fs.read("config.json");
 } else {
-    @io.print("Config not found");
+    io.print("Config not found");
 }
 ```
 
@@ -209,9 +209,9 @@ if @fs.exists("config.json") {
 ```crush
 // Future: try-catch
 try {
-    let data = @fs.read("file.txt");
+    let data = fs.read("file.txt");
 } catch (error) {
-    @io.eprint("Failed to read file: " + error);
+    io.eprint("Failed to read file: " + error);
 }
 ```
 
@@ -221,8 +221,8 @@ Capabilities can be composed:
 
 ```crush
 fn read_and_print(filename: String) {
-    let content = @fs.read(filename);
-    @io.print(content);
+    let content = fs.read(filename);
+    io.print(content);
 }
 
 // Requires both fs.read and io.print
@@ -232,3 +232,47 @@ fn read_and_print(filename: String) {
 
 - **[Polyglot Programming](polyglot.md)**: Embed multiple languages
 - **[Standard Library](stdlib.md)**: Additional capabilities
+
+## What is actually implemented today
+
+The chapters above describe the capability model. This section records, separately, **which
+capabilities the runtime currently ships** — because the two have drifted, and a guide that
+documents a capability the runtime does not have is worse than one that stays silent.
+
+Verified by running each call against `crush-run` (built with `--features stdlib`):
+
+**Available**
+
+| capability | notes |
+|---|---|
+| `io.print` | built-in, always available |
+| `str.concat`, `str.len` | built-in |
+| `str.trim`, `str.to_upper`, `str.substring` | require `--stdlib` |
+| `conv.to_int` | requires `--stdlib` |
+| `math.*` | requires `--stdlib` |
+| `fs.read`, `fs.write`, `fs.exists`, `fs.list` | require `--fs` |
+| `env.get` | requires `--env` |
+| `time.now` | requires `--time` |
+
+Run `crush-run caps` for the authoritative list on your build — and note that capability
+*groups* behind a Cargo feature (`--stdlib`, `--net`, `--db`, `--graphics`) will warn if that
+feature was not compiled in. **A "not enabled in this build" warning is not the same as "does
+not exist."**
+
+**Not implemented — documented in this guide but NOT in the runtime**
+
+`io.eprint` · `io.read` · `fs.delete` · `sys.exit` · `sys.args` · `sys.env` · `sys.exec` ·
+`type.of` · `console.print` · `array.push` · `array.pop` · `array.length` · `map.keys` ·
+`map.has_key`
+
+Examples using these will **not run**. They are retained here as intent, not as documentation
+of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.
+
+## A note on syntax
+
+Capability calls are written **unprefixed**: `io.print("hi")`, not `@io.print("hi")`. Earlier
+revisions of this guide used an `@` sigil; the parser has never accepted it in expression
+position, and every example here has been corrected.
+
+The `@` sigil **is** correct — and required — for polyglot blocks: `@python { ... }`,
+`@javascript { ... }`. Those are a different construct entirely.
