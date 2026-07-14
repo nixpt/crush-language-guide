@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -185,12 +185,12 @@
 <h2 id="function-definition"><a class="header" href="#function-definition">Function Definition</a></h2>
 <h3 id="basic-function"><a class="header" href="#basic-function">Basic Function</a></h3>
 <pre><code class="language-crush">fn greet() {
-    @io.print("Hello!");
+    io.print("Hello!");
 }
 </code></pre>
 <h3 id="with-parameters"><a class="header" href="#with-parameters">With Parameters</a></h3>
 <pre><code class="language-crush">fn greet(name: String) {
-    @io.print("Hello, " + name + "!");
+    io.print("Hello, " + name + "!");
 }
 </code></pre>
 <h3 id="with-return-value"><a class="header" href="#with-return-value">With Return Value</a></h3>
@@ -240,7 +240,7 @@ let result = calculate(add(2, 3), 4, "multiply");
 <h3 id="void-functions"><a class="header" href="#void-functions">Void Functions</a></h3>
 <p>Functions without return values:</p>
 <pre><code class="language-crush">fn log_message(msg: String) {
-    @io.print("[LOG] " + msg);
+    io.print("[LOG] " + msg);
     // No return statement
 }
 </code></pre>
@@ -254,7 +254,7 @@ create_user("Alice", 30, true);
 </code></pre>
 <h3 id="default-parameters-future-feature"><a class="header" href="#default-parameters-future-feature">Default Parameters (Future Feature)</a></h3>
 <pre><code class="language-crush">fn greet(name: String = "Guest") {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 greet();         // "Hello, Guest"
@@ -270,7 +270,7 @@ greet("Alice");  // "Hello, Alice"
 
 fn main() {
     let result = factorial(5);  // 120
-    @io.print(result);
+    io.print(result);
 }
 </code></pre>
 <h2 id="higher-order-functions"><a class="header" href="#higher-order-functions">Higher-Order Functions</a></h2>
@@ -308,14 +308,14 @@ fn main() {
 <h2 id="async-functions"><a class="header" href="#async-functions">Async Functions</a></h2>
 <p>Use <code>async</code>/<code>await</code> for asynchronous operations. <code>spawn</code> launches a task concurrently:</p>
 <pre><code class="language-crush">async fn fetch_data(url: String) -&gt; String {
-    let response = await @net.get(url);
+    let response = await net.get(url);
     return response;
 }
 
 fn main() {
     let task = spawn fetch_data("https://api.example.com/data");
     let result = await task;
-    @io.print(result);
+    io.print(result);
 }
 </code></pre>
 <h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>

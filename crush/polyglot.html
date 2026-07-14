@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -207,12 +207,14 @@ Walkers vary in completeness:</p>
 <tr><th>Language</th><th>Syntax</th><th>Walker status</th><th>Supported constructs</th></tr>
 </thead>
 <tbody>
-<tr><td>JavaScript</td><td><code>@javascript { }</code></td><td>Most complete</td><td>Variables, if/while/for, try/catch, throw, break/continue, return, arrays, objects, await</td></tr>
-<tr><td>Python</td><td><code>@python { }</code></td><td>Partial</td><td>Variables, if/while, return, expressions — <strong>missing</strong>: for-in, function defs</td></tr>
-<tr><td>Rust</td><td><code>@rust { }</code></td><td>Partial</td><td>Variables, if, return, expressions — <strong>missing</strong>: for/while, function defs</td></tr>
-<tr><td>Bash</td><td><code>@bash { }</code></td><td>Minimal stub</td><td>Only <code>NAME=VALUE</code> assignments and <code>echo</code> (regex-based, no real AST parser)</td></tr>
-<tr><td>C</td><td><code>@c { }</code></td><td>Exists</td><td>See walker source</td></tr>
-<tr><td>Go</td><td><code>@go { }</code></td><td>Exists</td><td>See walker source</td></tr>
+<tr><td>JavaScript/TypeScript</td><td><code>@javascript { }</code></td><td>Complete</td><td>Dual-backend (<code>swc</code> primary, <code>boa</code> optional). Full JS + TS + JSX/TSX</td></tr>
+<tr><td>Python</td><td><code>@python { }</code></td><td>Complete</td><td>Native frontend via <code>rustpython-parser</code></td></tr>
+<tr><td>Rust</td><td><code>@rust { }</code></td><td>Complete</td><td>Native frontend via <code>syn</code></td></tr>
+<tr><td>Bash</td><td><code>@bash { }</code></td><td>Complete</td><td>Full AST parsing via <code>brush-parser</code></td></tr>
+<tr><td>C / C++</td><td><code>@c { }</code></td><td>Mature</td><td>Tree-sitter-c and tree-sitter-cpp</td></tr>
+<tr><td>Go</td><td><code>@go { }</code></td><td>Mature</td><td>Tree-sitter-based walker</td></tr>
+<tr><td>Zig</td><td><code>@zig { }</code></td><td>Mature</td><td>Tree-sitter-based walker</td></tr>
+<tr><td>Wasm</td><td><code>@wasm { }</code></td><td>Mature</td><td>Integration tested with <code>.wat</code> and WASI</td></tr>
 </tbody>
 </table>
 </div>
@@ -252,6 +254,7 @@ Walkers vary in completeness:</p>
 <li><strong>Sandboxed</strong>: Cannot escape the capsule boundary or access host system directly</li>
 </ul>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
+<p><a href="https://codespaces.new/nixpt/crush-website"><img src="https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github" alt="Run in Codebucket (Codespaces)"></a></p>
 <pre><code class="language-crush">fn main() {
     @python {
         # This capsule has ONLY io.print capability
@@ -293,8 +296,8 @@ Walkers vary in completeness:</p>
         obj = MyClass()  # ✗ Not shareable
     }
     
-    @io.print(result);  // ✓ Works: result is Int
-    // @io.print(obj);  // ✗ Error: obj not CASM-compatible
+    io.print(result);  // ✓ Works: result is Int
+    // io.print(obj);  // ✗ Error: obj not CASM-compatible
 }
 </code></pre>
 <h3 id="how-it-works"><a class="header" href="#how-it-works">How It Works</a></h3>
@@ -402,7 +405,7 @@ Walkers vary in completeness:</p>
     let result = fibonacci(20);
 }
 
-@io.print("Fibonacci: " + result);
+io.print("Fibonacci: " + result);
 </code></pre>
 <h3 id="capability-calls-from-rust"><a class="header" href="#capability-calls-from-rust">Capability Calls from Rust</a></h3>
 <p>Rust capsules <strong>cannot access host <code>std</code> directly</strong>. They must use capability calls:</p>
@@ -445,7 +448,7 @@ Walkers vary in completeness:</p>
     }
 }
 
-@io.print("Sum: " + sum);
+io.print("Sum: " + sum);
 </code></pre>
 <h2 id="go-integration"><a class="header" href="#go-integration">Go Integration</a></h2>
 <h3 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h3>
@@ -508,7 +511,7 @@ Walkers vary in completeness:</p>
     }
     
     // Output
-    @io.print(formatted);
+    io.print(formatted);
     
     // Save with Bash
     @bash {
@@ -560,7 +563,7 @@ Walkers vary in completeness:</p>
 }
 
 if error_msg != null {
-    @io.eprint("Python error: " + error_msg);
+    io.eprint("Python error: " + error_msg);
 }
 </code></pre>
 <h2 id="variable-type-mapping"><a class="header" href="#variable-type-mapping">Variable Type Mapping</a></h2>

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -230,7 +230,7 @@ let check = !(x == 0);
 <h2 id="range-operator"><a class="header" href="#range-operator">Range Operator</a></h2>
 <p><code>..</code> creates a range value (compiled to <code>make_range</code>):</p>
 <pre><code class="language-crush">for i in 0..10 {
-    @io.print(i);  // 0, 1, ..., 9
+    io.print(i);  // 0, 1, ..., 9
 }
 
 let r = 1..5;  // range from 1 to 5 (exclusive)
@@ -240,7 +240,7 @@ let r = 1..5;  // range from 1 to 5 (exclusive)
 <pre><code class="language-crush">let result = data |&gt; process |&gt; format;
 // Equivalent to: format(process(data))
 
-let cleaned = "  hello  " |&gt; @str.trim |&gt; @str.to_upper;
+let cleaned = "  hello  " |&gt; str.trim |&gt; str.to_upper;
 </code></pre>
 <h2 id="operator-precedence"><a class="header" href="#operator-precedence">Operator Precedence</a></h2>
 <p>From highest to lowest:</p>

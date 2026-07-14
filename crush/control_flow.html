@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -185,32 +185,32 @@
 <h2 id="if-statements"><a class="header" href="#if-statements">If Statements</a></h2>
 <h3 id="basic-if"><a class="header" href="#basic-if">Basic If</a></h3>
 <pre><code class="language-crush">if condition {
-    @io.print("Condition is true");
+    io.print("Condition is true");
 }
 </code></pre>
 <h3 id="if-else"><a class="header" href="#if-else">If-Else</a></h3>
 <pre><code class="language-crush">if x &gt; 0 {
-    @io.print("Positive");
+    io.print("Positive");
 } else {
-    @io.print("Non-positive");
+    io.print("Non-positive");
 }
 </code></pre>
 <h3 id="if-else-if-else"><a class="header" href="#if-else-if-else">If-Else If-Else</a></h3>
 <pre><code class="language-crush">if score &gt;= 90 {
-    @io.print("A");
+    io.print("A");
 } else if score &gt;= 80 {
-    @io.print("B");
+    io.print("B");
 } else if score &gt;= 70 {
-    @io.print("C");
+    io.print("C");
 } else {
-    @io.print("F");
+    io.print("F");
 }
 </code></pre>
 <h2 id="while-loops"><a class="header" href="#while-loops">While Loops</a></h2>
 <h3 id="basic-while"><a class="header" href="#basic-while">Basic While</a></h3>
 <pre><code class="language-crush">let i = 0;
 while i &lt; 5 {
-    @io.print(i);
+    io.print(i);
     i = i + 1;
 }
 </code></pre>
@@ -220,7 +220,7 @@ while true {
     if counter &gt;= 10 {
         break;
     }
-    @io.print(counter);
+    io.print(counter);
     counter = counter + 1;
 }
 </code></pre>
@@ -228,17 +228,17 @@ while true {
 <h3 id="iterating-over-arrays"><a class="header" href="#iterating-over-arrays">Iterating Over Arrays</a></h3>
 <pre><code class="language-crush">let numbers = [1, 2, 3, 4, 5];
 for num in numbers {
-    @io.print(num);
+    io.print(num);
 }
 </code></pre>
 <h3 id="range-iteration"><a class="header" href="#range-iteration">Range Iteration</a></h3>
 <p>Use the <code>..</code> range operator (compiles to <code>make_range</code>):</p>
 <pre><code class="language-crush">for i in 0..10 {
-    @io.print(i);  // 0 through 9
+    io.print(i);  // 0 through 9
 }
 
 for i in 1..=5 {
-    @io.print(i);  // 1 through 5 (inclusive)
+    io.print(i);  // 1 through 5 (inclusive)
 }
 </code></pre>
 <h2 id="break-and-continue"><a class="header" href="#break-and-continue">Break and Continue</a></h2>
@@ -257,15 +257,15 @@ for i in 1..=5 {
     if i % 2 == 0 {
         continue;  // Skip even numbers
     }
-    @io.print(i);
+    io.print(i);
 }
 </code></pre>
 <h2 id="pattern-matching"><a class="header" href="#pattern-matching">Pattern Matching</a></h2>
 <p><code>match</code> is implemented — the keyword, AST node, and CASM codegen all exist:</p>
 <pre><code class="language-crush">match value {
-    0 =&gt; @io.print("Zero"),
-    1 =&gt; @io.print("One"),
-    _ =&gt; @io.print("Other")
+    0 =&gt; io.print("Zero"),
+    1 =&gt; io.print("One"),
+    _ =&gt; io.print("Other")
 }
 </code></pre>
 <p>Pattern forms supported:</p>
@@ -278,10 +278,10 @@ for i in 1..=5 {
 <h2 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h2>
 <p><code>try</code>/<code>catch</code>/<code>throw</code> are fully implemented:</p>
 <pre><code class="language-crush">try {
-    let data = @fs.read("file.txt");
-    @io.print(data);
+    let data = fs.read("file.txt");
+    io.print(data);
 } catch error {
-    @io.eprint("Failed: " + error);
+    io.eprint("Failed: " + error);
 }
 </code></pre>
 <h3 id="throwing-exceptions"><a class="header" href="#throwing-exceptions">Throwing Exceptions</a></h3>

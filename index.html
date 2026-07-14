@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-deec98d4.js"></script>
@@ -180,7 +180,15 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-crush-language-guide"><a class="header" href="#the-crush-language-guide">The Crush Language Guide</a></h1>
+                        <p align="center">
+  <img src="assets/hero.png" alt="Crush Banner" width="100%" />
+</p>
+
+<h1 align="center">
+  <img src="assets/logo.png" alt="Crush Logo" width="40" height="40" style="vertical-align: middle;" />
+  The Crush Language Guide
+</h1>
+
 <p><strong>Crush</strong> is a capability-based, polyglot programming language and virtual runtime. It lets you
 write in multiple languages (Python, Rust, Bash, C, Go) within a single program while enforcing
 fine-grained security through an explicit capability system.</p>
@@ -212,8 +220,9 @@ fine-grained security through an explicit capability system.</p>
     crush-vm  (CVM1 — bytecode VM)
 </code></pre>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
+<p><a href="https://codespaces.new/nixpt/crush-website"><img src="https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github" alt="Run in Codebucket (Codespaces)"></a></p>
 <pre><code class="language-crush">fn main() {
-    @io.print("Hello, Crush!");
+    io.print("Hello, Crush!");
 }
 </code></pre>
 <p>The <code>@</code> prefix marks a <strong>capability call</strong> — a crossing of the VM boundary that requires an

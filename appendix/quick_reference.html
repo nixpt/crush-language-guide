@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -243,7 +243,7 @@ let name: String = "Alice";
 </code></pre>
 <h3 id="functions"><a class="header" href="#functions">Functions</a></h3>
 <pre><code class="language-crush">fn greet(name: String) {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 fn add(a: Int, b: Int) -&gt; Int {
@@ -266,9 +266,9 @@ for item in collection {
 }
 </code></pre>
 <h3 id="capabilities-1"><a class="header" href="#capabilities-1">Capabilities</a></h3>
-<pre><code class="language-crush">@io.print("Hello");
-@fs.read("file.txt");
-@net.http("https://api.example.com");
+<pre><code class="language-crush">io.print("Hello");
+fs.read("file.txt");
+net.http("https://api.example.com");
 </code></pre>
 <h3 id="polyglot"><a class="header" href="#polyglot">Polyglot</a></h3>
 <pre><code class="language-crush">@python {
@@ -285,20 +285,20 @@ for item in collection {
 </code></pre>
 <h2 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h2>
 <h3 id="read-file"><a class="header" href="#read-file">Read File</a></h3>
-<pre><code class="language-crush">if @fs.exists("file.txt") {
-    let content = @fs.read("file.txt");
-    @io.print(content);
+<pre><code class="language-crush">if fs.exists("file.txt") {
+    let content = fs.read("file.txt");
+    io.print(content);
 }
 </code></pre>
 <h3 id="http-request"><a class="header" href="#http-request">HTTP Request</a></h3>
-<pre><code class="language-crush">let response = @net.get("https://api.example.com/data");
-@io.print(response);
+<pre><code class="language-crush">let response = net.get("https://api.example.com/data");
+io.print(response);
 </code></pre>
 <h3 id="command-line-args"><a class="header" href="#command-line-args">Command-Line Args</a></h3>
-<pre><code class="language-crush">let args = @sys.args();
+<pre><code class="language-crush">let args = sys.args();
 if args.length &lt; 2 {
-    @io.eprint("Usage: program &lt;arg&gt;");
-    @sys.exit(1);
+    io.eprint("Usage: program &lt;arg&gt;");
+    sys.exit(1);
 }
 </code></pre>
 <h2 id="type-reference"><a class="header" href="#type-reference">Type Reference</a></h2>

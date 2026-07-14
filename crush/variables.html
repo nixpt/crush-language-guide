@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -216,12 +216,12 @@ counter /= 2;   // counter = counter / 2
 <p>Variables declared in a function are local to that function:</p>
 <pre><code class="language-crush">fn example() {
     let x = 10;  // Local to example()
-    @io.print(x);
+    io.print(x);
 }
 
 fn main() {
     example();
-    // @io.print(x);  // Error: x not in scope
+    // io.print(x);  // Error: x not in scope
 }
 </code></pre>
 <h3 id="block-scope"><a class="header" href="#block-scope">Block Scope</a></h3>
@@ -231,12 +231,12 @@ fn main() {
     
     if true {
         let y = 20;  // Local to if block
-        @io.print(x);  // Can access outer x
-        @io.print(y);
+        io.print(x);  // Can access outer x
+        io.print(y);
     }
     
-    @io.print(x);  // OK
-    // @io.print(y);  // Error: y not in scope
+    io.print(x);  // OK
+    // io.print(y);  // Error: y not in scope
 }
 </code></pre>
 <h3 id="global-scope-module-level"><a class="header" href="#global-scope-module-level">Global Scope (Module Level)</a></h3>
@@ -248,21 +248,21 @@ fn get_config() -&gt; String {
 }
 
 fn main() {
-    @io.print(GLOBAL_CONFIG);
+    io.print(GLOBAL_CONFIG);
 }
 </code></pre>
 <h2 id="variable-shadowing"><a class="header" href="#variable-shadowing">Variable Shadowing</a></h2>
 <p>Inner scopes can shadow outer variables:</p>
 <pre><code class="language-crush">fn main() {
     let x = 10;
-    @io.print(x);  // 10
+    io.print(x);  // 10
     
     {
         let x = 20;  // Shadows outer x
-        @io.print(x);  // 20
+        io.print(x);  // 20
     }
     
-    @io.print(x);  // 10 (outer x restored)
+    io.print(x);  // 10 (outer x restored)
 }
 </code></pre>
 <h2 id="export-and-import"><a class="header" href="#export-and-import">Export and Import</a></h2>
@@ -273,8 +273,8 @@ export config = {"mode": "production"};
 </code></pre>
 <h3 id="importing-variables"><a class="header" href="#importing-variables">Importing Variables</a></h3>
 <pre><code class="language-crush">// capsule_b.crush
-let data = @import.var("capsule_a", "result");
-let cfg = @import.var("capsule_a", "config");
+let data = import.var("capsule_a", "result");
+let cfg = import.var("capsule_a", "config");
 </code></pre>
 <h2 id="constants-future-feature"><a class="header" href="#constants-future-feature">Constants (Future Feature)</a></h2>
 <pre><code class="language-crush">const PI = 3.14159;

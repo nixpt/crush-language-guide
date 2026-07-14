@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -212,7 +212,7 @@ greet("Alice")
 </code></pre>
 <p><strong>Crush:</strong></p>
 <pre><code class="language-crush">fn greet(name: String) {
-    @io.print("Hello, " + name + "!");
+    io.print("Hello, " + name + "!");
 }
 
 greet("Alice");
@@ -254,7 +254,8 @@ greet("Alice");
 <tr><td>Type System</td><td>Dynamic</td><td>Static, strict</td></tr>
 <tr><td>Memory Safety</td><td>VM-managed</td><td>Borrow checker</td></tr>
 <tr><td>Polyglot</td><td>✓</td><td>✗</td></tr>
-<tr><td>Compilation</td><td>To bytecode</td><td>To native code</td></tr>
+<tr><td>Compilation</td><td>To bytecode + AOT native</td><td>To native code</td></tr>
+<tr><td>AOT Performance</td><td>Near-native via <code>crush-aotc</code></td><td>Native</td></tr>
 </tbody>
 </table>
 </div>
@@ -279,6 +280,27 @@ greet("Alice");
 </tbody>
 </table>
 </div>
+<h2 id="performance"><a class="header" href="#performance">Performance</a></h2>
+<p>Crush has five execution tiers spanning interpreter to native code:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Tier</th><th>Speed vs CVM1 (simple)</th><th>Speed vs CVM1 (compute)</th></tr>
+</thead>
+<tbody>
+<tr><td>CVM1 (interpreter)</td><td>1.0×</td><td>1.0×</td></tr>
+<tr><td>FastVM</td><td>0.09×</td><td>0.5×</td></tr>
+<tr><td>AOT Rust (rustc)</td><td>42×</td><td>130×</td></tr>
+<tr><td>AOT C (gcc -O3)</td><td>54×</td><td>317×</td></tr>
+<tr><td>AOT C (clang -O3)</td><td>55×</td><td>378×</td></tr>
+</tbody>
+</table>
+</div>
+<p>AOT-compiled Crush achieves <strong>near-C performance</strong> — LLVM and GCC constant-fold
+the stack machine operations into direct native code. For compute-bound Crush programs,
+<code>crush-aotc</code> produces <code>.so</code> files that run within 2-5× of hand-written C.</p>
+<p>See the <a href="https://github.com/nixpt/crush-ast/tree/main/docs/benchmarks">crush-ast benchmarks</a>
+for detailed cross-language comparisons.</p>
 <h2 id="when-to-use-crush"><a class="header" href="#when-to-use-crush">When to Use Crush</a></h2>
 <p>✅ <strong>Use Crush when:</strong></p>
 <ul>
@@ -286,10 +308,10 @@ greet("Alice");
 <li>Security and isolation are important</li>
 <li>You want capability-based permissions</li>
 <li>You’re building polyglot applications</li>
+<li>You need native performance with scripting ergonomics (<code>crush-aotc</code>)</li>
 </ul>
 <p>❌ <strong>Consider alternatives when:</strong></p>
 <ul>
-<li>You need maximum performance (use Rust/C)</li>
 <li>You have a large existing codebase in another language</li>
 <li>You need mature ecosystem (Python/JavaScript)</li>
 <li>You’re building web frontends (use JavaScript/TypeScript)</li>
@@ -298,7 +320,7 @@ greet("Alice");
 <h3 id="from-python"><a class="header" href="#from-python">From Python</a></h3>
 <ol>
 <li>Add type hints to function signatures</li>
-<li>Replace <code>print()</code> with <code>@io.print()</code></li>
+<li>Replace <code>print()</code> with <code>io.print()</code></li>
 <li>Add capability permissions to manifest</li>
 <li>Keep Python code in <code>@python {}</code> blocks during transition</li>
 </ol>
@@ -306,7 +328,7 @@ greet("Alice");
 <ol>
 <li>Change <code>function</code> to <code>fn</code></li>
 <li>Add semicolons</li>
-<li>Replace <code>console.log()</code> with <code>@io.print()</code></li>
+<li>Replace <code>console.log()</code> with <code>io.print()</code></li>
 <li>Keep JavaScript in <code>@javascript {}</code> blocks</li>
 </ol>
 <h3 id="from-bash"><a class="header" href="#from-bash">From Bash</a></h3>

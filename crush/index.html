@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -193,12 +193,12 @@
 <h2 id="the-crush-language"><a class="header" href="#the-crush-language">The Crush Language</a></h2>
 <p>The Crush language provides a clean, expression-oriented syntax that acts as the glue for the vOS.</p>
 <pre><code class="language-crush">fn main() {
-    @io.print("Hello, Crush!");
+    io.print("Hello, Crush!");
 }
 </code></pre>
 <h3 id="the--operator"><a class="header" href="#the--operator">The <code>@</code> Operator</a></h3>
 <p>In Crush, the <code>@</code> prefix is used to denote a <strong>Capability Call</strong>. This visual marker identifies code that crosses the VM boundary to interact with the host or other capsules.</p>
-<pre><code class="language-crush">@fs.read("config.json");  // Crossing the boundary to the filesystem
+<pre><code class="language-crush">fs.read("config.json");  // Crossing the boundary to the filesystem
 let x = 1 + 2;             // Internal VM computation (no @)
 </code></pre>
 <h2 id="core-philosophy"><a class="header" href="#core-philosophy">Core Philosophy</a></h2>

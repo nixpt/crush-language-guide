@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -220,10 +220,10 @@ let message: String = "Hello, World!";
 let full_name = first + " " + last;
 
 // Length (via capability)
-let len = @str.length(name);
+let len = str.len(name);
 
 // Substring (via capability)
-let sub = @str.substring(text, 0, 5);
+let sub = str.substring(text, 0, 5);
 </code></pre>
 <h3 id="bool"><a class="header" href="#bool">Bool</a></h3>
 <p>Boolean values:</p>
@@ -236,6 +236,22 @@ let flag: Bool = true;
 // From comparisons
 let result = x &gt; 10;  // Bool
 </code></pre>
+<h3 id="bytes"><a class="header" href="#bytes">Bytes</a></h3>
+<p>Raw byte buffers for binary data:</p>
+<pre><code class="language-crush">let data = b"hello";
+
+// Type hint
+let buf: Bytes = b"data";
+</code></pre>
+<h3 id="error"><a class="header" href="#error">Error</a></h3>
+<p>First-class error values for exception handling:</p>
+<pre><code class="language-crush">let err = Error("file not found");
+
+// Check error
+if type.of(result) == "Error" {
+    io.print("Failed: " + result.message);
+}
+</code></pre>
 <h3 id="null"><a class="header" href="#null">Null</a></h3>
 <p>Represents absence of a value:</p>
 <pre><code class="language-crush">let empty = null;
@@ -245,7 +261,7 @@ let optional: String? = null;  // Future feature
 
 // Checking for null
 if value == null {
-    @io.print("No value");
+    io.print("No value");
 }
 </code></pre>
 <h2 id="collection-types"><a class="header" href="#collection-types">Collection Types</a></h2>
@@ -267,17 +283,17 @@ let first = numbers[0];
 let last = numbers[4];
 
 // Length
-let len = @array.length(numbers);
+let len = array.length(numbers);
 
 // Append
-@array.push(numbers, 6);
+array.push(numbers, 6);
 
 // Remove last
-let popped = @array.pop(numbers);
+let popped = array.pop(numbers);
 
 // Iterate
 for item in numbers {
-    @io.print(item);
+    io.print(item);
 }
 </code></pre>
 <h3 id="map-object"><a class="header" href="#map-object">Map (Object)</a></h3>
@@ -305,29 +321,29 @@ person["email"] = "alice@example.com";
 person.phone = "555-1234";
 
 // Check key exists
-if @map.has_key(person, "email") {
-    @io.print("Email exists");
+if map.has_key(person, "email") {
+    io.print("Email exists");
 }
 
 // Iterate
-for key in @map.keys(person) {
+for key in map.keys(person) {
     let value = person[key];
-    @io.print(key + ": " + value);
+    io.print(key + ": " + value);
 }
 </code></pre>
 <h2 id="type-conversion"><a class="header" href="#type-conversion">Type Conversion</a></h2>
 <h3 id="explicit-conversion"><a class="header" href="#explicit-conversion">Explicit Conversion</a></h3>
 <pre><code class="language-crush">// Int to String
-let str = @convert.to_string(42);
+let str = conv.to_string(42);
 
 // String to Int
-let num = @convert.to_int("42");
+let num = conv.to_int("42");
 
 // Float to Int
-let rounded = @convert.to_int(3.14);
+let rounded = conv.to_int(3.14);
 
 // Int to Float
-let decimal = @convert.to_float(42);
+let decimal = conv.to_float(42);
 </code></pre>
 <h3 id="implicit-conversion"><a class="header" href="#implicit-conversion">Implicit Conversion</a></h3>
 <p>String concatenation auto-converts:</p>
@@ -339,10 +355,10 @@ let result = "Pi is " + 3.14;  // "Pi is 3.14"
 <pre><code class="language-crush">let value = 42;
 
 // Check type
-let type_name = @type.of(value);  // "Int"
+let type_name = type.of(value);  // "Int"
 
 if type_name == "Int" {
-    @io.print("It's an integer");
+    io.print("It's an integer");
 }
 </code></pre>
 <h3 id="type-hints"><a class="header" href="#type-hints">Type Hints</a></h3>
@@ -355,7 +371,7 @@ let active: Bool = true;
 
 // Function parameter types
 fn greet(name: String, age: Int) {
-    @io.print("Hello, " + name);
+    io.print("Hello, " + name);
 }
 
 // Function return type
@@ -373,7 +389,7 @@ fn calculate(x: Int, y: Int) -&gt; Int {
 
 fn main() {
     let p = Point { x: 10.0, y: 20.0 };
-    @io.print(p.x);
+    io.print(p.x);
 }
 </code></pre>
 <h2 id="function-type"><a class="header" href="#function-type">Function Type</a></h2>
@@ -390,7 +406,7 @@ let cb: Function = |x| { return x * 2; };
 <pre><code class="language-crush">let name: String? = null;
 
 if name != null {
-    @io.print(name);
+    io.print(name);
 }
 </code></pre>
 <p><strong>Note:</strong> The <code>??</code> null-coalescing operator is not yet implemented; use an explicit <code>if</code> check instead.</p>
@@ -420,7 +436,7 @@ let f: Float = 3.14;
 let sum: Float = i + f;  // 45.14
 
 // Float to Int requires explicit conversion
-let rounded: Int = @convert.to_int(f);
+let rounded: Int = conv.to_int(f);
 </code></pre>
 <h3 id="string-concatenation"><a class="header" href="#string-concatenation">String Concatenation</a></h3>
 <p>Any type can be concatenated with String:</p>
@@ -439,6 +455,8 @@ let status = "Active: " + true;
 <tr><td><code>Float</code></td><td><code>3.14</code></td><td>64-bit IEEE 754</td></tr>
 <tr><td><code>String</code></td><td><code>"Hello"</code></td><td>UTF-8</td></tr>
 <tr><td><code>Bool</code></td><td><code>true</code></td><td></td></tr>
+<tr><td><code>Bytes</code></td><td><code>b"data"</code></td><td>raw binary buffer</td></tr>
+<tr><td><code>Error</code></td><td><code>Error("msg")</code></td><td>first-class error</td></tr>
 <tr><td><code>Null</code></td><td><code>null</code></td><td>absence of value</td></tr>
 <tr><td><code>Void</code></td><td>—</td><td>function return type only</td></tr>
 <tr><td><code>Any</code></td><td>—</td><td>dynamic/untyped hint</td></tr>
@@ -472,7 +490,7 @@ let mixed = [1, "two", 3.0];
 <h3 id="3-check-for-null"><a class="header" href="#3-check-for-null">3. Check for Null</a></h3>
 <pre><code class="language-crush">if value != null {
     // Safe to use value
-    @io.print(value);
+    io.print(value);
 }
 </code></pre>
 <h3 id="4-use-meaningful-type-names"><a class="header" href="#4-use-meaningful-type-names">4. Use Meaningful Type Names</a></h3>
@@ -490,11 +508,11 @@ let y: Float = 98.6;
 let result = 10 / 0;  // Runtime error
 
 // Invalid conversion
-let num = @convert.to_int("abc");  // Runtime error
+let num = conv.to_int("abc");  // Runtime error
 
 // Null access
 let value = null;
-@io.print(value.field);  // Runtime error
+io.print(value.field);  // Runtime error
 </code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>

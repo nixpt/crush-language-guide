@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -204,33 +204,33 @@ import std.io as console;
 <h3 id="io-module-stdio"><a class="header" href="#io-module-stdio">I/O Module (<code>std.io</code>)</a></h3>
 <p>Input/output operations:</p>
 <ul>
-<li><code>@io.print(message)</code> - Print to stdout</li>
-<li><code>@io.read()</code> - Read from stdin</li>
-<li><code>@io.eprint(message)</code> - Print to stderr</li>
+<li><code>io.print(message)</code> - Print to stdout</li>
+<li><code>io.read()</code> - Read from stdin</li>
+<li><code>io.eprint(message)</code> - Print to stderr</li>
 </ul>
 <h3 id="filesystem-module-stdfs"><a class="header" href="#filesystem-module-stdfs">Filesystem Module (<code>std.fs</code>)</a></h3>
 <p>File and directory operations:</p>
 <ul>
-<li><code>@fs.read(path)</code> - Read file</li>
-<li><code>@fs.write(path, content)</code> - Write file</li>
-<li><code>@fs.exists(path)</code> - Check if exists</li>
-<li><code>@fs.delete(path)</code> - Delete file</li>
-<li><code>@fs.list(path)</code> - List directory</li>
+<li><code>fs.read(path)</code> - Read file</li>
+<li><code>fs.write(path, content)</code> - Write file</li>
+<li><code>fs.exists(path)</code> - Check if exists</li>
+<li><code>fs.delete(path)</code> - Delete file</li>
+<li><code>fs.list(path)</code> - List directory</li>
 </ul>
 <h3 id="system-module-stdsys"><a class="header" href="#system-module-stdsys">System Module (<code>std.sys</code>)</a></h3>
 <p>System-level operations:</p>
 <ul>
-<li><code>@sys.exec(command)</code> - Execute command</li>
-<li><code>@sys.env(name)</code> - Get environment variable</li>
-<li><code>@sys.args()</code> - Get command-line arguments</li>
-<li><code>@sys.exit(code)</code> - Exit program</li>
+<li><code>sys.exec(command)</code> - Execute command</li>
+<li><code>sys.env(name)</code> - Get environment variable</li>
+<li><code>sys.args()</code> - Get command-line arguments</li>
+<li><code>sys.exit(code)</code> - Exit program</li>
 </ul>
 <h3 id="network-module-stdnet"><a class="header" href="#network-module-stdnet">Network Module (<code>std.net</code>)</a></h3>
 <p>Network operations:</p>
 <ul>
-<li><code>@net.http(url)</code> - HTTP request</li>
-<li><code>@net.get(url)</code> - HTTP GET</li>
-<li><code>@net.post(url, body)</code> - HTTP POST</li>
+<li><code>net.http(url)</code> - HTTP request</li>
+<li><code>net.get(url)</code> - HTTP GET</li>
+<li><code>net.post(url, body)</code> - HTTP POST</li>
 </ul>
 <h2 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h2>
 <pre><code class="language-crush">import std.io;
@@ -239,22 +239,22 @@ import std.sys;
 
 fn main() {
     // Get command-line arguments
-    let args = @sys.args();
+    let args = sys.args();
 
     if args.length &lt; 2 {
-        @io.eprint("Usage: program &lt;filename&gt;");
-        @sys.exit(1);
+        io.eprint("Usage: program &lt;filename&gt;");
+        sys.exit(1);
     }
 
     let filename = args[1];
 
     // Check if file exists
-    if @fs.exists(filename) {
-        let content = @fs.read(filename);
-        @io.print(content);
+    if fs.exists(filename) {
+        let content = fs.read(filename);
+        io.print(content);
     } else {
-        @io.eprint("File not found: " + filename);
-        @sys.exit(1);
+        io.eprint("File not found: " + filename);
+        sys.exit(1);
     }
 }
 </code></pre>

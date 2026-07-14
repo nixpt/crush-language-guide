@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -193,7 +193,7 @@
 
 fn main() {
     // Comments can appear anywhere
-    @io.print("Hello");  // Including after statements
+    io.print("Hello");  // Including after statements
 }
 </code></pre>
 <h3 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h3>
@@ -255,16 +255,16 @@ let x = 42;
 
 // Function definition
 fn greet() {
-    @io.print("Hello");
+    io.print("Hello");
 }
 
 // Control flow
 if x &gt; 0 {
-    @io.print("Positive");
+    io.print("Positive");
 }
 
 // Expression statement
-@io.print("Hello");
+io.print("Hello");
 </code></pre>
 <h3 id="expressions"><a class="header" href="#expressions">Expressions</a></h3>
 <p>Expressions produce values:</p>
@@ -280,7 +280,7 @@ let result = calculate(10);
 <h2 id="semicolons"><a class="header" href="#semicolons">Semicolons</a></h2>
 <p>Semicolons are <strong>required</strong> at the end of statements:</p>
 <pre><code class="language-crush">let x = 42;
-@io.print(x);
+io.print(x);
 return x;
 </code></pre>
 <p>Exception: The last expression in a block doesn’t need a semicolon:</p>
@@ -297,18 +297,18 @@ fn add_implicit(a: Int, b: Int) -&gt; Int {
 <pre><code class="language-crush">{
     let x = 10;
     let y = 20;
-    @io.print(x + y);
+    io.print(x + y);
 }
 
 fn main() {
     // Function body is a block
     let message = "Hello";
-    @io.print(message);
+    io.print(message);
 }
 
 if condition {
     // If body is a block
-    @io.print("True");
+    io.print("True");
 }
 </code></pre>
 <h2 id="variable-declaration"><a class="header" href="#variable-declaration">Variable Declaration</a></h2>
@@ -326,7 +326,7 @@ let c = 3;
 <h2 id="function-definition"><a class="header" href="#function-definition">Function Definition</a></h2>
 <pre><code class="language-crush">// Basic function
 fn greet() {
-    @io.print("Hello!");
+    io.print("Hello!");
 }
 
 // With parameters
@@ -413,7 +413,7 @@ if condition1 {
 }
 
 while i &lt; 10 {
-    @io.print(i);
+    io.print(i);
     i = i + 1;
 }
 </code></pre>
@@ -423,7 +423,7 @@ while i &lt; 10 {
 }
 
 for i in range(0, 10) {
-    @io.print(i);
+    io.print(i);
 }
 </code></pre>
 <h3 id="break-and-continue"><a class="header" href="#break-and-continue">Break and Continue</a></h3>
@@ -440,16 +440,16 @@ for i in range(0, 10) {
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability Calls</a></h2>
 <p>Capability calls use the <code>@</code> prefix:</p>
 <pre><code class="language-crush">// Basic capability call
-@io.print("Hello");
+io.print("Hello");
 
 // With multiple arguments
-@fs.write("file.txt", "content");
+fs.write("file.txt", "content");
 
 // Storing result
-let content = @fs.read("file.txt");
+let content = fs.read("file.txt");
 
 // Chaining (if result is an object)
-let data = @net.http("https://api.example.com").json();
+let data = net.http("https://api.example.com").json();
 </code></pre>
 <h2 id="language-blocks"><a class="header" href="#language-blocks">Language Blocks</a></h2>
 <p>Embed other languages with <code>@language { ... }</code>:</p>
@@ -482,7 +482,7 @@ import std.fs as filesystem;
 <p><strong>Important</strong>: <code>import</code> creates <strong>aliases</strong> for capabilities, not direct access. The <code>@</code> prefix is still required for all capability calls:</p>
 <pre><code class="language-crush">import std.io as console;
 
-@console.print("Hello");  // ✓ Correct
+console.print("Hello");  // ✓ Correct
 // console.print("Hello");  // ✗ Error: missing @
 </code></pre>
 </blockquote>
@@ -560,7 +560,7 @@ struct UserData { }
 <pre><code class="language-crush">fn main() {
     if condition {
         while loop {
-            @io.print("Nested");
+            io.print("Nested");
         }
     }
 }

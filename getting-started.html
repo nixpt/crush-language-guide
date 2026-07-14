@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-deec98d4.js"></script>
@@ -243,7 +243,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
 then compile and run it through the SDK.</p>
 <h2 id="a-note-on-capabilities"><a class="header" href="#a-note-on-capabilities">A note on capabilities</a></h2>
 <p>Crush is <strong>capability-gated</strong>: a program can only call host functions
-(<code>@io.print</code>, <code>@fs.read</code>, <code>@net.get</code>, …) that it declares a permission for and
+(<code>io.print</code>, <code>fs.read</code>, <code>net.get</code>, …) that it declares a permission for and
 that the host has actually registered. The published crates give you:</p>
 <ul>
 <li>the <strong>capability framework</strong> — <code>HostCaps</code> / <code>HostCap</code> and the SDK’s

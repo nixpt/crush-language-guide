@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0cca918e.js";
+            window.path_to_searchindex_js = "../searchindex-b7a090aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-deec98d4.js"></script>
@@ -194,15 +194,15 @@
 </ul>
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability Calls</a></h2>
 <p>Use the <code>@</code> prefix to call capabilities:</p>
-<pre><code class="language-crush">@io.print("Hello, World!");
+<pre><code class="language-crush">io.print("Hello, World!");
 </code></pre>
 <h3 id="with-arguments"><a class="header" href="#with-arguments">With Arguments</a></h3>
-<pre><code class="language-crush">@fs.write("file.txt", "content");
-let content = @fs.read("file.txt");
+<pre><code class="language-crush">fs.write("file.txt", "content");
+let content = fs.read("file.txt");
 </code></pre>
 <h3 id="storing-results"><a class="header" href="#storing-results">Storing Results</a></h3>
-<pre><code class="language-crush">let user_input = @io.read();
-let file_data = @fs.read("config.json");
+<pre><code class="language-crush">let user_input = io.read();
+let file_data = fs.read("config.json");
 </code></pre>
 <h2 id="declaring-permissions"><a class="header" href="#declaring-permissions">Declaring Permissions</a></h2>
 <p>Capabilities must be declared in the program manifest:</p>
@@ -248,9 +248,9 @@ the call fails at runtime regardless of what the manifest declares.</p>
 </table>
 </div>
 <p><strong>Example:</strong></p>
-<pre><code class="language-crush">@io.print("Enter your name:");
-let name = @io.read();
-@io.print("Hello, " + name);
+<pre><code class="language-crush">io.print("Enter your name:");
+let name = io.read();
+io.print("Hello, " + name);
 </code></pre>
 <h3 id="filesystem-capabilities"><a class="header" href="#filesystem-capabilities">Filesystem Capabilities</a></h3>
 <div class="table-wrapper">
@@ -268,11 +268,11 @@ let name = @io.read();
 </table>
 </div>
 <p><strong>Example:</strong></p>
-<pre><code class="language-crush">if @fs.exists("config.json") {
-    let config = @fs.read("config.json");
-    @io.print(config);
+<pre><code class="language-crush">if fs.exists("config.json") {
+    let config = fs.read("config.json");
+    io.print(config);
 } else {
-    @fs.write("config.json", "{}");
+    fs.write("config.json", "{}");
 }
 </code></pre>
 <h3 id="system-capabilities"><a class="header" href="#system-capabilities">System Capabilities</a></h3>
@@ -290,10 +290,10 @@ let name = @io.read();
 </table>
 </div>
 <p><strong>Example:</strong></p>
-<pre><code class="language-crush">let args = @sys.args();
+<pre><code class="language-crush">let args = sys.args();
 if args.length &lt; 2 {
-    @io.eprint("Usage: program &lt;file&gt;");
-    @sys.exit(1);
+    io.eprint("Usage: program &lt;file&gt;");
+    sys.exit(1);
 }
 </code></pre>
 <h3 id="network-capabilities"><a class="header" href="#network-capabilities">Network Capabilities</a></h3>
@@ -310,8 +310,8 @@ if args.length &lt; 2 {
 </table>
 </div>
 <p><strong>Example:</strong></p>
-<pre><code class="language-crush">let response = @net.get("https://api.example.com/data");
-@io.print(response);
+<pre><code class="language-crush">let response = net.get("https://api.example.com/data");
+io.print(response);
 </code></pre>
 <h2 id="security-model"><a class="header" href="#security-model">Security Model</a></h2>
 <h3 id="principle-of-least-privilege"><a class="header" href="#principle-of-least-privilege">Principle of Least Privilege</a></h3>
@@ -338,8 +338,8 @@ if args.length &lt; 2 {
 <pre><code class="language-crush">// Manifest: {"permissions": ["io.print"]}
 
 fn main() {
-    @io.print("Hello");  // ✓ Allowed
-    @fs.read("file.txt");  // ✗ Runtime error: Permission denied
+    io.print("Hello");  // ✓ Allowed
+    fs.read("file.txt");  // ✗ Runtime error: Permission denied
 }
 </code></pre>
 <h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
@@ -355,25 +355,25 @@ fn main() {
 }
 </code></pre>
 <h3 id="2-check-before-using"><a class="header" href="#2-check-before-using">2. Check Before Using</a></h3>
-<pre><code class="language-crush">if @fs.exists("config.json") {
-    let config = @fs.read("config.json");
+<pre><code class="language-crush">if fs.exists("config.json") {
+    let config = fs.read("config.json");
 } else {
-    @io.print("Config not found");
+    io.print("Config not found");
 }
 </code></pre>
 <h3 id="3-handle-errors"><a class="header" href="#3-handle-errors">3. Handle Errors</a></h3>
 <pre><code class="language-crush">// Future: try-catch
 try {
-    let data = @fs.read("file.txt");
+    let data = fs.read("file.txt");
 } catch (error) {
-    @io.eprint("Failed to read file: " + error);
+    io.eprint("Failed to read file: " + error);
 }
 </code></pre>
 <h2 id="capability-composition"><a class="header" href="#capability-composition">Capability Composition</a></h2>
 <p>Capabilities can be composed:</p>
 <pre><code class="language-crush">fn read_and_print(filename: String) {
-    let content = @fs.read(filename);
-    @io.print(content);
+    let content = fs.read(filename);
+    io.print(content);
 }
 
 // Requires both fs.read and io.print
@@ -383,6 +383,45 @@ try {
 <li><strong><a href="polyglot.html">Polyglot Programming</a></strong>: Embed multiple languages</li>
 <li><strong><a href="stdlib.html">Standard Library</a></strong>: Additional capabilities</li>
 </ul>
+<h2 id="what-is-actually-implemented-today"><a class="header" href="#what-is-actually-implemented-today">What is actually implemented today</a></h2>
+<p>The chapters above describe the capability model. This section records, separately, <strong>which
+capabilities the runtime currently ships</strong> — because the two have drifted, and a guide that
+documents a capability the runtime does not have is worse than one that stays silent.</p>
+<p>Verified by running each call against <code>crush-run</code> (built with <code>--features stdlib</code>):</p>
+<p><strong>Available</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>capability</th><th>notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>io.print</code></td><td>built-in, always available</td></tr>
+<tr><td><code>str.concat</code>, <code>str.len</code></td><td>built-in</td></tr>
+<tr><td><code>str.trim</code>, <code>str.to_upper</code>, <code>str.substring</code></td><td>require <code>--stdlib</code></td></tr>
+<tr><td><code>conv.to_int</code></td><td>requires <code>--stdlib</code></td></tr>
+<tr><td><code>math.*</code></td><td>requires <code>--stdlib</code></td></tr>
+<tr><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code></td><td>require <code>--fs</code></td></tr>
+<tr><td><code>env.get</code></td><td>requires <code>--env</code></td></tr>
+<tr><td><code>time.now</code></td><td>requires <code>--time</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Run <code>crush-run caps</code> for the authoritative list on your build — and note that capability
+<em>groups</em> behind a Cargo feature (<code>--stdlib</code>, <code>--net</code>, <code>--db</code>, <code>--graphics</code>) will warn if that
+feature was not compiled in. <strong>A “not enabled in this build” warning is not the same as “does
+not exist.”</strong></p>
+<p><strong>Not implemented — documented in this guide but NOT in the runtime</strong></p>
+<p><code>io.eprint</code> · <code>io.read</code> · <code>fs.delete</code> · <code>sys.exit</code> · <code>sys.args</code> · <code>sys.env</code> · <code>sys.exec</code> ·
+<code>type.of</code> · <code>console.print</code> · <code>array.push</code> · <code>array.pop</code> · <code>array.length</code> · <code>map.keys</code> ·
+<code>map.has_key</code></p>
+<p>Examples using these will <strong>not run</strong>. They are retained here as intent, not as documentation
+of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.</p>
+<h2 id="a-note-on-syntax"><a class="header" href="#a-note-on-syntax">A note on syntax</a></h2>
+<p>Capability calls are written <strong>unprefixed</strong>: <code>io.print("hi")</code>, not <code>@io.print("hi")</code>. Earlier
+revisions of this guide used an <code>@</code> sigil; the parser has never accepted it in expression
+position, and every example here has been corrected.</p>
+<p>The <code>@</code> sigil <strong>is</strong> correct — and required — for polyglot blocks: <code>@python { ... }</code>,
+<code>@javascript { ... }</code>. Those are a different construct entirely.</p>
 
                     </main>
 
