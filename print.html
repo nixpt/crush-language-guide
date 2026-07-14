@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b7a090aa.js";
+            window.path_to_searchindex_js = "searchindex-54769e70.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-deec98d4.js"></script>
@@ -1954,12 +1954,31 @@ not exist.”</strong></p>
 <code>map.has_key</code></p>
 <p>Examples using these will <strong>not run</strong>. They are retained here as intent, not as documentation
 of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.</p>
-<h2 id="a-note-on-syntax"><a class="header" href="#a-note-on-syntax">A note on syntax</a></h2>
+<h2 id="a-note-on-syntax-what--means-in-crush"><a class="header" href="#a-note-on-syntax-what--means-in-crush">A note on syntax: what <code>@</code> means in Crush</a></h2>
 <p>Capability calls are written <strong>unprefixed</strong>: <code>io.print("hi")</code>, not <code>@io.print("hi")</code>. Earlier
 revisions of this guide used an <code>@</code> sigil; the parser has never accepted it in expression
 position, and every example here has been corrected.</p>
-<p>The <code>@</code> sigil <strong>is</strong> correct — and required — for polyglot blocks: <code>@python { ... }</code>,
-<code>@javascript { ... }</code>. Those are a different construct entirely.</p>
+<p>That correction is narrow, and it is important not to over-generalise it. <strong><code>@</code> is a real and
+load-bearing sigil in Crush — it just does not introduce a capability call.</strong> It is overloaded
+across several distinct constructs, and stripping it blindly will corrupt them:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>form</th><th>example</th><th>what it is</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>polyglot block</strong></td><td><code>@python { ... }</code>, <code>@javascript { ... }</code></td><td>embed another language; the <code>@</code> is <strong>required</strong></td></tr>
+<tr><td><strong>compiler directive</strong></td><td><code>@gpu</code>, <code>@kernel</code>, <code>@target</code></td><td>steer the backend (e.g. the PTX/GPU path)</td></tr>
+<tr><td><strong>AST / AI annotation</strong></td><td><code>@invariant</code>, <code>@decision</code>, <code>@covers</code>, <code>@writes</code>, <code>@synthesize</code></td><td>typed metadata attached to CAST nodes</td></tr>
+<tr><td><strong>capability call</strong></td><td><del><code>@io.print(...)</code></del> → <code>io.print(...)</code></td><td><strong>no sigil.</strong> This is the one that was wrong.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The lexer emits a single <code>AtIdent</code> token for all of these; what a given <code>@name</code> <em>means</em> is
+decided by the parser from context, not by the sigil.</p>
+<p>So: if you are writing a tool that rewrites Crush source, <strong>do not treat <code>@</code> as a single
+construct.</strong> Note in particular that some annotations carry a dot (<code>@wip.started_by</code>), so a
+“strip <code>@</code> from anything shaped like <code>@x.y</code>” rule will silently eat them.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="polyglot-programming"><a class="header" href="#polyglot-programming">Polyglot Programming</a></h1>
 <p>Crush’s killer feature: <strong>embed multiple programming languages in a single program</strong>. Write Python for data science, JavaScript for JSON, Bash for system tasks, and Rust for performance - all seamlessly integrated.</p>
