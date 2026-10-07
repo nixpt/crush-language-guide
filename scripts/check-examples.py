@@ -25,6 +25,10 @@ opening fence (invisible in the rendered book):
     <!-- check: flags --time --net -->   extra crush-run flags
     <!-- check: stdin <text> -->   feed this text to stdin
 
+With --crush-ast DIR (a crush-ast checkout, with `buckets` beside it), the
+```rust,no_run blocks are also compiled and run against that checkout's
+`crush-lang-sdk` (they are the embedding examples; each must exit 0).
+
 A ```text block introduced by `<!-- check: output -->` is the expected stdout
 of the crush block above it (compared after trimming trailing whitespace).
 
@@ -71,6 +75,45 @@ def extract(md: Path):
         if line.strip():
             pending, last = {}, None
         i += 1
+
+
+def extract_rust(md: Path):
+    lines = md.read_text().splitlines()
+    i = 0
+    while i < len(lines):
+        m = FENCE.match(lines[i])
+        if m:
+            j = fence_end(lines, i)
+            if m.group(1) == "rust,no_run":
+                yield {"file": md, "line": i + 2, "code": "\n".join(lines[i + 1 : j]) + "\n"}
+            i = j + 1
+            continue
+        i += 1
+
+
+CARGO_TOML = """[package]
+name = "guide-embed-check"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+crush-lang-sdk = {{ path = "{sdk}", features = ["stdlib"] }}
+anyhow = "1"
+
+[workspace]
+"""
+
+
+def check_rust(block, crush_ast, tmp):
+    work = Path(tmp)
+    (work / "src").mkdir()
+    (work / "Cargo.toml").write_text(CARGO_TOML.format(sdk=Path(crush_ast).resolve() / "crates" / "crush-lang-sdk"))
+    (work / "src" / "main.rs").write_text(block["code"])
+    rc, out, err = run(["cargo", "run", "--quiet"], work, 1800)
+    if rc != 0:
+        tail = [l for l in (out + err).splitlines() if l.strip()][-3:]
+        return "fail", "cargo run: " + " | ".join(tail)
+    return "green", "compiles and runs"
 
 
 def run(cmd, cwd, timeout, stdin=""):
@@ -127,6 +170,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin-dir", default=os.environ.get("CRUSH_BIN_DIR"))
     ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--crush-ast", default=os.environ.get("CRUSH_AST_DIR"), help="crush-ast checkout, to build the rust embedding examples")
     ap.add_argument("files", nargs="*")
     a = ap.parse_args()
     bins = {}
@@ -143,6 +187,19 @@ def main():
                 status, msg = check(b, bins, tmp)
             counts[status] = counts.get(status, 0) + 1
             rel = f"{b['file'].relative_to(ROOT)}:{b['line']}"
+            if status == "fail":
+                bad.append((rel, msg))
+            if a.verbose or status == "fail":
+                print(f"{status:8} {rel}  {msg}")
+    for md in files:
+        for b in list(extract_rust(md)):
+            rel = f"{md.relative_to(ROOT)}:{b['line']}"
+            if not a.crush_ast:
+                status, msg = "skipped", "rust block: no --crush-ast checkout given"
+            else:
+                with tempfile.TemporaryDirectory() as tmp:
+                    status, msg = check_rust(b, a.crush_ast, tmp)
+            counts[status] = counts.get(status, 0) + 1
             if status == "fail":
                 bad.append((rel, msg))
             if a.verbose or status == "fail":
