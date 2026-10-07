@@ -1,239 +1,186 @@
 # Functions
 
-Functions are first-class values in Crush. This chapter covers function definition, calling, parameters, and return values.
+This chapter covers defining and calling functions. Crush functions are named,
+top-level declarations. **Functions are not first-class values yet** — you can
+call one by name, but you can't store it in a variable or pass it as an argument
+(see [Higher-order functions](#higher-order-functions-and-lambdas)).
 
-## Function Definition
-
-### Basic Function
-
-```crush
-fn greet() {
-    io.print("Hello!");
-}
-```
-
-### With Parameters
+## Defining functions
 
 ```crush
 fn greet(name: String) {
-    io.print("Hello, " + name + "!");
+    print("Hello, " + name + "!")
 }
-```
 
-### With Return Value
-
-```crush
 fn add(a: Int, b: Int) -> Int {
-    return a + b;
+    return a + b
 }
+
+greet("Alice")
+print(add(5, 3))
 ```
 
-### Multiple Parameters
-
-```crush
-fn calculate(x: Int, y: Int, operation: String) -> Int {
-    if operation == "add" {
-        return x + y;
-    } else if operation == "multiply" {
-        return x * y;
-    }
-    return 0;
-}
+<!-- check: output -->
+```text
+Hello, Alice!
+8
 ```
 
-## Function Calls
+- Parameter and return **type hints are optional**. When present they are checked
+  at compile time at call sites (`add("x", 1)` is a compile error).
+- The number of arguments is checked at compile time: `add(1)` →
+  `Function 'add' expects 2 arguments, found 1`.
+- There are no default parameter values (`fn f(x = 1)` is a parse error) and no
+  variadic parameters.
+- A function may be called before its definition appears in the file.
 
-```crush
-// No arguments
-greet();
+## Returning values
 
-// With arguments
-greet("Alice");
-
-// Storing result
-let sum = add(5, 3);
-
-// Nested calls
-let result = calculate(add(2, 3), 4, "multiply");
-```
-
-## Return Values
-
-### Explicit Return
-
-```crush
-fn get_value() -> Int {
-    return 42;
-}
-```
-
-### Multiple Return Points
+Return with `return`. A function that falls off the end — or uses a bare
+`return` — yields `null`. A final expression is **not** an implicit return:
 
 ```crush
 fn check_sign(x: Int) -> String {
     if x > 0 {
-        return "positive";
+        return "positive"
     } else if x < 0 {
-        return "negative";
+        return "negative"
     }
-    return "zero";
+    return "zero"
 }
-```
 
-### Void Functions
-
-Functions without return values:
-
-```crush
 fn log_message(msg: String) {
-    io.print("[LOG] " + msg);
-    // No return statement
-}
-```
-
-## Parameters
-
-### Positional Parameters
-
-```crush
-fn create_user(name: String, age: Int, active: Bool) {
-    // ...
+    print("[LOG] " + msg)
 }
 
-create_user("Alice", 30, true);
+print(check_sign(5))
+print(check_sign(-2))
+print(check_sign(0))
+log_message("done")
+print(log_message("again"))
 ```
 
-### Default Parameters (Future Feature)
-
-```crush
-fn greet(name: String = "Guest") {
-    io.print("Hello, " + name);
-}
-
-greet();         // "Hello, Guest"
-greet("Alice");  // "Hello, Alice"
+<!-- check: output -->
+```text
+positive
+negative
+zero
+[LOG] done
+[LOG] again
+null
 ```
+
+The return-type hint is not checked against what the body actually returns
+today: `fn f() -> Int { return "s" }` compiles.
 
 ## Recursion
 
 ```crush
 fn factorial(n: Int) -> Int {
     if n <= 1 {
-        return 1;
+        return 1
     }
-    return n * factorial(n - 1);
+    return n * factorial(n - 1)
 }
 
-fn main() {
-    let result = factorial(5);  // 120
-    io.print(result);
+fn fib(n) {
+    if n < 2 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
 }
+
+print(factorial(5))
+print(fib(15))
 ```
 
-## Higher-Order Functions
+<!-- check: output -->
+```text
+120
+610
+```
 
-Functions are first-class values and can be passed as arguments:
+Mutual recursion works too. Recursion depth is capped by the VM's call-depth
+quota — **256 frames by default** (`--max-call-depth N` on `crush-run`); exceeding
+it ends the program with `call depth quota exceeded`. The other default quotas are
+1,000,000 instructions (`--max-steps`), a 4096-slot stack (`--max-stack`), 1 MiB of
+output (`--max-output`), and a 30-second wall-clock limit per polyglot block.
+
+<!-- check: runfail call depth quota exceeded -->
+```crush
+fn d(n) {
+    return d(n - 1)
+}
+print(d(1))
+```
+
+## Higher-order functions and lambdas
+
+> **Not yet implemented.** Passing a function by name (`apply(double, 21)`),
+> storing one in a variable (`let f = double`), and anonymous functions
+> (`|x| { ... }`, `|x| => x * 2`) all fail to compile. The lexer reads a bare `|`
+> as an identifier, so the lambda parser is unreachable (crush-ast **CRUSH-75**,
+> open); closures that capture variables are a separate, larger gap. Until then,
+> write ordinary named functions and call them directly, or use the
+> pipeline operator (`x |> f`), which does accept a function **name**:
+
+<!-- check: nyi CRUSH-75 -->
+```crush
+fn double(n) {
+    return n * 2
+}
+let f = double
+print(f(21))
+```
+
+<!-- check: nyi CRUSH-75 -->
+```crush
+let double = |x| { return x * 2 }
+print(double(21))
+```
 
 ```crush
-fn apply(f: Function, x: Int) -> Int {
-    return f(x);
+fn double(n) {
+    return n * 2
 }
-
-fn double(n: Int) -> Int {
-    return n * 2;
+fn inc(n) {
+    return n + 1
 }
-
-fn main() {
-    let result = apply(double, 21);  // 42
-}
+print(5 |> double |> inc)
 ```
 
-## Lambdas and Closures
+<!-- check: output -->
+```text
+11
+```
 
-Anonymous functions use the `|params| { body }` syntax (the `Lambda` AST node):
+## Concurrency: `spawn`, `yield`, `async`, `await`
 
+These keywords are in the grammar, but the end-to-end path is incomplete: a
+program that contains `spawn f()`, `async fn`, or `await` is rejected by the
+assembler (`SPAWN takes 1 operand(s), got 0`). The AI/concurrency opcodes are
+tracked under crush-ast **CRUSH-1** / **CRUSH-34**. A bare `yield` statement
+compiles and runs (it is a no-op without a spawned task).
+
+<!-- check: nyi CRUSH-34 -->
 ```crush
-let double = |x| { return x * 2; };
-let result = double(21);  // 42
-
-// Single-expression form
-let square = |x| => x * x;
+fn worker() {
+    print("worker")
+}
+spawn worker()
+yield
+print("main")
 ```
 
-Closures capture variables from the enclosing scope:
+## Best practices
 
-```crush
-fn make_adder(x: Int) -> Function {
-    return |y| { return x + y; };
-}
-
-fn main() {
-    let add_five = make_adder(5);
-    let result = add_five(10);  // 15
-}
-```
-
-## Async Functions
-
-Use `async`/`await` for asynchronous operations. `spawn` launches a task concurrently:
-
-```crush
-async fn fetch_data(url: String) -> String {
-    let response = await net.get(url);
-    return response;
-}
-
-fn main() {
-    let task = spawn fetch_data("https://api.example.com/data");
-    let result = await task;
-    io.print(result);
-}
-```
-
-## Best Practices
-
-### 1. Use Type Hints
-
-```crush
-// Good
-fn calculate(x: Int, y: Int) -> Int {
-    return x + y;
-}
-
-// Less clear
-fn calculate(x, y) {
-    return x + y;
-}
-```
-
-### 2. Keep Functions Focused
-
-```crush
-// Good: Single responsibility
-fn validate_email(email: String) -> Bool {
-    // ...
-}
-
-fn send_email(to: String, subject: String, body: String) {
-    // ...
-}
-```
-
-### 3. Use Descriptive Names
-
-```crush
-// Good
-fn calculate_total_price(items: Array, tax_rate: Float) -> Float {
-    // ...
-}
-
-// Avoid
-fn calc(x, y) {
-    // ...
-}
-```
+- Keep functions small and give parameters type hints — they document the
+  interface and catch mistakes at compile time.
+- Pass data in as parameters: functions cannot see top-level variables
+  ([Variables](variables.md#module-level-variables-are-not-visible-inside-functions)).
+- Prefer descriptive names (`calculate_total_price`, not `calc`).
 
 ## Next Steps
 
-- **[Capability System](capabilities.md)**: Secure I/O operations
-- **[Polyglot Programming](polyglot.md)**: Embed multiple languages
+- **[Capability System](capabilities.md)**
+- **[Polyglot Programming](polyglot.md)**

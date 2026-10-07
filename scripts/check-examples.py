@@ -17,6 +17,8 @@ opening fence (invisible in the rendered book):
     <!-- check: run -->            compile + execute, must exit 0 (the default)
     <!-- check: compile -->        compile only (needs host state / is a fragment)
     <!-- check: error -->          must FAIL to compile (the page shows an error)
+    <!-- check: runfail <text> -->  compiles, but must fail at run time with
+                                   <text> in its error output
     <!-- check: nyi CRUSH-NN -->   not yet implemented in crush-ast; must fail,
                                    and is flagged the day it starts working
     <!-- check: skip <reason> -->  not a standalone program (pseudo-code, ...)
@@ -109,6 +111,11 @@ def check(block, bins, tmp):
     if "compile" in d:
         return "green", "compiles (compile-only)"
     rc, out, err = runs_ok(block, bins, work, src)
+    if "runfail" in d:
+        if rc == 0:
+            return "fail", "expected a run-time failure, but it ran fine"
+        want = d["runfail"]
+        return ("green", f"fails at run time ({want})") if want in out + err else ("fail", f"run-time failure lacks {want!r}: {first_line(out + err)}")
     if rc != 0:
         return "fail", "run: " + (first_line(out + err) or f"exit {rc}")
     if block["expect"] is not None and out.rstrip() != block["expect"].rstrip():
