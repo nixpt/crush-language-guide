@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -180,282 +180,302 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="crush-ast-cast-specification"><a class="header" href="#crush-ast-cast-specification">Crush AST (CAST) Specification</a></h1>
-<blockquote>
-<p><strong>Version note:</strong> This document describes the v0.3 base spec. The Rust struct
-implementation (<code>crush-cast/src/lib.rs</code>) is more complete: it adds <code>TryCatch</code>,
-<code>Throw</code>, <code>LangBlock</code>, <code>StructDef</code>, <code>Break</code>, <code>Continue</code>, <code>DomMutate</code>,
-<code>DomEventListener</code>, <code>DomQuery</code>, <code>Spawn</code>, <code>Await</code>, <code>Lambda</code>, <code>Pipeline</code>,
-<code>Range</code>, <code>Match</code>, and AI-native statement/expression nodes. Walkers in the
-repo declare <code>cast_version</code> values of <code>"0.1"</code> (Rust/Bash) or <code>"0.2"</code> (Python/JS).</p>
-</blockquote>
-<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
-<p>CAST is the intermediate representation used by Crush to enable polyglot programming. Language walkers translate source code into CAST, and the Crush compiler translates CAST into CASM bytecode.</p>
-<h2 id="design-principles"><a class="header" href="#design-principles">Design Principles</a></h2>
-<ol>
-<li><strong>Language-Agnostic</strong>: CAST nodes should represent common programming constructs, not language-specific syntax</li>
-<li><strong>Explicit Control Flow</strong>: Control flow (if/while/for) is represented explicitly, not as jumps</li>
-<li><strong>Metadata Preservation</strong>: Each node includes <code>meta</code> for source language, line numbers, etc.</li>
-<li><strong>Type Hints</strong>: Optional type annotations for static analysis</li>
-</ol>
-<h2 id="document-structure"><a class="header" href="#document-structure">Document Structure</a></h2>
-<h3 id="top-level-cast-document"><a class="header" href="#top-level-cast-document">Top-Level CAST Document</a></h3>
+                        <h1 id="cast--the-crush-ast"><a class="header" href="#cast--the-crush-ast">CAST — the Crush AST</a></h1>
+<p><strong>CAST</strong> is the JSON abstract syntax tree that sits between source languages and
+<a href="../casm/README.html">CASM</a>. The Crush parser produces it, the polyglot <em>walkers</em>
+produce it from other languages, and an AI agent can write it directly (see
+<a href="ai-native.html">AI-Native CAST</a>). The compiler (<code>crush_frontend</code>) turns it into CASM.</p>
+<pre><code> Crush source ──parse──┐
+ Python/JS/… ──walker──┼──▶ CAST (JSON) ──compile──▶ CASM IR ──▶ CVM1 ──▶ VM
+ an agent's JSON ──────┘
+</code></pre>
+<p>This page is the schema reference. It is derived from <code>crates/crush-cast/src/lib.rs</code>
+in crush-ast (<code>v0.3.9</code>); the examples are accepted by <code>crush_cast::validate_json</code>,
+compiled and run by this guide’s checker.</p>
+<h2 id="document-structure"><a class="header" href="#document-structure">Document structure</a></h2>
 <pre><code class="language-json">{
-  "version": "0.3",
+  "cast_version": "0.1.0",
   "entry": "main",
-  "lang": "python",
-  "imports": {
-    "native": ["os", "sys"],
-    "crush": []
-  },
+  "lang": null,
   "functions": {
-    "main": {
-      "params": [],
-      "body": [ /* Statement[] */ ],
-      "return_type": null,
-      "meta": {}
-    }
-  },
-  "structs": {}
-}
-</code></pre>
-<h2 id="statement-nodes"><a class="header" href="#statement-nodes">Statement Nodes</a></h2>
-<h3 id="vardecl---variable-declaration"><a class="header" href="#vardecl---variable-declaration">VarDecl - Variable Declaration</a></h3>
-<pre><code class="language-json">{
-  "type": "VarDecl",
-  "name": "x",
-  "value": { /* Expr */ },
-  "type_hint": "int",  // Optional
-  "meta": { "lang": "python", "line": 5 }
-}
-</code></pre>
-<h3 id="export---export-variable"><a class="header" href="#export---export-variable">Export - Export Variable</a></h3>
-<pre><code class="language-json">{
-  "type": "Export",
-  "name": "result",
-  "value": { /* Expr */ },
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="exprstmt---expression-statement"><a class="header" href="#exprstmt---expression-statement">ExprStmt - Expression Statement</a></h3>
-<pre><code class="language-json">{
-  "type": "ExprStmt",
-  "expr": { /* Expr */ },
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="if---conditional-statement"><a class="header" href="#if---conditional-statement">If - Conditional Statement</a></h3>
-<pre><code class="language-json">{
-  "type": "If",
-  "condition": { /* Expr */ },
-  "then_body": [ /* Statement[] */ ],
-  "else_body": [ /* Statement[] */ ],  // Optional, can be null or []
-  "meta": { "lang": "python", "line": 10 }
-}
-</code></pre>
-<h3 id="while---while-loop"><a class="header" href="#while---while-loop">While - While Loop</a></h3>
-<pre><code class="language-json">{
-  "type": "While",
-  "condition": { /* Expr */ },
-  "body": [ /* Statement[] */ ],
-  "meta": { "lang": "python", "line": 15 }
-}
-</code></pre>
-<h3 id="for---for-loop"><a class="header" href="#for---for-loop">For - For Loop</a></h3>
-<pre><code class="language-json">{
-  "type": "For",
-  "iterator": "item",
-  "iterable": { /* Expr */ },
-  "body": [ /* Statement[] */ ],
-  "meta": { "lang": "python", "line": 20 }
-}
-</code></pre>
-<h3 id="return---function-return"><a class="header" href="#return---function-return">Return - Function Return</a></h3>
-<pre><code class="language-json">{
-  "type": "Return",
-  "value": { /* Expr */ },  // Optional, null for void return
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="structdef---structclass-definition"><a class="header" href="#structdef---structclass-definition">StructDef - Struct/Class Definition</a></h3>
-<pre><code class="language-json">{
-  "type": "StructDef",
-  "name": "Point",
-  "fields": [
-    { "name": "x", "type_hint": "int" },
-    { "name": "y", "type_hint": "int" }
-  ],
-  "methods": [
-    {
-      "name": "distance",
-      "params": ["other"],
-      "body": [ /* Statement[] */ ],
-      "return_type": "float"
-    }
-  ],
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h2 id="expression-nodes"><a class="header" href="#expression-nodes">Expression Nodes</a></h2>
-<h3 id="literals"><a class="header" href="#literals">Literals</a></h3>
-<h4 id="intliteral"><a class="header" href="#intliteral">IntLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "IntLiteral",
-  "value": 42,
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h4 id="stringliteral"><a class="header" href="#stringliteral">StringLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "StringLiteral",
-  "value": "Hello, World!",
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h4 id="boolliteral"><a class="header" href="#boolliteral">BoolLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "BoolLiteral",
-  "value": true,
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h4 id="nullliteral"><a class="header" href="#nullliteral">NullLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "NullLiteral",
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h4 id="arrayliteral"><a class="header" href="#arrayliteral">ArrayLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "ArrayLiteral",
-  "elements": [ /* Expr[] */ ],
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h4 id="mapliteral"><a class="header" href="#mapliteral">MapLiteral</a></h4>
-<pre><code class="language-json">{
-  "type": "MapLiteral",
-  "entries": [
-    { "key": { /* Expr */ }, "value": { /* Expr */ } }
-  ],
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="var---variable-reference"><a class="header" href="#var---variable-reference">Var - Variable Reference</a></h3>
-<pre><code class="language-json">{
-  "type": "Var",
-  "name": "x",
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="binaryop---binary-operation"><a class="header" href="#binaryop---binary-operation">BinaryOp - Binary Operation</a></h3>
-<pre><code class="language-json">{
-  "type": "BinaryOp",
-  "operator": "+",  // +, -, *, /, %, ==, !=, &lt;, &gt;, &lt;=, &gt;=, and, or
-  "left": { /* Expr */ },
-  "right": { /* Expr */ },
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="unaryop---unary-operation"><a class="header" href="#unaryop---unary-operation">UnaryOp - Unary Operation</a></h3>
-<pre><code class="language-json">{
-  "type": "UnaryOp",
-  "operator": "-",  // -, not, ~
-  "operand": { /* Expr */ },
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="call---function-call"><a class="header" href="#call---function-call">Call - Function Call</a></h3>
-<pre><code class="language-json">{
-  "type": "Call",
-  "function": "add",
-  "args": [ /* Expr[] */ ],
-  "meta": { "lang": "python" }
-}
-</code></pre>
-<h3 id="capabilitycall---capability-invocation"><a class="header" href="#capabilitycall---capability-invocation">CapabilityCall - Capability Invocation</a></h3>
-<pre><code class="language-json">{
-  "type": "CapabilityCall",
-  "name": "io.print",
-  "args": [ /* Expr[] */ ],
-  "meta": {
-    "capability": true,
-    "namespace": "io",
-    "method": "print",
-    "lang": "python"
+    "main": { "params": [], "body": [ /* statements */ ], "meta": {} }
   }
 }
 </code></pre>
-<h3 id="fieldaccess---struct-field-access"><a class="header" href="#fieldaccess---struct-field-access">FieldAccess - Struct Field Access</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>cast_version</code></td><td>string</td><td>yes</td><td>format version; see <a href="#serialization">Serialization</a></td></tr>
+<tr><td><code>entry</code></td><td>string</td><td>yes</td><td>name of the function to run first</td></tr>
+<tr><td><code>lang</code></td><td>string or null</td><td>yes (may be <code>null</code>)</td><td>language that produced the tree (<code>"crush"</code>, <code>"python"</code>, …)</td></tr>
+<tr><td><code>functions</code></td><td>object</td><td>yes</td><td>function name → function</td></tr>
+<tr><td><code>ai_meta</code></td><td>object</td><td>no</td><td>program-level AI metadata — see <a href="ai-native.html">AI-Native CAST</a></td></tr>
+<tr><td><code>manifest</code></td><td>object</td><td>no</td><td>the <code>@module</code> navigation manifest (purpose, exports, invariants) used by <code>crush-index</code></td></tr>
+<tr><td><code>exhaustive_sites</code>, <code>wip</code>, <code>temporaries</code>, <code>decisions</code></td><td></td><td>no</td><td>compiler-populated tooling nodes (<code>@wip</code>, <code>@temporary</code>, <code>@decision</code> blocks)</td></tr>
+</tbody>
+</table>
+</div>
+<p>A <strong>function</strong> is:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>params</code></td><td>array of <code>[name, type]</code> pairs</td><td>yes</td><td><code>[["n", "Int"]]</code>; use <code>"Any"</code> for untyped</td></tr>
+<tr><td><code>body</code></td><td>array of statements</td><td>yes</td><td></td></tr>
+<tr><td><code>meta</code></td><td>object</td><td><strong>yes</strong></td><td>free-form (<code>{}</code> is fine). Forgetting it is the most common validation error</td></tr>
+<tr><td><code>is_async</code></td><td>bool</td><td>no</td><td>tooling hint</td></tr>
+<tr><td><code>annotations</code></td><td>object</td><td>no</td><td><code>@errors</code>/<code>@reads</code>/<code>@writes</code>/<code>@covers</code> annotations</td></tr>
+</tbody>
+</table>
+</div>
+<p>There is no top-level <code>imports</code> or <code>structs</code> table: imports and struct definitions
+are <em>statements</em> (<code>Import</code>, <code>StructDef</code>).</p>
+<h2 id="a-complete-program"><a class="header" href="#a-complete-program">A complete program</a></h2>
+<!-- check: cast-json -->
 <pre><code class="language-json">{
-  "type": "FieldAccess",
-  "object": { /* Expr */ },
-  "field": "x",
-  "meta": { "lang": "python" }
+  "cast_version": "0.1.0",
+  "entry": "main",
+  "lang": null,
+  "functions": {
+    "square": {
+      "params": [["n", "Int"]],
+      "body": [
+        { "type": "Return",
+          "value": { "type": "BinaryOp", "operator": "*",
+                     "left":  { "type": "Var", "name": "n" },
+                     "right": { "type": "Var", "name": "n" } } }
+      ],
+      "meta": {}
+    },
+    "main": {
+      "params": [],
+      "body": [
+        { "type": "VarDecl", "name": "total", "value": { "type": "IntLiteral", "value": 0 }, "type_hint": "Int" },
+        { "type": "For", "variable": "i",
+          "iterable": { "type": "ArrayLiteral", "elements": [
+              { "type": "IntLiteral", "value": 1 },
+              { "type": "IntLiteral", "value": 2 },
+              { "type": "IntLiteral", "value": 3 } ] },
+          "body": [
+            { "type": "Assign", "target": "total",
+              "value": { "type": "BinaryOp", "operator": "+",
+                         "left":  { "type": "Var", "name": "total" },
+                         "right": { "type": "Call", "function": "square",
+                                    "args": [ { "type": "Var", "name": "i" } ] } } }
+          ] },
+        { "type": "If",
+          "condition": { "type": "BinaryOp", "operator": "&gt;",
+                         "left": { "type": "Var", "name": "total" },
+                         "right": { "type": "IntLiteral", "value": 10 } },
+          "then_body": [
+            { "type": "ExprStmt", "expr": { "type": "CapabilityCall", "name": "io.print",
+                "args": [ { "type": "StringLiteral", "value": "sum of squares: " },
+                          { "type": "Var", "name": "total" } ], "meta": {} } }
+          ],
+          "else_body": null }
+      ],
+      "meta": {}
+    }
+  }
 }
 </code></pre>
-<h3 id="index---arraymap-indexing"><a class="header" href="#index---arraymap-indexing">Index - Array/Map Indexing</a></h3>
+<!-- check: output -->
+<pre><code class="language-text">sum of squares: 14
+</code></pre>
+<p>Every node is an object with a <code>"type"</code> tag. <code>meta</code> is optional on almost every
+node (it defaults to <code>{}</code>), with one exception: <strong><code>CapabilityCall</code> requires its
+<code>meta</code></strong>. The Crush parser fills <code>meta</code> with <code>line</code> and <code>col</code>.</p>
+<h2 id="statements"><a class="header" href="#statements">Statements</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>type</code></th><th>Fields</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>VarDecl</code></td><td><code>name</code>, <code>value</code>, <code>type_hint</code></td><td>declare a variable (<code>type_hint</code> defaults to <code>"Any"</code>)</td></tr>
+<tr><td><code>Assign</code></td><td><code>target</code> (a name), <code>value</code></td><td></td></tr>
+<tr><td><code>SetField</code></td><td><code>target</code> (expression), <code>field</code>, <code>value</code></td><td><code>p.x = 3</code></td></tr>
+<tr><td><code>Export</code></td><td><code>name</code>, <code>value</code></td><td>publish a variable to the host / polyglot caller</td></tr>
+<tr><td><code>ExprStmt</code></td><td><code>expr</code></td><td>expression evaluated for effect; its value is dropped</td></tr>
+<tr><td><code>If</code></td><td><code>condition</code>, <code>then_body</code>, <code>else_body</code></td><td><code>else_body</code> is <code>null</code> or a statement list</td></tr>
+<tr><td><code>While</code></td><td><code>condition</code>, <code>body</code></td><td></td></tr>
+<tr><td><code>For</code></td><td><code>variable</code>, <code>iterable</code>, <code>body</code></td><td></td></tr>
+<tr><td><code>Return</code></td><td><code>value</code> (nullable)</td><td></td></tr>
+<tr><td><code>Break</code>, <code>Continue</code></td><td>—</td><td></td></tr>
+<tr><td><code>TryCatch</code></td><td><code>body</code>, <code>error_var</code>, <code>handler</code></td><td></td></tr>
+<tr><td><code>Throw</code></td><td><code>value</code></td><td></td></tr>
+<tr><td><code>FunctionDef</code></td><td><code>name</code>, <code>params</code>, <code>body</code></td><td>nested function definition</td></tr>
+<tr><td><code>StructDef</code></td><td><code>name</code>, <code>fields</code></td><td><code>fields</code> is <code>[[name, type], …]</code></td></tr>
+<tr><td><code>LangBlock</code></td><td><code>lang</code>, <code>code</code>, <code>variables</code>, <code>imports</code>, <code>deps</code></td><td>a polyglot <code>@lang { }</code> block; <code>variables</code> are marshalled in, <code>meta.polyglot_output</code> names the variable marshalled out</td></tr>
+<tr><td><code>Import</code></td><td><code>import</code></td><td>an <code>ImportStatement</code> — parsed, but <strong>not executed</strong>: see below</td></tr>
+<tr><td><code>DomMutate</code>, <code>DomEventListener</code></td><td></td><td>DOM nodes; compile to <code>NOP</code> today</td></tr>
+<tr><td><code>AI</code></td><td><code>ai_type</code>, …</td><td>AI statements — see <a href="ai-native.html">AI-Native CAST</a></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>Import</code>, in particular, is accepted by the schema in six flavours (<code>CrushModule</code>,
+<code>PolyglotModule</code>, <code>MCPImport</code>, <code>Capability</code>, <code>External</code>, <code>SecureEnv</code>), but at run
+time an import lowers to an unregistered <code>module.load</code> capability and fails — Crush
+imports are not implemented yet (CRUSH-110).</p>
+<h2 id="expressions"><a class="header" href="#expressions">Expressions</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>type</code></th><th>Fields</th></tr>
+</thead>
+<tbody>
+<tr><td><code>IntLiteral</code>, <code>FloatLiteral</code>, <code>StringLiteral</code>, <code>BoolLiteral</code></td><td><code>value</code></td></tr>
+<tr><td><code>NullLiteral</code></td><td>—</td></tr>
+<tr><td><code>Var</code></td><td><code>name</code></td></tr>
+<tr><td><code>BinaryOp</code></td><td><code>operator</code>, <code>left</code>, <code>right</code> — operators as the language spells them: <code>+ - * / % == != &lt; &gt; &lt;= &gt;= &amp;&amp; ||</code></td></tr>
+<tr><td><code>UnaryOp</code></td><td><code>operator</code> (<code>-</code>, <code>!</code>), <code>operand</code></td></tr>
+<tr><td><code>Call</code></td><td><code>function</code> (a name), <code>args</code> — a call to a user function</td></tr>
+<tr><td><code>CapabilityCall</code></td><td><code>name</code> (<code>"io.print"</code>), <code>args</code>, <strong><code>meta</code> (required)</strong></td></tr>
+<tr><td><code>ArrayLiteral</code>, <code>TupleLiteral</code>, <code>ListLiteral</code>, <code>VectorLiteral</code>, <code>SetLiteral</code></td><td><code>elements</code></td></tr>
+<tr><td><code>ObjectLiteral</code></td><td><code>properties</code>: <code>[[key, expression], …]</code></td></tr>
+<tr><td><code>Index</code></td><td><code>target</code>, <code>index</code></td></tr>
+<tr><td><code>GetField</code></td><td><code>target</code>, <code>field</code></td></tr>
+<tr><td><code>NewStruct</code></td><td><code>name</code></td></tr>
+<tr><td><code>Range</code></td><td><code>start</code>, <code>end</code></td></tr>
+<tr><td><code>Match</code></td><td><code>expression</code>, <code>arms</code> (<code>{pattern, body}</code> pairs)</td></tr>
+<tr><td><code>Pipeline</code></td><td><code>segments</code> — <code>a |&gt; b |&gt; c</code></td></tr>
+<tr><td><code>Spawn</code>, <code>Await</code>, <code>Yield</code></td><td>task / async forms (stubs, see <a href="../casm/instructions.html#polyglot-concurrency-ai-and-dom">CASM</a>)</td></tr>
+<tr><td><code>Lambda</code></td><td><code>params</code>, <code>body</code> — the node exists, but the Crush parser cannot produce it: lambdas are not implemented (CRUSH-75)</td></tr>
+<tr><td><code>VectorMath</code></td><td><code>operator</code>, <code>args</code></td></tr>
+<tr><td><code>DomQuery</code></td><td><code>query_type</code>, <code>selector</code></td></tr>
+<tr><td><code>AI</code></td><td><code>ai_type</code>, … — see <a href="ai-native.html">AI-Native CAST</a></td></tr>
+</tbody>
+</table>
+</div>
+<p>Note the naming: it is <code>GetField</code> (not <code>FieldAccess</code>), <code>ArrayLiteral</code> (there is no
+<code>MapLiteral</code> — use <code>ObjectLiteral</code>) and <code>Var</code> (not <code>Identifier</code>).</p>
+<h3 id="patterns-for-match"><a class="header" href="#patterns-for-match">Patterns (for <code>Match</code>)</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>type</code></th><th>Fields</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Literal</code></td><td><code>value</code> (an expression)</td></tr>
+<tr><td><code>Identifier</code></td><td><code>name</code> (binds the value)</td></tr>
+<tr><td><code>Struct</code></td><td><code>name</code>, <code>fields</code>: <code>[[field, pattern], …]</code></td></tr>
+<tr><td><code>Wildcard</code></td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-json">{ "type": "Match",
+  "expression": { "type": "Var", "name": "n" },
+  "arms": [
+    { "pattern": { "type": "Literal", "value": { "type": "IntLiteral", "value": 6 } },
+      "body": [ { "type": "ExprStmt", "expr": { "type": "StringLiteral", "value": "six" } } ] },
+    { "pattern": { "type": "Wildcard" },
+      "body": [ { "type": "ExprStmt", "expr": { "type": "StringLiteral", "value": "other" } } ] }
+  ] }
+</code></pre>
+<h2 id="types"><a class="header" href="#types">Types</a></h2>
+<p>Type positions (<code>type_hint</code>, parameter and field types) hold a <code>CastType</code>. It is
+serialized the usual serde way: a bare string for the simple types,
+<code>{"Variant": payload}</code> for the others.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>"Int"</code>, <code>"Float"</code>, <code>"F32"</code>, <code>"BigInt"</code>, <code>"Complex"</code>, <code>"String"</code>, <code>"Bool"</code>, <code>"Null"</code></td><td>scalars</td></tr>
+<tr><td><code>"Any"</code></td><td>dynamic (the default)</td></tr>
+<tr><td><code>{"Array": "Int"}</code>, <code>{"List": …}</code>, <code>{"Vector": …}</code>, <code>{"Set": …}</code>, <code>{"Map": …}</code>, <code>{"Tensor": …}</code></td><td>homogeneous collections of the inner type</td></tr>
+<tr><td><code>{"Tuple": ["Int", "String"]}</code></td><td>fixed-length sequence</td></tr>
+<tr><td><code>{"Struct": "Point"}</code>, <code>{"TypeRef": "Point"}</code></td><td>named types</td></tr>
+<tr><td><code>{"Lambda": {"params": […], "returns": …}}</code></td><td>function types</td></tr>
+</tbody>
+</table>
+</div>
+<p>Types are <strong>hints</strong>: the compiler records them but the VM is dynamically typed.</p>
+<!-- check: cast-json -->
 <pre><code class="language-json">{
-  "type": "Index",
-  "object": { /* Expr */ },
-  "index": { /* Expr */ },
-  "meta": { "lang": "python" }
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "VarDecl", "name": "xs", "type_hint": { "Array": "Int" },
+      "value": { "type": "ArrayLiteral", "elements": [ { "type": "IntLiteral", "value": 7 } ] } },
+    { "type": "ExprStmt", "expr": { "type": "CapabilityCall", "name": "io.print", "meta": {},
+      "args": [ { "type": "Index", "target": { "type": "Var", "name": "xs" },
+                  "index": { "type": "IntLiteral", "value": 0 } } ] } }
+  ] } }
 }
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">7
 </code></pre>
 <h2 id="metadata"><a class="header" href="#metadata">Metadata</a></h2>
-<p>All nodes should include a <code>meta</code> field with:</p>
-<ul>
-<li><code>lang</code>: Source language (e.g., “python”, “rust”, “c”)</li>
-<li><code>line</code>: Optional line number in source</li>
-<li><code>column</code>: Optional column number in source</li>
-<li>Additional language-specific metadata as needed</li>
-</ul>
-<h2 id="type-hints"><a class="header" href="#type-hints">Type Hints</a></h2>
-<p>Optional <code>type_hint</code> fields can be:</p>
-<ul>
-<li>Primitives: <code>"int"</code>, <code>"float"</code>, <code>"str"</code>, <code>"bool"</code></li>
-<li>Collections: <code>"array"</code>, <code>"map"</code></li>
-<li>Custom: <code>"StructName"</code></li>
-<li>Generic: <code>"Array&lt;int&gt;"</code>, <code>"Map&lt;str, int&gt;"</code></li>
-</ul>
-<h2 id="compilation-strategy"><a class="header" href="#compilation-strategy">Compilation Strategy</a></h2>
-<h3 id="control-flow--casm"><a class="header" href="#control-flow--casm">Control Flow → CASM</a></h3>
-<p><strong>If Statement</strong>:</p>
-<pre><code>compile(condition)
-jmp_if_not else_label
-compile(then_body)
-jmp end_label
-else_label:
-compile(else_body)
-end_label:
+<p><code>meta</code> on a node is an open JSON object. The Crush parser writes <code>line</code> and <code>col</code>
+(1-based); walkers add their own keys. <code>crush_frontend</code> copies <code>line</code>/<code>col</code> onto the
+CASM instructions it emits, which is how a runtime error gets pointed at a source
+line. Nothing in <code>meta</code> changes what a program does, with one exception the
+compiler reads: <code>LangBlock.meta.polyglot_output</code> (the variable to marshal back).</p>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<p><code>crush_cast::validate_json(&amp;str)</code> checks a document against the schema and returns
+errors <strong>with a JSON path and a hint</strong> for the mistakes agents make most often. Only
+the first error is reported, because serde stops at the first one.</p>
+<!-- check: cast-json -->
+<!-- check: runfail unknown variant `Print` -->
+<pre><code class="language-json">{ "cast_version": "0.1.0", "entry": "main", "functions": { "main": {
+    "params": [], "meta": {},
+    "body": [ { "type": "Print", "value": { "type": "StringLiteral", "value": "hi" } } ] } } }
 </code></pre>
-<p><strong>While Loop</strong>:</p>
-<pre><code>loop_start:
-compile(condition)
-jmp_if_not loop_end
-compile(body)
-jmp loop_start
-loop_end:
+<p>The error for that document is <code>functions.main.body[0].type: unknown variant </code>Print<code>, expected one of </code>VarDecl<code>, </code>Assign<code>, …</code>, with the hint <em>“Statement type
+‘Print’ doesn’t exist. Use ExprStmt with CapabilityCall("print") instead”</em>. Other
+built-in hints cover <code>Identifier</code>/<code>Literal</code> expressions, a missing <code>Function.meta</code>,
+<code>prompt</code> instead of <code>query</code> in an AI query, and an object where a
+<code>DelegationStrategy</code> string belongs.</p>
+<p>Validation is structural. It does not check that a called function exists or that a
+capability name is real; the compiler and the VM do.</p>
+<h2 id="serialization"><a class="header" href="#serialization">Serialization</a></h2>
+<p><code>crush_cast::Program</code> can be written and read as JSON (the canonical form) or as
+CBOR:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Extension</th><th>Codec</th></tr>
+</thead>
+<tbody>
+<tr><td><code>.cast.json</code>, anything else</td><td>JSON (pretty-printed)</td></tr>
+<tr><td><code>.castb</code>, <code>.cbor</code></td><td>CBOR (<code>cbor4ii</code>), no header or magic</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>Program::deserialize</code> / <code>load</code> check <code>cast_version</code> and refuse a different <strong>major</strong>
+than <code>CAST_VERSION</code> (<code>"0.1"</code>): <code>version mismatch at cast boundary: expected 0.1, found …</code>. The corpus in <code>examples/cast/</code> uses <code>"0.1"</code> / <code>"0.1.0"</code>.</p>
+<blockquote>
+<p><strong>Known inconsistency (crush-ast <code>v0.3.9</code>).</strong> The Crush front end stamps the trees
+it produces <code>cast_version: "1.0.0"</code>, which the versioned loader then rejects — so a
+CAST dump from the compiler cannot be re-loaded with <code>Program::load</code>, though
+<code>serde_json</code> and <code>validate_json</code> accept it. When you write CAST by hand or from an
+agent, use <code>"0.1.0"</code>.</p>
+</blockquote>
+<!-- check: cast-load-fails version mismatch at cast boundary: expected 0.1, found 1.0.0 -->
+<!-- check: cast-json -->
+<pre><code class="language-json">{ "cast_version": "1.0.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "body": [], "meta": {} } } }
 </code></pre>
-<p><strong>For Loop</strong> (requires iterator protocol):</p>
-<pre><code>compile(iterable)
-store __iter
-loop_start:
-load __iter
-cap_call iter.next 1
-dup
-jmp_if_not loop_end
-store iterator
-compile(body)
-jmp loop_start
-loop_end:
-pop
-</code></pre>
-<h2 id="version-history"><a class="header" href="#version-history">Version History</a></h2>
+<h2 id="from-cast-to-casm"><a class="header" href="#from-cast-to-casm">From CAST to CASM</a></h2>
+<p><code>crush_frontend::compile_cast(&amp;program)</code> (or <code>compile_cast_owned</code>) walks the tree and
+emits <a href="../casm/structure.html">CASM IR</a>. The control-flow statements lower to jumps:</p>
 <ul>
-<li><strong>v0.3</strong>: Added control flow nodes (If, While, For), data structures (StructDef), and formal specification</li>
-<li><strong>v0.2</strong>: Added CapabilityCall, Import, Export</li>
-<li><strong>v0.1</strong>: Initial version with basic expressions and statements</li>
+<li><code>If</code> → condition, <code>jmp_if_not</code> over the then-branch, <code>jmp</code> over the else-branch.</li>
+<li><code>While</code> → test at the top, <code>jmp_if_not</code> to the exit, <code>jmp</code> back.</li>
+<li><code>For</code> over an array → an index loop (<code>len</code>/<code>index</code>), as shown in
+<a href="../casm/examples.html#9-what-the-compiler-writes">CASM Examples</a>.</li>
+<li><code>TryCatch</code> → <code>enter_try</code>, the body, <code>exit_try</code>, <code>jmp</code> past the handler; the handler
+starts by storing the thrown value into <code>error_var</code>.</li>
+<li><code>CapabilityCall</code> → arguments in order, then <code>cap_call name argc</code> (a <code>pop</code> follows
+when the call is a statement and the capability returns a value).</li>
+<li><code>Call</code> → arguments <strong>last first</strong>, then <code>call function argc</code>.</li>
 </ul>
 
                     </main>

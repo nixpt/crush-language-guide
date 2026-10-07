@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -181,61 +181,96 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="casm-overview"><a class="header" href="#casm-overview">CASM Overview</a></h1>
-<p><strong>CASM</strong> (Crush Assembly) is the low-level, target-independent instruction set for the Crush Virtual Machine. It is the final stage of the compilation pipeline before execution.</p>
-<h2 id="what-is-casm"><a class="header" href="#what-is-casm">What is CASM?</a></h2>
-<p>CASM is a <strong>stack-based assembly language</strong> designed for high-performance and secure execution. It serves as the universal “lingua franca” of the Crush ecosystem:</p>
-<ul>
-<li><strong>Unified Target</strong>: Whether source code is written in Python, Rust, or Crush, it eventually becomes CASM.</li>
-<li><strong>Explicit Effects</strong>: Every system interaction is visible as a <code>cap_call</code> (capability call).</li>
-<li><strong>Rich Metadata</strong>: CASM preserves source line and file information for precise error reporting.</li>
-<li><strong>Portability</strong>: Programs are serialized as JSON (for development) or MessagePack (for distribution).</li>
-</ul>
-<h2 id="the-execution-model"><a class="header" href="#the-execution-model">The Execution Model</a></h2>
-<h3 id="stack-based-logic"><a class="header" href="#stack-based-logic">Stack-Based Logic</a></h3>
-<p>Like WebAssembly or JVM bytecode, CASM operates on a stack:</p>
-<pre><code class="language-json">{"op": "push_int", "value": 10}
-{"op": "push_int", "value": 20}
-{"op": "add"} // Pops 20, Pops 10, Pushes 30
+<p><strong>CASM</strong> (Crush Assembly) is the stack-machine instruction set that Crush programs
+compile to. The name covers three closely related things, and most confusion about
+it comes from mixing them up:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Form</th><th>What it is</th><th>Extension</th><th>Defined in</th><th>Who produces / runs it</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>CASM IR</strong> (JSON)</td><td>The compiler’s structured output: functions of JSON instructions, <code>{"op": "push_int", "value": 42}</code></td><td><code>.casm</code> JSON, or <code>.casmb</code> (MessagePack)</td><td>the <code>casm</code> crate (<code>casm::Program</code>)</td><td><code>compile_crush_to_casm</code> produces it; embedders load it with <code>casm::Program::load</code></td></tr>
+<tr><td><strong>CASM text</strong></td><td>A line-oriented assembly you can write by hand: <code>.func main</code> / <code>PUSH 42</code> / <code>CAP_CALL "io.print" 1</code></td><td><code>.casm</code></td><td><code>crush-vm</code>’s assembler</td><td><code>crushc --emit casm</code> prints it; <code>crush-run run x.casm</code> and <code>crush-compile</code> consume it</td></tr>
+<tr><td><strong>CVM1</strong> (binary)</td><td>The bytecode the VM actually executes: magic <code>CVM1</code>, constant pool, flat code</td><td><code>.cvm1</code></td><td><code>crush-vm</code> (<code>bytecode.rs</code>)</td><td><code>crushc</code> writes it; <code>crush-run run x.cvm1</code> runs it</td></tr>
+</tbody>
+</table>
+</div>
+<p>(The extension <code>.casm</code> is shared by the JSON IR and the text assembly; the tools
+that read a file expect one of them — <code>crush-run</code> expects text.)</p>
+<p>They fit together like this:</p>
+<pre><code> Crush source ──parse──▶ CAST (JSON AST) ──compile──▶ CASM IR (JSON) ──lower──▶ CASM text ──assemble──▶ CVM1 bytes ──▶ VM
+                                                                      (crush_lang_sdk::compile::casm_to_vm)
 </code></pre>
-<h3 id="capability-first-security"><a class="header" href="#capability-first-security">Capability-First Security</a></h3>
-<p>CASM does not have instructions for raw syscalls. All host interactions must go through the capability system:</p>
-<pre><code class="language-json">{"op": "push_str", "value": "logs.txt"}
-{"op": "cap_call", "name": "fs.read", "argc": 1}
-</code></pre>
-<p>The VM validates this call against the capsule’s manifest at runtime. If the <code>fs.read</code> capability was not granted, the execution is immediately terminated.</p>
-<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
-<h3 id="1-unified-value-system"><a class="header" href="#1-unified-value-system">1. Unified Value System</a></h3>
-<p>CASM uses a unified <code>RuntimeValue</code> system that supports:</p>
+<p><code>crushc</code> runs the whole chain; <code>crush-run run FILE.crush</code> compiles in memory and
+runs. The CASM IR is the <strong>interchange point</strong>: every front-end (the Crush parser,
+the polyglot walkers, an agent writing <a href="../cast/README.html">CAST</a> directly) ends up
+there, and every back-end (the VM, the AOT compilers <code>crush-aot</code> / <code>crush-aotc</code>,
+the FastVM lowering) starts there.</p>
+<h2 id="what-is-real-and-what-is-not"><a class="header" href="#what-is-real-and-what-is-not">What is real and what is not</a></h2>
 <ul>
-<li><strong>Primitives</strong>: <code>Int</code>, <code>Float</code>, <code>Bool</code>, <code>Null</code>.</li>
-<li><strong>References</strong>: <code>String</code>, <code>Array</code>, <code>Map</code> (managed in the VM Arena).</li>
-<li><strong>Functions</strong>: First-class function handles.</li>
+<li><strong>The VM is stack-based</strong>, with a flat operand stack, per-frame local slots, a
+call stack, and a <code>try</code>/<code>throw</code> handler stack.</li>
+<li><strong>Host access is capability-only.</strong> There is no syscall instruction. A program
+talks to the outside world with <code>CAP_CALL "name" argc</code>, and the VM refuses a
+capability that the host did not register <em>or</em> that the program’s manifest does
+not list.</li>
+<li><strong>The IR has more instructions than the VM bytecode.</strong> The <code>casm</code> crate’s
+<code>OpCode</code> enum is a superset; <code>casm_to_vm</code> lowers only part of it (see the
+<a href="instructions.html#what-lowers-to-cvm1">Instruction Reference</a>). Some IR
+instructions lower to a <code>NOP</code>; some are rejected with <code>Unsupported CVM1 opcode</code>.</li>
+<li><strong>The <code>ai_*</code>, <code>dom_*</code>, <code>spawn</code>/<code>yield</code>/<code>await</code> instructions are stubs.</strong> In the
+IR→CVM1 lowering the <code>ai_*</code> and <code>dom_*</code> instructions become <code>NOP</code>s; a hand-written
+CVM1 <code>AI_QUERY</code> reaches an <code>ai_native.query</code> capability that returns
+<code>{ok: true, kind: "query", echo: []}</code> and does nothing else. See
+<a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a>.</li>
+<li><strong>Source mapping</strong> is carried in each IR instruction’s <code>meta</code> (<code>line</code>, <code>col</code>);
+the CVM1 binary does not store it (the text assembler keeps a line→offset map for
+debuggers only).</li>
 </ul>
-<h3 id="2-arena-based-memory"><a class="header" href="#2-arena-based-memory">2. Arena-Based Memory</a></h3>
-<p>All complex objects in CASM are created within the VM’s <strong>Arena</strong>. This ensures that memory management is deterministic and that capsules remain strictly isolated from each other.</p>
-<h3 id="3-source-mapping"><a class="header" href="#3-source-mapping">3. Source Mapping</a></h3>
-<p>Each instruction in a <code>.casm</code> file can include a <code>meta</code> block:</p>
-<pre><code class="language-json">{
-  "op": "add",
-  "meta": {
-    "file": "main.py",
-    "line": 10
-  }
+<h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
+<p>Compile a small program to text assembly:</p>
+<pre><code class="language-crush">fn add(a, b) {
+    return a + b
 }
+let x = add(2, 3)
+io.print("x = ", x)
 </code></pre>
-<p>If an error occurs, the VM uses this metadata to provide a human-readable trace back to the original source code.</p>
-<h2 id="file-structure"><a class="header" href="#file-structure">File Structure</a></h2>
-<p>A <code>.casm</code> capsule is a JSON object containing:</p>
+<!-- check: output -->
+<pre><code class="language-text">x = 5
+</code></pre>
+<pre><code class="language-bash">crushc add.crush --emit casm
+</code></pre>
+<!-- check: run -->
+<pre><code class="language-casm">.func main
+    PUSH 3
+    PUSH 2
+    CALL add
+    STORE 0
+    PUSH_STR "x = "
+    LOAD 0
+    CAP_CALL "io.print" 2
+    PUSH_NULL
+    RET
+.func add
+    STORE 0
+    STORE 1
+    LOAD 0
+    LOAD 1
+    ADD
+    RET
+</code></pre>
+<p>Two things to notice, both explained in <a href="structure.html">Program Structure</a>: arguments
+are pushed in <strong>reverse</strong> order (<code>3</code> then <code>2</code>), so the callee’s first <code>STORE</code> pops the
+first argument into slot 0, the second <code>STORE</code> the next one, and so on; and all top-level statements live in a
+function called <code>main</code>.</p>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next steps</a></h2>
 <ul>
-<li><strong><code>manifest</code></strong>: Metadata and capability requirements.</li>
-<li><strong><code>functions</code></strong>: A collection of named blocks of code.</li>
-<li><strong><code>entry</code></strong>: The name of the function to execute first.</li>
-</ul>
-<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
-<ul>
-<li><strong><a href="instructions.html">Instruction Reference</a></strong>: Explore the complete set of CASM opcodes.</li>
-<li><strong><a href="serialization.html">Binary Format</a></strong>: Learn how CASM is optimized for distribution.</li>
-<li><strong><a href="../crush/README.html">Crush Language Guide</a></strong>: See how the high-level language maps to CASM.</li>
+<li><strong><a href="structure.html">Program Structure</a></strong> — the JSON IR, the text assembly and the CVM1 binary layout.</li>
+<li><strong><a href="instructions.html">Instruction Reference</a></strong> — every opcode, with stack effects.</li>
+<li><strong><a href="examples.html">Examples</a></strong> — hand-written programs, all run by the guide’s checker.</li>
+<li><strong><a href="serialization.html">Serialization</a></strong> — <code>.casm</code>, <code>.casmb</code>, <code>.cvm1</code> and the version gates.</li>
+<li><strong><a href="../crush/README.html">Crush Language Guide</a></strong> — the source language that compiles to it.</li>
 </ul>
 
                     </main>

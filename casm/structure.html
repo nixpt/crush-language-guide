@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -181,340 +181,223 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="program-structure"><a class="header" href="#program-structure">Program Structure</a></h1>
-<p>A CASM program is a JSON document with a well-defined structure. This chapter explains each component in detail.</p>
-<h2 id="top-level-structure"><a class="header" href="#top-level-structure">Top-Level Structure</a></h2>
+<p>This chapter describes the three forms of CASM from the top down: the JSON IR
+(<code>casm::Program</code>), the text assembly, and the CVM1 binary. Field names and layouts
+are taken from <code>crates/casm/src/lib.rs</code>, <code>crates/crush-vm/src/assembler.rs</code> and
+<code>crates/crush-vm/src/bytecode.rs</code> in crush-ast.</p>
+<h2 id="the-json-ir"><a class="header" href="#the-json-ir">The JSON IR</a></h2>
 <pre><code class="language-json">{
-  "version": "0.1",
-  "functions": { /* ... */ },
-  "lang": "python",
-  "manifest": { /* ... */ }
+  "version": "1.0",
+  "functions": { "main": { "params": [], "locals": [], "body": [ /* instructions */ ] } },
+  "manifest": { "permissions": ["io.print"] },
+  "lang": "crush"
 }
 </code></pre>
-<h3 id="fields"><a class="header" href="#fields">Fields</a></h3>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>version</code></td><td>String</td><td>✓</td><td>CASM format version (currently <code>"0.1"</code>)</td></tr>
-<tr><td><code>functions</code></td><td>Object</td><td>✓</td><td>Map of function name to function definition</td></tr>
-<tr><td><code>lang</code></td><td>String</td><td>✗</td><td>Source language (e.g., <code>"python"</code>, <code>"crush"</code>, <code>"rust"</code>)</td></tr>
-<tr><td><code>manifest</code></td><td>Object</td><td>✗</td><td>Capability permissions and metadata</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>yes</td><td>CASM format version. The loader accepts any version whose <strong>major</strong> is <code>1</code> (<code>CASM_VERSION = "1.0"</code>); the Crush compiler writes <code>"1.0.0"</code>. Anything else is rejected at load time.</td></tr>
+<tr><td><code>functions</code></td><td>object</td><td>yes</td><td>function name → function definition</td></tr>
+<tr><td><code>manifest</code></td><td>object</td><td>no</td><td><code>{"permissions": [capability names…]}</code>. Defaults to no permissions.</td></tr>
+<tr><td><code>lang</code></td><td>string</td><td>no</td><td>source-language hint (<code>"crush"</code>, <code>"python"</code>, …); informational</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="function-structure"><a class="header" href="#function-structure">Function Structure</a></h2>
-<p>Each function in the <code>functions</code> object has this structure:</p>
-<pre><code class="language-json">{
-  "params": ["arg1", "arg2"],
-  "locals": ["temp", "counter"],
-  "body": [ /* instructions */ ]
-}
-</code></pre>
-<h3 id="function-fields"><a class="header" href="#function-fields">Function Fields</a></h3>
+<p>There is <strong>no <code>entry</code> field</strong>. When the program is lowered to CVM1, execution
+starts at the function named <code>main</code> (the assembler picks <code>main</code> if one exists,
+otherwise the first function it sees — and <code>functions</code> is an unordered map, so
+always name your entry function <code>main</code>). The Crush compiler puts all top-level
+statements into <code>main</code>.</p>
+<h3 id="functions"><a class="header" href="#functions">Functions</a></h3>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>params</code></td><td>Array&lt;String&gt;</td><td>✗</td><td>Parameter names (default: <code>[]</code>)</td></tr>
-<tr><td><code>locals</code></td><td>Array&lt;String&gt;</td><td>✗</td><td>Local variable names (default: <code>[]</code>)</td></tr>
-<tr><td><code>body</code></td><td>Array&lt;Instruction&gt;</td><td>✓</td><td>Instruction sequence</td></tr>
+<tr><td><code>params</code></td><td>array of strings</td><td>no (default <code>[]</code>)</td><td>parameter names</td></tr>
+<tr><td><code>locals</code></td><td>array of strings</td><td>no (default <code>[]</code>)</td><td>declared local names</td></tr>
+<tr><td><code>type_hints</code></td><td>object</td><td>no</td><td>name → type string, tooling only</td></tr>
+<tr><td><code>body</code></td><td>array of instructions</td><td>yes</td><td>the code</td></tr>
 </tbody>
 </table>
 </div>
-<h3 id="parameters-vs-locals"><a class="header" href="#parameters-vs-locals">Parameters vs Locals</a></h3>
-<ul>
-<li><strong>Parameters</strong>: Function arguments, bound when the function is called</li>
-<li><strong>Locals</strong>: Additional local variables declared in the function</li>
-</ul>
-<p>Example:</p>
-<pre><code class="language-json">{
-  "functions": {
-    "add": {
-      "params": ["a", "b"],
-      "locals": ["result"],
-      "body": [
-        {"op": "load", "name": "a"},
-        {"op": "load", "name": "b"},
-        {"op": "add"},
-        {"op": "store", "name": "result"},
-        {"op": "load", "name": "result"},
-        {"op": "ret"}
-      ]
-    }
-  }
-}
+<p><code>params</code> and <code>locals</code> are <strong>documentation for tools</strong>: the VM does not bind
+parameters for you. A call pushes its arguments (last argument first) and jumps; the
+callee’s body must begin by <code>store</code>-ing them. This is what the compiler emits for
+<code>fn add(a, b)</code>:</p>
+<pre><code class="language-json">{ "params": ["a", "b"], "locals": [],
+  "body": [ {"op":"store","name":"a"}, {"op":"store","name":"b"},
+            {"op":"load","name":"a"},  {"op":"load","name":"b"},
+            {"op":"add"}, {"op":"ret"} ] }
 </code></pre>
-<h2 id="instruction-structure"><a class="header" href="#instruction-structure">Instruction Structure</a></h2>
-<p>Each instruction is a JSON object with these fields:</p>
-<pre><code class="language-json">{
-  "op": "push_int",
-  "value": 42,
-  "lang": "python",
-  "meta": {
-    "file": "script.py",
-    "line": 10,
-    "column": 5
-  }
-}
+<p>Variables are referred to <strong>by name</strong> in the IR; lowering assigns each distinct name
+in a function a numeric slot (in order of first use), and slots are local to the
+call frame.</p>
+<h3 id="instructions"><a class="header" href="#instructions">Instructions</a></h3>
+<pre><code class="language-json">{ "op": "push_int", "value": 42, "instr_lang": "crush", "meta": { "line": 4, "col": 15 } }
 </code></pre>
-<h3 id="instruction-fields"><a class="header" href="#instruction-fields">Instruction Fields</a></h3>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>op</code></td><td>String</td><td>✓</td><td>Operation name (e.g., <code>"push_int"</code>, <code>"add"</code>)</td></tr>
-<tr><td><code>lang</code></td><td>String</td><td>✗</td><td>Source language for this instruction</td></tr>
-<tr><td><code>meta</code></td><td>Object</td><td>✗</td><td>Metadata (file, line, column, etc.)</td></tr>
-<tr><td><em>others</em></td><td>Various</td><td>Varies</td><td>Operation-specific arguments</td></tr>
+<tr><td><code>op</code></td><td>string</td><td>yes</td><td>the operation, lower-case snake case (<code>"push_int"</code>, <code>"cap_call"</code>, …)</td></tr>
+<tr><td><code>instr_lang</code></td><td>string or null</td><td>no</td><td>source language of this instruction (the Rust field is <code>lang</code>, the JSON key is <code>instr_lang</code>)</td></tr>
+<tr><td><code>meta</code></td><td>any JSON</td><td>no</td><td>free-form metadata; the compiler writes <code>line</code> and <code>col</code></td></tr>
+<tr><td><em>(others)</em></td><td>varies</td><td>per op</td><td>operation arguments, flattened into the same object</td></tr>
 </tbody>
 </table>
 </div>
-<h3 id="operation-specific-arguments"><a class="header" href="#operation-specific-arguments">Operation-Specific Arguments</a></h3>
-<p>Different operations require different arguments. These are flattened into the instruction object:</p>
-<pre><code class="language-json">// push_int requires "value"
-{"op": "push_int", "value": 42}
-
-// store requires "name"
-{"op": "store", "name": "x"}
-
-// cap_call requires "name" and "argc"
+<p>Operation arguments sit <strong>next to</strong> <code>op</code>, not in a nested object:</p>
+<pre><code class="language-json">{"op": "push_int", "value": 42}
+{"op": "store",    "name": "x"}
 {"op": "cap_call", "name": "io.print", "argc": 1}
-
-// jmp requires "target"
-{"op": "jmp", "target": 10}
+{"op": "call",     "function": "add", "argc": 2}
+{"op": "jmp",      "target": 10}
 </code></pre>
-<p>See the <a href="instructions.html">Instruction Set Reference</a> for complete details on each operation’s arguments.</p>
-<h2 id="metadata"><a class="header" href="#metadata">Metadata</a></h2>
-<p>The <code>meta</code> field can contain arbitrary JSON data, but these fields have special meaning:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Field</th><th>Type</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>file</code></td><td>String</td><td>Source file path</td></tr>
-<tr><td><code>line</code></td><td>Integer</td><td>Line number in source file</td></tr>
-<tr><td><code>column</code></td><td>Integer</td><td>Column number in source file</td></tr>
-<tr><td><code>lang</code></td><td>String</td><td>Source language</td></tr>
-</tbody>
-</table>
-</div>
-<p>Example with full metadata:</p>
+<p><strong>Jump targets are instruction indices</strong> within the same function’s <code>body</code>
+(<code>"target": 10</code> means “the eleventh instruction”). A target equal to
+<code>body.len()</code> jumps past the end.</p>
+<p>A complete program, written by hand and checked by this guide:</p>
+<!-- check: casm-json -->
 <pre><code class="language-json">{
-  "op": "push_str",
-  "value": "Hello",
-  "lang": "crush",
-  "meta": {
-    "file": "examples/hello.crush",
-    "line": 4,
-    "column": 15,
-    "lang": "crush"
-  }
-}
-</code></pre>
-<p>This metadata is used by the VM to provide accurate error messages:</p>
-<pre><code class="language-text">Error at examples/hello.crush:4:15
-  |
-4 |     let msg = "Hello";
-  |               ^^^^^^^
-  | Type error: expected Int, got String
-</code></pre>
-<h2 id="manifest"><a class="header" href="#manifest">Manifest</a></h2>
-<p>The manifest declares capability permissions:</p>
-<pre><code class="language-json">{
-  "manifest": {
-    "permissions": [
-      "io.print",
-      "io.read",
-      "fs.read",
-      "fs.write",
-      "net.http"
-    ]
-  }
-}
-</code></pre>
-<h3 id="manifest-fields"><a class="header" href="#manifest-fields">Manifest Fields</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>permissions</code></td><td>Array&lt;String&gt;</td><td>✓</td><td>List of required capabilities</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="permission-strings"><a class="header" href="#permission-strings">Permission Strings</a></h3>
-<p>Permissions follow the format <code>namespace.method</code>:</p>
-<ul>
-<li><code>io.print</code> - Print to stdout</li>
-<li><code>io.read</code> - Read from stdin</li>
-<li><code>fs.read</code> - Read files</li>
-<li><code>fs.write</code> - Write files</li>
-<li><code>fs.delete</code> - Delete files</li>
-<li><code>net.http</code> - Make HTTP requests</li>
-<li><code>sys.exec</code> - Execute system commands</li>
-<li><code>sys.env</code> - Access environment variables</li>
-</ul>
-<p>The VM will reject any <code>cap_call</code> that isn’t listed in the manifest.</p>
-<h2 id="complete-example"><a class="header" href="#complete-example">Complete Example</a></h2>
-<p>Here’s a complete CASM program with all components:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "lang": "crush",
+  "version": "1.0",
   "functions": {
     "main": {
       "params": [],
-      "locals": ["name", "greeting"],
+      "locals": [],
       "body": [
-        {
-          "op": "push_str",
-          "value": "What's your name?",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 2}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.print",
-          "argc": 1,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 2}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.read",
-          "argc": 0,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 3}
-        },
-        {
-          "op": "store",
-          "name": "name",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 3}
-        },
-        {
-          "op": "push_str",
-          "value": "Hello, ",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "load",
-          "name": "name",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "add",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "push_str",
-          "value": "!",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "add",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "store",
-          "name": "greeting",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "load",
-          "name": "greeting",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 6}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.print",
-          "argc": 1,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 6}
-        },
-        {
-          "op": "ret",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 7}
-        }
+        {"op": "push_int", "value": 3},
+        {"op": "push_int", "value": 2},
+        {"op": "call", "function": "add", "argc": 2},
+        {"op": "push_str", "value": "2 + 3 = "},
+        {"op": "swap"},
+        {"op": "cap_call", "name": "io.print", "argc": 2},
+        {"op": "halt"}
+      ]
+    },
+    "add": {
+      "params": ["a", "b"],
+      "locals": [],
+      "body": [
+        {"op": "store", "name": "a"},
+        {"op": "store", "name": "b"},
+        {"op": "load", "name": "a"},
+        {"op": "load", "name": "b"},
+        {"op": "add"},
+        {"op": "ret"}
       ]
     }
   },
-  "manifest": {
-    "permissions": [
-      "io.print",
-      "io.read"
-    ]
-  }
+  "manifest": { "permissions": ["io.print"] }
 }
 </code></pre>
-<p>This corresponds to the Crush source:</p>
-<pre><code class="language-crush">fn main() {
-    io.print("What's your name?");
-    let name = io.read();
-    
-    let greeting = "Hello, " + name + "!";
-    io.print(greeting);
-}
+<!-- check: output -->
+<pre><code class="language-text">2 + 3 = 5
 </code></pre>
-<h2 id="entry-point"><a class="header" href="#entry-point">Entry Point</a></h2>
-<p>The VM looks for a function named <code>"main"</code> as the entry point. If no <code>main</code> function exists, the program cannot be executed.</p>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-always-include-metadata"><a class="header" href="#1-always-include-metadata">1. Always Include Metadata</a></h3>
-<p>Include <code>lang</code>, <code>file</code>, <code>line</code>, and <code>column</code> metadata for better error messages:</p>
-<pre><code class="language-json">{
-  "op": "add",
-  "lang": "python",
-  "meta": {
-    "file": "script.py",
-    "line": 42,
-    "column": 10
-  }
-}
+<p>(<code>push_str</code> then <code>swap</code> puts the label <em>under</em> the sum, so <code>io.print</code> sees the
+label first.)</p>
+<h3 id="the-manifest"><a class="header" href="#the-manifest">The manifest</a></h3>
+<p><code>manifest.permissions</code> lists the capability names the program may call. The check
+happens at run time, on every <code>cap_call</code>: a capability that is not in the list is
+refused with <code>capability not declared in manifest: NAME</code>, even if the host has it
+registered. When the Crush compiler lowers a program it adds every capability the
+code actually calls, so a manifest only matters when you write or edit IR by hand
+(or want to <em>restrict</em> a program).</p>
+<h2 id="the-text-assembly"><a class="header" href="#the-text-assembly">The text assembly</a></h2>
+<p>This is what <code>crushc --emit casm</code> prints and <code>crush-run run FILE.casm</code> /
+<code>crush-compile</code> read. One instruction per line:</p>
+<pre><code class="language-casm">; a comment (# also works)
+.func main              ; start of function "main"
+    PUSH 40
+    PUSH 2
+    ADD
+    CAP_CALL "io.print" 1
+    JMP done            ; jump to a label
+done:                   ; a label is "name:" on its own line (or before an instruction)
+    HALT
 </code></pre>
-<h3 id="2-declare-all-locals"><a class="header" href="#2-declare-all-locals">2. Declare All Locals</a></h3>
-<p>List all local variables in the <code>locals</code> array for clarity:</p>
-<pre><code class="language-json">{
-  "params": ["x", "y"],
-  "locals": ["temp", "result", "i"],
-  "body": [ /* ... */ ]
-}
-</code></pre>
-<h3 id="3-minimal-permissions"><a class="header" href="#3-minimal-permissions">3. Minimal Permissions</a></h3>
-<p>Only request capabilities you actually use:</p>
-<pre><code class="language-json">{
-  "manifest": {
-    "permissions": ["io.print"]  // Only what's needed
-  }
-}
-</code></pre>
-<h3 id="4-use-descriptive-function-names"><a class="header" href="#4-use-descriptive-function-names">4. Use Descriptive Function Names</a></h3>
-<pre><code class="language-json">{
-  "functions": {
-    "calculate_fibonacci": { /* ... */ },
-    "format_output": { /* ... */ }
-  }
-}
-</code></pre>
-<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="instructions.html">Instruction Set Reference</a></strong>: Learn about all available operations</li>
-<li><strong><a href="examples.html">Examples</a></strong>: See complete CASM programs</li>
-<li><strong><a href="serialization.html">Serialization</a></strong>: Learn about JSON and binary formats</li>
+<li><code>.func NAME</code> begins a function. Functions share one flat code section; a <code>CALL</code>
+must name a function defined <strong>somewhere</strong> in the file (forward references are
+fine — the assembler runs two passes).</li>
+<li><code>LABEL:</code> marks a jump target; <code>JMP</code>/<code>JZ</code>/<code>JNZ</code>/<code>ENTER_TRY</code> take a label name.</li>
+<li>Mnemonics are case-insensitive. Operands: <code>PUSH</code> takes a signed 64-bit integer,
+<code>PUSH_F64</code> a float, <code>PUSH_STR</code> a double-quoted string (Rust <code>{:?}</code> escapes), and
+<code>LOAD</code>/<code>STORE</code> a slot number <code>0</code>–<code>65535</code>.</li>
+<li><code>CAP_CALL "name" argc</code> takes the capability name and the argument count (0–255).</li>
+<li>The assembler records <code>main</code> (or, failing that, the first <code>.func</code>) as the entry
+point and builds a function table. A file with no <code>.func</code> at all is a single
+anonymous routine starting at offset 0.</li>
+</ul>
+<pre><code class="language-casm">.func main
+    PUSH 40
+    PUSH 2
+    ADD
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">42
+</code></pre>
+<p><code>crush-run</code> does not infer permissions from a <code>.casm</code> file: pass the capabilities
+the program uses with <code>--cap</code> (e.g. <code>crush-run run prog.casm --cap io.print</code>).</p>
+<h2 id="the-cvm1-binary"><a class="header" href="#the-cvm1-binary">The CVM1 binary</a></h2>
+<p><code>crushc x.crush -o x.cvm1</code> writes this layout (all multi-byte integers
+big-endian):</p>
+<pre><code> offset  size   field
+      0     4   magic            "CVM1"
+      4     1   version          2   (versions 1 and 2 are accepted)
+      5     2   manifest_len
+      7     n   manifest         JSON: {"runtime", "permissions", "name"?, "functions"?, "entry"?}
+            2   n_consts
+            …   consts           n_consts × ( 2-byte length + UTF-8 bytes )
+            4   code_len
+            …   code             flat bytecode
+</code></pre>
+<p>The constant pool holds every string the code names: <code>PUSH_STR</code> literals, capability
+names and function names. A capability name or a string is limited to 65 535 bytes
+and the pool to 65 536 entries because indices are 16-bit. The <code>functions</code> table in
+the manifest maps each function name to its byte offset in <code>code</code>; <code>entry</code> names the
+function the VM starts in.</p>
+<p>Each instruction is one opcode byte followed by a fixed-size operand:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Operand</th><th>Size</th><th>Used by</th></tr>
+</thead>
+<tbody>
+<tr><td>none</td><td>0</td><td>most opcodes</td></tr>
+<tr><td><code>i64</code></td><td>8</td><td><code>PUSH</code>, <code>PUSH_BOOL</code></td></tr>
+<tr><td><code>f64</code></td><td>8</td><td><code>PUSH_F64</code></td></tr>
+<tr><td>const index</td><td>2</td><td><code>PUSH_STR</code>, <code>CALL</code>, <code>GET_FIELD</code>, <code>SET_FIELD</code>, <code>CAST</code>, <code>EXEC_LANG</code>, the <code>AI_*</code>/<code>DOM_*</code> opcodes</td></tr>
+<tr><td>slot</td><td>2</td><td><code>LOAD</code>, <code>STORE</code></td></tr>
+<tr><td>count</td><td>2</td><td><code>NEW_ARRAY</code>, <code>NEW_TUPLE</code>, <code>NEW_LIST</code>, <code>NEW_VECTOR</code>, <code>NEW_SET</code>, <code>PICK</code>, <code>ROLL</code>, <code>SPAWN</code></td></tr>
+<tr><td>code offset</td><td>4</td><td><code>JMP</code>, <code>JZ</code>, <code>JNZ</code>, <code>ENTER_TRY</code> (byte offset into <code>code</code>)</td></tr>
+<tr><td>capability</td><td>3</td><td><code>CAP_CALL</code>: 2-byte const index of the name + 1-byte argc</td></tr>
+</tbody>
+</table>
+</div>
+<p>Jumps in the binary are <strong>byte offsets</strong>, unlike the IR’s instruction indices; the
+assembler converts labels for you.</p>
+<p>You can turn a binary back into text with <code>crush_lang_sdk::disassemble</code>; it prints
+<code>.func</code> lines and synthesises <code>L&lt;offset&gt;:</code> labels for jump targets.</p>
+<h2 id="metadata-and-source-maps"><a class="header" href="#metadata-and-source-maps">Metadata and source maps</a></h2>
+<p>The IR keeps <code>meta.line</code>/<code>meta.col</code> on each instruction, and <code>casm::debug_info</code>
+defines <code>DebugInfo</code>/<code>SourceLocation</code> for mapping a runtime failure back to the
+source (<code>format_runtime_error_with_location</code>). The CVM1 binary carries none of it:
+<code>Program::source_map</code> (line → code offset) exists only on a freshly assembled
+program, for debuggers, and is not serialized.</p>
+<h2 id="see-also"><a class="header" href="#see-also">See also</a></h2>
+<ul>
+<li><a href="instructions.html">Instruction Reference</a></li>
+<li><a href="serialization.html">Serialization</a> — file extensions and version checks</li>
+<li><a href="../cast/README.html">CAST</a> — the layer above</li>
 </ul>
 
                     </main>

@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-36566637.js"></script>
@@ -183,7 +183,7 @@
                         <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application. Everything here
-was run against crush-ast <code>main</code> (workspace version <code>0.3.8</code>).</p>
+was run against crush-ast <code>v0.3.9</code> (the release on crates.io).</p>
 <h2 id="1-build-the-toolchain"><a class="header" href="#1-build-the-toolchain">1. Build the toolchain</a></h2>
 <p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
 Build it from source — this is the path this guide’s examples are validated
@@ -223,15 +223,20 @@ warning and <code>str.*</code>, <code>math.*</code>, <code>conv.*</code> and fri
 (<code>cargo run -p crush-installer -- install --bin-dir target/release</code> copies them
 into <code>~/.crush/bin</code>; it does not currently include the <code>crush</code> wrapper).</p>
 <blockquote>
-<p><strong>A note on crates.io.</strong> The crates are published, but not in lockstep, and the
-SDK lags the repository. As of this writing: <code>crush-vm</code> <strong>0.3.6</strong>; <code>casm</code>,
-<code>crush-errors</code>, <code>crush-diagnostics</code>, <code>crush-lint</code>, <code>crush-ffi</code>, <code>crush-installer</code>
-and <code>tree-sitter-crush</code> <strong>0.3.7</strong>; <code>crush-frontend</code>, <code>crush-cast</code>, <code>crush-cson</code>,
-<code>crush-index</code>, <code>crush-jit</code> and <code>crush-python</code> <strong>0.3.0</strong>; and <strong><code>crush-lang-sdk</code>
-0.2.0</strong>, which predates the <code>crush</code> binary and the capability behaviour
-documented here. <code>crush-pkg</code>, <code>crush-aot</code>, <code>crush-aotc</code> and the walker CLI are
-not on crates.io. <code>cargo install crush-lang-sdk</code> therefore gives you an older
-toolchain than this guide describes; use the source build above.</p>
+<p><strong>Crates.io.</strong> The <code>0.3.9</code> release is published: <code>crush-lang-sdk</code> (which installs
+<code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code> and <code>crush-diff</code>),
+<code>crush-vm</code>, <code>crush-frontend</code>, <code>casm</code>, <code>crush-cast</code>, <code>crush-errors</code>,
+<code>crush-diagnostics</code>, <code>crush-ffi</code>, <code>crush-cson</code>, <code>crush-index</code>, <code>crush-walker-core</code>,
+<code>crush-lang-python</code> and <code>crush-lang-js</code>. So <code>cargo install crush-lang-sdk</code> works and
+gives the toolchain this guide describes, and an embedding project can depend on
+<code>crush-lang-sdk = "0.3.9"</code>. Four crates lag: <code>crush-lint</code>, <code>crush-installer</code> and
+<code>tree-sitter-crush</code> are at <code>0.3.7</code>, <code>crush-jit</code> and <code>crush-python</code> at <code>0.3.0</code>;
+<code>crush-pkg</code>, <code>crush-aot</code> and <code>crush-aotc</code> are not published. <strong>Never depend on
+<code>crush-lang-sdk</code> <code>0.2</code></strong>: that line has been yanked, and it runs <code>@lang</code> blocks
+without the <code>--polyglot</code> gate.</p>
+<p>The <code>cargo install</code> route does not enable the optional SDK features
+(<code>stdlib</code>, <code>net</code>, <code>db</code>, <code>graphics</code>): add them with
+<code>cargo install crush-lang-sdk --features stdlib,net,db,graphics</code>.</p>
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
@@ -285,7 +290,7 @@ crates give direct access to the IR, bytecode, or VM.</p>
 <tr><td><a href="https://crates.io/crates/crush-frontend"><code>crush-frontend</code></a></td><td>Parser, semantic analyzer, optimizer, and CASM compiler (<code>parse_source</code>).</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-vm"><code>crush-vm</code></a></td><td>The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM.</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-cast"><code>crush-cast</code></a></td><td>The CAST intermediate representation.</td></tr>
-<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM bytecode format (JSON IR + binary <code>.casmb</code>).</td></tr>
+<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM IR (<code>casm::Program</code>, JSON and MessagePack) — see <a href="casm/README.html">CASM</a>.</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-errors"><code>crush-errors</code></a></td><td>Shared error types.</td></tr>
 <tr><td><a href="https://crates.io/crates/tree-sitter-crush"><code>tree-sitter-crush</code></a></td><td>Tree-sitter grammar (editor tooling, syntax highlighting).</td></tr>
 </tbody>

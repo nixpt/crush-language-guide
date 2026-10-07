@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -181,818 +181,361 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="instruction-set-reference"><a class="header" href="#instruction-set-reference">Instruction Set Reference</a></h1>
-<p>This is the complete reference for all CASM instructions. Each instruction is documented with its syntax, stack effects, parameters, description, and examples.</p>
-<h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading Stack Effects</a></h2>
-<p>Stack effects show how instructions modify the stack:</p>
-<pre><code class="language-text">before → after
-</code></pre>
-<p>For example:</p>
-<ul>
-<li><code>a, b → result</code> means: pop <code>b</code>, pop <code>a</code>, push <code>result</code></li>
-<li><code>value →</code> means: pop <code>value</code> (nothing pushed)</li>
-<li><code>→ value</code> means: push <code>value</code> (nothing popped)</li>
-</ul>
-<h2 id="instruction-categories"><a class="header" href="#instruction-categories">Instruction Categories</a></h2>
-<ul>
-<li><a href="#stack-operations">Stack Operations</a></li>
-<li><a href="#memory-operations">Memory Operations</a></li>
-<li><a href="#arithmetic-operations">Arithmetic Operations</a></li>
-<li><a href="#comparison-operations">Comparison Operations</a></li>
-<li><a href="#logical-operations">Logical Operations</a></li>
-<li><a href="#bitwise-operations">Bitwise Operations</a></li>
-<li><a href="#stack-manipulation">Stack Manipulation</a></li>
-<li><a href="#control-flow">Control Flow</a></li>
-<li><a href="#array-operations">Array Operations</a></li>
-<li><a href="#object-operations">Object Operations</a></li>
-<li><a href="#type-operations">Type Operations</a></li>
-<li><a href="#capability-calls">Capability Calls</a></li>
-<li><a href="#concurrency">Concurrency</a></li>
-</ul>
-<hr>
-<h2 id="stack-operations"><a class="header" href="#stack-operations">Stack Operations</a></h2>
-<h3 id="push_int"><a class="header" href="#push_int"><code>push_int</code></a></h3>
-<p>Push an integer onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ int</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code> (Integer): The integer value to push</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 100}
-// Stack: [100]
-</code></pre>
-<hr>
-<h3 id="push_float"><a class="header" href="#push_float"><code>push_float</code></a></h3>
-<p>Push a floating-point number onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "push_float", "value": 3.14}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ float</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code> (Float): The float value to push</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_float", "value": 2.718}
-// Stack: [2.718]
-</code></pre>
-<hr>
-<h3 id="push_str"><a class="header" href="#push_str"><code>push_str</code></a></h3>
-<p>Push a string onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "push_str", "value": "Hello"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ string</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code> (String): The string value to push</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_str", "value": "Hello, World!"}
-// Stack: ["Hello, World!"]
-</code></pre>
-<hr>
-<h3 id="push_bool"><a class="header" href="#push_bool"><code>push_bool</code></a></h3>
-<p>Push a boolean onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": true}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ bool</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>value</code> (Boolean): <code>true</code> or <code>false</code></li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": false}
-// Stack: [false]
-</code></pre>
-<hr>
-<h3 id="push_null"><a class="header" href="#push_null"><code>push_null</code></a></h3>
-<p>Push a null value onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "push_null"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ null</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_null"}
-// Stack: [null]
-</code></pre>
-<hr>
-<h3 id="pop"><a class="header" href="#pop"><code>pop</code></a></h3>
-<p>Remove the top value from the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "pop"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value →</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-{"op": "pop"}
-// Stack: []
-</code></pre>
-<hr>
-<h3 id="dup"><a class="header" href="#dup"><code>dup</code></a></h3>
-<p>Duplicate the top stack value.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "dup"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → value, value</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "dup"}
-// Stack: [5, 5]
-</code></pre>
-<hr>
-<h2 id="memory-operations"><a class="header" href="#memory-operations">Memory Operations</a></h2>
-<h3 id="store"><a class="header" href="#store"><code>store</code></a></h3>
-<p>Store the top stack value in a variable.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "store", "name": "variable_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value →</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Variable name</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-{"op": "store", "name": "x"}
-// Variable x = 42
-// Stack: []
-</code></pre>
-<hr>
-<h3 id="load"><a class="header" href="#load"><code>load</code></a></h3>
-<p>Load a variable’s value onto the stack.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "load", "name": "variable_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Variable name</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "load", "name": "x"}
-// Stack: [42] (assuming x = 42)
-</code></pre>
-<hr>
-<h3 id="export_var"><a class="header" href="#export_var"><code>export_var</code></a></h3>
-<p>Export a variable to the capsule’s export table.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "export_var", "name": "variable_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value →</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Variable name to export</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 100}
-{"op": "export_var", "name": "result"}
-// Exports result = 100 for other capsules
-</code></pre>
-<hr>
-<h3 id="import_var"><a class="header" href="#import_var"><code>import_var</code></a></h3>
-<p>Import a variable from another capsule.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "import_var", "name": "variable_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Variable name to import</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "import_var", "name": "config"}
-// Stack: [&lt;imported value&gt;]
-</code></pre>
-<hr>
-<h2 id="arithmetic-operations"><a class="header" href="#arithmetic-operations">Arithmetic Operations</a></h2>
-<h3 id="add"><a class="header" href="#add"><code>add</code></a></h3>
-<p>Add two values.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "add"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Behavior:</strong></p>
-<ul>
-<li>Numbers: arithmetic addition</li>
-<li>Strings: concatenation</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "add"}
-// Stack: [8]
-</code></pre>
-<hr>
-<h3 id="sub"><a class="header" href="#sub"><code>sub</code></a></h3>
-<p>Subtract two numbers.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "sub"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 10}
-{"op": "push_int", "value": 3}
-{"op": "sub"}
-// Stack: [7]  (10 - 3)
-</code></pre>
-<hr>
-<h3 id="mul"><a class="header" href="#mul"><code>mul</code></a></h3>
-<p>Multiply two numbers.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "mul"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 6}
-{"op": "push_int", "value": 7}
-{"op": "mul"}
-// Stack: [42]
-</code></pre>
-<hr>
-<h3 id="div"><a class="header" href="#div"><code>div</code></a></h3>
-<p>Divide two numbers.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "div"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 20}
-{"op": "push_int", "value": 4}
-{"op": "div"}
-// Stack: [5]  (20 / 4)
-</code></pre>
-<hr>
-<h3 id="mod"><a class="header" href="#mod"><code>mod</code></a></h3>
-<p>Compute modulo (remainder).</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "mod"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 17}
-{"op": "push_int", "value": 5}
-{"op": "mod"}
-// Stack: [2]  (17 % 5)
-</code></pre>
-<hr>
-<h3 id="neg"><a class="header" href="#neg"><code>neg</code></a></h3>
-<p>Negate a number.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "neg"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → -value</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-{"op": "neg"}
-// Stack: [-42]
-</code></pre>
-<hr>
-<h2 id="comparison-operations"><a class="header" href="#comparison-operations">Comparison Operations</a></h2>
-<h3 id="eq"><a class="header" href="#eq"><code>eq</code></a></h3>
-<p>Test equality.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "eq"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 5}
-{"op": "eq"}
-// Stack: [true]
-</code></pre>
-<hr>
-<h3 id="ne"><a class="header" href="#ne"><code>ne</code></a></h3>
-<p>Test inequality.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "ne"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "ne"}
-// Stack: [true]
-</code></pre>
-<hr>
-<h3 id="lt"><a class="header" href="#lt"><code>lt</code></a></h3>
-<p>Test less than.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "lt"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 3}
-{"op": "push_int", "value": 5}
-{"op": "lt"}
-// Stack: [true]  (3 &lt; 5)
-</code></pre>
-<hr>
-<h3 id="gt"><a class="header" href="#gt"><code>gt</code></a></h3>
-<p>Test greater than.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "gt"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 7}
-{"op": "push_int", "value": 3}
-{"op": "gt"}
-// Stack: [true]  (7 &gt; 3)
-</code></pre>
-<hr>
-<h3 id="le"><a class="header" href="#le"><code>le</code></a></h3>
-<p>Test less than or equal.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "le"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 5}
-{"op": "le"}
-// Stack: [true]  (5 &lt;= 5)
-</code></pre>
-<hr>
-<h3 id="ge"><a class="header" href="#ge"><code>ge</code></a></h3>
-<p>Test greater than or equal.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "ge"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 8}
-{"op": "push_int", "value": 3}
-{"op": "ge"}
-// Stack: [true]  (8 &gt;= 3)
-</code></pre>
-<hr>
-<h2 id="logical-operations"><a class="header" href="#logical-operations">Logical Operations</a></h2>
-<h3 id="and"><a class="header" href="#and"><code>and</code></a></h3>
-<p>Logical AND.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "and"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": true}
-{"op": "push_bool", "value": false}
-{"op": "and"}
-// Stack: [false]
-</code></pre>
-<hr>
-<h3 id="or"><a class="header" href="#or"><code>or</code></a></h3>
-<p>Logical OR.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "or"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": true}
-{"op": "push_bool", "value": false}
-{"op": "or"}
-// Stack: [true]
-</code></pre>
-<hr>
-<h3 id="not"><a class="header" href="#not"><code>not</code></a></h3>
-<p>Logical NOT.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "not"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → bool</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": true}
-{"op": "not"}
-// Stack: [false]
-</code></pre>
-<hr>
-<h2 id="bitwise-operations"><a class="header" href="#bitwise-operations">Bitwise Operations</a></h2>
-<h3 id="bit_and"><a class="header" href="#bit_and"><code>bit_and</code></a></h3>
-<p>Bitwise AND.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "bit_and"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 12}  // 1100
-{"op": "push_int", "value": 10}  // 1010
-{"op": "bit_and"}
-// Stack: [8]  // 1000
-</code></pre>
-<hr>
-<h3 id="bit_or"><a class="header" href="#bit_or"><code>bit_or</code></a></h3>
-<p>Bitwise OR.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "bit_or"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="bit_xor"><a class="header" href="#bit_xor"><code>bit_xor</code></a></h3>
-<p>Bitwise XOR.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "bit_xor"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="bit_not"><a class="header" href="#bit_not"><code>bit_not</code></a></h3>
-<p>Bitwise NOT.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "bit_not"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="shl"><a class="header" href="#shl"><code>shl</code></a></h3>
-<p>Shift left.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "shl"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value, shift → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}   // 101
-{"op": "push_int", "value": 2}
-{"op": "shl"}
-// Stack: [20]  // 10100
-</code></pre>
-<hr>
-<h3 id="shr"><a class="header" href="#shr"><code>shr</code></a></h3>
-<p>Shift right.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "shr"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value, shift → result</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h2 id="stack-manipulation"><a class="header" href="#stack-manipulation">Stack Manipulation</a></h2>
-<h3 id="swap"><a class="header" href="#swap"><code>swap</code></a></h3>
-<p>Swap the top two stack values.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "swap"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b → b, a</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 1}
-{"op": "push_int", "value": 2}
-{"op": "swap"}
-// Stack: [1, 2] → [2, 1]
-</code></pre>
-<hr>
-<h3 id="rot"><a class="header" href="#rot"><code>rot</code></a></h3>
-<p>Rotate top three values.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "rot"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>a, b, c → b, c, a</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="pick"><a class="header" href="#pick"><code>pick</code></a></h3>
-<p>Copy nth item from stack top.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "pick", "n": 2}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>..., a, b, c → ..., a, b, c, a</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>n</code> (Integer): Depth to pick from (0 = top)</li>
-</ul>
-<hr>
-<h3 id="roll"><a class="header" href="#roll"><code>roll</code></a></h3>
-<p>Move nth item to stack top.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "roll", "n": 2}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>..., a, b, c → ..., b, c, a</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>n</code> (Integer): Depth to roll from</li>
-</ul>
-<hr>
-<h2 id="control-flow"><a class="header" href="#control-flow">Control Flow</a></h2>
-<h3 id="jmp"><a class="header" href="#jmp"><code>jmp</code></a></h3>
-<p>Unconditional jump.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "jmp", "target": 10}
-</code></pre>
-<p><strong>Stack Effect:</strong> (none)</p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code> (Integer): Instruction index to jump to</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "jmp", "target": 5}
-// Jump to instruction 5
-</code></pre>
-<hr>
-<h3 id="jmp_if"><a class="header" href="#jmp_if"><code>jmp_if</code></a></h3>
-<p>Jump if true.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "jmp_if", "target": 10}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>condition →</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code> (Integer): Instruction index to jump to if true</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_bool", "value": true}
-{"op": "jmp_if", "target": 5}
-// Jumps to instruction 5
-</code></pre>
-<hr>
-<h3 id="jmp_if_not"><a class="header" href="#jmp_if_not"><code>jmp_if_not</code></a></h3>
-<p>Jump if false.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "jmp_if_not", "target": 10}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>condition →</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>target</code> (Integer): Instruction index to jump to if false</li>
-</ul>
-<hr>
-<h3 id="call"><a class="header" href="#call"><code>call</code></a></h3>
-<p>Call a function.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "call", "function": "function_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>arg1, arg2, ... → return_value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>function</code> (String): Name of function to call</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "call", "function": "add"}
-// Calls add(5, 3), pushes result
-</code></pre>
-<hr>
-<h3 id="ret"><a class="header" href="#ret"><code>ret</code></a></h3>
-<p>Return from function.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "ret"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>return_value →</code> (to caller’s stack)</p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-{"op": "ret"}
-// Returns 42 to caller
-</code></pre>
-<hr>
-<h3 id="break"><a class="header" href="#break"><code>break</code></a></h3>
-<p>Exit innermost loop.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "break"}
-</code></pre>
-<p><strong>Stack Effect:</strong> (none)</p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="continue"><a class="header" href="#continue"><code>continue</code></a></h3>
-<p>Jump to loop start.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "continue"}
-</code></pre>
-<p><strong>Stack Effect:</strong> (none)</p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h2 id="array-operations"><a class="header" href="#array-operations">Array Operations</a></h2>
-<h3 id="new_array"><a class="header" href="#new_array"><code>new_array</code></a></h3>
-<p>Create array from stack values.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "new_array", "size": 3}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>v1, v2, v3 → array</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>size</code> (Integer): Number of elements to pop</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 1}
-{"op": "push_int", "value": 2}
-{"op": "push_int", "value": 3}
-{"op": "new_array", "size": 3}
-// Stack: [[1, 2, 3]]
-</code></pre>
-<hr>
-<h3 id="arr_get"><a class="header" href="#arr_get"><code>arr_get</code></a></h3>
-<p>Get array element.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "arr_get"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>array, index → value</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">// Assuming array = [10, 20, 30]
-{"op": "load", "name": "arr"}
-{"op": "push_int", "value": 1}
-{"op": "arr_get"}
-// Stack: [20]
-</code></pre>
-<hr>
-<h3 id="arr_set"><a class="header" href="#arr_set"><code>arr_set</code></a></h3>
-<p>Set array element.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "arr_set"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>array, index, value → array</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="arr_len"><a class="header" href="#arr_len"><code>arr_len</code></a></h3>
-<p>Get array length.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "arr_len"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>array → length</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="arr_push"><a class="header" href="#arr_push"><code>arr_push</code></a></h3>
-<p>Append to array.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "arr_push"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>array, value → array</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="arr_pop"><a class="header" href="#arr_pop"><code>arr_pop</code></a></h3>
-<p>Remove last element.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "arr_pop"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>array → array, value</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h2 id="object-operations"><a class="header" href="#object-operations">Object Operations</a></h2>
-<h3 id="new_obj"><a class="header" href="#new_obj"><code>new_obj</code></a></h3>
-<p>Create empty object.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "new_obj"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ object</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="new_struct"><a class="header" href="#new_struct"><code>new_struct</code></a></h3>
-<p>Create named struct.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "new_struct", "name": "Point"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>→ struct</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Struct type name</li>
-</ul>
-<hr>
-<h3 id="get_field"><a class="header" href="#get_field"><code>get_field</code></a></h3>
-<p>Get object field.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "get_field", "name": "field_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>object → value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Field name</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "load", "name": "point"}
-{"op": "get_field", "name": "x"}
-// Stack: [&lt;x value&gt;]
-</code></pre>
-<hr>
-<h3 id="set_field"><a class="header" href="#set_field"><code>set_field</code></a></h3>
-<p>Set object field.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "set_field", "name": "field_name"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>object, value → object</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Field name</li>
-</ul>
-<hr>
-<h2 id="type-operations"><a class="header" href="#type-operations">Type Operations</a></h2>
-<h3 id="type_of"><a class="header" href="#type_of"><code>type_of</code></a></h3>
-<p>Get type of value.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "type_of"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → type_string</code></p>
-<p><strong>Parameters:</strong> None</p>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_int", "value": 42}
-{"op": "type_of"}
-// Stack: ["int"]
-</code></pre>
-<hr>
-<h3 id="cast"><a class="header" href="#cast"><code>cast</code></a></h3>
-<p>Cast value to type.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "cast", "type": "int"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>value → casted_value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>type</code> (String): Target type</li>
-</ul>
-<hr>
-<h2 id="capability-calls"><a class="header" href="#capability-calls">Capability Calls</a></h2>
-<h3 id="cap_call"><a class="header" href="#cap_call"><code>cap_call</code></a></h3>
-<p>Invoke a capability.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "cap_call", "name": "io.print", "argc": 1}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>arg1, arg2, ... → return_value</code></p>
-<p><strong>Parameters:</strong></p>
-<ul>
-<li><code>name</code> (String): Capability name (format: <code>namespace.method</code>)</li>
-<li><code>argc</code> (Integer): Number of arguments</li>
-</ul>
-<p><strong>Example:</strong></p>
-<pre><code class="language-json">{"op": "push_str", "value": "Hello!"}
-{"op": "cap_call", "name": "io.print", "argc": 1}
-// Prints "Hello!" to stdout
-</code></pre>
-<p><strong>Common Capabilities:</strong></p>
-<ul>
-<li><code>io.print</code> - Print to stdout</li>
-<li><code>io.read</code> - Read from stdin</li>
-<li><code>fs.read</code> - Read file</li>
-<li><code>fs.write</code> - Write file</li>
-<li><code>net.http</code> - HTTP request</li>
-<li><code>sys.exec</code> - Execute command</li>
-</ul>
-<hr>
-<h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
-<h3 id="spawn"><a class="header" href="#spawn"><code>spawn</code></a></h3>
-<p>Create new task.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "spawn"}
-</code></pre>
-<p><strong>Stack Effect:</strong> <code>function_name, args... → task_id</code></p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h3 id="yield"><a class="header" href="#yield"><code>yield</code></a></h3>
-<p>Yield execution.</p>
-<p><strong>Syntax:</strong></p>
-<pre><code class="language-json">{"op": "yield"}
-</code></pre>
-<p><strong>Stack Effect:</strong> (none)</p>
-<p><strong>Parameters:</strong> None</p>
-<hr>
-<h2 id="quick-reference-table"><a class="header" href="#quick-reference-table">Quick Reference Table</a></h2>
+<p>Every instruction has two spellings: the <strong>JSON name</strong> used in the CASM IR
+(<code>"op": "push_int"</code>) and the <strong>CVM1 mnemonic</strong> used in the text assembly and the
+binary (<code>PUSH</code>). The tables below give both, the operand, and the stack effect.
+Behaviour was checked against the crush-ast <code>v0.3.9</code> VM; the examples at the end of
+each section are run by this guide’s checker.</p>
+<h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading stack effects</a></h2>
+<p><code>a b → c</code> means: pop <code>b</code> (the <strong>top</strong>), pop <code>a</code>, push <code>c</code>. The rightmost value is
+always the top of the stack. <code>…</code> is “whatever was below”.</p>
+<p>Operands in the text assembly follow the mnemonic: <code>PUSH 42</code>, <code>LOAD 3</code>,
+<code>CAP_CALL "io.print" 1</code>. In the IR they are named fields next to <code>op</code>.</p>
+<blockquote>
+<p><strong>Two instruction sets.</strong> The IR (<code>casm::OpCode</code>) is wider than the VM: it has
+names the VM bytecode does not (<code>break</code>, <code>continue</code>, <code>await</code> with a handle,
+<code>call_host</code>, <code>import_var</code>) and the VM bytecode has mnemonics the IR lowering never
+emits (<code>ROT</code>, <code>PICK</code>, <code>CAST</code>, the <code>MATH_*</code> family). <a href="#what-lowers-to-cvm1">The last
+section</a> lists exactly which IR ops reach the VM.</p>
+</blockquote>
+<h2 id="stack"><a class="header" href="#stack">Stack</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Category</th><th>Instructions</th></tr>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Operand</th><th>Stack effect</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td>Stack</td><td><code>push_int</code>, <code>push_float</code>, <code>push_str</code>, <code>push_bool</code>, <code>push_null</code>, <code>pop</code>, <code>dup</code></td></tr>
-<tr><td>Memory</td><td><code>store</code>, <code>load</code>, <code>export_var</code>, <code>import_var</code></td></tr>
-<tr><td>Arithmetic</td><td><code>add</code>, <code>sub</code>, <code>mul</code>, <code>div</code>, <code>mod</code>, <code>neg</code></td></tr>
-<tr><td>Comparison</td><td><code>eq</code>, <code>ne</code>, <code>lt</code>, <code>gt</code>, <code>le</code>, <code>ge</code></td></tr>
-<tr><td>Logical</td><td><code>and</code>, <code>or</code>, <code>not</code></td></tr>
-<tr><td>Bitwise</td><td><code>bit_and</code>, <code>bit_or</code>, <code>bit_xor</code>, <code>bit_not</code>, <code>shl</code>, <code>shr</code></td></tr>
-<tr><td>Stack Manip</td><td><code>swap</code>, <code>rot</code>, <code>pick</code>, <code>roll</code></td></tr>
-<tr><td>Control Flow</td><td><code>jmp</code>, <code>jmp_if</code>, <code>jmp_if_not</code>, <code>call</code>, <code>ret</code>, <code>break</code>, <code>continue</code></td></tr>
-<tr><td>Arrays</td><td><code>new_array</code>, <code>arr_get</code>, <code>arr_set</code>, <code>arr_len</code>, <code>arr_push</code>, <code>arr_pop</code></td></tr>
-<tr><td>Objects</td><td><code>new_obj</code>, <code>new_struct</code>, <code>get_field</code>, <code>set_field</code></td></tr>
-<tr><td>Ranges</td><td><code>make_range</code></td></tr>
-<tr><td>Types</td><td><code>type_of</code>, <code>cast</code></td></tr>
-<tr><td>Exceptions</td><td><code>enter_try</code>, <code>exit_try</code>, <code>throw</code></td></tr>
-<tr><td>Capabilities</td><td><code>cap_call</code></td></tr>
-<tr><td>Concurrency</td><td><code>spawn</code>, <code>yield</code>, <code>await</code></td></tr>
-<tr><td>Polyglot</td><td><code>exec_lang</code></td></tr>
-<tr><td>DOM</td><td><code>dom_query</code>, <code>dom_mutate</code>, <code>dom_event_listener</code></td></tr>
-<tr><td>AI-native</td><td><code>ai_query</code>, <code>ai_tool_chain</code>, <code>ai_agent_delegation</code>, <code>ai_learning_loop</code>, <code>ai_context_aware</code>, <code>ai_goal_decl</code>, <code>ai_progress_update</code>, <code>ai_knowledge_share</code>, <code>ai_capability_discovery</code></td></tr>
+<tr><td><code>push_int</code></td><td><code>PUSH</code></td><td><code>value</code> (i64)</td><td><code>→ int</code></td><td></td></tr>
+<tr><td><code>push_float</code></td><td><code>PUSH_F64</code></td><td><code>value</code> (f64)</td><td><code>→ float</code></td><td></td></tr>
+<tr><td><code>push_str</code></td><td><code>PUSH_STR</code></td><td><code>value</code> (string)</td><td><code>→ str</code></td><td>text form: quoted string</td></tr>
+<tr><td><code>push_bool</code></td><td><code>PUSH_BOOL</code></td><td><code>value</code> (bool; <code>1</code>/<code>0</code> in text)</td><td><code>→ bool</code></td><td></td></tr>
+<tr><td><code>push_null</code></td><td><code>PUSH_NULL</code></td><td>—</td><td><code>→ null</code></td><td></td></tr>
+<tr><td><code>pop</code></td><td><code>POP</code></td><td>—</td><td><code>a →</code></td><td></td></tr>
+<tr><td><code>dup</code></td><td><code>DUP</code></td><td>—</td><td><code>a → a a</code></td><td></td></tr>
+<tr><td><code>swap</code></td><td><code>SWAP</code></td><td>—</td><td><code>a b → b a</code></td><td></td></tr>
+<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>v0.3.9</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
+<tr><td><code>pick</code></td><td><code>PICK n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td>copy the item <code>n</code> below the top (<code>PICK 2</code> copies the third)</td></tr>
+<tr><td><code>roll</code></td><td><code>ROLL n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td><em>move</em> the item <code>n</code> below the top to the top</td></tr>
+<tr><td>—</td><td><code>NOP</code></td><td>—</td><td>—</td><td>text/binary only</td></tr>
 </tbody>
 </table>
 </div>
+<pre><code class="language-casm">.func main
+    PUSH 1
+    PUSH 2
+    PUSH 3
+    ROLL 2          ; stack is now 2 3 1
+    CAP_CALL "io.print" 1
+    CAP_CALL "io.print" 1
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">1
+3
+2
+</code></pre>
+<h2 id="variables"><a class="header" href="#variables">Variables</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Operand</th><th>Stack effect</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>load</code></td><td><code>LOAD slot</code></td><td><code>name</code></td><td><code>→ v</code></td><td>push the variable</td></tr>
+<tr><td><code>store</code></td><td><code>STORE slot</code></td><td><code>name</code></td><td><code>v →</code></td><td>pop into the variable</td></tr>
+<tr><td><code>export_var</code></td><td>—</td><td><code>name</code></td><td>—</td><td>IR only; lowers to <code>NOP</code> (the value stays on the stack)</td></tr>
+<tr><td><code>import_var</code></td><td>—</td><td><code>name</code></td><td>—</td><td>IR only; <strong>not lowered</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>In the IR a variable is a name; in CVM1 it is a numeric <strong>slot</strong> (0–65535) local to
+the current call frame. Frames do not share slots: a callee cannot see its caller’s
+variables.</p>
+<h2 id="arithmetic-and-comparison"><a class="header" href="#arithmetic-and-comparison">Arithmetic and comparison</a></h2>
+<p>All binary operators pop <code>b</code> then <code>a</code> and push <code>a OP b</code>.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Effect</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>add</code> <code>sub</code> <code>mul</code></td><td><code>ADD</code> <code>SUB</code> <code>MUL</code></td><td><code>a b → a∘b</code></td><td><code>ADD</code> also concatenates strings</td></tr>
+<tr><td><code>div</code></td><td><code>DIV</code></td><td><code>a b → a/b</code></td><td>integer division on two ints (<code>7/2 = 3</code>), float otherwise</td></tr>
+<tr><td><code>mod</code></td><td><code>MOD</code></td><td><code>a b → a%b</code></td><td></td></tr>
+<tr><td><code>neg</code></td><td><code>NEG</code></td><td><code>a → -a</code></td><td></td></tr>
+<tr><td><code>eq</code> <code>ne</code></td><td><code>EQ</code> <code>NE</code></td><td><code>a b → bool</code></td><td></td></tr>
+<tr><td><code>lt</code> <code>gt</code> <code>le</code> <code>ge</code></td><td><code>LT</code> <code>GT</code> <code>LE</code> <code>GE</code></td><td><code>a b → bool</code></td><td></td></tr>
+<tr><td><code>and</code> <code>or</code></td><td><code>AND</code> <code>OR</code></td><td><code>a b → bool</code></td><td><strong>eager</strong> — both operands are already evaluated. The <code>&amp;&amp;</code> / <code>||</code> operators of Crush compile to jumps, not to these</td></tr>
+<tr><td><code>not</code></td><td><code>NOT</code></td><td><code>a → bool</code></td><td>logical not</td></tr>
+<tr><td><code>bit_and</code> <code>bit_or</code> <code>bit_xor</code></td><td><code>BITAND</code> <code>BITOR</code> <code>BITXOR</code></td><td><code>a b → a∘b</code></td><td></td></tr>
+<tr><td><code>bit_not</code></td><td><code>BITNOT</code></td><td><code>a → ~a</code></td><td></td></tr>
+<tr><td><code>shl</code> <code>shr</code></td><td><code>SHL</code> <code>SHR</code></td><td><code>a b → a&lt;&lt;b</code> / <code>a&gt;&gt;b</code></td><td></td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-casm">.func main
+    PUSH 10
+    PUSH 3
+    SUB                 ; 10 - 3
+    CAP_CALL "io.print" 1
+    PUSH 7
+    PUSH 2
+    DIV                 ; integer division
+    CAP_CALL "io.print" 1
+    PUSH 12
+    PUSH 10
+    BITAND
+    CAP_CALL "io.print" 1
+    PUSH 1
+    PUSH 4
+    SHL
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">7
+3
+8
+16
+</code></pre>
+<h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Operand</th><th>Stack effect</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>jmp</code></td><td><code>JMP label</code></td><td><code>target</code></td><td>—</td><td>unconditional</td></tr>
+<tr><td><code>jmp_if_not</code></td><td><code>JZ label</code></td><td><code>target</code></td><td><code>cond →</code></td><td>jump if <code>cond</code> is <strong>falsy</strong></td></tr>
+<tr><td><code>jmp_if</code></td><td><code>JNZ label</code></td><td><code>target</code></td><td><code>cond →</code></td><td>jump if <code>cond</code> is truthy</td></tr>
+<tr><td><code>call</code></td><td><code>CALL name</code></td><td><code>function</code>, <code>argc</code></td><td><code>args… → [result]</code></td><td>see below</td></tr>
+<tr><td><code>ret</code></td><td><code>RET</code></td><td>—</td><td><code>[v] →</code></td><td>return to the caller</td></tr>
+<tr><td><code>halt</code></td><td><code>HALT</code></td><td>—</td><td>—</td><td>stop the whole program</td></tr>
+<tr><td><code>enter_try</code></td><td><code>ENTER_TRY label</code></td><td><code>target</code></td><td>—</td><td>push an exception handler</td></tr>
+<tr><td><code>exit_try</code></td><td><code>EXIT_TRY</code></td><td>—</td><td>—</td><td>pop it again (normal exit of the <code>try</code> body)</td></tr>
+<tr><td><code>throw</code></td><td><code>THROW</code></td><td>—</td><td><code>v →</code></td><td>unwind to the nearest handler, which receives <code>v</code> on its stack</td></tr>
+<tr><td><code>break</code> <code>continue</code></td><td>—</td><td>—</td><td>—</td><td>in the IR enum only; the compiler lowers loops to <code>jmp</code>s and never emits these</td></tr>
+</tbody>
+</table>
+</div>
+<p>Jump operands are <strong>instruction indices</strong> in the IR and <strong>byte offsets</strong> in the
+binary; the text assembler takes label names. A value is <em>falsy</em> if it is <code>false</code>,
+<code>null</code>, <code>0</code>, <code>0.0</code>, the empty string or an empty array; everything else (including
+the string <code>"0"</code>) is truthy.</p>
+<p><strong>Calling convention.</strong> The caller pushes the arguments <strong>last first</strong>, then
+<code>CALL</code>s. The callee’s body begins with one <code>STORE</code> per parameter, in declaration
+order, which pops the first argument first. <code>RET</code> returns to the caller; a function
+that produces a value leaves it on the stack for <code>RET</code>. Crush functions always end
+with <code>PUSH_NULL</code> / <code>RET</code> if they have no explicit <code>return</code>.</p>
+<pre><code class="language-casm">.func main
+    PUSH 5              ; counter
+    STORE 0
+loop:
+    LOAD 0
+    JZ done             ; stop when the counter reaches 0
+    LOAD 0
+    CAP_CALL "io.print" 1
+    LOAD 0
+    PUSH 1
+    SUB
+    STORE 0
+    JMP loop
+done:
+    PUSH 4
+    CALL double
+    CAP_CALL "io.print" 1
+    HALT
+.func double
+    STORE 0
+    LOAD 0
+    PUSH 2
+    MUL
+    RET
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">5
+4
+3
+2
+1
+8
+</code></pre>
+<p><strong>Exceptions.</strong> <code>ENTER_TRY handler</code> records where to resume; <code>THROW</code> pops a value,
+unwinds, and jumps to <code>handler</code> with that value on top of the stack.</p>
+<pre><code class="language-casm">.func main
+    ENTER_TRY handler
+    PUSH_STR "boom"
+    THROW
+    EXIT_TRY            ; not reached
+    JMP end
+handler:
+    CAP_CALL "io.print" 1   ; prints the thrown value
+end:
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">boom
+</code></pre>
+<h2 id="collections-and-objects"><a class="header" href="#collections-and-objects">Collections and objects</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Operand</th><th>Stack effect</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>new_array</code></td><td><code>NEW_ARRAY n</code></td><td><code>size</code></td><td><code>v₁…vₙ → array</code></td><td>pops <code>n</code> values. <strong>IR quirk:</strong> lowering ignores <code>size</code> and emits <code>NEW_ARRAY 0</code> — build arrays with <code>new_array</code> + <code>array_push</code>, as the compiler does</td></tr>
+<tr><td><code>array_push</code> / <code>arr_push</code></td><td><code>ARR_PUSH</code></td><td>—</td><td><code>array v → array</code></td><td></td></tr>
+<tr><td><code>array_pop</code> / <code>arr_pop</code></td><td><code>ARR_POP</code></td><td>—</td><td><code>array → array v</code></td><td></td></tr>
+<tr><td><code>index</code> / <code>arr_get</code></td><td><code>ARR_GET</code></td><td>—</td><td><code>array i → v</code></td><td>also indexes objects/strings</td></tr>
+<tr><td><code>arr_set</code></td><td><code>ARR_SET</code></td><td>—</td><td><code>array i v → array</code></td><td></td></tr>
+<tr><td><code>len</code> / <code>arr_len</code></td><td><code>ARR_LEN</code></td><td>—</td><td><code>array → n</code></td><td>works on strings too</td></tr>
+<tr><td><code>make_range</code></td><td><code>MAKE_RANGE</code></td><td>—</td><td><code>start end → range</code></td><td><code>1..4</code> yields 1, 2, 3</td></tr>
+<tr><td><code>new_tuple</code> <code>new_list</code> <code>new_vector</code> <code>new_set</code></td><td><code>NEW_TUPLE n</code> etc.</td><td><code>size</code></td><td><code>v₁…vₙ → coll</code></td><td>plus <code>TUPLE_PUSH</code> <code>LIST_PUSH</code> <code>VECTOR_PUSH</code> <code>SET_PUSH</code></td></tr>
+<tr><td><code>new_obj</code></td><td><code>NEW_OBJ</code></td><td>—</td><td><code>→ obj</code></td><td>empty object</td></tr>
+<tr><td><code>new_struct</code></td><td><code>NEW_OBJ</code></td><td><code>name</code></td><td><code>→ obj</code></td><td>the struct name is dropped on lowering</td></tr>
+<tr><td><code>set_field</code></td><td><code>SET_FIELD "f"</code></td><td><code>name</code> or <code>field</code></td><td><code>obj v → obj</code></td><td></td></tr>
+<tr><td><code>get_field</code></td><td><code>GET_FIELD "f"</code></td><td><code>name</code> or <code>field</code></td><td><code>obj → v</code></td><td></td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-casm">.func main
+    PUSH 10
+    PUSH 20
+    PUSH 30
+    NEW_ARRAY 3
+    DUP
+    ARR_LEN
+    CAP_CALL "io.print" 1       ; 3
+    PUSH 1
+    ARR_GET
+    CAP_CALL "io.print" 1       ; 20
+    NEW_OBJ
+    PUSH 5
+    SET_FIELD "x"
+    GET_FIELD "x"
+    CAP_CALL "io.print" 1       ; 5
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">3
+20
+5
+</code></pre>
+<h2 id="strings-math-types"><a class="header" href="#strings-math-types">Strings, math, types</a></h2>
+<p>String operations pop their operands in the order shown and push the result.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Stack effect</th></tr>
+</thead>
+<tbody>
+<tr><td><code>str_contains</code></td><td><code>STR_CONTAINS</code></td><td><code>s pattern → bool</code></td></tr>
+<tr><td><code>str_split</code></td><td><code>STR_SPLIT</code></td><td><code>s delim → array</code></td></tr>
+<tr><td><code>str_replace</code></td><td><code>STR_REPLACE</code></td><td><code>s old new → s</code></td></tr>
+<tr><td><code>str_join</code></td><td><code>STR_JOIN</code></td><td><code>array delim → s</code></td></tr>
+<tr><td><code>str_starts_with</code> <code>str_ends_with</code></td><td><code>STR_STARTS_WITH</code> <code>STR_ENDS_WITH</code></td><td><code>s prefix → bool</code></td></tr>
+<tr><td><code>str_to_upper</code> <code>str_to_lower</code> <code>str_trim</code></td><td><code>STR_TO_UPPER</code> <code>STR_TO_LOWER</code> <code>STR_TRIM</code></td><td><code>s → s</code></td></tr>
+<tr><td><code>math_pow</code></td><td><code>MATH_POW</code></td><td><code>base exp → float</code></td></tr>
+<tr><td><code>math_sqrt</code> <code>math_abs</code> <code>math_round</code> <code>math_floor</code> <code>math_ceil</code></td><td><code>MATH_SQRT</code> …</td><td><code>x → float</code></td></tr>
+<tr><td><code>type_of</code></td><td><code>TYPEOF</code></td><td><code>v → str</code> — <code>"int"</code>, <code>"float"</code>, <code>"str"</code>, <code>"bool"</code>, <code>"null"</code>, <code>"array"</code>, <code>"map"</code> (an object), <code>"tuple"</code>, …</td></tr>
+<tr><td><code>cast</code></td><td><code>CAST "t"</code></td><td><code>v → v'</code> — <code>"int"</code>, <code>"float"</code>, <code>"string"</code></td></tr>
+<tr><td>—</td><td><code>VEC_ADD</code> <code>VEC_DOT</code> <code>MAT_MUL</code></td><td>vector/matrix helpers, CVM1 only</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-casm">.func main
+    PUSH_STR "aXb"
+    PUSH_STR "X"
+    PUSH_STR "-"
+    STR_REPLACE
+    CAP_CALL "io.print" 1       ; a-b
+    PUSH 2
+    PUSH 10
+    MATH_POW
+    CAP_CALL "io.print" 1       ; 1024.0
+    PUSH_STR "12"
+    CAST "int"
+    PUSH 1
+    ADD
+    CAP_CALL "io.print" 1       ; 13
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">a-b
+1024.0
+13
+</code></pre>
+<p>(The Crush-level equivalents of these live in the <code>--stdlib</code> capabilities —
+<code>str.*</code>, <code>math.*</code>, <code>conv.*</code> — and compile to <code>CAP_CALL</code>s, not to these opcodes. See
+the <a href="../crush/stdlib.html">standard library</a>.)</p>
+<h2 id="capabilities"><a class="header" href="#capabilities">Capabilities</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Operand</th><th>Stack effect</th></tr>
+</thead>
+<tbody>
+<tr><td><code>cap_call</code></td><td><code>CAP_CALL "name" argc</code></td><td><code>name</code>, <code>argc</code></td><td><code>a₁…aₙ → [result]</code></td></tr>
+<tr><td><code>call_host</code></td><td>—</td><td><code>capsule</code>, <code>ic_id</code>, <code>method</code>, <code>argc</code></td><td>IR only, <strong>not lowered</strong></td></tr>
+<tr><td><code>call_interface</code></td><td>—</td><td><code>handle</code>, <code>method</code>, <code>argc</code></td><td>IR only, <strong>not lowered</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>CAP_CALL</code> pops <code>argc</code> arguments (the first argument was pushed first) and invokes
+the named host capability. Whether it then pushes a result depends on the
+capability: <code>io.print</code> returns nothing, <code>str.len</code> returns a number. The compiler
+knows this and drops the <code>pop</code> it would otherwise emit after a statement-position
+call. If the capability is not registered by the host the VM stops with <code>unknown capability: NAME</code>; if it is registered but missing from the manifest, with
+<code>capability not declared in manifest: NAME</code>. See the
+<a href="../crush/capabilities.html">capability chapter</a>.</p>
+<h2 id="polyglot-concurrency-ai-and-dom"><a class="header" href="#polyglot-concurrency-ai-and-dom">Polyglot, concurrency, AI and DOM</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>JSON <code>op</code></th><th>CVM1</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>exec_lang</code></td><td><code>EXEC_LANG "json"</code></td><td>run a <code>@python { }</code> / <code>@javascript { }</code> / <code>@bash { }</code> block; the operand is a JSON string with <code>lang</code>, <code>code</code>, <code>var_count</code> and the marshalling lists. Needs the matching <code>polyglot.&lt;lang&gt;</code> capability — see <a href="../crush/polyglot.html">Polyglot</a></td></tr>
+<tr><td><code>spawn</code> <code>yield</code> <code>await</code></td><td><code>SPAWN n</code> <code>YIELD</code> <code>AWAIT</code></td><td>dispatched to the <code>concurrency_native.spawn/yield/await</code> gates; <strong>stubs</strong> — nothing is scheduled</td></tr>
+<tr><td><code>ai_query</code> … (13 names)</td><td><code>AI_QUERY</code> … (10 opcodes)</td><td><strong>stubs</strong>, see <a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a></td></tr>
+<tr><td><code>dom_query</code> <code>dom_mutate</code> <code>dom_event_listener</code></td><td><code>DOM_QUERY</code> …</td><td><strong>stubs</strong>: lowered to <code>NOP</code>; the <code>dom_native.*</code> gates exist only for hand-written CVM1</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="what-lowers-to-cvm1"><a class="header" href="#what-lowers-to-cvm1">What lowers to CVM1</a></h2>
+<p><code>crush_lang_sdk::compile::casm_to_vm</code> is the bridge from the JSON IR to a runnable
+program. It handles exactly these IR operations:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th></th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Lowered faithfully</strong></td><td><code>push_int</code> <code>push_float</code> <code>push_str</code> <code>push_bool</code> <code>push_null</code> <code>pop</code> <code>dup</code> <code>swap</code> <code>load</code> <code>store</code> <code>add</code> <code>sub</code> <code>mul</code> <code>div</code> <code>mod</code> <code>neg</code> <code>eq</code> <code>ne</code> <code>lt</code> <code>gt</code> <code>le</code> <code>ge</code> <code>and</code> <code>or</code> <code>not</code> <code>call</code> <code>cap_call</code> <code>ret</code> <code>halt</code> <code>jmp</code> <code>jmp_if</code> <code>jmp_if_not</code> <code>enter_try</code> <code>exit_try</code> <code>throw</code> <code>array_push</code> <code>array_pop</code> <code>len</code> <code>index</code> <code>arr_get</code> <code>arr_set</code> <code>make_range</code> <code>str_contains</code> <code>str_split</code> <code>str_replace</code> <code>str_join</code> <code>new_obj</code> <code>get_field</code> <code>set_field</code> <code>exec_lang</code> <code>spawn</code> <code>yield</code> <code>await</code></td></tr>
+<tr><td><strong>Lowered with a loss</strong></td><td><code>new_array</code> (size ignored — always empty), <code>new_struct</code> (→ <code>NEW_OBJ</code>, name dropped), <code>export_var</code> (→ <code>NOP</code>), <code>dom_*</code> and all <code>ai_*</code> including <code>ai_capability_discovery</code>, <code>ai_adaptation_request</code>, <code>ai_semantic_switch</code> (→ <code>NOP</code>)</td></tr>
+<tr><td><strong>Rejected</strong></td><td>everything else the <code>casm</code> crate defines — <code>arr_push</code> <code>arr_pop</code> <code>arr_len</code> <code>bit_*</code> <code>shl</code> <code>shr</code> <code>rot</code> <code>pick</code> <code>roll</code> <code>type_of</code> <code>cast</code> <code>math_*</code> <code>str_starts_with</code> <code>str_ends_with</code> <code>str_to_*</code> <code>str_trim</code> <code>new_tuple</code> <code>new_list</code> <code>new_vector</code> <code>new_set</code> <code>*_push</code> <code>import_var</code> <code>call_host</code> <code>call_interface</code> <code>break</code> <code>continue</code> — fail with <code>Unsupported CVM1 opcode: NAME at FUNCTION:INDEX</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>So for hand-written programs the <strong>text assembly is the more capable form</strong>: it
+reaches <code>ROT</code>, <code>PICK</code>, <code>CAST</code>, <code>MATH_*</code>, the bit operations, tuples and sets that
+the IR route refuses. For programs <em>compiled from Crush</em>, the compiler stays inside
+the “lowered faithfully” set.</p>
+<!-- check: casm-json -->
+<!-- check: runfail Unsupported CVM1 opcode: shl -->
+<pre><code class="language-json">{
+  "version": "1.0",
+  "functions": { "main": { "body": [
+    {"op": "push_int", "value": 1},
+    {"op": "shl"},
+    {"op": "cap_call", "name": "io.print", "argc": 1},
+    {"op": "halt"}
+  ] } },
+  "manifest": { "permissions": ["io.print"] }
+}
+</code></pre>
+<p>(The block above is expected to fail: <code>shl</code> is in the IR but not lowered.)</p>
 
                     </main>
 

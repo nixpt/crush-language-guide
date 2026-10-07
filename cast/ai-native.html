@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -181,228 +181,124 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
-<h2 id="the-doctrine"><a class="header" href="#the-doctrine">The Doctrine</a></h2>
-<p>CAST is JSON. Any agent can emit it directly — no walker, no compiler front-end,
-no source-to-AST pipeline required. An agent that understands the CAST schema can
-produce a complete, runnable program as a single JSON document and hand it to
-<code>crush_lang::compile_cast()</code> to get CASM bytecode.</p>
-<p>This is the <strong>AI-native doctrine</strong> (s107 / EXO-175): the primary authoring surface
-for AI agents in Exosphere is CAST, not Crush source code.</p>
-<pre><code>Agent output (JSON)  →  compile_cast()  →  CASM  →  crush-vm (CVM1)
-                ↑
-    No lexer, no parser, no walker.
-    The agent IS the front-end.
+<h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
+<p>CAST is JSON. An agent that knows the <a href="README.html">schema</a> can emit a complete
+program as one JSON document — no lexer, no parser, no walker — validate it, and
+hand it to the compiler:</p>
+<pre><code>agent output (JSON) ──▶ validate_json ──▶ compile_cast ──▶ CASM ──▶ crush-vm
+          ▲
+          └─ no front-end: the agent *is* the front-end
 </code></pre>
-<p>Validation before compilation:</p>
-<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>// standalone crush-ast
-crush_cast::validate_json(&amp;cast_json)?;  // schema check
-let casm = crush_frontend::compile(&amp;cast_json)?;
+<pre class="playground"><code class="language-rust no_run">fn main() -&gt; anyhow::Result&lt;()&gt; {
+    let cast_json = r#"{
+        "cast_version": "0.1.0", "entry": "main", "lang": null,
+        "functions": { "main": { "params": [], "meta": {}, "body": [
+            { "type": "ExprStmt", "expr": { "type": "CapabilityCall",
+              "name": "io.print", "meta": {},
+              "args": [ { "type": "StringLiteral", "value": "from an agent" } ] } }
+        ] } }
+    }"#;
 
-// exosphere embedding (crush_lang re-exports the same pipeline)
-let casm = crush_lang::compile_cast(&amp;cast_json)?;
-<span class="boring">}</span></code></pre>
-<hr>
-<h2 id="program-skeleton"><a class="header" href="#program-skeleton">Program Skeleton</a></h2>
-<p>Every CAST document has this top-level shape:</p>
+    // 1. Schema check: errors carry a JSON path and, for common mistakes, a hint.
+    if let Err(errors) = crush_cast::validate_json(cast_json) {
+        for e in errors {
+            eprintln!("{e}");
+        }
+        anyhow::bail!("invalid CAST");
+    }
+
+    // 2. CAST -&gt; CASM IR -&gt; CVM1, then run it.
+    let program: crush_cast::Program = serde_json::from_str(cast_json)?;
+    let casm = crush_frontend::compile_cast_owned(program)?;
+    let vm = crush_lang_sdk::compile::casm_to_vm(&amp;casm)?;
+    let result = crush_lang_sdk::Runtime::new().run(&amp;vm)?;
+    assert_eq!(result.output, "from an agent\n");
+    Ok(())
+}</code></pre>
+<p>(For a standalone checkout, <code>crush_cast::validate_json</code> and
+<code>crush_frontend::compile_cast</code> are the entry points; the version-gated
+<code>crush_cast::Program::deserialize</code> currently rejects the front end’s own <code>1.0.0</code>
+stamp, so parse with <code>serde_json</code> as above or write <code>"cast_version": "0.1.0"</code>. See
+<a href="README.html#serialization">CAST serialization</a>.)</p>
+<p>Writing CAST rather than source buys an agent three things: no syntax errors (the
+schema is the grammar), a validator that answers with a path and a hint, and
+<code>meta</code> fields it can use to tag nodes with their own provenance.</p>
+<h2 id="program-skeleton"><a class="header" href="#program-skeleton">Program skeleton</a></h2>
 <pre><code class="language-json">{
   "cast_version": "0.1.0",
   "entry": "main",
-  "lang": null,
-  "functions": {
-    "main": {
-      "params": [],
-      "body": [ /* Statement[] */ ],
-      "meta": {}
-    }
-  },
+  "lang": "agent",
+  "functions": { "main": { "params": [], "body": [ /* statements */ ], "meta": {} } },
   "ai_meta": null
 }
 </code></pre>
-<p>Set <code>"lang": "agent"</code> (or any string) to identify the emitting agent in source maps.
-Set <code>"ai_meta"</code> to attach program-level metadata (see below).</p>
-<hr>
-<h2 id="ai-expression-nodes"><a class="header" href="#ai-expression-nodes">AI Expression Nodes</a></h2>
-<p>Five <code>"type": "AI"</code> expression variants. They compile to the <code>ai_*</code> CASM instruction family.</p>
-<h3 id="query"><a class="header" href="#query">Query</a></h3>
-<p>Natural-language query execution. The runtime resolves <code>query</code> against the available
-LLM/tool context and returns a typed value.</p>
-<pre><code class="language-json">{
-  "type": "VarDecl",
-  "name": "answer",
-  "value": {
-    "type": "AI",
-    "ai_type": "Query",
-    "query": "Answer this question concisely",
-    "result_type": "string",
-    "context": {
-      "question": "What is the capital of France?"
-    }
-  },
-  "type_hint": "String",
-  "meta": {}
-}
-</code></pre>
-<h3 id="toolchain"><a class="header" href="#toolchain">ToolChain</a></h3>
-<p>Orchestrate a sequence (or parallel set) of tool calls. <code>result_binding</code> names where
-each tool’s output is stored for downstream tools.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "ToolChain",
-  "tools": [
-    {
-      "tool_name": "search",
-      "parameters": { "query": "Python best practices" },
-      "result_binding": "search_results"
-    },
-    {
-      "tool_name": "analyze",
-      "parameters": { "text": "search_results" },
-      "result_binding": "analysis"
-    },
-    {
-      "tool_name": "summarize",
-      "parameters": { "input": "analysis" },
-      "result_binding": "summary"
-    }
-  ],
-  "strategy": { "type": "Sequential" },
-  "error_handling": {
-    "type": "Retry",
-    "max_retries": 2,
-    "retry_condition": "status != ok"
-  }
-}
-</code></pre>
-<p><strong><code>strategy</code> options:</strong> <code>Sequential</code> · <code>Parallel</code> · <code>Conditional</code> · <code>Retry</code></p>
-<p><strong><code>error_handling</code> options:</strong> <code>FailFast</code> · <code>ContinueOnError</code> · <code>Retry { max_retries }</code> · <code>Fallback</code></p>
-<h3 id="agentdelegation"><a class="header" href="#agentdelegation">AgentDelegation</a></h3>
-<p>Delegate a task to one or more agents. The <code>delegation_strategy</code> controls how agents
-are selected and results are combined.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "AgentDelegation",
-  "task": "Review the diff on branch agent/castbook/EXO-175 for unsoundness",
-  "agents": ["agent://reviewers/*"],
-  "delegation_strategy": { "Consensus": { "threshold": 0.66 } },
-  "expected_format": "markdown"
-}
-</code></pre>
-<p><strong><code>delegation_strategy</code> options:</strong>
-<code>FirstAvailable</code> · <code>CapabilityMatch</code> · <code>ParallelSplit</code> · <code>Hierarchical</code> ·
-<code>{ "Consensus": { "threshold": 0.0–1.0 } }</code> · <code>Broadcast</code> · <code>Best</code> · <code>RoundRobin</code></p>
-<h3 id="learningloop"><a class="header" href="#learningloop">LearningLoop</a></h3>
-<p>Record patterns from execution and adapt future behavior.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "LearningLoop",
-  "learning_target": "ExecutionPatterns",
-  "strategy": "PatternRecognition",
-  "adaptations": ["OptimizeToolChain", "LearnNewPatterns"]
-}
-</code></pre>
-<h3 id="contextaware"><a class="header" href="#contextaware">ContextAware</a></h3>
-<p>Wrap an expression with explicit context requirements and provisions. The runtime
-ensures the required context is present before evaluating <code>expression</code>.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "ContextAware",
-  "expression": {
-    "type": "AI",
-    "ai_type": "Query",
-    "query": "Summarize the review consensus in two sentences",
-    "result_type": "string",
-    "context": {}
-  },
-  "requires_context": ["session.goal", "review.findings"],
-  "provides_context": ["review.summary"]
-}
-</code></pre>
-<hr>
-<h2 id="ai-statement-nodes"><a class="header" href="#ai-statement-nodes">AI Statement Nodes</a></h2>
-<p>Five coordination statements at the top level of a function body. They do not
-produce values — they signal intent to the agent runtime.</p>
-<h3 id="goaldeclaration"><a class="header" href="#goaldeclaration">GoalDeclaration</a></h3>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "GoalDeclaration",
-  "goal": "Ship EXO-175 with 80% schema coverage",
-  "success_criteria": ["all examples validate", "no FP on real fleet"],
-  "deadline": "2026-06-30T00:00:00Z",
-  "meta": {}
-}
-</code></pre>
-<h3 id="progressupdate"><a class="header" href="#progressupdate">ProgressUpdate</a></h3>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "ProgressUpdate",
-  "goal_id": "EXO-175",
-  "progress": 0.65,
-  "status": "in-progress",
-  "notes": "core examples done; AI-native chapter in flight",
-  "meta": {}
-}
-</code></pre>
-<h3 id="knowledgesharing"><a class="header" href="#knowledgesharing">KnowledgeSharing</a></h3>
-<p>Share a learned insight with other agents in the fleet.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "KnowledgeSharing",
-  "knowledge_type": "Insight",
-  "content": { "finding": "review consensus reached", "confidence": 0.9 },
-  "recipients": ["agent://reviewers/*", "foreman"],
-  "retention_policy": "Session",
-  "meta": {}
-}
-</code></pre>
-<h3 id="capabilitydiscovery"><a class="header" href="#capabilitydiscovery">CapabilityDiscovery</a></h3>
-<p>Broadcast a request to find agents that can handle a domain.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "CapabilityDiscovery",
-  "domain": "code-review",
-  "requirements": ["rust", "security-analysis"],
-  "discovery_strategy": "Broadcast",
-  "meta": {}
-}
-</code></pre>
-<h3 id="adaptationrequest"><a class="header" href="#adaptationrequest">AdaptationRequest</a></h3>
-<p>Request a runtime or coordination change.</p>
-<pre><code class="language-json">{
-  "type": "AI",
-  "ai_type": "AdaptationRequest",
-  "adaptation_type": "Performance",
-  "reason": "review latency above target",
-  "parameters": { "max_parallel_reviews": 4 },
-  "meta": {}
-}
-</code></pre>
-<hr>
-<h2 id="program-level-ai-metadata"><a class="header" href="#program-level-ai-metadata">Program-Level AI Metadata</a></h2>
-<p>The top-level <code>ai_meta</code> field lets an agent describe the whole program:</p>
-<pre><code class="language-json">{
-  "ai_meta": {
-    "description": "Demonstrates the AI-native orchestration primitives end to end.",
-    "ai_tags": ["orchestration", "delegation", "learning"],
-    "required_capabilities": ["ai.query", "ai.agent_delegation"],
-    "execution_context": {
-      "environment": ["exosphere"],
-      "resources": [],
-      "permissions": ["ai.query"],
-      "dependencies": []
-    },
-    "learning_objectives": ["optimize delegation latency"],
-    "collaboration_patterns": ["consensus", "broadcast"]
-  }
-}
-</code></pre>
-<p>These fields are metadata only — they do not affect CASM compilation — but the
-Exosphere runtime uses them for scheduling, capability pre-checks, and audit logs.</p>
-<hr>
-<h2 id="complete-example-agent-orchestration"><a class="header" href="#complete-example-agent-orchestration">Complete Example: Agent Orchestration</a></h2>
-<p>The following is a real CAST document from <code>examples/cast/ai-orchestration.cast.json</code>.
-It is the canonical reference for all five AI expression and statement types together.</p>
+<p><code>lang</code> may be any string — set it to identify the emitting agent in source maps.
+<code>ai_meta</code> carries program-level AI metadata (below).</p>
+<h2 id="ai-nodes"><a class="header" href="#ai-nodes">AI nodes</a></h2>
+<p>An AI node is an object with <code>"type": "AI"</code> and an <code>ai_type</code> discriminator. There are
+<strong>seven expressions</strong> (they yield a value and may appear wherever an expression can)
+and <strong>six statements</strong> (coordination steps in a statement list).</p>
+<h3 id="expressions"><a class="header" href="#expressions">Expressions</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>ai_type</code></th><th>Fields</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Query</code></td><td><code>query</code>, <code>result_type</code> (string or null), <code>context</code> (object)</td></tr>
+<tr><td><code>ToolChain</code></td><td><code>tools</code> (array of <code>{tool_name, parameters, result_binding?, condition?, required_capability?}</code>), <code>strategy</code>, <code>error_handling</code></td></tr>
+<tr><td><code>AgentDelegation</code></td><td><code>task</code>, <code>agents</code> (ids or patterns), <code>delegation_strategy</code>, <code>expected_format?</code></td></tr>
+<tr><td><code>LearningLoop</code></td><td><code>learning_target</code>, <code>strategy</code>, <code>adaptations</code></td></tr>
+<tr><td><code>ContextAware</code></td><td><code>expression</code> (any expression), <code>requires_context</code>, <code>provides_context</code></td></tr>
+<tr><td><code>SemanticMatch</code></td><td><code>target</code> (expression), <code>concept</code>, <code>confidence_threshold</code></td></tr>
+<tr><td><code>Synthesize</code></td><td><code>output_type</code> (a <a href="README.html#types"><code>CastType</code></a>), <code>constraints</code>, <code>context_refs</code>, <code>examples?</code></td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="statements"><a class="header" href="#statements">Statements</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>ai_type</code></th><th>Fields</th></tr>
+</thead>
+<tbody>
+<tr><td><code>GoalDeclaration</code></td><td><code>goal_id</code>, <code>description</code>, <code>success_criteria</code>, <code>priority</code>, <code>deadline?</code></td></tr>
+<tr><td><code>ProgressUpdate</code></td><td><code>goal_id</code>, <code>progress</code> (0.0–1.0), <code>status_message</code>, <code>metrics</code> (name → number)</td></tr>
+<tr><td><code>KnowledgeSharing</code></td><td><code>knowledge_type</code>, <code>content</code> (any JSON), <code>recipients</code>, <code>retention_policy</code></td></tr>
+<tr><td><code>CapabilityDiscovery</code></td><td><code>domain</code>, <code>requirements</code>, <code>discovery_strategy</code></td></tr>
+<tr><td><code>AdaptationRequest</code></td><td><code>adaptation_type</code>, <code>reason</code>, <code>parameters</code></td></tr>
+<tr><td><code>SemanticSwitch</code></td><td><code>target</code> (expression), <code>cases</code>: <code>[[label, statements], …]</code>, <code>fallback?</code></td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="the-enumerations"><a class="header" href="#the-enumerations">The enumerations</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Field</th><th>Values</th></tr>
+</thead>
+<tbody>
+<tr><td><code>strategy</code> (ToolChain)</td><td><strong>objects</strong>: <code>{"type": "Sequential"}</code>, <code>{"type": "Parallel"}</code>, <code>{"type": "Conditional", "conditions": [..]}</code>, <code>{"type": "Retry", "max_attempts": 3, "backoff_strategy": {"type": "Fixed", "delay_ms": 100}}</code> (also <code>Exponential</code>, <code>Linear</code>)</td></tr>
+<tr><td><code>error_handling</code></td><td><strong>objects</strong>: <code>{"type": "FailFast"}</code>, <code>{"type": "ContinueOnError"}</code>, <code>{"type": "Retry", "max_retries": 2, "retry_condition": null}</code>, <code>{"type": "Fallback", "fallback_tools": [..]}</code></td></tr>
+<tr><td><code>delegation_strategy</code></td><td>strings <code>"FirstAvailable"</code> <code>"CapabilityMatch"</code> <code>"ParallelSplit"</code> <code>"Hierarchical"</code> <code>"Broadcast"</code> <code>"Best"</code> <code>"RoundRobin"</code>, or <code>{"Consensus": {"threshold": 0.66}}</code></td></tr>
+<tr><td><code>learning_target</code></td><td><code>"UserBehavior"</code> <code>"ExecutionPatterns"</code> <code>"ErrorPatterns"</code> <code>"PerformanceMetrics"</code> <code>"ToolUsage"</code></td></tr>
+<tr><td>LearningLoop <code>strategy</code></td><td><code>"PatternRecognition"</code> <code>"StatisticalAnalysis"</code> <code>"MachineLearning"</code> <code>"RuleBased"</code></td></tr>
+<tr><td><code>adaptations</code> items</td><td><code>"OptimizeToolChain"</code> <code>"ImproveErrorHandling"</code> <code>"UpdateAgentSelection"</code> <code>"ModifyExecutionStrategy"</code> <code>"LearnNewPatterns"</code></td></tr>
+<tr><td><code>priority</code></td><td><code>"Low"</code> <code>"Medium"</code> <code>"High"</code> <code>"Critical"</code></td></tr>
+<tr><td><code>knowledge_type</code></td><td><code>"Pattern"</code> <code>"Solution"</code> <code>"BestPractice"</code> <code>"Warning"</code> <code>"Insight"</code></td></tr>
+<tr><td><code>retention_policy</code></td><td><code>"Ephemeral"</code> <code>"Session"</code> <code>"Persistent"</code> or <code>{"Conditional": {"condition": ".."}}</code></td></tr>
+<tr><td><code>discovery_strategy</code></td><td><code>"Broadcast"</code> <code>"Targeted"</code> <code>"Hierarchical"</code> <code>"LearningBased"</code></td></tr>
+<tr><td><code>adaptation_type</code></td><td><code>"Performance"</code> <code>"Reliability"</code> <code>"Usability"</code> <code>"Compatibility"</code> <code>"Learning"</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Note the asymmetry: <code>ToolChain.strategy</code> and <code>error_handling</code> are <em>internally
+tagged objects</em> (<code>{"type": …}</code>), while <code>delegation_strategy</code> and the others are
+plain strings. Mixing them up is the commonest validation failure; the validator’s
+hint for the delegation case says so.</p>
+<p>Here is every node in one program. It is the schema’s complete AI surface, checked
+by <code>validate_json</code>, the compiler and the lowering:</p>
+<!-- check: cast-validate -->
 <pre><code class="language-json">{
   "cast_version": "0.1.0",
   "entry": "main",
@@ -410,122 +306,172 @@ It is the canonical reference for all five AI expression and statement types tog
   "functions": {
     "main": {
       "params": [],
+      "meta": {},
       "body": [
-        {
-          "type": "AI",
-          "ai_type": "CapabilityDiscovery",
-          "domain": "code-review",
-          "requirements": ["rust", "security-analysis"],
-          "discovery_strategy": "Broadcast",
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "review",
-          "value": {
-            "type": "AI",
-            "ai_type": "AgentDelegation",
-            "task": "Review the diff on branch agent/castbook/EXO-175 for unsoundness",
+        { "type": "AI", "ai_type": "GoalDeclaration", "goal_id": "ship-it",
+          "description": "Ship the release", "success_criteria": ["tests pass"],
+          "priority": "High", "deadline": null },
+        { "type": "AI", "ai_type": "ProgressUpdate", "goal_id": "ship-it",
+          "progress": 0.5, "status_message": "halfway", "metrics": { "coverage": 0.8 } },
+        { "type": "AI", "ai_type": "KnowledgeSharing", "knowledge_type": "Insight",
+          "content": { "finding": "x" }, "recipients": ["agent://reviewers/*"],
+          "retention_policy": "Session" },
+        { "type": "AI", "ai_type": "CapabilityDiscovery", "domain": "code-review",
+          "requirements": ["rust"], "discovery_strategy": "Broadcast" },
+        { "type": "AI", "ai_type": "AdaptationRequest", "adaptation_type": "Performance",
+          "reason": "review latency above target", "parameters": { "workers": 4 } },
+        { "type": "VarDecl", "name": "answer", "type_hint": "String",
+          "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
+                     "result_type": "string", "context": {} } },
+        { "type": "VarDecl", "name": "hits", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "ToolChain",
+            "tools": [ { "tool_name": "search", "parameters": { "q": "x" }, "result_binding": "hits" } ],
+            "strategy": { "type": "Sequential" }, "error_handling": { "type": "FailFast" } } },
+        { "type": "VarDecl", "name": "verdict", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "AgentDelegation", "task": "Review the diff",
             "agents": ["agent://reviewers/*"],
             "delegation_strategy": { "Consensus": { "threshold": 0.66 } },
-            "expected_format": "markdown"
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "AI",
-          "ai_type": "KnowledgeSharing",
-          "knowledge_type": "Insight",
-          "content": { "finding": "review consensus reached", "confidence": 0.9 },
-          "recipients": ["agent://reviewers/*", "foreman"],
-          "retention_policy": "Session",
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "insight",
-          "value": {
-            "type": "AI",
-            "ai_type": "LearningLoop",
-            "learning_target": "ExecutionPatterns",
-            "strategy": "PatternRecognition",
-            "adaptations": ["OptimizeToolChain", "LearnNewPatterns"]
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "AI",
-          "ai_type": "AdaptationRequest",
-          "adaptation_type": "Performance",
-          "reason": "review latency above target",
-          "parameters": { "max_parallel_reviews": 4 },
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "summary",
-          "value": {
-            "type": "AI",
-            "ai_type": "ContextAware",
-            "expression": {
-              "type": "AI",
-              "ai_type": "Query",
-              "query": "Summarize the review consensus in two sentences",
-              "result_type": "string",
-              "context": {}
-            },
-            "requires_context": ["session.goal", "review.findings"],
-            "provides_context": ["review.summary"]
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "Export",
-          "name": "summary",
-          "value": { "type": "Var", "name": "summary" },
-          "meta": {}
-        }
-      ],
-      "meta": {}
+            "expected_format": "markdown" } },
+        { "type": "VarDecl", "name": "insight", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "LearningLoop", "learning_target": "ToolUsage",
+            "strategy": "RuleBased", "adaptations": ["OptimizeToolChain"] } },
+        { "type": "VarDecl", "name": "scoped", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "ContextAware",
+            "expression": { "type": "IntLiteral", "value": 1 },
+            "requires_context": ["session.goal"], "provides_context": ["review.summary"] } },
+        { "type": "VarDecl", "name": "match", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "SemanticMatch",
+            "target": { "type": "StringLiteral", "value": "hi" },
+            "concept": "greeting", "confidence_threshold": 0.8 } },
+        { "type": "VarDecl", "name": "draft", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "Synthesize", "output_type": "String",
+            "constraints": ["two sentences"], "context_refs": [], "examples": null } }
+      ]
     }
-  },
-  "ai_meta": {
-    "description": "Demonstrates the AI-native orchestration primitives end to end.",
-    "ai_tags": ["orchestration", "delegation", "learning"],
-    "required_capabilities": ["ai.query", "ai.agent_delegation"]
   }
 }
 </code></pre>
-<hr>
-<h2 id="casm-instructions-emitted"><a class="header" href="#casm-instructions-emitted">CASM Instructions Emitted</a></h2>
+<h2 id="program-level-metadata"><a class="header" href="#program-level-metadata">Program-level metadata</a></h2>
+<p><code>ai_meta</code> describes the program as a whole. It does not change compilation:</p>
+<pre><code class="language-json">{
+  "ai_meta": {
+    "description": "Review orchestration",
+    "ai_tags": ["orchestration", "delegation"],
+    "required_capabilities": ["ai.query", "ai.agent_delegation"],
+    "execution_context": { "environment": [], "resources": [], "permissions": [], "dependencies": [] },
+    "learning_objectives": ["optimize delegation latency"],
+    "collaboration_patterns": [
+      { "pattern_type": "consensus", "participants": ["reviewers"],
+        "communication_style": "async", "decision_making": "vote" }
+    ],
+    "inputs": [], "outputs": [], "complexity": 3
+  }
+}
+</code></pre>
+<h2 id="what-actually-runs"><a class="header" href="#what-actually-runs">What actually runs</a></h2>
+<p><strong>The AI nodes compile, but nothing executes them yet.</strong> This is the single most
+important thing to know before building on this chapter. The CAST compiler turns each
+AI node into the matching <code>ai_*</code> CASM instruction, but the step that lowers CASM to
+runnable CVM1 (<code>casm_to_vm</code>) turns every <code>ai_*</code> instruction into a <code>NOP</code>. Concretely
+(crush-ast <code>v0.3.9</code>, tickets CRUSH-1 / CRUSH-32 / CRUSH-34):</p>
+<ul>
+<li><strong>AI statements are no-ops.</strong> A program made of them runs and does nothing:</li>
+</ul>
+<!-- check: cast-json -->
+<pre><code class="language-json">{
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "AI", "ai_type": "GoalDeclaration", "goal_id": "g", "description": "d",
+      "success_criteria": [], "priority": "Low", "deadline": null },
+    { "type": "ExprStmt", "expr": { "type": "CapabilityCall", "name": "io.print", "meta": {},
+      "args": [ { "type": "StringLiteral", "value": "after the goal" } ] } }
+  ] } }
+}
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">after the goal
+</code></pre>
+<ul>
+<li><strong>AI expressions produce no value.</strong> Because the <code>NOP</code> pushes nothing, any program
+that <em>uses</em> the result (<code>VarDecl</code>, an argument, a <code>Return</code>) pops an empty stack and
+fails:</li>
+</ul>
+<!-- check: cast-json -->
+<!-- check: runfail stack underflow -->
+<pre><code class="language-json">{
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "VarDecl", "name": "answer", "type_hint": "String",
+      "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
+                 "result_type": "string", "context": {} } }
+  ] } }
+}
+</code></pre>
+<p>This is why the shipped <code>examples/cast/ai-query.cast.json</code> and
+<code>ai-orchestration.cast.json</code> validate but fail with <code>stack underflow</code> when run.</p>
+<ul>
+<li><strong>Three IR nodes have no bytecode at all.</strong> <code>ai_capability_discovery</code>,
+<code>ai_adaptation_request</code> and <code>ai_semantic_switch</code> exist in the IR but not in CVM1.
+CVM1 has ten AI opcodes (<code>AI_QUERY</code>, <code>AI_SYNTHESIZE</code>, <code>AI_AGENT_DELEGATION</code>,
+<code>AI_SEMANTIC_MATCH</code>, <code>AI_LEARNING_LOOP</code>, <code>AI_CONTEXT_AWARE</code>, <code>AI_TOOLCHAIN</code>,
+<code>AI_GOAL_DECLARATION</code>, <code>AI_PROGRESS_UPDATE</code>, <code>AI_KNOWLEDGE_SHARING</code>).</li>
+<li><strong>The opcodes exist and are gated by capabilities, as stubs.</strong> A hand-written CVM1
+<code>AI_QUERY</code> calls the host capability <code>ai_native.query</code> — and an embedder can
+register the ten <code>ai_native.*</code> stubs with
+<code>HostCapsBuilder::new().ai_native(true)</code>. Each stub returns the same thing, a map
+<code>{ok: true, kind: "&lt;name&gt;", echo: [...]}</code>, and does nothing else (no model call, no
+delegation, no learning). The CLI has no flag for it. This is the wiring a real
+backend will replace, so the gate names are the stable part:</li>
+</ul>
+<!-- check: asm-ai -->
+<!-- check: output -->
+<pre><code class="language-casm">.func main
+    AI_QUERY "{\"q\": \"capital of France\"}"
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<pre><code class="language-text">{ok: true, kind: query, echo: []}
+</code></pre>
+<p>The gates are <code>ai_native.query</code>, <code>.synthesize</code>, <code>.agent_delegation</code>,
+<code>.semantic_match</code>, <code>.learning_loop</code>, <code>.context_aware</code>, <code>.toolchain</code>,
+<code>.goal_declaration</code>, <code>.progress_update</code> and <code>.knowledge_sharing</code>. The same pattern
+holds for the DOM opcodes (<code>dom_native.*</code>) and <code>SPAWN</code>/<code>YIELD</code>/<code>AWAIT</code>
+(<code>concurrency_native.*</code>).</p>
+<p>So today the AI-native surface is best understood as a <strong>typed, validated schema for
+agent intent</strong> — a program an agent can emit, a tool can lint and an index can read —
+not an executing orchestration runtime. Plan for the schema to be stable and the
+execution to arrive later.</p>
+<h2 id="instruction-mapping"><a class="header" href="#instruction-mapping">Instruction mapping</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>CAST node</th><th>CASM instruction</th></tr>
+<tr><th>CAST node</th><th>CASM IR instruction</th><th>CVM1 opcode</th></tr>
 </thead>
 <tbody>
-<tr><td><code>AI / Query</code></td><td><code>ai_query</code></td></tr>
-<tr><td><code>AI / ToolChain</code></td><td><code>ai_tool_chain</code></td></tr>
-<tr><td><code>AI / AgentDelegation</code></td><td><code>ai_agent_delegation</code></td></tr>
-<tr><td><code>AI / LearningLoop</code></td><td><code>ai_learning_loop</code></td></tr>
-<tr><td><code>AI / ContextAware</code></td><td><code>ai_context_aware</code></td></tr>
-<tr><td><code>AI / GoalDeclaration</code></td><td><code>ai_goal_decl</code></td></tr>
-<tr><td><code>AI / ProgressUpdate</code></td><td><code>ai_progress_update</code></td></tr>
-<tr><td><code>AI / KnowledgeSharing</code></td><td><code>ai_knowledge_share</code></td></tr>
-<tr><td><code>AI / CapabilityDiscovery</code></td><td><code>ai_capability_discovery</code></td></tr>
-<tr><td><code>AI / AdaptationRequest</code></td><td>(maps to <code>ai_context_aware</code> + runtime signal)</td></tr>
+<tr><td><code>Query</code></td><td><code>ai_query</code></td><td><code>AI_QUERY</code></td></tr>
+<tr><td><code>ToolChain</code></td><td><code>ai_tool_chain</code></td><td><code>AI_TOOLCHAIN</code></td></tr>
+<tr><td><code>AgentDelegation</code></td><td><code>ai_agent_delegation</code></td><td><code>AI_AGENT_DELEGATION</code></td></tr>
+<tr><td><code>LearningLoop</code></td><td><code>ai_learning_loop</code></td><td><code>AI_LEARNING_LOOP</code></td></tr>
+<tr><td><code>ContextAware</code></td><td><code>ai_context_aware</code></td><td><code>AI_CONTEXT_AWARE</code></td></tr>
+<tr><td><code>SemanticMatch</code></td><td><code>ai_semantic_match</code></td><td><code>AI_SEMANTIC_MATCH</code></td></tr>
+<tr><td><code>Synthesize</code></td><td><code>ai_synthesize</code></td><td><code>AI_SYNTHESIZE</code></td></tr>
+<tr><td><code>GoalDeclaration</code></td><td><code>ai_goal_decl</code></td><td><code>AI_GOAL_DECLARATION</code></td></tr>
+<tr><td><code>ProgressUpdate</code></td><td><code>ai_progress_update</code></td><td><code>AI_PROGRESS_UPDATE</code></td></tr>
+<tr><td><code>KnowledgeSharing</code></td><td><code>ai_knowledge_share</code></td><td><code>AI_KNOWLEDGE_SHARING</code></td></tr>
+<tr><td><code>CapabilityDiscovery</code></td><td><code>ai_capability_discovery</code></td><td>—</td></tr>
+<tr><td><code>AdaptationRequest</code></td><td><code>ai_adaptation_request</code></td><td>—</td></tr>
+<tr><td><code>SemanticSwitch</code></td><td><code>ai_semantic_switch</code></td><td>—</td></tr>
 </tbody>
 </table>
 </div>
-<hr>
-<h2 id="see-also"><a class="header" href="#see-also">See Also</a></h2>
+<p>(“CVM1 opcode” is what the text assembler and the VM have; as explained above the
+IR→CVM1 lowering does not currently emit any of them. The IR column is what
+<code>crush_frontend::compile_cast</code> emits for each node.)</p>
+<h2 id="see-also"><a class="header" href="#see-also">See also</a></h2>
 <ul>
-<li><a href="https://github.com/nixpt/crush-ast/tree/main/examples/cast"><code>examples/cast/</code></a> — canonical CAST example corpus</li>
-<li><a href="README.html">CAST Base Spec</a> — statement and expression node reference (v0.3 base)</li>
-<li><a href="../casm/instructions.html">CASM Instruction Reference</a> — the <code>ai_*</code> instruction category</li>
+<li><a href="https://github.com/nixpt/crush-ast/tree/main/examples/cast"><code>examples/cast/</code></a> in crush-ast — the example corpus (validates; most need host capabilities or hit the AI limits above to run)</li>
+<li><a href="README.html">CAST schema</a> — the non-AI nodes</li>
+<li><a href="../casm/instructions.html#polyglot-concurrency-ai-and-dom">CASM Instruction Reference</a></li>
 </ul>
 
                     </main>

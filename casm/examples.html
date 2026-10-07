@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
+            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-36566637.js"></script>
@@ -181,512 +181,340 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="casm-examples"><a class="header" href="#casm-examples">CASM Examples</a></h1>
-<p>This chapter provides practical examples of CASM programs, from simple to complex.</p>
-<h2 id="example-1-hello-world"><a class="header" href="#example-1-hello-world">Example 1: Hello World</a></h2>
-<p>The simplest CASM program:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": [],
-      "body": [
-        {"op": "push_str", "value": "Hello, World!"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+<p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
+with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
+guide’s checker against crush-ast <code>v0.3.9</code>, with the output shown. The JSON IR is
+covered in <a href="structure.html">Program Structure</a> and
+<a href="serialization.html">Serialization</a>. Opcode details are in the
+<a href="instructions.html">Instruction Reference</a>.</p>
+<p>All programs print with <code>CAP_CALL "io.print" N</code>, so run them with <code>--cap io.print</code>
+(a <code>.casm</code> file carries no permissions of its own).</p>
+<h2 id="1-hello-world"><a class="header" href="#1-hello-world">1. Hello, world</a></h2>
+<pre><code class="language-casm">.func main
+    PUSH_STR "Hello, CASM!"
+    CAP_CALL "io.print" 1
+    HALT
 </code></pre>
-<p><strong>Execution trace:</strong></p>
-<pre><code class="language-text">1. push_str "Hello, World!"  → Stack: ["Hello, World!"]
-2. cap_call io.print 1       → Prints "Hello, World!", Stack: []
-3. ret                       → Returns from main
+<!-- check: output -->
+<pre><code class="language-text">Hello, CASM!
 </code></pre>
-<h2 id="example-2-variables-and-arithmetic"><a class="header" href="#example-2-variables-and-arithmetic">Example 2: Variables and Arithmetic</a></h2>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["x", "y", "sum"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "store", "name": "x"},
-        
-        {"op": "push_int", "value": 32},
-        {"op": "store", "name": "y"},
-        
-        {"op": "load", "name": "x"},
-        {"op": "load", "name": "y"},
-        {"op": "add"},
-        {"op": "store", "name": "sum"},
-        
-        {"op": "push_str", "value": "The sum is: "},
-        {"op": "load", "name": "sum"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+<p><code>io.print</code> takes any number of arguments (here <code>1</code>), prints them back to back and
+adds a newline.</p>
+<h2 id="2-variables-and-arithmetic"><a class="header" href="#2-variables-and-arithmetic">2. Variables and arithmetic</a></h2>
+<p><code>STORE n</code> pops into slot <code>n</code>; <code>LOAD n</code> pushes it back.</p>
+<pre><code class="language-casm">.func main
+    PUSH 6
+    STORE 0             ; a = 6
+    PUSH 7
+    STORE 1             ; b = 7
+    LOAD 0
+    LOAD 1
+    MUL
+    STORE 2             ; product = a * b
+    PUSH_STR "6 * 7 = "
+    LOAD 2
+    CAP_CALL "io.print" 2
+    HALT
 </code></pre>
-<p><strong>Output:</strong> <code>The sum is: 42</code></p>
-<h2 id="example-3-conditional-ifelse"><a class="header" href="#example-3-conditional-ifelse">Example 3: Conditional (If/Else)</a></h2>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["age"],
-      "body": [
-        {"op": "push_int", "value": 18},
-        {"op": "store", "name": "age"},
-        
-        {"op": "load", "name": "age"},
-        {"op": "push_int", "value": 18},
-        {"op": "ge"},
-        {"op": "jmp_if_not", "target": 9},
-        
-        {"op": "push_str", "value": "You are an adult"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        {"op": "jmp", "target": 11},
-        
-        {"op": "push_str", "value": "You are a minor"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+<!-- check: output -->
+<pre><code class="language-text">6 * 7 = 42
 </code></pre>
-<p><strong>Control flow:</strong></p>
-<pre><code class="language-text">if age &gt;= 18:
-    print("You are an adult")
+<h2 id="3-conditionals"><a class="header" href="#3-conditionals">3. Conditionals</a></h2>
+<p><code>JZ</code> jumps when the popped value is falsy, so an <code>if</code> compiles to a <code>JZ</code> over the
+“then” branch plus a <code>JMP</code> over the “else” branch.</p>
+<pre><code class="language-casm">.func main
+    PUSH 3
+    STORE 0             ; n = 3
+    LOAD 0
+    PUSH 2
+    GT                  ; n &gt; 2
+    JZ else
+    PUSH_STR "big"
+    CAP_CALL "io.print" 1
+    JMP end
 else:
-    print("You are a minor")
+    PUSH_STR "small"
+    CAP_CALL "io.print" 1
+end:
+    HALT
 </code></pre>
-<h2 id="example-4-while-loop"><a class="header" href="#example-4-while-loop">Example 4: While Loop</a></h2>
-<p>Count from 1 to 5:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["i"],
-      "body": [
-        {"op": "push_int", "value": 1},
-        {"op": "store", "name": "i"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 5},
-        {"op": "le"},
-        {"op": "jmp_if_not", "target": 14},
-        
-        {"op": "load", "name": "i"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 1},
-        {"op": "add"},
-        {"op": "store", "name": "i"},
-        
-        {"op": "jmp", "target": 2},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
+<!-- check: output -->
+<pre><code class="language-text">big
+</code></pre>
+<h2 id="4-loops"><a class="header" href="#4-loops">4. Loops</a></h2>
+<pre><code class="language-casm">.func main
+    PUSH 1
+    STORE 0             ; i = 1
+    PUSH 0
+    STORE 1             ; sum = 0
+loop:
+    LOAD 0
+    PUSH 5
+    GT                  ; i &gt; 5 ?
+    JNZ done
+    LOAD 1
+    LOAD 0
+    ADD
+    STORE 1             ; sum = sum + i
+    LOAD 0
+    PUSH 1
+    ADD
+    STORE 0             ; i = i + 1
+    JMP loop
+done:
+    PUSH_STR "sum 1..5 = "
+    LOAD 1
+    CAP_CALL "io.print" 2
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">sum 1..5 = 15
+</code></pre>
+<h2 id="5-functions"><a class="header" href="#5-functions">5. Functions</a></h2>
+<p>Arguments are pushed <strong>last first</strong>; the callee’s first instructions <code>STORE</code> its
+parameters in order, so the first <code>STORE</code> receives the <em>first</em> argument. <code>RET</code>
+returns whatever the callee left on top of the stack.</p>
+<pre><code class="language-casm">.func main
+    PUSH 3              ; second argument (b)
+    PUSH 10             ; first argument  (a)
+    CALL sub
+    CAP_CALL "io.print" 1
+    HALT
+.func sub
+    STORE 0             ; a
+    STORE 1             ; b
+    LOAD 0
+    LOAD 1
+    SUB                 ; a - b
+    RET
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">7
+</code></pre>
+<p>Recursion works the same way (each call gets fresh slots). The default call-depth
+quota is 256:</p>
+<pre><code class="language-casm">.func main
+    PUSH 10
+    CALL fact
+    CAP_CALL "io.print" 1
+    HALT
+.func fact
+    STORE 0             ; n
+    LOAD 0
+    PUSH 1
+    LE
+    JNZ base
+    LOAD 0
+    LOAD 0
+    PUSH 1
+    SUB
+    CALL fact           ; fact(n - 1)
+    MUL                 ; n * fact(n - 1)
+    RET
+base:
+    PUSH 1
+    RET
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">3628800
+</code></pre>
+<h2 id="6-arrays-and-objects"><a class="header" href="#6-arrays-and-objects">6. Arrays and objects</a></h2>
+<pre><code class="language-casm">.func main
+    PUSH 10
+    PUSH 20
+    PUSH 30
+    NEW_ARRAY 3         ; [10, 20, 30]
+    STORE 0
+    LOAD 0
+    PUSH 40
+    ARR_PUSH            ; array v -&gt; array
+    STORE 0
+    PUSH_STR "length: "
+    LOAD 0
+    ARR_LEN
+    CAP_CALL "io.print" 2
+    PUSH_STR "second: "
+    LOAD 0
+    PUSH 1
+    ARR_GET
+    CAP_CALL "io.print" 2
+
+    NEW_OBJ
+    PUSH_STR "Ada"
+    SET_FIELD "name"    ; obj v -&gt; obj
+    STORE 1
+    LOAD 1
+    GET_FIELD "name"
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">length: 4
+second: 20
+Ada
+</code></pre>
+<h2 id="7-errors"><a class="header" href="#7-errors">7. Errors</a></h2>
+<p><code>ENTER_TRY handler</code> … <code>THROW</code> jumps to the handler with the thrown value on the
+stack; <code>EXIT_TRY</code> retires the handler when the body finishes normally.</p>
+<pre><code class="language-casm">.func main
+    ENTER_TRY handler
+    PUSH_STR "disk full"
+    THROW
+    EXIT_TRY
+    JMP end
+handler:
+    STORE 0
+    PUSH_STR "recovered from: "
+    LOAD 0
+    CAP_CALL "io.print" 2
+end:
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">recovered from: disk full
+</code></pre>
+<p>A capability that is not registered, or a type error, is <strong>not</strong> catchable this way:
+it ends the program with a <code>[runtime]</code> error.</p>
+<h2 id="8-host-capabilities"><a class="header" href="#8-host-capabilities">8. Host capabilities</a></h2>
+<p>File access needs the <code>--fs</code> flag <strong>and</strong> the capability in the manifest, so run
+this one as <code>crush-run run prog.casm --cap io.print --cap fs.exists --fs</code>:</p>
+<!-- check: flags --cap fs.exists --fs -->
+<pre><code class="language-casm">.func main
+    PUSH_STR "no-such-file.txt"
+    CAP_CALL "fs.exists" 1
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">0
+</code></pre>
+<p>The manifest is checked first. Leave out <code>--cap fs.exists</code> and the VM stops with
+<code>capability not declared in manifest: fs.exists</code>; pass <code>--cap fs.exists</code> but leave out
+<code>--fs</code> and it stops with <code>unknown capability: fs.exists</code> (declared, but the host never
+registered it).</p>
+<!-- check: runfail capability not declared in manifest: fs.exists -->
+<pre><code class="language-casm">.func main
+    PUSH_STR "no-such-file.txt"
+    CAP_CALL "fs.exists" 1
+    CAP_CALL "io.print" 1
+    HALT
+</code></pre>
+<h2 id="9-what-the-compiler-writes"><a class="header" href="#9-what-the-compiler-writes">9. What the compiler writes</a></h2>
+<p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
+Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
+<p><strong><code>if</code> / <code>else</code>:</strong></p>
+<pre><code class="language-crush">let n = 3
+if n &gt; 2 {
+    io.print("big")
+} else {
+    io.print("small")
 }
 </code></pre>
-<p><strong>Output:</strong></p>
-<pre><code class="language-text">1
-2
-3
-4
-5
+<!-- check: output -->
+<pre><code class="language-text">big
 </code></pre>
-<h2 id="example-5-function-calls"><a class="header" href="#example-5-function-calls">Example 5: Function Calls</a></h2>
-<p>Factorial function:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["result"],
-      "body": [
-        {"op": "push_int", "value": 5},
-        {"op": "call", "function": "factorial"},
-        {"op": "store", "name": "result"},
-        
-        {"op": "push_str", "value": "5! = "},
-        {"op": "load", "name": "result"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    },
-    "factorial": {
-      "params": ["n"],
-      "locals": ["temp"],
-      "body": [
-        {"op": "load", "name": "n"},
-        {"op": "push_int", "value": 1},
-        {"op": "le"},
-        {"op": "jmp_if_not", "target": 5},
-        
-        {"op": "push_int", "value": 1},
-        {"op": "ret"},
-        
-        {"op": "load", "name": "n"},
-        {"op": "push_int", "value": 1},
-        {"op": "sub"},
-        {"op": "call", "function": "factorial"},
-        {"op": "store", "name": "temp"},
-        
-        {"op": "load", "name": "n"},
-        {"op": "load", "name": "temp"},
-        {"op": "mul"},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
+<pre><code class="language-casm">.func main
+    PUSH 3
+    STORE 0
+    LOAD 0
+    PUSH 2
+    GT
+    JZ L42
+    PUSH_STR "big"
+    CAP_CALL "io.print" 1
+    JMP L49
+L42:
+    PUSH_STR "small"
+    CAP_CALL "io.print" 1
+L49:
+    PUSH_NULL
+    RET
+</code></pre>
+<p><strong><code>try</code> / <code>catch</code>:</strong></p>
+<pre><code class="language-crush">try {
+    throw "bad"
+} catch e {
+    io.print("caught ", e)
 }
 </code></pre>
-<p><strong>Output:</strong> <code>5! = 120</code></p>
-<h2 id="example-6-arrays"><a class="header" href="#example-6-arrays">Example 6: Arrays</a></h2>
-<p>Working with arrays:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["arr", "len", "i"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "push_int", "value": 20},
-        {"op": "push_int", "value": 30},
-        {"op": "new_array", "size": 3},
-        {"op": "store", "name": "arr"},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "arr_len"},
-        {"op": "store", "name": "len"},
-        
-        {"op": "push_str", "value": "Array length: "},
-        {"op": "load", "name": "len"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "push_int", "value": 1},
-        {"op": "arr_get"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+<!-- check: output -->
+<pre><code class="language-text">caught bad
 </code></pre>
-<p><strong>Output:</strong></p>
-<pre><code class="language-text">Array length: 3
-20
+<pre><code class="language-casm">.func main
+    ENTER_TRY L15
+    PUSH_STR "bad"
+    THROW
+    EXIT_TRY
+    JMP L28
+L15:
+    STORE 0
+    PUSH_STR "caught "
+    LOAD 0
+    CAP_CALL "io.print" 2
+L28:
+    PUSH_NULL
+    RET
 </code></pre>
-<h2 id="example-7-objects-and-structs"><a class="header" href="#example-7-objects-and-structs">Example 7: Objects and Structs</a></h2>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["point"],
-      "body": [
-        {"op": "new_struct", "name": "Point"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "push_int", "value": 10},
-        {"op": "set_field", "name": "x"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "push_int", "value": 20},
-        {"op": "set_field", "name": "y"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "get_field", "name": "x"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+<p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
+slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
+<pre><code class="language-crush">let t = 0
+for x in [1, 2, 3] { t = t + x }
+io.print(t)
 </code></pre>
-<p><strong>Output:</strong> <code>10</code></p>
-<h2 id="example-8-file-io"><a class="header" href="#example-8-file-io">Example 8: File I/O</a></h2>
-<p>Reading and writing files:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["content"],
-      "body": [
-        {"op": "push_str", "value": "data.txt"},
-        {"op": "push_str", "value": "Hello from CASM!"},
-        {"op": "cap_call", "name": "fs.write", "argc": 2},
-        
-        {"op": "push_str", "value": "File written successfully"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "push_str", "value": "data.txt"},
-        {"op": "cap_call", "name": "fs.read", "argc": 1},
-        {"op": "store", "name": "content"},
-        
-        {"op": "push_str", "value": "File content: "},
-        {"op": "load", "name": "content"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print", "fs.read", "fs.write"]
-  }
-}
+<!-- check: output -->
+<pre><code class="language-text">6
 </code></pre>
-<h2 id="example-9-error-handling"><a class="header" href="#example-9-error-handling">Example 9: Error Handling</a></h2>
-<p>Using metadata for error reporting:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "lang": "python",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["x", "y"],
-      "body": [
-        {
-          "op": "push_int",
-          "value": 10,
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 1, "column": 5}
-        },
-        {
-          "op": "store",
-          "name": "x",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 1}
-        },
-        {
-          "op": "push_int",
-          "value": 0,
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 2, "column": 5}
-        },
-        {
-          "op": "store",
-          "name": "y",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 2}
-        },
-        {
-          "op": "load",
-          "name": "x",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 8}
-        },
-        {
-          "op": "load",
-          "name": "y",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 12}
-        },
-        {
-          "op": "div",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 10}
-        },
-        {
-          "op": "ret",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3}
-        }
-      ]
-    }
-  }
-}
+<pre><code class="language-casm">.func main
+    PUSH 0
+    STORE 0
+    NEW_ARRAY 0
+    PUSH 1
+    ARR_PUSH
+    PUSH 2
+    ARR_PUSH
+    PUSH 3
+    ARR_PUSH
+    STORE 1
+    PUSH 0
+    STORE 2
+L60:
+    LOAD 1
+    ARR_LEN
+    LOAD 2
+    GT
+    JZ L114
+    LOAD 1
+    LOAD 2
+    ARR_GET
+    STORE 3
+    LOAD 0
+    LOAD 3
+    ADD
+    STORE 0
+    LOAD 2
+    PUSH 1
+    ADD
+    STORE 2
+    JMP L60
+L114:
+    LOAD 0
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
 </code></pre>
-<p><strong>Error output:</strong></p>
-<pre><code class="language-text">Error at script.py:3:10
-  |
-3 | result = x / y
-  |          ^^^^^
-  | Division by zero
-</code></pre>
-<h2 id="example-10-complete-program"><a class="header" href="#example-10-complete-program">Example 10: Complete Program</a></h2>
-<p>A complete program with multiple functions and capabilities:</p>
-<pre><code class="language-json">{
-  "version": "0.1",
-  "lang": "crush",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["numbers", "sum", "avg"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "push_int", "value": 20},
-        {"op": "push_int", "value": 30},
-        {"op": "push_int", "value": 40},
-        {"op": "push_int", "value": 50},
-        {"op": "new_array", "size": 5},
-        {"op": "store", "name": "numbers"},
-        
-        {"op": "load", "name": "numbers"},
-        {"op": "call", "function": "sum_array"},
-        {"op": "store", "name": "sum"},
-        
-        {"op": "load", "name": "sum"},
-        {"op": "push_int", "value": 5},
-        {"op": "div"},
-        {"op": "store", "name": "avg"},
-        
-        {"op": "push_str", "value": "Sum: "},
-        {"op": "load", "name": "sum"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "push_str", "value": "Average: "},
-        {"op": "load", "name": "avg"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    },
-    "sum_array": {
-      "params": ["arr"],
-      "locals": ["total", "i", "len"],
-      "body": [
-        {"op": "push_int", "value": 0},
-        {"op": "store", "name": "total"},
-        
-        {"op": "push_int", "value": 0},
-        {"op": "store", "name": "i"},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "arr_len"},
-        {"op": "store", "name": "len"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "load", "name": "len"},
-        {"op": "lt"},
-        {"op": "jmp_if_not", "target": 23},
-        
-        {"op": "load", "name": "total"},
-        {"op": "load", "name": "arr"},
-        {"op": "load", "name": "i"},
-        {"op": "arr_get"},
-        {"op": "add"},
-        {"op": "store", "name": "total"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 1},
-        {"op": "add"},
-        {"op": "store", "name": "i"},
-        
-        {"op": "jmp", "target": 9},
-        
-        {"op": "load", "name": "total"},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
-</code></pre>
-<p><strong>Output:</strong></p>
-<pre><code class="language-text">Sum: 150
-Average: 30
-</code></pre>
-<h2 id="tips-for-writing-casm"><a class="header" href="#tips-for-writing-casm">Tips for Writing CASM</a></h2>
-<h3 id="1-use-comments-in-json"><a class="header" href="#1-use-comments-in-json">1. Use Comments in JSON</a></h3>
-<p>While CASM itself doesn’t support comments, you can add them in your JSON during development:</p>
-<pre><code class="language-json">{
-  "body": [
-    {"op": "push_int", "value": 42},
-    {"_comment": "Print the value"},
-    {"op": "cap_call", "name": "io.print", "argc": 1}
-  ]
-}
-</code></pre>
-<p>(The VM will ignore unknown fields like <code>_comment</code>)</p>
-<h3 id="2-label-jump-targets"><a class="header" href="#2-label-jump-targets">2. Label Jump Targets</a></h3>
-<p>Keep track of instruction indices:</p>
-<pre><code class="language-json">{
-  "body": [
-    /* 0 */ {"op": "load", "name": "x"},
-    /* 1 */ {"op": "push_int", "value": 0},
-    /* 2 */ {"op": "gt"},
-    /* 3 */ {"op": "jmp_if_not", "target": 6},
-    /* 4 */ {"op": "push_str", "value": "Positive"},
-    /* 5 */ {"op": "jmp", "target": 7},
-    /* 6 */ {"op": "push_str", "value": "Non-positive"},
-    /* 7 */ {"op": "cap_call", "name": "io.print", "argc": 1}
-  ]
-}
-</code></pre>
-<h3 id="3-always-include-metadata"><a class="header" href="#3-always-include-metadata">3. Always Include Metadata</a></h3>
-<pre><code class="language-json">{
-  "op": "add",
-  "lang": "crush",
-  "meta": {
-    "file": "program.crush",
-    "line": 10,
-    "column": 15
-  }
-}
-</code></pre>
-<h3 id="4-validate-your-casm"><a class="header" href="#4-validate-your-casm">4. Validate Your CASM</a></h3>
-<pre><code class="language-bash">crush validate program.casm
-</code></pre>
-<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
-<ul>
-<li><strong><a href="structure.html">Program Structure</a></strong>: Understand CASM program anatomy</li>
-<li><strong><a href="instructions.html">Instruction Reference</a></strong>: Complete instruction documentation</li>
-<li><strong><a href="../crush/README.html">Crush Language</a></strong>: Learn the high-level Crush language</li>
-</ul>
+<p>Notice the array literal: <code>NEW_ARRAY 0</code> followed by one <code>ARR_PUSH</code> per element —
+which is why the <a href="instructions.html#collections-and-objects">IR’s <code>new_array</code></a> never
+needs its <code>size</code>.</p>
+<h2 id="tips"><a class="header" href="#tips">Tips</a></h2>
+<ol>
+<li><strong>Comment freely.</strong> <code>;</code> and <code>#</code> start a comment in the text assembly (JSON has no comments).</li>
+<li><strong>Name your labels.</strong> The assembler resolves them; you never count bytes.</li>
+<li><strong>Keep the entry function called <code>main</code></strong> and put it first.</li>
+<li><strong>Mind the stack.</strong> Each <code>CAP_CALL</code> to a value-returning capability leaves a value;
+a stray one at <code>HALT</code> shows up as <code>stack=1</code> in the <code>[steps=…, stack=…]</code> line that
+<code>crush-run</code> prints. Compare it to <code>0</code> when debugging.</li>
+<li><strong>To see what a Crush construct costs, compile it:</strong> <code>crushc FILE.crush --emit casm</code>.</li>
+</ol>
 
                     </main>
 
