@@ -213,8 +213,9 @@ block.
 
 ### Bash
 
-`@bash` blocks get **every variable currently in scope as an environment
-variable** (stringified — arrays arrive as `[1, 2]`), and nothing comes back
+`@bash` blocks have no marshaling analysis. They receive the `let` variables
+declared **earlier at the top level of the same function body** as environment
+variables (stringified — an array arrives as `[1, 2]`), and nothing comes back
 except the printed output:
 
 <!-- check: flags --polyglot -->
@@ -230,8 +231,29 @@ echo "hello $name"
 hello crush
 ```
 
-Because bash receives all of scope, don't keep secrets in Crush variables around a
-`@bash` block you don't control.
+Two surprises: function **parameters** are not passed to a `@bash` block, and
+neither is the result of an earlier `@python`/`@javascript` block — copy it into
+a `let` first:
+
+<!-- check: flags --polyglot -->
+```crush
+@python {
+m = 7
+}
+let n = m
+@bash {
+echo "n=$n"
+}
+```
+
+<!-- check: output -->
+```text
+n=7
+```
+
+Bash also inherits the host environment (`$HOME`, `$PATH`, …) in the default,
+unsandboxed lane, so don't keep secrets in Crush variables around a `@bash` block
+you don't control.
 
 ## Errors
 

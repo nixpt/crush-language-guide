@@ -1,8 +1,7 @@
 # Fibonacci & Functions
 
-> Source: `crates/core/crush-lang/tests/fixtures/fibonacci.crush`
-
-The canonical recursion example — also validates type-hinted function signatures.
+The canonical recursion example, with typed function signatures. Run it with
+`crush run fib.crush`.
 
 ```crush
 fn fib(n: Int) -> Int {
@@ -12,25 +11,43 @@ fn fib(n: Int) -> Int {
     return fib(n - 1) + fib(n - 2)
 }
 
-fn main() {
-    let result = fib(10)
-    return result
+fn factorial(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
 }
+
+fn main() {
+    for i in 0..10 {
+        print("fib(" + i + ") = " + fib(i))
+    }
+    print("10! = " + factorial(10))
+}
+```
+
+<!-- check: output -->
+```text
+fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+10! = 3628800
 ```
 
 **What this shows:**
-- `fn name(param: Type) -> ReturnType` — typed function signature
-- Recursive calls work without any special annotation
-- `return` is explicit; there is no implicit last-expression return
 
-A simpler function that doubles its argument (from `function_call.crush`):
-
-```crush
-fn double(n: Int) {
-    return n * 2
-}
-
-double(21)
-```
-
-Functions without a `-> Type` annotation implicitly return `Void`.
+- `fn name(param: Type) -> ReturnType` — a typed signature (hints are checked at
+  call sites)
+- Recursion needs no special annotation; the default call-depth limit is 256
+  frames, which is far more than this needs
+- `return` is explicit — there is no implicit last-expression return
+- `"text" + number` converts the number, so `print` can build a line
+- A program may have both top-level statements and `fn main()`; the top-level
+  statements run first, then `main`

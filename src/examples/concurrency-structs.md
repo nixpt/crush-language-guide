@@ -1,51 +1,62 @@
-# Concurrency & Structs
+# Structs (and Concurrency)
 
-> Source: `tests/language/concurrency_structs.crush`
-
-Struct instantiation with field access, plus `spawn`/`yield` for cooperative multitasking.
+A struct is declared once, created with `new Name()`, and filled in by assigning
+fields. Structs are passed by reference.
 
 ```crush
-// Struct instantiation
-let p = new Point();
-p.x = 10;
-p.y = 20;
-print("Point x: " + p.x);
-print("Point y: " + p.y);
+struct Point { x: Float, y: Float }
 
-// Spawn a concurrent task
-print("Main starting spawn");
-spawn worker();
-
-print("Main yielding 1");
-yield;
-
-print("Main yielding 2");
-yield;
-
-print("Main resumed");
-
-fn worker() {
-    print("Worker running");
-    yield;
-    print("Worker finishing");
+fn dist2(a, b) {
+    let dx = a.x - b.x
+    let dy = a.y - b.y
+    return dx * dx + dy * dy
 }
+
+let p = new Point()
+p.x = 1.0
+p.y = 2.0
+let q = new Point()
+q.x = 4.0
+q.y = 6.0
+
+print("p = (" + p.x + ", " + p.y + ")")
+print("squared distance: " + dist2(p, q))
+```
+
+<!-- check: output -->
+```text
+p = (1.0, 2.0)
+squared distance: 25.0
 ```
 
 **What this shows:**
-- `new StructName()` instantiates a struct
-- Field assignment and access via `.` operator
-- `spawn fn()` — launches a function as a cooperative task
-- `yield` — suspends the current task and switches to another ready task
-- `spawn`/`yield` implement M:1 cooperative concurrency (no preemption)
 
-The tree-sitter grammar also supports struct definitions with typed fields:
+- `struct Point { x: Float, y: Float }` — declare it on **one line**; the parser
+  does not yet accept a struct body that spans lines
+- `new Point()` takes no arguments; set each field with `p.x = ...`
+- Field access works inside functions, including on parameters (`a.x`)
+- `Float` arithmetic: `3.0 * 3.0 + 4.0 * 4.0` is `25.0`
 
+## Concurrency
+
+Earlier revisions of this guide demonstrated `spawn worker()` with cooperative
+`yield`. That does **not** run today: the compiler emits a `SPAWN` instruction
+without its operand and the assembler rejects the program
+(`SPAWN takes 1 operand(s), got 0`). The scheduler for green threads exists in
+`crush-vm`, but the source-level path is unfinished — crush-ast **CRUSH-34**
+(spawn/await/yield execution) is open. A bare `yield` statement compiles and is a
+no-op.
+
+<!-- check: nyi CRUSH-34 -->
 ```crush
-struct Point {
-    x: Float,
-    y: Float
+fn worker() {
+    print("worker running")
+    yield
+    print("worker finishing")
 }
 
-let p = Point { x: 10.0, y: 20.0 };
-print(p.x);
+spawn worker()
+print("main")
+yield
+print("main again")
 ```

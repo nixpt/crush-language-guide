@@ -22,12 +22,12 @@
 - [Fibonacci & Functions](examples/fibonacci.md)
 - [Arrays & Loops](examples/arrays-loops.md)
 - [Exception Handling](examples/exceptions.md)
-- [Concurrency & Structs](examples/concurrency-structs.md)
+- [Structs (and Concurrency)](examples/concurrency-structs.md)
 - [Lambdas & Pipes](examples/lambdas.md)
 - [Import Styles](examples/imports.md)
-- [System Info Dashboard](examples/sysinfo.md)
+- [System Info Report](examples/sysinfo.md)
 - [Build Pipeline](examples/build-pipeline.md)
-- [Async LLM Dashboard](examples/async-dom.md)
+- [Polyglot Pipeline](examples/async-dom.md)
 
 # CAST — Crush Abstract Syntax Tree
 

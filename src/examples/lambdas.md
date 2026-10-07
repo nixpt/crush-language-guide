@@ -1,71 +1,58 @@
 # Lambdas & the Pipeline Operator
 
-> Source: `crates/core/crush-lang/walkers/tree-sitter-crush/test_lambda.crush`
+## The pipeline operator
 
-Two lambda forms and the `|>` pipeline operator.
+`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and
+bind more loosely than any other operator. The right-hand side must be a
+user-defined function (or a call to one).
 
 ```crush
-// Block-body lambda (multiple statements)
+fn add(a, b) {
+    return a + b
+}
+fn mul(a, b) {
+    return a * b
+}
+fn square(x) {
+    return x * x
+}
+
+print(add(1, 2) |> mul(3))
+print(2 |> square |> square)
+let result = 3 |> add(4) |> mul(10)
+print(result)
+```
+
+<!-- check: output -->
+```text
+9
+16
+70
+```
+
+`add(1, 2) |> mul(3)` is `mul(add(1, 2), 3)`, i.e. `mul(3, 3)` = 9.
+
+## Lambdas
+
+> **Not yet implemented.** Anonymous functions, functions as values, and closures
+> all fail to compile today. The lexer reads a bare `|` as an identifier, so the
+> `|params| body` parser is unreachable — crush-ast **CRUSH-75**, open (the same
+> bug is GitHub issue #78). The forms below are what the design intends; they are
+> kept here, marked, so they can be switched on when CRUSH-75 lands.
+
+<!-- check: nyi CRUSH-75 -->
+```crush
 let add = |a, b| {
-    return a + b;
-};
-
-// Arrow lambda (single expression, no braces or return)
-let mul = |x, y| => x * y;
-
-// Call like any function
-let sum = add(1, 2);      // 3
-let product = mul(4, 5);  // 20
-```
-
-## Typed Parameters
-
-```crush
-let add_typed = |x: Int, y: Int| => x + y;
-```
-
-## The Pipeline Operator
-
-`|>` passes the left value as the first argument to the right function:
-
-```crush
-let res = add(1, 2) |> mul(3);
-// Equivalent to: mul(add(1, 2), 3) = mul(3, 3) = 9
-```
-
-Pipelines chain left-to-right with the lowest operator precedence:
-
-```crush
-let result = raw_data
-    |> parse
-    |> validate
-    |> format;
-```
-
-## Higher-Order Functions
-
-Functions accept and return other functions:
-
-```crush
-fn apply(f: Function, x: Int) -> Int {
-    return f(x);
+    return a + b
 }
-
-fn double(n: Int) -> Int { return n * 2; }
-
-let r = apply(double, 21);   // 42
-let r2 = apply(|x| => x * x, 5);  // 25 — lambda passed inline
+print(add(1, 2))
 ```
 
-## Closures
-
-Lambdas capture the enclosing scope:
-
+<!-- check: nyi CRUSH-75 -->
 ```crush
-fn make_adder(x: Int) -> Function {
-    return |y| { return x + y; };
-}
-
-let add5 = make_adder(5);
-let result = add5(10);   // 15
+let mul = |x, y| => x * y
+print(mul(4, 5))
 ```
+
+Passing a function by name (`apply(double, 21)`) fails for the same reason: a
+function name is not a value. Until then, use named functions and `|>`.

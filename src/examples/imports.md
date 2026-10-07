@@ -1,46 +1,64 @@
 # Import Styles
 
-> Source: `crates/core/crush-lang/walkers/tree-sitter-crush/test_imports.crush`
+> **Not yet implemented.** Every form of `import` parses, but **none of them load
+> anything** — the compiler lowers each to a capability that the runtime does not
+> provide. The only import form that runs is `use @lang`, which only declares
+> that a polyglot block will use a module. This is crush-ast **CRUSH-110** (open):
+> today there is no way to share code between files.
 
-Crush has several import forms. Standard modules use `import`; external resources
-and capabilities use `use @`.
+| Form | Parses | Runs |
+|------|:------:|------|
+| `import io` / `import fs as files` / `import net { a, b }` | yes | fails: `unknown capability: module.load` |
+| `use @mcp "url" { tools } as alias` | yes | fails: `unknown capability: mcp.connect` |
+| `use @cap "cap.path" { names } as alias` | yes | fails: `unknown capability: cap.acquire` |
+| `import @git "url" as alias`, `import @http "url" as alias` | yes | fails: `unknown capability: external.load` |
+| `use @lang python "math" as math` | yes | runs; see below |
 
+Each failing form is checked below, so this page will say so the day one starts
+working:
+
+<!-- check: nyi CRUSH-110 -->
 ```crush
-// Standard module import
-import io;
-import fs as files;                    // aliased
-import net { http_get, http_post };    // selective
-
-// MCP server — wire a remote API as typed capabilities
-use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github;
-
-// Capability import — grant specific cap handles under an alias
-use @cap "fs.read" { "fs.read", "fs.list" } as reader;
-
-// Polyglot import — pull a symbol from a language module
-use @lang python "sys" { "version", "path" } as pysys;
-
-// External resources
-import @git "https://github.com/nixpt/exosphere.git" as exo;
-import @http "https://example.com/data.json" as data;
-
-fn main() {
-    io.print("Imports working!");
-}
+import fs as files
+print("loaded")
 ```
 
-## Form Reference
+<!-- check: nyi CRUSH-110 -->
+```crush
+use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
+print("loaded")
+```
 
-| Form | Purpose |
-|------|---------|
-| `import module` | Crush stdlib module (`io`, `fs`, `net`, `sys`, `math`, `time`, ...) |
-| `import module as alias` | Module with alias |
-| `import module { a, b }` | Selective import — only named symbols |
-| `use @mcp "url" { tools } as alias` | Wire an MCP server as capabilities |
-| `use @cap "cap.path" { names } as alias` | Import specific capability handles |
-| `use @lang python "module" { symbols }` | Import a polyglot language module |
-| `import @git "url" as alias` | Bind a git repository as a resource |
-| `import @http "url" as alias` | Bind an HTTP resource |
+<!-- check: nyi CRUSH-110 -->
+```crush
+import @http "https://example.com/data.json" as data
+print("loaded")
+```
 
-All `use @...` forms are enforced by the capability system: the runtime only grants
-the declared access; anything undeclared is denied at execution time.
+## `use @lang`
+
+`use @lang <language> "<module>" as <alias>` declares a module for a polyglot
+block. It is accepted and runs, but the alias is not wired to the block's
+variables — the block still has to `import` the module itself:
+
+<!-- check: flags --polyglot -->
+```crush
+use @lang python "math" as math
+
+@python {
+import math
+v = math.factorial(5)
+}
+print(v)
+```
+
+<!-- check: output -->
+```text
+120
+```
+
+## Sharing code today
+
+Put helper functions in the same file, or do the work in a polyglot block. The
+only cross-file mechanism that exists is outside the language: run several
+programs and pass data through files or the host.
