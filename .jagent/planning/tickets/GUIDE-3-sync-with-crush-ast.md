@@ -1,7 +1,7 @@
 # GUIDE-3 — Sync the guide with crush-ast `main` (folds in GUIDE-1, GUIDE-2)
 
-**Status**: In progress (panini) · **Priority**: P1 · **Branch**: `agent/panini/GUIDE-3`
-**Validated against**: crush-ast `origin/main` `4e9c388` (workspace version `0.3.8`, 2026-08-25 release),
+**Status**: Done (PR #1, panini) · **Priority**: P1 · **Branch**: `agent/panini/GUIDE-3`
+**Validated against**: crush-ast `v0.3.9` (`4034d92`, the crates.io release; the first pass ran against `4e9c388`),
 built with `cargo build -p crush-lang-sdk --features stdlib,net,db,graphics`.
 
 The guide was last touched 2026-08-02. This ticket records what had drifted
@@ -48,11 +48,15 @@ The guide was last touched 2026-08-02. This ticket records what had drifted
 
 ## Status log
 
-(Appended as work proceeds — see PR description for final counts.)
+- 2026-10-07 (run 1): language chapters, stdlib, capabilities, polyglot, getting started, examples, README rewritten (11 commits).
+- 2026-10-07 (run 2): casm/* (README, structure, instructions, serialization, examples), cast/* (README, ai-native), appendix/* (quick reference, comparison, glossary) rewritten against `crates/casm`, `crates/crush-vm`, `crates/crush-cast`; getting-started crate versions updated for the published 0.3.9 set (sdk 0.2.0 is yanked).
+- **Final checker run (crush-ast `v0.3.9`):** 181 blocks = 141 ```crush + 24 ```casm + 12 JSON CASM/CAST + 4 `rust,no_run`. **165 green, 15 not-yet-implemented (CRUSH-75, CRUSH-34, CRUSH-110 + GAP-* ids), 1 skipped, 0 failing.** (First run before any edit: 183 crush blocks, 50 green, 133 failing; many of those blocks were cut or merged as pages were rewritten.)
+- Foreman sweep corrections (no WASM sandbox, no `@rust/@c/@go/@zig/@wasm` executors, lambdas CRUSH-75 and imports CRUSH-110 not implemented, per-crate versions) applied; `grep` for those claims across `src/` is clean.
+- Findings filed in TASKS (crush-ast bugs the guide now documents): `.casmb` cannot be read back; `CAST_VERSION` "0.1" vs front-end "1.0.0"; `casm_to_vm` `new_array` size ignored and most IR opcodes unsupported.
 
 ## Done when
 
-- [ ] PR open, `mdbook build` green
-- [ ] Checker covers every ```` ```crush ```` block; counts in the PR body
-- [ ] No page claims a feature, crate version or command crush-ast `origin/main` doesn't back
-- [ ] GUIDE-1 and GUIDE-2 tickets updated
+- [x] PR open, `mdbook build` green
+- [x] Checker covers every ```` ```crush ```` block; counts in the PR body
+- [x] No page claims a feature, crate version or command crush-ast `v0.3.9` doesn't back
+- [x] GUIDE-1 and GUIDE-2 tickets updated
