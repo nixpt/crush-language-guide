@@ -215,11 +215,14 @@ print(cfg.db.port)
 5433
 ```
 
+Printing an object lists its keys in an **unspecified order that can differ
+between runs**; to walk an object deterministically use `collections.keys(obj)`
+(sorted) with `--stdlib` — see [Standard Library](stdlib.md#collections--collections).
+
 > **Not yet implemented.** String-key subscripts (`person["name"]`) fail at run
-> time with `array index must be int, got str`; `len(map)` and `for k in map`
-> are rejected (`expected array or string, got map`); and `.keys()` is not
-> available. Use dot access. (Reported against crush-ast; no ticket yet — see
-> the GUIDE-3 ticket.)
+> time with `array index must be int, got str`, and `len(obj)` and `for k in obj`
+> are rejected (`expected array or string, got map`). Use dot access, and
+> `collections.keys(obj)` to enumerate. (crush-ast gap `GAP-MAP-SUBSCRIPT`.)
 
 <!-- check: nyi GAP-MAP-SUBSCRIPT -->
 ```crush
