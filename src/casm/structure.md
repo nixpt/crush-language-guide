@@ -1,369 +1,238 @@
 # Program Structure
 
-A CASM program is a JSON document with a well-defined structure. This chapter explains each component in detail.
+This chapter describes the three forms of CASM from the top down: the JSON IR
+(`casm::Program`), the text assembly, and the CVM1 binary. Field names and layouts
+are taken from `crates/casm/src/lib.rs`, `crates/crush-vm/src/assembler.rs` and
+`crates/crush-vm/src/bytecode.rs` in crush-ast.
 
-## Top-Level Structure
+## The JSON IR
 
 ```json
 {
-  "version": "0.1",
-  "functions": { /* ... */ },
-  "lang": "python",
-  "manifest": { /* ... */ }
+  "version": "1.0",
+  "functions": { "main": { "params": [], "locals": [], "body": [ /* instructions */ ] } },
+  "manifest": { "permissions": ["io.print"] },
+  "lang": "crush"
 }
 ```
-
-### Fields
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `version` | String | ✓ | CASM format version (currently `"0.1"`) |
-| `functions` | Object | ✓ | Map of function name to function definition |
-| `lang` | String | ✗ | Source language (e.g., `"python"`, `"crush"`, `"rust"`) |
-| `manifest` | Object | ✗ | Capability permissions and metadata |
+|---|---|---|---|
+| `version` | string | yes | CASM format version. The loader accepts any version whose **major** is `1` (`CASM_VERSION = "1.0"`); the Crush compiler writes `"1.0.0"`. Anything else is rejected at load time. |
+| `functions` | object | yes | function name → function definition |
+| `manifest` | object | no | `{"permissions": [capability names…]}`. Defaults to no permissions. |
+| `lang` | string | no | source-language hint (`"crush"`, `"python"`, …); informational |
 
-## Function Structure
+There is **no `entry` field**. When the program is lowered to CVM1, execution
+starts at the function named `main` (the assembler picks `main` if one exists,
+otherwise the first function it sees — and `functions` is an unordered map, so
+always name your entry function `main`). The Crush compiler puts all top-level
+statements into `main`.
 
-Each function in the `functions` object has this structure:
-
-```json
-{
-  "params": ["arg1", "arg2"],
-  "locals": ["temp", "counter"],
-  "body": [ /* instructions */ ]
-}
-```
-
-### Function Fields
+### Functions
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `params` | Array\<String\> | ✗ | Parameter names (default: `[]`) |
-| `locals` | Array\<String\> | ✗ | Local variable names (default: `[]`) |
-| `body` | Array\<Instruction\> | ✓ | Instruction sequence |
+|---|---|---|---|
+| `params` | array of strings | no (default `[]`) | parameter names |
+| `locals` | array of strings | no (default `[]`) | declared local names |
+| `type_hints` | object | no | name → type string, tooling only |
+| `body` | array of instructions | yes | the code |
 
-### Parameters vs Locals
-
-- **Parameters**: Function arguments, bound when the function is called
-- **Locals**: Additional local variables declared in the function
-
-Example:
-
-```json
-{
-  "functions": {
-    "add": {
-      "params": ["a", "b"],
-      "locals": ["result"],
-      "body": [
-        {"op": "load", "name": "a"},
-        {"op": "load", "name": "b"},
-        {"op": "add"},
-        {"op": "store", "name": "result"},
-        {"op": "load", "name": "result"},
-        {"op": "ret"}
-      ]
-    }
-  }
-}
-```
-
-## Instruction Structure
-
-Each instruction is a JSON object with these fields:
+`params` and `locals` are **documentation for tools**: the VM does not bind
+parameters for you. A call pushes its arguments (last argument first) and jumps; the
+callee's body must begin by `store`-ing them. This is what the compiler emits for
+`fn add(a, b)`:
 
 ```json
-{
-  "op": "push_int",
-  "value": 42,
-  "lang": "python",
-  "meta": {
-    "file": "script.py",
-    "line": 10,
-    "column": 5
-  }
-}
+{ "params": ["a", "b"], "locals": [],
+  "body": [ {"op":"store","name":"a"}, {"op":"store","name":"b"},
+            {"op":"load","name":"a"},  {"op":"load","name":"b"},
+            {"op":"add"}, {"op":"ret"} ] }
 ```
 
-### Instruction Fields
+Variables are referred to **by name** in the IR; lowering assigns each distinct name
+in a function a numeric slot (in order of first use), and slots are local to the
+call frame.
+
+### Instructions
+
+```json
+{ "op": "push_int", "value": 42, "instr_lang": "crush", "meta": { "line": 4, "col": 15 } }
+```
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `op` | String | ✓ | Operation name (e.g., `"push_int"`, `"add"`) |
-| `lang` | String | ✗ | Source language for this instruction |
-| `meta` | Object | ✗ | Metadata (file, line, column, etc.) |
-| *others* | Various | Varies | Operation-specific arguments |
+|---|---|---|---|
+| `op` | string | yes | the operation, lower-case snake case (`"push_int"`, `"cap_call"`, …) |
+| `instr_lang` | string or null | no | source language of this instruction (the Rust field is `lang`, the JSON key is `instr_lang`) |
+| `meta` | any JSON | no | free-form metadata; the compiler writes `line` and `col` |
+| *(others)* | varies | per op | operation arguments, flattened into the same object |
 
-### Operation-Specific Arguments
-
-Different operations require different arguments. These are flattened into the instruction object:
+Operation arguments sit **next to** `op`, not in a nested object:
 
 ```json
-// push_int requires "value"
 {"op": "push_int", "value": 42}
-
-// store requires "name"
-{"op": "store", "name": "x"}
-
-// cap_call requires "name" and "argc"
+{"op": "store",    "name": "x"}
 {"op": "cap_call", "name": "io.print", "argc": 1}
-
-// jmp requires "target"
-{"op": "jmp", "target": 10}
+{"op": "call",     "function": "add", "argc": 2}
+{"op": "jmp",      "target": 10}
 ```
 
-See the [Instruction Set Reference](instructions.md) for complete details on each operation's arguments.
+**Jump targets are instruction indices** within the same function's `body`
+(`"target": 10` means "the eleventh instruction"). A target equal to
+`body.len()` jumps past the end.
 
-## Metadata
+A complete program, written by hand and checked by this guide:
 
-The `meta` field can contain arbitrary JSON data, but these fields have special meaning:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | String | Source file path |
-| `line` | Integer | Line number in source file |
-| `column` | Integer | Column number in source file |
-| `lang` | String | Source language |
-
-Example with full metadata:
-
+<!-- check: casm-json -->
 ```json
 {
-  "op": "push_str",
-  "value": "Hello",
-  "lang": "crush",
-  "meta": {
-    "file": "examples/hello.crush",
-    "line": 4,
-    "column": 15,
-    "lang": "crush"
-  }
-}
-```
-
-This metadata is used by the VM to provide accurate error messages:
-
-```text
-Error at examples/hello.crush:4:15
-  |
-4 |     let msg = "Hello";
-  |               ^^^^^^^
-  | Type error: expected Int, got String
-```
-
-## Manifest
-
-The manifest declares capability permissions:
-
-```json
-{
-  "manifest": {
-    "permissions": [
-      "io.print",
-      "io.read",
-      "fs.read",
-      "fs.write",
-      "net.http"
-    ]
-  }
-}
-```
-
-### Manifest Fields
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `permissions` | Array\<String\> | ✓ | List of required capabilities |
-
-### Permission Strings
-
-Permissions follow the format `namespace.method`:
-
-- `io.print` - Print to stdout
-- `io.read` - Read from stdin
-- `fs.read` - Read files
-- `fs.write` - Write files
-- `fs.delete` - Delete files
-- `net.http` - Make HTTP requests
-- `sys.exec` - Execute system commands
-- `sys.env` - Access environment variables
-
-The VM will reject any `cap_call` that isn't listed in the manifest.
-
-## Complete Example
-
-Here's a complete CASM program with all components:
-
-```json
-{
-  "version": "0.1",
-  "lang": "crush",
+  "version": "1.0",
   "functions": {
     "main": {
       "params": [],
-      "locals": ["name", "greeting"],
+      "locals": [],
       "body": [
-        {
-          "op": "push_str",
-          "value": "What's your name?",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 2}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.print",
-          "argc": 1,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 2}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.read",
-          "argc": 0,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 3}
-        },
-        {
-          "op": "store",
-          "name": "name",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 3}
-        },
-        {
-          "op": "push_str",
-          "value": "Hello, ",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "load",
-          "name": "name",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "add",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "push_str",
-          "value": "!",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "add",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "store",
-          "name": "greeting",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 5}
-        },
-        {
-          "op": "load",
-          "name": "greeting",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 6}
-        },
-        {
-          "op": "cap_call",
-          "name": "io.print",
-          "argc": 1,
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 6}
-        },
-        {
-          "op": "ret",
-          "lang": "crush",
-          "meta": {"file": "greet.crush", "line": 7}
-        }
+        {"op": "push_int", "value": 3},
+        {"op": "push_int", "value": 2},
+        {"op": "call", "function": "add", "argc": 2},
+        {"op": "push_str", "value": "2 + 3 = "},
+        {"op": "swap"},
+        {"op": "cap_call", "name": "io.print", "argc": 2},
+        {"op": "halt"}
+      ]
+    },
+    "add": {
+      "params": ["a", "b"],
+      "locals": [],
+      "body": [
+        {"op": "store", "name": "a"},
+        {"op": "store", "name": "b"},
+        {"op": "load", "name": "a"},
+        {"op": "load", "name": "b"},
+        {"op": "add"},
+        {"op": "ret"}
       ]
     }
   },
-  "manifest": {
-    "permissions": [
-      "io.print",
-      "io.read"
-    ]
-  }
+  "manifest": { "permissions": ["io.print"] }
 }
 ```
 
-This corresponds to the Crush source:
-
-```crush
-fn main() {
-    io.print("What's your name?");
-    let name = io.read();
-    
-    let greeting = "Hello, " + name + "!";
-    io.print(greeting);
-}
+<!-- check: output -->
+```text
+2 + 3 = 5
 ```
 
-## Entry Point
+(`push_str` then `swap` puts the label *under* the sum, so `io.print` sees the
+label first.)
 
-The VM looks for a function named `"main"` as the entry point. If no `main` function exists, the program cannot be executed.
+### The manifest
 
-## Best Practices
+`manifest.permissions` lists the capability names the program may call. The check
+happens at run time, on every `cap_call`: a capability that is not in the list is
+refused with `capability not declared in manifest: NAME`, even if the host has it
+registered. When the Crush compiler lowers a program it adds every capability the
+code actually calls, so a manifest only matters when you write or edit IR by hand
+(or want to *restrict* a program).
 
-### 1. Always Include Metadata
+## The text assembly
 
-Include `lang`, `file`, `line`, and `column` metadata for better error messages:
+This is what `crushc --emit casm` prints and `crush-run run FILE.casm` /
+`crush-compile` read. One instruction per line:
 
-```json
-{
-  "op": "add",
-  "lang": "python",
-  "meta": {
-    "file": "script.py",
-    "line": 42,
-    "column": 10
-  }
-}
+```casm
+; a comment (# also works)
+.func main              ; start of function "main"
+    PUSH 40
+    PUSH 2
+    ADD
+    CAP_CALL "io.print" 1
+    JMP done            ; jump to a label
+done:                   ; a label is "name:" on its own line (or before an instruction)
+    HALT
 ```
 
-### 2. Declare All Locals
+- `.func NAME` begins a function. Functions share one flat code section; a `CALL`
+  must name a function defined **somewhere** in the file (forward references are
+  fine — the assembler runs two passes).
+- `LABEL:` marks a jump target; `JMP`/`JZ`/`JNZ`/`ENTER_TRY` take a label name.
+- Mnemonics are case-insensitive. Operands: `PUSH` takes a signed 64-bit integer,
+  `PUSH_F64` a float, `PUSH_STR` a double-quoted string (Rust `{:?}` escapes), and
+  `LOAD`/`STORE` a slot number `0`–`65535`.
+- `CAP_CALL "name" argc` takes the capability name and the argument count (0–255).
+- The assembler records `main` (or, failing that, the first `.func`) as the entry
+  point and builds a function table. A file with no `.func` at all is a single
+  anonymous routine starting at offset 0.
 
-List all local variables in the `locals` array for clarity:
-
-```json
-{
-  "params": ["x", "y"],
-  "locals": ["temp", "result", "i"],
-  "body": [ /* ... */ ]
-}
+```casm
+.func main
+    PUSH 40
+    PUSH 2
+    ADD
+    CAP_CALL "io.print" 1
+    HALT
 ```
 
-### 3. Minimal Permissions
-
-Only request capabilities you actually use:
-
-```json
-{
-  "manifest": {
-    "permissions": ["io.print"]  // Only what's needed
-  }
-}
+<!-- check: output -->
+```text
+42
 ```
 
-### 4. Use Descriptive Function Names
+`crush-run` does not infer permissions from a `.casm` file: pass the capabilities
+the program uses with `--cap` (e.g. `crush-run run prog.casm --cap io.print`).
 
-```json
-{
-  "functions": {
-    "calculate_fibonacci": { /* ... */ },
-    "format_output": { /* ... */ }
-  }
-}
+## The CVM1 binary
+
+`crushc x.crush -o x.cvm1` writes this layout (all multi-byte integers
+big-endian):
+
+```
+ offset  size   field
+      0     4   magic            "CVM1"
+      4     1   version          2   (versions 1 and 2 are accepted)
+      5     2   manifest_len
+      7     n   manifest         JSON: {"runtime", "permissions", "name"?, "functions"?, "entry"?}
+            2   n_consts
+            …   consts           n_consts × ( 2-byte length + UTF-8 bytes )
+            4   code_len
+            …   code             flat bytecode
 ```
 
-## Next Steps
+The constant pool holds every string the code names: `PUSH_STR` literals, capability
+names and function names. A capability name or a string is limited to 65 535 bytes
+and the pool to 65 536 entries because indices are 16-bit. The `functions` table in
+the manifest maps each function name to its byte offset in `code`; `entry` names the
+function the VM starts in.
 
-- **[Instruction Set Reference](instructions.md)**: Learn about all available operations
-- **[Examples](examples.md)**: See complete CASM programs
-- **[Serialization](serialization.md)**: Learn about JSON and binary formats
+Each instruction is one opcode byte followed by a fixed-size operand:
+
+| Operand | Size | Used by |
+|---|---|---|
+| none | 0 | most opcodes |
+| `i64` | 8 | `PUSH`, `PUSH_BOOL` |
+| `f64` | 8 | `PUSH_F64` |
+| const index | 2 | `PUSH_STR`, `CALL`, `GET_FIELD`, `SET_FIELD`, `CAST`, `EXEC_LANG`, the `AI_*`/`DOM_*` opcodes |
+| slot | 2 | `LOAD`, `STORE` |
+| count | 2 | `NEW_ARRAY`, `NEW_TUPLE`, `NEW_LIST`, `NEW_VECTOR`, `NEW_SET`, `PICK`, `ROLL`, `SPAWN` |
+| code offset | 4 | `JMP`, `JZ`, `JNZ`, `ENTER_TRY` (byte offset into `code`) |
+| capability | 3 | `CAP_CALL`: 2-byte const index of the name + 1-byte argc |
+
+Jumps in the binary are **byte offsets**, unlike the IR's instruction indices; the
+assembler converts labels for you.
+
+You can turn a binary back into text with `crush_lang_sdk::disassemble`; it prints
+`.func` lines and synthesises `L<offset>:` labels for jump targets.
+
+## Metadata and source maps
+
+The IR keeps `meta.line`/`meta.col` on each instruction, and `casm::debug_info`
+defines `DebugInfo`/`SourceLocation` for mapping a runtime failure back to the
+source (`format_runtime_error_with_location`). The CVM1 binary carries none of it:
+`Program::source_map` (line → code offset) exists only on a freshly assembled
+program, for debuggers, and is not serialized.
+
+## See also
+
+- [Instruction Reference](instructions.md)
+- [Serialization](serialization.md) — file extensions and version checks
+- [CAST](../cast/README.md) — the layer above

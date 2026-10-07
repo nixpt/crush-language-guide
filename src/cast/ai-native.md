@@ -1,295 +1,125 @@
 # AI-Native CAST
 
-## The Doctrine
+## The doctrine
 
-CAST is JSON. Any agent can emit it directly — no walker, no compiler front-end,
-no source-to-AST pipeline required. An agent that understands the CAST schema can
-produce a complete, runnable program as a single JSON document and hand it to
-`crush_lang::compile_cast()` to get CASM bytecode.
-
-This is the **AI-native doctrine** (s107 / EXO-175): the primary authoring surface
-for AI agents in Exosphere is CAST, not Crush source code.
+CAST is JSON. An agent that knows the [schema](README.md) can emit a complete
+program as one JSON document — no lexer, no parser, no walker — validate it, and
+hand it to the compiler:
 
 ```
-Agent output (JSON)  →  compile_cast()  →  CASM  →  crush-vm (CVM1)
-                ↑
-    No lexer, no parser, no walker.
-    The agent IS the front-end.
+agent output (JSON) ──▶ validate_json ──▶ compile_cast ──▶ CASM ──▶ crush-vm
+          ▲
+          └─ no front-end: the agent *is* the front-end
 ```
 
-Validation before compilation:
+```rust,no_run
+fn main() -> anyhow::Result<()> {
+    let cast_json = r#"{
+        "cast_version": "0.1.0", "entry": "main", "lang": null,
+        "functions": { "main": { "params": [], "meta": {}, "body": [
+            { "type": "ExprStmt", "expr": { "type": "CapabilityCall",
+              "name": "io.print", "meta": {},
+              "args": [ { "type": "StringLiteral", "value": "from an agent" } ] } }
+        ] } }
+    }"#;
 
-```rust
-// standalone crush-ast
-crush_cast::validate_json(&cast_json)?;  // schema check
-let casm = crush_frontend::compile(&cast_json)?;
+    // 1. Schema check: errors carry a JSON path and, for common mistakes, a hint.
+    if let Err(errors) = crush_cast::validate_json(cast_json) {
+        for e in errors {
+            eprintln!("{e}");
+        }
+        anyhow::bail!("invalid CAST");
+    }
 
-// exosphere embedding (crush_lang re-exports the same pipeline)
-let casm = crush_lang::compile_cast(&cast_json)?;
+    // 2. CAST -> CASM IR -> CVM1, then run it.
+    let program: crush_cast::Program = serde_json::from_str(cast_json)?;
+    let casm = crush_frontend::compile_cast_owned(program)?;
+    let vm = crush_lang_sdk::compile::casm_to_vm(&casm)?;
+    let result = crush_lang_sdk::Runtime::new().run(&vm)?;
+    assert_eq!(result.output, "from an agent\n");
+    Ok(())
+}
 ```
 
----
+(For a standalone checkout, `crush_cast::validate_json` and
+`crush_frontend::compile_cast` are the entry points; the version-gated
+`crush_cast::Program::deserialize` currently rejects the front end's own `1.0.0`
+stamp, so parse with `serde_json` as above or write `"cast_version": "0.1.0"`. See
+[CAST serialization](README.md#serialization).)
 
-## Program Skeleton
+Writing CAST rather than source buys an agent three things: no syntax errors (the
+schema is the grammar), a validator that answers with a path and a hint, and
+`meta` fields it can use to tag nodes with their own provenance.
 
-Every CAST document has this top-level shape:
+## Program skeleton
 
 ```json
 {
   "cast_version": "0.1.0",
   "entry": "main",
-  "lang": null,
-  "functions": {
-    "main": {
-      "params": [],
-      "body": [ /* Statement[] */ ],
-      "meta": {}
-    }
-  },
+  "lang": "agent",
+  "functions": { "main": { "params": [], "body": [ /* statements */ ], "meta": {} } },
   "ai_meta": null
 }
 ```
 
-Set `"lang": "agent"` (or any string) to identify the emitting agent in source maps.
-Set `"ai_meta"` to attach program-level metadata (see below).
+`lang` may be any string — set it to identify the emitting agent in source maps.
+`ai_meta` carries program-level AI metadata (below).
 
----
+## AI nodes
 
-## AI Expression Nodes
+An AI node is an object with `"type": "AI"` and an `ai_type` discriminator. There are
+**seven expressions** (they yield a value and may appear wherever an expression can)
+and **six statements** (coordination steps in a statement list).
 
-Five `"type": "AI"` expression variants. They compile to the `ai_*` CASM instruction family.
+### Expressions
 
-### Query
+| `ai_type` | Fields |
+|---|---|
+| `Query` | `query`, `result_type` (string or null), `context` (object) |
+| `ToolChain` | `tools` (array of `{tool_name, parameters, result_binding?, condition?, required_capability?}`), `strategy`, `error_handling` |
+| `AgentDelegation` | `task`, `agents` (ids or patterns), `delegation_strategy`, `expected_format?` |
+| `LearningLoop` | `learning_target`, `strategy`, `adaptations` |
+| `ContextAware` | `expression` (any expression), `requires_context`, `provides_context` |
+| `SemanticMatch` | `target` (expression), `concept`, `confidence_threshold` |
+| `Synthesize` | `output_type` (a [`CastType`](README.md#types)), `constraints`, `context_refs`, `examples?` |
 
-Natural-language query execution. The runtime resolves `query` against the available
-LLM/tool context and returns a typed value.
+### Statements
 
-```json
-{
-  "type": "VarDecl",
-  "name": "answer",
-  "value": {
-    "type": "AI",
-    "ai_type": "Query",
-    "query": "Answer this question concisely",
-    "result_type": "string",
-    "context": {
-      "question": "What is the capital of France?"
-    }
-  },
-  "type_hint": "String",
-  "meta": {}
-}
-```
+| `ai_type` | Fields |
+|---|---|
+| `GoalDeclaration` | `goal_id`, `description`, `success_criteria`, `priority`, `deadline?` |
+| `ProgressUpdate` | `goal_id`, `progress` (0.0–1.0), `status_message`, `metrics` (name → number) |
+| `KnowledgeSharing` | `knowledge_type`, `content` (any JSON), `recipients`, `retention_policy` |
+| `CapabilityDiscovery` | `domain`, `requirements`, `discovery_strategy` |
+| `AdaptationRequest` | `adaptation_type`, `reason`, `parameters` |
+| `SemanticSwitch` | `target` (expression), `cases`: `[[label, statements], …]`, `fallback?` |
 
-### ToolChain
+### The enumerations
 
-Orchestrate a sequence (or parallel set) of tool calls. `result_binding` names where
-each tool's output is stored for downstream tools.
+| Field | Values |
+|---|---|
+| `strategy` (ToolChain) | **objects**: `{"type": "Sequential"}`, `{"type": "Parallel"}`, `{"type": "Conditional", "conditions": [..]}`, `{"type": "Retry", "max_attempts": 3, "backoff_strategy": {"type": "Fixed", "delay_ms": 100}}` (also `Exponential`, `Linear`) |
+| `error_handling` | **objects**: `{"type": "FailFast"}`, `{"type": "ContinueOnError"}`, `{"type": "Retry", "max_retries": 2, "retry_condition": null}`, `{"type": "Fallback", "fallback_tools": [..]}` |
+| `delegation_strategy` | strings `"FirstAvailable"` `"CapabilityMatch"` `"ParallelSplit"` `"Hierarchical"` `"Broadcast"` `"Best"` `"RoundRobin"`, or `{"Consensus": {"threshold": 0.66}}` |
+| `learning_target` | `"UserBehavior"` `"ExecutionPatterns"` `"ErrorPatterns"` `"PerformanceMetrics"` `"ToolUsage"` |
+| LearningLoop `strategy` | `"PatternRecognition"` `"StatisticalAnalysis"` `"MachineLearning"` `"RuleBased"` |
+| `adaptations` items | `"OptimizeToolChain"` `"ImproveErrorHandling"` `"UpdateAgentSelection"` `"ModifyExecutionStrategy"` `"LearnNewPatterns"` |
+| `priority` | `"Low"` `"Medium"` `"High"` `"Critical"` |
+| `knowledge_type` | `"Pattern"` `"Solution"` `"BestPractice"` `"Warning"` `"Insight"` |
+| `retention_policy` | `"Ephemeral"` `"Session"` `"Persistent"` or `{"Conditional": {"condition": ".."}}` |
+| `discovery_strategy` | `"Broadcast"` `"Targeted"` `"Hierarchical"` `"LearningBased"` |
+| `adaptation_type` | `"Performance"` `"Reliability"` `"Usability"` `"Compatibility"` `"Learning"` |
 
-```json
-{
-  "type": "AI",
-  "ai_type": "ToolChain",
-  "tools": [
-    {
-      "tool_name": "search",
-      "parameters": { "query": "Python best practices" },
-      "result_binding": "search_results"
-    },
-    {
-      "tool_name": "analyze",
-      "parameters": { "text": "search_results" },
-      "result_binding": "analysis"
-    },
-    {
-      "tool_name": "summarize",
-      "parameters": { "input": "analysis" },
-      "result_binding": "summary"
-    }
-  ],
-  "strategy": { "type": "Sequential" },
-  "error_handling": {
-    "type": "Retry",
-    "max_retries": 2,
-    "retry_condition": "status != ok"
-  }
-}
-```
+Note the asymmetry: `ToolChain.strategy` and `error_handling` are *internally
+tagged objects* (`{"type": …}`), while `delegation_strategy` and the others are
+plain strings. Mixing them up is the commonest validation failure; the validator's
+hint for the delegation case says so.
 
-**`strategy` options:** `Sequential` · `Parallel` · `Conditional` · `Retry`
+Here is every node in one program. It is the schema's complete AI surface, checked
+by `validate_json`, the compiler and the lowering:
 
-**`error_handling` options:** `FailFast` · `ContinueOnError` · `Retry { max_retries }` · `Fallback`
-
-### AgentDelegation
-
-Delegate a task to one or more agents. The `delegation_strategy` controls how agents
-are selected and results are combined.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "AgentDelegation",
-  "task": "Review the diff on branch agent/castbook/EXO-175 for unsoundness",
-  "agents": ["agent://reviewers/*"],
-  "delegation_strategy": { "Consensus": { "threshold": 0.66 } },
-  "expected_format": "markdown"
-}
-```
-
-**`delegation_strategy` options:**
-`FirstAvailable` · `CapabilityMatch` · `ParallelSplit` · `Hierarchical` ·
-`{ "Consensus": { "threshold": 0.0–1.0 } }` · `Broadcast` · `Best` · `RoundRobin`
-
-### LearningLoop
-
-Record patterns from execution and adapt future behavior.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "LearningLoop",
-  "learning_target": "ExecutionPatterns",
-  "strategy": "PatternRecognition",
-  "adaptations": ["OptimizeToolChain", "LearnNewPatterns"]
-}
-```
-
-### ContextAware
-
-Wrap an expression with explicit context requirements and provisions. The runtime
-ensures the required context is present before evaluating `expression`.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "ContextAware",
-  "expression": {
-    "type": "AI",
-    "ai_type": "Query",
-    "query": "Summarize the review consensus in two sentences",
-    "result_type": "string",
-    "context": {}
-  },
-  "requires_context": ["session.goal", "review.findings"],
-  "provides_context": ["review.summary"]
-}
-```
-
----
-
-## AI Statement Nodes
-
-Five coordination statements at the top level of a function body. They do not
-produce values — they signal intent to the agent runtime.
-
-### GoalDeclaration
-
-```json
-{
-  "type": "AI",
-  "ai_type": "GoalDeclaration",
-  "goal": "Ship EXO-175 with 80% schema coverage",
-  "success_criteria": ["all examples validate", "no FP on real fleet"],
-  "deadline": "2026-06-30T00:00:00Z",
-  "meta": {}
-}
-```
-
-### ProgressUpdate
-
-```json
-{
-  "type": "AI",
-  "ai_type": "ProgressUpdate",
-  "goal_id": "EXO-175",
-  "progress": 0.65,
-  "status": "in-progress",
-  "notes": "core examples done; AI-native chapter in flight",
-  "meta": {}
-}
-```
-
-### KnowledgeSharing
-
-Share a learned insight with other agents in the fleet.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "KnowledgeSharing",
-  "knowledge_type": "Insight",
-  "content": { "finding": "review consensus reached", "confidence": 0.9 },
-  "recipients": ["agent://reviewers/*", "foreman"],
-  "retention_policy": "Session",
-  "meta": {}
-}
-```
-
-### CapabilityDiscovery
-
-Broadcast a request to find agents that can handle a domain.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "CapabilityDiscovery",
-  "domain": "code-review",
-  "requirements": ["rust", "security-analysis"],
-  "discovery_strategy": "Broadcast",
-  "meta": {}
-}
-```
-
-### AdaptationRequest
-
-Request a runtime or coordination change.
-
-```json
-{
-  "type": "AI",
-  "ai_type": "AdaptationRequest",
-  "adaptation_type": "Performance",
-  "reason": "review latency above target",
-  "parameters": { "max_parallel_reviews": 4 },
-  "meta": {}
-}
-```
-
----
-
-## Program-Level AI Metadata
-
-The top-level `ai_meta` field lets an agent describe the whole program:
-
-```json
-{
-  "ai_meta": {
-    "description": "Demonstrates the AI-native orchestration primitives end to end.",
-    "ai_tags": ["orchestration", "delegation", "learning"],
-    "required_capabilities": ["ai.query", "ai.agent_delegation"],
-    "execution_context": {
-      "environment": ["exosphere"],
-      "resources": [],
-      "permissions": ["ai.query"],
-      "dependencies": []
-    },
-    "learning_objectives": ["optimize delegation latency"],
-    "collaboration_patterns": ["consensus", "broadcast"]
-  }
-}
-```
-
-These fields are metadata only — they do not affect CASM compilation — but the
-Exosphere runtime uses them for scheduling, capability pre-checks, and audit logs.
-
----
-
-## Complete Example: Agent Orchestration
-
-The following is a real CAST document from `examples/cast/ai-orchestration.cast.json`.
-It is the canonical reference for all five AI expression and statement types together.
-
+<!-- check: cast-validate -->
 ```json
 {
   "cast_version": "0.1.0",
@@ -298,117 +128,182 @@ It is the canonical reference for all five AI expression and statement types tog
   "functions": {
     "main": {
       "params": [],
+      "meta": {},
       "body": [
-        {
-          "type": "AI",
-          "ai_type": "CapabilityDiscovery",
-          "domain": "code-review",
-          "requirements": ["rust", "security-analysis"],
-          "discovery_strategy": "Broadcast",
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "review",
-          "value": {
-            "type": "AI",
-            "ai_type": "AgentDelegation",
-            "task": "Review the diff on branch agent/castbook/EXO-175 for unsoundness",
+        { "type": "AI", "ai_type": "GoalDeclaration", "goal_id": "ship-it",
+          "description": "Ship the release", "success_criteria": ["tests pass"],
+          "priority": "High", "deadline": null },
+        { "type": "AI", "ai_type": "ProgressUpdate", "goal_id": "ship-it",
+          "progress": 0.5, "status_message": "halfway", "metrics": { "coverage": 0.8 } },
+        { "type": "AI", "ai_type": "KnowledgeSharing", "knowledge_type": "Insight",
+          "content": { "finding": "x" }, "recipients": ["agent://reviewers/*"],
+          "retention_policy": "Session" },
+        { "type": "AI", "ai_type": "CapabilityDiscovery", "domain": "code-review",
+          "requirements": ["rust"], "discovery_strategy": "Broadcast" },
+        { "type": "AI", "ai_type": "AdaptationRequest", "adaptation_type": "Performance",
+          "reason": "review latency above target", "parameters": { "workers": 4 } },
+        { "type": "VarDecl", "name": "answer", "type_hint": "String",
+          "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
+                     "result_type": "string", "context": {} } },
+        { "type": "VarDecl", "name": "hits", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "ToolChain",
+            "tools": [ { "tool_name": "search", "parameters": { "q": "x" }, "result_binding": "hits" } ],
+            "strategy": { "type": "Sequential" }, "error_handling": { "type": "FailFast" } } },
+        { "type": "VarDecl", "name": "verdict", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "AgentDelegation", "task": "Review the diff",
             "agents": ["agent://reviewers/*"],
             "delegation_strategy": { "Consensus": { "threshold": 0.66 } },
-            "expected_format": "markdown"
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "AI",
-          "ai_type": "KnowledgeSharing",
-          "knowledge_type": "Insight",
-          "content": { "finding": "review consensus reached", "confidence": 0.9 },
-          "recipients": ["agent://reviewers/*", "foreman"],
-          "retention_policy": "Session",
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "insight",
-          "value": {
-            "type": "AI",
-            "ai_type": "LearningLoop",
-            "learning_target": "ExecutionPatterns",
-            "strategy": "PatternRecognition",
-            "adaptations": ["OptimizeToolChain", "LearnNewPatterns"]
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "AI",
-          "ai_type": "AdaptationRequest",
-          "adaptation_type": "Performance",
-          "reason": "review latency above target",
-          "parameters": { "max_parallel_reviews": 4 },
-          "meta": {}
-        },
-        {
-          "type": "VarDecl",
-          "name": "summary",
-          "value": {
-            "type": "AI",
-            "ai_type": "ContextAware",
-            "expression": {
-              "type": "AI",
-              "ai_type": "Query",
-              "query": "Summarize the review consensus in two sentences",
-              "result_type": "string",
-              "context": {}
-            },
-            "requires_context": ["session.goal", "review.findings"],
-            "provides_context": ["review.summary"]
-          },
-          "type_hint": "Any",
-          "meta": {}
-        },
-        {
-          "type": "Export",
-          "name": "summary",
-          "value": { "type": "Var", "name": "summary" },
-          "meta": {}
-        }
-      ],
-      "meta": {}
+            "expected_format": "markdown" } },
+        { "type": "VarDecl", "name": "insight", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "LearningLoop", "learning_target": "ToolUsage",
+            "strategy": "RuleBased", "adaptations": ["OptimizeToolChain"] } },
+        { "type": "VarDecl", "name": "scoped", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "ContextAware",
+            "expression": { "type": "IntLiteral", "value": 1 },
+            "requires_context": ["session.goal"], "provides_context": ["review.summary"] } },
+        { "type": "VarDecl", "name": "match", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "SemanticMatch",
+            "target": { "type": "StringLiteral", "value": "hi" },
+            "concept": "greeting", "confidence_threshold": 0.8 } },
+        { "type": "VarDecl", "name": "draft", "type_hint": "Any",
+          "value": { "type": "AI", "ai_type": "Synthesize", "output_type": "String",
+            "constraints": ["two sentences"], "context_refs": [], "examples": null } }
+      ]
     }
-  },
-  "ai_meta": {
-    "description": "Demonstrates the AI-native orchestration primitives end to end.",
-    "ai_tags": ["orchestration", "delegation", "learning"],
-    "required_capabilities": ["ai.query", "ai.agent_delegation"]
   }
 }
 ```
 
----
+## Program-level metadata
 
-## CASM Instructions Emitted
+`ai_meta` describes the program as a whole. It does not change compilation:
 
-| CAST node | CASM instruction |
-|-----------|-----------------|
-| `AI / Query` | `ai_query` |
-| `AI / ToolChain` | `ai_tool_chain` |
-| `AI / AgentDelegation` | `ai_agent_delegation` |
-| `AI / LearningLoop` | `ai_learning_loop` |
-| `AI / ContextAware` | `ai_context_aware` |
-| `AI / GoalDeclaration` | `ai_goal_decl` |
-| `AI / ProgressUpdate` | `ai_progress_update` |
-| `AI / KnowledgeSharing` | `ai_knowledge_share` |
-| `AI / CapabilityDiscovery` | `ai_capability_discovery` |
-| `AI / AdaptationRequest` | (maps to `ai_context_aware` + runtime signal) |
+```json
+{
+  "ai_meta": {
+    "description": "Review orchestration",
+    "ai_tags": ["orchestration", "delegation"],
+    "required_capabilities": ["ai.query", "ai.agent_delegation"],
+    "execution_context": { "environment": [], "resources": [], "permissions": [], "dependencies": [] },
+    "learning_objectives": ["optimize delegation latency"],
+    "collaboration_patterns": [
+      { "pattern_type": "consensus", "participants": ["reviewers"],
+        "communication_style": "async", "decision_making": "vote" }
+    ],
+    "inputs": [], "outputs": [], "complexity": 3
+  }
+}
+```
 
----
+## What actually runs
 
-## See Also
+**The AI nodes compile, but nothing executes them yet.** This is the single most
+important thing to know before building on this chapter. The CAST compiler turns each
+AI node into the matching `ai_*` CASM instruction, but the step that lowers CASM to
+runnable CVM1 (`casm_to_vm`) turns every `ai_*` instruction into a `NOP`. Concretely
+(crush-ast `v0.3.9`, tickets CRUSH-1 / CRUSH-32 / CRUSH-34):
 
-- [`examples/cast/`](https://github.com/nixpt/crush-ast/tree/main/examples/cast) — canonical CAST example corpus
-- [CAST Base Spec](README.md) — statement and expression node reference (v0.3 base)
-- [CASM Instruction Reference](../casm/instructions.md) — the `ai_*` instruction category
+- **AI statements are no-ops.** A program made of them runs and does nothing:
+
+<!-- check: cast-json -->
+```json
+{
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "AI", "ai_type": "GoalDeclaration", "goal_id": "g", "description": "d",
+      "success_criteria": [], "priority": "Low", "deadline": null },
+    { "type": "ExprStmt", "expr": { "type": "CapabilityCall", "name": "io.print", "meta": {},
+      "args": [ { "type": "StringLiteral", "value": "after the goal" } ] } }
+  ] } }
+}
+```
+
+<!-- check: output -->
+```text
+after the goal
+```
+
+- **AI expressions produce no value.** Because the `NOP` pushes nothing, any program
+  that *uses* the result (`VarDecl`, an argument, a `Return`) pops an empty stack and
+  fails:
+
+<!-- check: cast-json -->
+<!-- check: runfail stack underflow -->
+```json
+{
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "VarDecl", "name": "answer", "type_hint": "String",
+      "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
+                 "result_type": "string", "context": {} } }
+  ] } }
+}
+```
+
+  This is why the shipped `examples/cast/ai-query.cast.json` and
+  `ai-orchestration.cast.json` validate but fail with `stack underflow` when run.
+
+- **Three IR nodes have no bytecode at all.** `ai_capability_discovery`,
+  `ai_adaptation_request` and `ai_semantic_switch` exist in the IR but not in CVM1.
+  CVM1 has ten AI opcodes (`AI_QUERY`, `AI_SYNTHESIZE`, `AI_AGENT_DELEGATION`,
+  `AI_SEMANTIC_MATCH`, `AI_LEARNING_LOOP`, `AI_CONTEXT_AWARE`, `AI_TOOLCHAIN`,
+  `AI_GOAL_DECLARATION`, `AI_PROGRESS_UPDATE`, `AI_KNOWLEDGE_SHARING`).
+- **The opcodes exist and are gated by capabilities, as stubs.** A hand-written CVM1
+  `AI_QUERY` calls the host capability `ai_native.query` — and an embedder can
+  register the ten `ai_native.*` stubs with
+  `HostCapsBuilder::new().ai_native(true)`. Each stub returns the same thing, a map
+  `{ok: true, kind: "<name>", echo: [...]}`, and does nothing else (no model call, no
+  delegation, no learning). The CLI has no flag for it. This is the wiring a real
+  backend will replace, so the gate names are the stable part:
+
+<!-- check: asm-ai -->
+<!-- check: output -->
+```casm
+.func main
+    AI_QUERY "{\"q\": \"capital of France\"}"
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+```text
+{ok: true, kind: query, echo: []}
+```
+
+  The gates are `ai_native.query`, `.synthesize`, `.agent_delegation`,
+  `.semantic_match`, `.learning_loop`, `.context_aware`, `.toolchain`,
+  `.goal_declaration`, `.progress_update` and `.knowledge_sharing`. The same pattern
+  holds for the DOM opcodes (`dom_native.*`) and `SPAWN`/`YIELD`/`AWAIT`
+  (`concurrency_native.*`).
+
+So today the AI-native surface is best understood as a **typed, validated schema for
+agent intent** — a program an agent can emit, a tool can lint and an index can read —
+not an executing orchestration runtime. Plan for the schema to be stable and the
+execution to arrive later.
+
+## Instruction mapping
+
+| CAST node | CASM IR instruction | CVM1 opcode |
+|---|---|---|
+| `Query` | `ai_query` | `AI_QUERY` |
+| `ToolChain` | `ai_tool_chain` | `AI_TOOLCHAIN` |
+| `AgentDelegation` | `ai_agent_delegation` | `AI_AGENT_DELEGATION` |
+| `LearningLoop` | `ai_learning_loop` | `AI_LEARNING_LOOP` |
+| `ContextAware` | `ai_context_aware` | `AI_CONTEXT_AWARE` |
+| `SemanticMatch` | `ai_semantic_match` | `AI_SEMANTIC_MATCH` |
+| `Synthesize` | `ai_synthesize` | `AI_SYNTHESIZE` |
+| `GoalDeclaration` | `ai_goal_decl` | `AI_GOAL_DECLARATION` |
+| `ProgressUpdate` | `ai_progress_update` | `AI_PROGRESS_UPDATE` |
+| `KnowledgeSharing` | `ai_knowledge_share` | `AI_KNOWLEDGE_SHARING` |
+| `CapabilityDiscovery` | `ai_capability_discovery` | — |
+| `AdaptationRequest` | `ai_adaptation_request` | — |
+| `SemanticSwitch` | `ai_semantic_switch` | — |
+
+("CVM1 opcode" is what the text assembler and the VM have; as explained above the
+IR→CVM1 lowering does not currently emit any of them. The IR column is what
+`crush_frontend::compile_cast` emits for each node.)
+
+## See also
+
+- [`examples/cast/`](https://github.com/nixpt/crush-ast/tree/main/examples/cast) in crush-ast — the example corpus (validates; most need host capabilities or hit the AI limits above to run)
+- [CAST schema](README.md) — the non-AI nodes
+- [CASM Instruction Reference](../casm/instructions.md#polyglot-concurrency-ai-and-dom)

@@ -2,5 +2,9 @@
 
 Filed s412 (2026-08-02) from the crush-ast CRUSH-71 audit arc. Tickets in `.jagent/planning/tickets/`.
 
-- [ ] **GUIDE-1** — validate every code example through the real pipeline (see ticket)
-- [ ] **GUIDE-2** — document the polyglot lanes + timeout/sandbox semantics (see ticket)
+- [x] **GUIDE-1** — validate every code example through the real pipeline (see ticket) — done in PR #1
+- [x] **GUIDE-2** — document the polyglot lanes + timeout/sandbox semantics (see ticket) — done in PR #1
+- [x] **GUIDE-3** — sync the whole guide with crush-ast v0.3.9 (folds in GUIDE-1/2): 181 blocks checked, 165 green / 15 NYI / 1 skipped / 0 failing — PR #1
+- [ ] **issue** — crush-ast v0.3.9: crush-cast CAST_VERSION="0.1" but the Crush frontend emits cast_version "1.0.0" (parser/mod.rs:566), so Program::deserialize/load (version gate, pack.rs) rejects the frontend's own CAST JSON: 'version mismatch at cast boundary: expected 0.1, found 1.0.0'. serde_json::from_str and validate_json accept it. Guide documents both; fix is crush-ast's (foreman).  _(panini, 2026-10-07)_
+- [ ] **gap** — crush-ast v0.3.9 crush-lang-sdk/src/compile.rs casm_to_vm: JSON op new_array computes 'size' then emits a literal 'NEW_ARRAY 0' (unused variable), so hand-written/AI-emitted CASM IR {push 1, push 2, new_array size:2} yields an EMPTY array. Compiler output is unaffected (it uses new_array + array_push). Also casm_to_vm rejects most IR opcodes the casm crate defines (arr_len, arr_push, arr_pop, shl/shr/bit_*, type_of, cast, rot/pick/roll, math_*, str_to_*/starts/ends/trim, new_tuple/list/vector/set, call_host, import_var...) with 'Unsupported CVM1 opcode', although CVM1 text assembly has mnemonics for them; and lowers ai_*/dom_* to NOP. Guide documents the gap.  _(panini, 2026-10-07)_
+- [ ] **issue** — crush-ast v0.3.9 casm::Program binary (.casmb) format cannot be read back: serialize(Format::Binary) uses rmp_serde::encode::write (compact array encoding) but Instruction has #[serde(flatten)] args, so deserialize fails 'invalid type: sequence, expected a map' for every program (repro: compile any .crush to casm::Program, serialize Binary, deserialize Binary). Fix: rmp_serde::encode::write_named / to_vec_named. Guide documents it as currently unusable.  _(panini, 2026-10-07)_

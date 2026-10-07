@@ -1,1266 +1,352 @@
 # Instruction Set Reference
 
-This is the complete reference for all CASM instructions. Each instruction is documented with its syntax, stack effects, parameters, description, and examples.
+Every instruction has two spellings: the **JSON name** used in the CASM IR
+(`"op": "push_int"`) and the **CVM1 mnemonic** used in the text assembly and the
+binary (`PUSH`). The tables below give both, the operand, and the stack effect.
+Behaviour was checked against the crush-ast `v0.3.9` VM; the examples at the end of
+each section are run by this guide's checker.
 
-## Reading Stack Effects
+## Reading stack effects
 
-Stack effects show how instructions modify the stack:
+`a b → c` means: pop `b` (the **top**), pop `a`, push `c`. The rightmost value is
+always the top of the stack. `…` is "whatever was below".
 
+Operands in the text assembly follow the mnemonic: `PUSH 42`, `LOAD 3`,
+`CAP_CALL "io.print" 1`. In the IR they are named fields next to `op`.
+
+> **Two instruction sets.** The IR (`casm::OpCode`) is wider than the VM: it has
+> names the VM bytecode does not (`break`, `continue`, `await` with a handle,
+> `call_host`, `import_var`) and the VM bytecode has mnemonics the IR lowering never
+> emits (`ROT`, `PICK`, `CAST`, the `MATH_*` family). [The last
+> section](#what-lowers-to-cvm1) lists exactly which IR ops reach the VM.
+
+## Stack
+
+| JSON `op` | CVM1 | Operand | Stack effect | Notes |
+|---|---|---|---|---|
+| `push_int` | `PUSH` | `value` (i64) | `→ int` | |
+| `push_float` | `PUSH_F64` | `value` (f64) | `→ float` | |
+| `push_str` | `PUSH_STR` | `value` (string) | `→ str` | text form: quoted string |
+| `push_bool` | `PUSH_BOOL` | `value` (bool; `1`/`0` in text) | `→ bool` | |
+| `push_null` | `PUSH_NULL` | — | `→ null` | |
+| `pop` | `POP` | — | `a →` | |
+| `dup` | `DUP` | — | `a → a a` | |
+| `swap` | `SWAP` | — | `a b → b a` | |
+| `rot` | `ROT` | — | `a b c → b a c` | as observed on `v0.3.9`; **not** Forth's `ROT` |
+| `pick` | `PICK n` | `n` | `… → … v` | copy the item `n` below the top (`PICK 2` copies the third) |
+| `roll` | `ROLL n` | `n` | `… → … v` | *move* the item `n` below the top to the top |
+| — | `NOP` | — | — | text/binary only |
+
+```casm
+.func main
+    PUSH 1
+    PUSH 2
+    PUSH 3
+    ROLL 2          ; stack is now 2 3 1
+    CAP_CALL "io.print" 1
+    CAP_CALL "io.print" 1
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+<!-- check: output -->
 ```text
-before → after
-```
-
-For example:
-- `a, b → result` means: pop `b`, pop `a`, push `result`
-- `value →` means: pop `value` (nothing pushed)
-- `→ value` means: push `value` (nothing popped)
-
-## Instruction Categories
-
-- [Stack Operations](#stack-operations)
-- [Memory Operations](#memory-operations)
-- [Arithmetic Operations](#arithmetic-operations)
-- [Comparison Operations](#comparison-operations)
-- [Logical Operations](#logical-operations)
-- [Bitwise Operations](#bitwise-operations)
-- [Stack Manipulation](#stack-manipulation)
-- [Control Flow](#control-flow)
-- [Array Operations](#array-operations)
-- [Object Operations](#object-operations)
-- [Type Operations](#type-operations)
-- [Capability Calls](#capability-calls)
-- [Concurrency](#concurrency)
-
----
-
-## Stack Operations
-
-### `push_int`
-
-Push an integer onto the stack.
-
-**Syntax:**
-```json
-{"op": "push_int", "value": 42}
-```
-
-**Stack Effect:** `→ int`
-
-**Parameters:**
-- `value` (Integer): The integer value to push
-
-**Example:**
-```json
-{"op": "push_int", "value": 100}
-// Stack: [100]
-```
-
----
-
-### `push_float`
-
-Push a floating-point number onto the stack.
-
-**Syntax:**
-```json
-{"op": "push_float", "value": 3.14}
-```
-
-**Stack Effect:** `→ float`
-
-**Parameters:**
-- `value` (Float): The float value to push
-
-**Example:**
-```json
-{"op": "push_float", "value": 2.718}
-// Stack: [2.718]
-```
-
----
-
-### `push_str`
-
-Push a string onto the stack.
-
-**Syntax:**
-```json
-{"op": "push_str", "value": "Hello"}
-```
-
-**Stack Effect:** `→ string`
-
-**Parameters:**
-- `value` (String): The string value to push
-
-**Example:**
-```json
-{"op": "push_str", "value": "Hello, World!"}
-// Stack: ["Hello, World!"]
-```
-
----
-
-### `push_bool`
-
-Push a boolean onto the stack.
-
-**Syntax:**
-```json
-{"op": "push_bool", "value": true}
-```
-
-**Stack Effect:** `→ bool`
-
-**Parameters:**
-- `value` (Boolean): `true` or `false`
-
-**Example:**
-```json
-{"op": "push_bool", "value": false}
-// Stack: [false]
-```
-
----
-
-### `push_null`
-
-Push a null value onto the stack.
-
-**Syntax:**
-```json
-{"op": "push_null"}
-```
-
-**Stack Effect:** `→ null`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_null"}
-// Stack: [null]
-```
-
----
-
-### `pop`
-
-Remove the top value from the stack.
-
-**Syntax:**
-```json
-{"op": "pop"}
-```
-
-**Stack Effect:** `value →`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 42}
-{"op": "pop"}
-// Stack: []
-```
-
----
-
-### `dup`
-
-Duplicate the top stack value.
-
-**Syntax:**
-```json
-{"op": "dup"}
-```
-
-**Stack Effect:** `value → value, value`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "dup"}
-// Stack: [5, 5]
-```
-
----
-
-## Memory Operations
-
-### `store`
-
-Store the top stack value in a variable.
-
-**Syntax:**
-```json
-{"op": "store", "name": "variable_name"}
-```
-
-**Stack Effect:** `value →`
-
-**Parameters:**
-- `name` (String): Variable name
-
-**Example:**
-```json
-{"op": "push_int", "value": 42}
-{"op": "store", "name": "x"}
-// Variable x = 42
-// Stack: []
-```
-
----
-
-### `load`
-
-Load a variable's value onto the stack.
-
-**Syntax:**
-```json
-{"op": "load", "name": "variable_name"}
-```
-
-**Stack Effect:** `→ value`
-
-**Parameters:**
-- `name` (String): Variable name
-
-**Example:**
-```json
-{"op": "load", "name": "x"}
-// Stack: [42] (assuming x = 42)
-```
-
----
-
-### `export_var`
-
-Export a variable to the capsule's export table.
-
-**Syntax:**
-```json
-{"op": "export_var", "name": "variable_name"}
-```
-
-**Stack Effect:** `value →`
-
-**Parameters:**
-- `name` (String): Variable name to export
-
-**Example:**
-```json
-{"op": "push_int", "value": 100}
-{"op": "export_var", "name": "result"}
-// Exports result = 100 for other capsules
-```
-
----
-
-### `import_var`
-
-Import a variable from another capsule.
-
-**Syntax:**
-```json
-{"op": "import_var", "name": "variable_name"}
-```
-
-**Stack Effect:** `→ value`
-
-**Parameters:**
-- `name` (String): Variable name to import
-
-**Example:**
-```json
-{"op": "import_var", "name": "config"}
-// Stack: [<imported value>]
-```
-
----
-
-## Arithmetic Operations
-
-### `add`
-
-Add two values.
-
-**Syntax:**
-```json
-{"op": "add"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Behavior:**
-- Numbers: arithmetic addition
-- Strings: concatenation
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "add"}
-// Stack: [8]
-```
-
----
-
-### `sub`
-
-Subtract two numbers.
-
-**Syntax:**
-```json
-{"op": "sub"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 10}
-{"op": "push_int", "value": 3}
-{"op": "sub"}
-// Stack: [7]  (10 - 3)
-```
-
----
-
-### `mul`
-
-Multiply two numbers.
-
-**Syntax:**
-```json
-{"op": "mul"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 6}
-{"op": "push_int", "value": 7}
-{"op": "mul"}
-// Stack: [42]
-```
-
----
-
-### `div`
-
-Divide two numbers.
-
-**Syntax:**
-```json
-{"op": "div"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 20}
-{"op": "push_int", "value": 4}
-{"op": "div"}
-// Stack: [5]  (20 / 4)
-```
-
----
-
-### `mod`
-
-Compute modulo (remainder).
-
-**Syntax:**
-```json
-{"op": "mod"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 17}
-{"op": "push_int", "value": 5}
-{"op": "mod"}
-// Stack: [2]  (17 % 5)
-```
-
----
-
-### `neg`
-
-Negate a number.
-
-**Syntax:**
-```json
-{"op": "neg"}
-```
-
-**Stack Effect:** `value → -value`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 42}
-{"op": "neg"}
-// Stack: [-42]
-```
-
----
-
-## Comparison Operations
-
-### `eq`
-
-Test equality.
-
-**Syntax:**
-```json
-{"op": "eq"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 5}
-{"op": "eq"}
-// Stack: [true]
-```
-
----
-
-### `ne`
-
-Test inequality.
-
-**Syntax:**
-```json
-{"op": "ne"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "ne"}
-// Stack: [true]
-```
-
----
-
-### `lt`
-
-Test less than.
-
-**Syntax:**
-```json
-{"op": "lt"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 3}
-{"op": "push_int", "value": 5}
-{"op": "lt"}
-// Stack: [true]  (3 < 5)
-```
-
----
-
-### `gt`
-
-Test greater than.
-
-**Syntax:**
-```json
-{"op": "gt"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 7}
-{"op": "push_int", "value": 3}
-{"op": "gt"}
-// Stack: [true]  (7 > 3)
-```
-
----
-
-### `le`
-
-Test less than or equal.
-
-**Syntax:**
-```json
-{"op": "le"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 5}
-{"op": "le"}
-// Stack: [true]  (5 <= 5)
-```
-
----
-
-### `ge`
-
-Test greater than or equal.
-
-**Syntax:**
-```json
-{"op": "ge"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 8}
-{"op": "push_int", "value": 3}
-{"op": "ge"}
-// Stack: [true]  (8 >= 3)
-```
-
----
-
-## Logical Operations
-
-### `and`
-
-Logical AND.
-
-**Syntax:**
-```json
-{"op": "and"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_bool", "value": true}
-{"op": "push_bool", "value": false}
-{"op": "and"}
-// Stack: [false]
-```
-
----
-
-### `or`
-
-Logical OR.
-
-**Syntax:**
-```json
-{"op": "or"}
-```
-
-**Stack Effect:** `a, b → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_bool", "value": true}
-{"op": "push_bool", "value": false}
-{"op": "or"}
-// Stack: [true]
-```
-
----
-
-### `not`
-
-Logical NOT.
-
-**Syntax:**
-```json
-{"op": "not"}
-```
-
-**Stack Effect:** `value → bool`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_bool", "value": true}
-{"op": "not"}
-// Stack: [false]
-```
-
----
-
-## Bitwise Operations
-
-### `bit_and`
-
-Bitwise AND.
-
-**Syntax:**
-```json
-{"op": "bit_and"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 12}  // 1100
-{"op": "push_int", "value": 10}  // 1010
-{"op": "bit_and"}
-// Stack: [8]  // 1000
-```
-
----
-
-### `bit_or`
-
-Bitwise OR.
-
-**Syntax:**
-```json
-{"op": "bit_or"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
----
-
-### `bit_xor`
-
-Bitwise XOR.
-
-**Syntax:**
-```json
-{"op": "bit_xor"}
-```
-
-**Stack Effect:** `a, b → result`
-
-**Parameters:** None
-
----
-
-### `bit_not`
-
-Bitwise NOT.
-
-**Syntax:**
-```json
-{"op": "bit_not"}
-```
-
-**Stack Effect:** `value → result`
-
-**Parameters:** None
-
----
-
-### `shl`
-
-Shift left.
-
-**Syntax:**
-```json
-{"op": "shl"}
-```
-
-**Stack Effect:** `value, shift → result`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}   // 101
-{"op": "push_int", "value": 2}
-{"op": "shl"}
-// Stack: [20]  // 10100
-```
-
----
-
-### `shr`
-
-Shift right.
-
-**Syntax:**
-```json
-{"op": "shr"}
-```
-
-**Stack Effect:** `value, shift → result`
-
-**Parameters:** None
-
----
-
-## Stack Manipulation
-
-### `swap`
-
-Swap the top two stack values.
-
-**Syntax:**
-```json
-{"op": "swap"}
-```
-
-**Stack Effect:** `a, b → b, a`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 1}
-{"op": "push_int", "value": 2}
-{"op": "swap"}
-// Stack: [1, 2] → [2, 1]
-```
-
----
-
-### `rot`
-
-Rotate top three values.
-
-**Syntax:**
-```json
-{"op": "rot"}
-```
-
-**Stack Effect:** `a, b, c → b, c, a`
-
-**Parameters:** None
-
----
-
-### `pick`
-
-Copy nth item from stack top.
-
-**Syntax:**
-```json
-{"op": "pick", "n": 2}
-```
-
-**Stack Effect:** `..., a, b, c → ..., a, b, c, a`
-
-**Parameters:**
-- `n` (Integer): Depth to pick from (0 = top)
-
----
-
-### `roll`
-
-Move nth item to stack top.
-
-**Syntax:**
-```json
-{"op": "roll", "n": 2}
-```
-
-**Stack Effect:** `..., a, b, c → ..., b, c, a`
-
-**Parameters:**
-- `n` (Integer): Depth to roll from
-
----
-
-## Control Flow
-
-### `jmp`
-
-Unconditional jump.
-
-**Syntax:**
-```json
-{"op": "jmp", "target": 10}
-```
-
-**Stack Effect:** (none)
-
-**Parameters:**
-- `target` (Integer): Instruction index to jump to
-
-**Example:**
-```json
-{"op": "jmp", "target": 5}
-// Jump to instruction 5
-```
-
----
-
-### `jmp_if`
-
-Jump if true.
-
-**Syntax:**
-```json
-{"op": "jmp_if", "target": 10}
-```
-
-**Stack Effect:** `condition →`
-
-**Parameters:**
-- `target` (Integer): Instruction index to jump to if true
-
-**Example:**
-```json
-{"op": "push_bool", "value": true}
-{"op": "jmp_if", "target": 5}
-// Jumps to instruction 5
-```
-
----
-
-### `jmp_if_not`
-
-Jump if false.
-
-**Syntax:**
-```json
-{"op": "jmp_if_not", "target": 10}
-```
-
-**Stack Effect:** `condition →`
-
-**Parameters:**
-- `target` (Integer): Instruction index to jump to if false
-
----
-
-### `call`
-
-Call a function.
-
-**Syntax:**
-```json
-{"op": "call", "function": "function_name"}
-```
-
-**Stack Effect:** `arg1, arg2, ... → return_value`
-
-**Parameters:**
-- `function` (String): Name of function to call
-
-**Example:**
-```json
-{"op": "push_int", "value": 5}
-{"op": "push_int", "value": 3}
-{"op": "call", "function": "add"}
-// Calls add(5, 3), pushes result
-```
-
----
-
-### `ret`
-
-Return from function.
-
-**Syntax:**
-```json
-{"op": "ret"}
-```
-
-**Stack Effect:** `return_value →` (to caller's stack)
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 42}
-{"op": "ret"}
-// Returns 42 to caller
-```
-
----
-
-### `break`
-
-Exit innermost loop.
-
-**Syntax:**
-```json
-{"op": "break"}
-```
-
-**Stack Effect:** (none)
-
-**Parameters:** None
-
----
-
-### `continue`
-
-Jump to loop start.
-
-**Syntax:**
-```json
-{"op": "continue"}
-```
-
-**Stack Effect:** (none)
-
-**Parameters:** None
-
----
-
-## Array Operations
-
-### `new_array`
-
-Create array from stack values.
-
-**Syntax:**
-```json
-{"op": "new_array", "size": 3}
-```
-
-**Stack Effect:** `v1, v2, v3 → array`
-
-**Parameters:**
-- `size` (Integer): Number of elements to pop
-
-**Example:**
-```json
-{"op": "push_int", "value": 1}
-{"op": "push_int", "value": 2}
-{"op": "push_int", "value": 3}
-{"op": "new_array", "size": 3}
-// Stack: [[1, 2, 3]]
-```
-
----
-
-### `arr_get`
-
-Get array element.
-
-**Syntax:**
-```json
-{"op": "arr_get"}
-```
-
-**Stack Effect:** `array, index → value`
-
-**Parameters:** None
-
-**Example:**
-```json
-// Assuming array = [10, 20, 30]
-{"op": "load", "name": "arr"}
-{"op": "push_int", "value": 1}
-{"op": "arr_get"}
-// Stack: [20]
-```
-
----
-
-### `arr_set`
-
-Set array element.
-
-**Syntax:**
-```json
-{"op": "arr_set"}
-```
-
-**Stack Effect:** `array, index, value → array`
-
-**Parameters:** None
-
----
-
-### `arr_len`
-
-Get array length.
-
-**Syntax:**
-```json
-{"op": "arr_len"}
-```
-
-**Stack Effect:** `array → length`
-
-**Parameters:** None
-
----
-
-### `arr_push`
-
-Append to array.
-
-**Syntax:**
-```json
-{"op": "arr_push"}
-```
-
-**Stack Effect:** `array, value → array`
-
-**Parameters:** None
-
----
-
-### `arr_pop`
-
-Remove last element.
-
-**Syntax:**
-```json
-{"op": "arr_pop"}
-```
-
-**Stack Effect:** `array → array, value`
-
-**Parameters:** None
-
----
-
-## Object Operations
-
-### `new_obj`
-
-Create empty object.
-
-**Syntax:**
-```json
-{"op": "new_obj"}
-```
-
-**Stack Effect:** `→ object`
-
-**Parameters:** None
-
----
-
-### `new_struct`
-
-Create named struct.
-
-**Syntax:**
-```json
-{"op": "new_struct", "name": "Point"}
-```
-
-**Stack Effect:** `→ struct`
-
-**Parameters:**
-- `name` (String): Struct type name
-
----
-
-### `get_field`
-
-Get object field.
-
-**Syntax:**
-```json
-{"op": "get_field", "name": "field_name"}
-```
-
-**Stack Effect:** `object → value`
-
-**Parameters:**
-- `name` (String): Field name
-
-**Example:**
-```json
-{"op": "load", "name": "point"}
-{"op": "get_field", "name": "x"}
-// Stack: [<x value>]
-```
-
----
-
-### `set_field`
-
-Set object field.
-
-**Syntax:**
-```json
-{"op": "set_field", "name": "field_name"}
-```
-
-**Stack Effect:** `object, value → object`
-
-**Parameters:**
-- `name` (String): Field name
-
----
-
-## Type Operations
-
-### `type_of`
-
-Get type of value.
-
-**Syntax:**
-```json
-{"op": "type_of"}
-```
-
-**Stack Effect:** `value → type_string`
-
-**Parameters:** None
-
-**Example:**
-```json
-{"op": "push_int", "value": 42}
-{"op": "type_of"}
-// Stack: ["int"]
-```
-
----
-
-### `cast`
-
-Cast value to type.
-
-**Syntax:**
-```json
-{"op": "cast", "type": "int"}
-```
-
-**Stack Effect:** `value → casted_value`
-
-**Parameters:**
-- `type` (String): Target type
-
----
-
-## Capability Calls
-
-### `cap_call`
-
-Invoke a capability.
-
-**Syntax:**
-```json
-{"op": "cap_call", "name": "io.print", "argc": 1}
-```
-
-**Stack Effect:** `arg1, arg2, ... → return_value`
-
-**Parameters:**
-- `name` (String): Capability name (format: `namespace.method`)
-- `argc` (Integer): Number of arguments
-
-**Example:**
-```json
-{"op": "push_str", "value": "Hello!"}
-{"op": "cap_call", "name": "io.print", "argc": 1}
-// Prints "Hello!" to stdout
-```
-
-**Common Capabilities:**
-- `io.print` - Print to stdout
-- `io.read` - Read from stdin
-- `fs.read` - Read file
-- `fs.write` - Write file
-- `net.http` - HTTP request
-- `sys.exec` - Execute command
-
----
-
-## Concurrency
-
-### `spawn`
-
-Create new task.
-
-**Syntax:**
-```json
-{"op": "spawn"}
-```
-
-**Stack Effect:** `function_name, args... → task_id`
-
-**Parameters:** None
-
----
-
-### `yield`
-
-Yield execution.
-
-**Syntax:**
-```json
-{"op": "yield"}
-```
-
-**Stack Effect:** (none)
-
-**Parameters:** None
-
----
-
-## Quick Reference Table
-
-| Category | Instructions |
-|----------|-------------|
-| Stack | `push_int`, `push_float`, `push_str`, `push_bool`, `push_null`, `pop`, `dup` |
-| Memory | `store`, `load`, `export_var`, `import_var` |
-| Arithmetic | `add`, `sub`, `mul`, `div`, `mod`, `neg` |
-| Comparison | `eq`, `ne`, `lt`, `gt`, `le`, `ge` |
-| Logical | `and`, `or`, `not` |
-| Bitwise | `bit_and`, `bit_or`, `bit_xor`, `bit_not`, `shl`, `shr` |
-| Stack Manip | `swap`, `rot`, `pick`, `roll` |
-| Control Flow | `jmp`, `jmp_if`, `jmp_if_not`, `call`, `ret`, `break`, `continue` |
-| Arrays | `new_array`, `arr_get`, `arr_set`, `arr_len`, `arr_push`, `arr_pop` |
-| Objects | `new_obj`, `new_struct`, `get_field`, `set_field` |
-| Ranges | `make_range` |
-| Types | `type_of`, `cast` |
-| Exceptions | `enter_try`, `exit_try`, `throw` |
-| Capabilities | `cap_call` |
-| Concurrency | `spawn`, `yield`, `await` |
-| Polyglot | `exec_lang` |
-| DOM | `dom_query`, `dom_mutate`, `dom_event_listener` |
-| AI-native | `ai_query`, `ai_tool_chain`, `ai_agent_delegation`, `ai_learning_loop`, `ai_context_aware`, `ai_goal_decl`, `ai_progress_update`, `ai_knowledge_share`, `ai_capability_discovery` |
+1
+3
+2
+```
+
+## Variables
+
+| JSON `op` | CVM1 | Operand | Stack effect | Notes |
+|---|---|---|---|---|
+| `load` | `LOAD slot` | `name` | `→ v` | push the variable |
+| `store` | `STORE slot` | `name` | `v →` | pop into the variable |
+| `export_var` | — | `name` | — | IR only; lowers to `NOP` (the value stays on the stack) |
+| `import_var` | — | `name` | — | IR only; **not lowered** |
+
+In the IR a variable is a name; in CVM1 it is a numeric **slot** (0–65535) local to
+the current call frame. Frames do not share slots: a callee cannot see its caller's
+variables.
+
+## Arithmetic and comparison
+
+All binary operators pop `b` then `a` and push `a OP b`.
+
+| JSON `op` | CVM1 | Effect | Notes |
+|---|---|---|---|
+| `add` `sub` `mul` | `ADD` `SUB` `MUL` | `a b → a∘b` | `ADD` also concatenates strings |
+| `div` | `DIV` | `a b → a/b` | integer division on two ints (`7/2 = 3`), float otherwise |
+| `mod` | `MOD` | `a b → a%b` | |
+| `neg` | `NEG` | `a → -a` | |
+| `eq` `ne` | `EQ` `NE` | `a b → bool` | |
+| `lt` `gt` `le` `ge` | `LT` `GT` `LE` `GE` | `a b → bool` | |
+| `and` `or` | `AND` `OR` | `a b → bool` | **eager** — both operands are already evaluated. The `&&` / `\|\|` operators of Crush compile to jumps, not to these |
+| `not` | `NOT` | `a → bool` | logical not |
+| `bit_and` `bit_or` `bit_xor` | `BITAND` `BITOR` `BITXOR` | `a b → a∘b` | |
+| `bit_not` | `BITNOT` | `a → ~a` | |
+| `shl` `shr` | `SHL` `SHR` | `a b → a<<b` / `a>>b` | |
+
+```casm
+.func main
+    PUSH 10
+    PUSH 3
+    SUB                 ; 10 - 3
+    CAP_CALL "io.print" 1
+    PUSH 7
+    PUSH 2
+    DIV                 ; integer division
+    CAP_CALL "io.print" 1
+    PUSH 12
+    PUSH 10
+    BITAND
+    CAP_CALL "io.print" 1
+    PUSH 1
+    PUSH 4
+    SHL
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+<!-- check: output -->
+```text
+7
+3
+8
+16
+```
+
+## Control flow
+
+| JSON `op` | CVM1 | Operand | Stack effect | Notes |
+|---|---|---|---|---|
+| `jmp` | `JMP label` | `target` | — | unconditional |
+| `jmp_if_not` | `JZ label` | `target` | `cond →` | jump if `cond` is **falsy** |
+| `jmp_if` | `JNZ label` | `target` | `cond →` | jump if `cond` is truthy |
+| `call` | `CALL name` | `function`, `argc` | `args… → [result]` | see below |
+| `ret` | `RET` | — | `[v] →` | return to the caller |
+| `halt` | `HALT` | — | — | stop the whole program |
+| `enter_try` | `ENTER_TRY label` | `target` | — | push an exception handler |
+| `exit_try` | `EXIT_TRY` | — | — | pop it again (normal exit of the `try` body) |
+| `throw` | `THROW` | — | `v →` | unwind to the nearest handler, which receives `v` on its stack |
+| `break` `continue` | — | — | — | in the IR enum only; the compiler lowers loops to `jmp`s and never emits these |
+
+Jump operands are **instruction indices** in the IR and **byte offsets** in the
+binary; the text assembler takes label names. A value is *falsy* if it is `false`,
+`null`, `0`, `0.0`, the empty string or an empty array; everything else (including
+the string `"0"`) is truthy.
+
+**Calling convention.** The caller pushes the arguments **last first**, then
+`CALL`s. The callee's body begins with one `STORE` per parameter, in declaration
+order, which pops the first argument first. `RET` returns to the caller; a function
+that produces a value leaves it on the stack for `RET`. Crush functions always end
+with `PUSH_NULL` / `RET` if they have no explicit `return`.
+
+```casm
+.func main
+    PUSH 5              ; counter
+    STORE 0
+loop:
+    LOAD 0
+    JZ done             ; stop when the counter reaches 0
+    LOAD 0
+    CAP_CALL "io.print" 1
+    LOAD 0
+    PUSH 1
+    SUB
+    STORE 0
+    JMP loop
+done:
+    PUSH 4
+    CALL double
+    CAP_CALL "io.print" 1
+    HALT
+.func double
+    STORE 0
+    LOAD 0
+    PUSH 2
+    MUL
+    RET
+```
+
+<!-- check: output -->
+```text
+5
+4
+3
+2
+1
+8
+```
+
+**Exceptions.** `ENTER_TRY handler` records where to resume; `THROW` pops a value,
+unwinds, and jumps to `handler` with that value on top of the stack.
+
+```casm
+.func main
+    ENTER_TRY handler
+    PUSH_STR "boom"
+    THROW
+    EXIT_TRY            ; not reached
+    JMP end
+handler:
+    CAP_CALL "io.print" 1   ; prints the thrown value
+end:
+    HALT
+```
+
+<!-- check: output -->
+```text
+boom
+```
+
+## Collections and objects
+
+| JSON `op` | CVM1 | Operand | Stack effect | Notes |
+|---|---|---|---|---|
+| `new_array` | `NEW_ARRAY n` | `size` | `v₁…vₙ → array` | pops `n` values. **IR quirk:** lowering ignores `size` and emits `NEW_ARRAY 0` — build arrays with `new_array` + `array_push`, as the compiler does |
+| `array_push` / `arr_push` | `ARR_PUSH` | — | `array v → array` | |
+| `array_pop` / `arr_pop` | `ARR_POP` | — | `array → array v` | |
+| `index` / `arr_get` | `ARR_GET` | — | `array i → v` | also indexes objects/strings |
+| `arr_set` | `ARR_SET` | — | `array i v → array` | |
+| `len` / `arr_len` | `ARR_LEN` | — | `array → n` | works on strings too |
+| `make_range` | `MAKE_RANGE` | — | `start end → range` | `1..4` yields 1, 2, 3 |
+| `new_tuple` `new_list` `new_vector` `new_set` | `NEW_TUPLE n` etc. | `size` | `v₁…vₙ → coll` | plus `TUPLE_PUSH` `LIST_PUSH` `VECTOR_PUSH` `SET_PUSH` |
+| `new_obj` | `NEW_OBJ` | — | `→ obj` | empty object |
+| `new_struct` | `NEW_OBJ` | `name` | `→ obj` | the struct name is dropped on lowering |
+| `set_field` | `SET_FIELD "f"` | `name` or `field` | `obj v → obj` | |
+| `get_field` | `GET_FIELD "f"` | `name` or `field` | `obj → v` | |
+
+```casm
+.func main
+    PUSH 10
+    PUSH 20
+    PUSH 30
+    NEW_ARRAY 3
+    DUP
+    ARR_LEN
+    CAP_CALL "io.print" 1       ; 3
+    PUSH 1
+    ARR_GET
+    CAP_CALL "io.print" 1       ; 20
+    NEW_OBJ
+    PUSH 5
+    SET_FIELD "x"
+    GET_FIELD "x"
+    CAP_CALL "io.print" 1       ; 5
+    HALT
+```
+
+<!-- check: output -->
+```text
+3
+20
+5
+```
+
+## Strings, math, types
+
+String operations pop their operands in the order shown and push the result.
+
+| JSON `op` | CVM1 | Stack effect |
+|---|---|---|
+| `str_contains` | `STR_CONTAINS` | `s pattern → bool` |
+| `str_split` | `STR_SPLIT` | `s delim → array` |
+| `str_replace` | `STR_REPLACE` | `s old new → s` |
+| `str_join` | `STR_JOIN` | `array delim → s` |
+| `str_starts_with` `str_ends_with` | `STR_STARTS_WITH` `STR_ENDS_WITH` | `s prefix → bool` |
+| `str_to_upper` `str_to_lower` `str_trim` | `STR_TO_UPPER` `STR_TO_LOWER` `STR_TRIM` | `s → s` |
+| `math_pow` | `MATH_POW` | `base exp → float` |
+| `math_sqrt` `math_abs` `math_round` `math_floor` `math_ceil` | `MATH_SQRT` … | `x → float` |
+| `type_of` | `TYPEOF` | `v → str` — `"int"`, `"float"`, `"str"`, `"bool"`, `"null"`, `"array"`, `"map"` (an object), `"tuple"`, … |
+| `cast` | `CAST "t"` | `v → v'` — `"int"`, `"float"`, `"string"` |
+| — | `VEC_ADD` `VEC_DOT` `MAT_MUL` | vector/matrix helpers, CVM1 only |
+
+```casm
+.func main
+    PUSH_STR "aXb"
+    PUSH_STR "X"
+    PUSH_STR "-"
+    STR_REPLACE
+    CAP_CALL "io.print" 1       ; a-b
+    PUSH 2
+    PUSH 10
+    MATH_POW
+    CAP_CALL "io.print" 1       ; 1024.0
+    PUSH_STR "12"
+    CAST "int"
+    PUSH 1
+    ADD
+    CAP_CALL "io.print" 1       ; 13
+    HALT
+```
+
+<!-- check: output -->
+```text
+a-b
+1024.0
+13
+```
+
+(The Crush-level equivalents of these live in the `--stdlib` capabilities —
+`str.*`, `math.*`, `conv.*` — and compile to `CAP_CALL`s, not to these opcodes. See
+the [standard library](../crush/stdlib.md).)
+
+## Capabilities
+
+| JSON `op` | CVM1 | Operand | Stack effect |
+|---|---|---|---|
+| `cap_call` | `CAP_CALL "name" argc` | `name`, `argc` | `a₁…aₙ → [result]` |
+| `call_host` | — | `capsule`, `ic_id`, `method`, `argc` | IR only, **not lowered** |
+| `call_interface` | — | `handle`, `method`, `argc` | IR only, **not lowered** |
+
+`CAP_CALL` pops `argc` arguments (the first argument was pushed first) and invokes
+the named host capability. Whether it then pushes a result depends on the
+capability: `io.print` returns nothing, `str.len` returns a number. The compiler
+knows this and drops the `pop` it would otherwise emit after a statement-position
+call. If the capability is not registered by the host the VM stops with `unknown
+capability: NAME`; if it is registered but missing from the manifest, with
+`capability not declared in manifest: NAME`. See the
+[capability chapter](../crush/capabilities.md).
+
+## Polyglot, concurrency, AI and DOM
+
+| JSON `op` | CVM1 | Notes |
+|---|---|---|
+| `exec_lang` | `EXEC_LANG "json"` | run a `@python { }` / `@javascript { }` / `@bash { }` block; the operand is a JSON string with `lang`, `code`, `var_count` and the marshalling lists. Needs the matching `polyglot.<lang>` capability — see [Polyglot](../crush/polyglot.md) |
+| `spawn` `yield` `await` | `SPAWN n` `YIELD` `AWAIT` | dispatched to the `concurrency_native.spawn/yield/await` gates; **stubs** — nothing is scheduled |
+| `ai_query` … (13 names) | `AI_QUERY` … (10 opcodes) | **stubs**, see [AI-Native CAST](../cast/ai-native.md#what-actually-runs) |
+| `dom_query` `dom_mutate` `dom_event_listener` | `DOM_QUERY` … | **stubs**: lowered to `NOP`; the `dom_native.*` gates exist only for hand-written CVM1 |
+
+## What lowers to CVM1
+
+`crush_lang_sdk::compile::casm_to_vm` is the bridge from the JSON IR to a runnable
+program. It handles exactly these IR operations:
+
+| | |
+|---|---|
+| **Lowered faithfully** | `push_int` `push_float` `push_str` `push_bool` `push_null` `pop` `dup` `swap` `load` `store` `add` `sub` `mul` `div` `mod` `neg` `eq` `ne` `lt` `gt` `le` `ge` `and` `or` `not` `call` `cap_call` `ret` `halt` `jmp` `jmp_if` `jmp_if_not` `enter_try` `exit_try` `throw` `array_push` `array_pop` `len` `index` `arr_get` `arr_set` `make_range` `str_contains` `str_split` `str_replace` `str_join` `new_obj` `get_field` `set_field` `exec_lang` `spawn` `yield` `await` |
+| **Lowered with a loss** | `new_array` (size ignored — always empty), `new_struct` (→ `NEW_OBJ`, name dropped), `export_var` (→ `NOP`), `dom_*` and all `ai_*` including `ai_capability_discovery`, `ai_adaptation_request`, `ai_semantic_switch` (→ `NOP`) |
+| **Rejected** | everything else the `casm` crate defines — `arr_push` `arr_pop` `arr_len` `bit_*` `shl` `shr` `rot` `pick` `roll` `type_of` `cast` `math_*` `str_starts_with` `str_ends_with` `str_to_*` `str_trim` `new_tuple` `new_list` `new_vector` `new_set` `*_push` `import_var` `call_host` `call_interface` `break` `continue` — fail with `Unsupported CVM1 opcode: NAME at FUNCTION:INDEX` |
+
+So for hand-written programs the **text assembly is the more capable form**: it
+reaches `ROT`, `PICK`, `CAST`, `MATH_*`, the bit operations, tuples and sets that
+the IR route refuses. For programs *compiled from Crush*, the compiler stays inside
+the "lowered faithfully" set.
+
+<!-- check: casm-json -->
+<!-- check: runfail Unsupported CVM1 opcode: shl -->
+```json
+{
+  "version": "1.0",
+  "functions": { "main": { "body": [
+    {"op": "push_int", "value": 1},
+    {"op": "shl"},
+    {"op": "cap_call", "name": "io.print", "argc": 1},
+    {"op": "halt"}
+  ] } },
+  "manifest": { "permissions": ["io.print"] }
+}
+```
+
+(The block above is expected to fail: `shl` is in the IR but not lowered.)

@@ -1,28 +1,30 @@
 # Serialization Formats
 
-CASM programs can be serialized in two formats: **JSON** (human-readable) and **Binary** (compact). This chapter explains both formats and when to use each.
+A Crush program exists in several on-disk forms, one per layer of the pipeline.
+This chapter lists them, says which tool reads and writes each, and describes the
+version checks that gate loading. For the layouts themselves see
+[Program Structure](structure.md).
 
-## JSON Format (.casm)
+| Layer | Form | Extension | Written by | Read by |
+|---|---|---|---|---|
+| source | Crush text | `.crush` | you | `crushc`, `crush-run`, `crush run` |
+| CAST | JSON | `.cast.json` (any non-`.castb`/`.cbor` name) | walkers, agents, `casm`-side tools | `crush_cast::Program::{deserialize,load}`, `crush_frontend::compile_cast` |
+| CAST | CBOR | `.castb`, `.cbor` | `crush_cast::Program::save` | same |
+| CASM IR | JSON | `.casm` | `casm::Program::{serialize,save}` | `casm::Program::{deserialize,load}` |
+| CASM IR | MessagePack | `.casmb` | `casm::Program::{serialize,save}` | **see the bug note below** |
+| CASM text | assembly | `.casm` | `crushc --emit casm`, you | `crush-run run`, `crush-compile` |
+| CVM1 | binary | `.cvm1` | `crushc -o`, `crush build`, `crush-compile` | `crush-run run`, `crush run`, `Runtime::run_blob` |
 
-The JSON format is the primary, human-readable serialization format for CASM programs.
+## CASM IR: JSON (`.casm`)
 
-### Characteristics
+This is the readable form of a compiled program and the one you diff, commit and
+generate from tools. `casm::Program::load` / `save` choose the codec from the file
+extension: `.casmb` means binary, **anything else is JSON**.
 
-- **Human-readable**: Easy to read, write, and debug
-- **Text-based**: Can be version-controlled with git
-- **Portable**: Works across all platforms
-- **Larger size**: More verbose than binary format
-- **Slower parsing**: JSON parsing has overhead
-
-### File Extension
-
-`.casm`
-
-### Example
-
+<!-- check: casm-json -->
 ```json
 {
-  "version": "0.1",
+  "version": "1.0",
   "functions": {
     "main": {
       "params": [],
@@ -30,322 +32,126 @@ The JSON format is the primary, human-readable serialization format for CASM pro
       "body": [
         {"op": "push_int", "value": 42},
         {"op": "cap_call", "name": "io.print", "argc": 1},
-        {"op": "ret"}
+        {"op": "halt"}
       ]
     }
   },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
+  "manifest": { "permissions": ["io.print"] }
 }
 ```
 
-### When to Use
-
-✅ **Use JSON when:**
-- Developing and debugging programs
-- Hand-writing CASM code
-- Generating CASM from tools
-- Version controlling bytecode
-- Sharing examples and documentation
-- Learning CASM
-
-❌ **Avoid JSON when:**
-- Deploying to production (use binary)
-- Size matters (embedded systems, network transfer)
-- Performance is critical
-
-## Binary Format (.casmb)
-
-The binary format uses MessagePack for compact, efficient serialization.
-
-### Characteristics
-
-- **Compact**: 30-50% smaller than JSON
-- **Fast**: Faster to parse and serialize
-- **Binary**: Not human-readable
-- **Portable**: MessagePack is cross-platform
-
-### File Extension
-
-`.casmb`
-
-### Structure
-
-The binary format uses [MessagePack](https://msgpack.org/) to serialize the same structure as JSON:
-
+<!-- check: output -->
 ```text
-┌─────────────────────────────────┐
-│ MessagePack Binary Data         │
-│                                 │
-│ Same structure as JSON:         │
-│ - version (string)              │
-│ - functions (map)               │
-│ - lang (optional string)        │
-│ - manifest (optional map)       │
-└─────────────────────────────────┘
+42
 ```
 
-### When to Use
+The compiler writes pretty-printed JSON with `meta` on every instruction, so a
+compiled program is verbose: the five-line `add` program in the
+[overview](README.md) is about 3 KB as IR JSON and 199 bytes as `.cvm1`.
 
-✅ **Use Binary when:**
-- Deploying to production
-- Distributing compiled programs
-- Minimizing file size
-- Optimizing load time
-- Embedding in other formats
+## CASM IR: MessagePack (`.casmb`)
 
-❌ **Avoid Binary when:**
-- Debugging or development
-- Need to inspect bytecode
-- Version controlling (use JSON)
+`Program::serialize(Format::Binary)` writes the line `#!/usr/bin/env crush run`
+followed by the program as MessagePack (via `rmp_serde`), and `save` marks the file
+executable on Unix. The reader skips a leading `#!` line.
 
-## Format Detection
+> **Known bug (crush-ast `v0.3.9`).** A `.casmb` file cannot be read back. The
+> writer emits MessagePack's compact array encoding but `Instruction` flattens its
+> operands into a map, so every load fails with `invalid type: sequence, expected a
+> map`. Until that is fixed, treat `.casmb` as write-only and ship `.cvm1`
+> instead. The block below fails exactly this way:
 
-The Crush VM automatically detects the format based on file extension:
+<!-- check: casmb-fails expected a map -->
+<!-- check: casm-json -->
+```json
+{
+  "version": "1.0",
+  "functions": { "main": { "body": [ {"op": "halt"} ] } }
+}
+```
 
-| Extension | Format | Auto-detected |
-|-----------|--------|---------------|
-| `.casm` | JSON | ✓ |
-| `.casmb` | Binary (MessagePack) | ✓ |
-| Other | JSON (default) | ✓ |
+Note also that `crush run` and `crush-run run` accept only `.crush`, `.casm` (as
+*text assembly*) and `.cvm1`. Neither can execute IR JSON or `.casmb` directly; that
+needs the Rust API.
 
-### Example
+## CVM1 (`.cvm1`)
+
+The executable form: `CVM1` magic, a version byte, a JSON manifest, a constant
+pool and a flat code section, described byte by byte in
+[Program Structure](structure.md#the-cvm1-binary).
 
 ```bash
-# JSON format (auto-detected)
-exo run program.casm
-
-# Binary format (auto-detected)
-exo run program.casmb
-
-# Explicit format specification
-exo run --format=json program.txt
-exo run --format=binary program.bin
+crushc add.crush -o add.cvm1     # or: crush build add.crush
+crush-run run add.cvm1
 ```
-
-## Converting Between Formats
-
-### JSON to Binary
 
 ```bash
-# Using crush-cli
-exo compile program.casm --output program.casmb
-
-# Or programmatically in Rust
-use casm::{Program, Format};
-
-let program = Program::load("program.casm")?;
-program.save("program.casmb")?;  // Auto-detects binary format
+crush-compile prog.casm -o prog.cvm1 --cap io.print --name prog   # text assembly -> CVM1
 ```
 
-### Binary to JSON
+## Version gates
 
-```bash
-# Using crush-cli
-crush decompile program.casmb --output program.casm
+Every loader fails closed on an incompatible version, comparing the **major**
+component only (minor bumps stay compatible):
 
-# Or programmatically
-let program = Program::load("program.casmb")?;
-program.save("program.casm")?;  // Auto-detects JSON format
+| Format | Constant | Accepts | Error |
+|---|---|---|---|
+| CASM IR | `casm::CASM_VERSION = "1.0"` | `version` with major `1` (`"1.0"`, `"1.0.0"`, `"1.4"`) | `version mismatch at casm boundary: expected 1.0, found 2.0` |
+| CVM1 | `bytecode::VERSION = 2` | version byte `1` or `2` | `UnsupportedVersion(n)` |
+| CAST | `crush_cast::CAST_VERSION = "0.1"` | `cast_version` with major `0` | `version mismatch at cast boundary: expected 0.1, found …` |
+
+The old docs said `"version": "0.1"` for CASM; that is now rejected (major `0`).
+
+<!-- check: casm-json -->
+<!-- check: runfail version mismatch at casm boundary: expected 1.0, found 0.1 -->
+```json
+{ "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 ```
 
-## Size Comparison
-
-Example program sizes:
-
-| Program | JSON (.casm) | Binary (.casmb) | Savings |
-|---------|--------------|-----------------|---------|
-| Hello World | 450 bytes | 180 bytes | 60% |
-| Fibonacci | 1.2 KB | 650 bytes | 46% |
-| Complex App | 50 KB | 28 KB | 44% |
-
-Binary format typically saves **40-60%** of file size.
-
-## Performance Comparison
-
-Parsing performance (approximate):
-
-| Format | Parse Time | Serialize Time |
-|--------|------------|----------------|
-| JSON | 100% (baseline) | 100% (baseline) |
-| Binary | 40% (2.5x faster) | 30% (3.3x faster) |
-
-Binary format is **2-3x faster** to parse and serialize.
+> **Known inconsistency (crush-ast `v0.3.9`).** `CAST_VERSION` is `"0.1"` but the
+> Crush front end stamps the CAST it produces with `cast_version: "1.0.0"`. The
+> versioned loader (`Program::deserialize`/`load`) therefore rejects the front end's
+> *own* output, while plain `serde_json` and `validate_json` accept it. Example
+> programs in `examples/cast/` carry `"0.1.0"` and load fine. See
+> [CAST](../cast/README.md#serialization).
 
 ## Rust API
 
-### Loading Programs
+```rust,no_run
+use casm::{Format, Program};
 
-```rust
-use casm::{Program, Format};
-use std::path::Path;
+fn main() -> anyhow::Result<()> {
+    let program = crush_lang_sdk::compile::compile_crush_to_casm(
+        "io.print(6 * 7)",
+    )?;
 
-// Auto-detect format from extension
-let program = Program::load(Path::new("program.casm"))?;
+    // JSON IR, round trip through bytes.
+    let bytes = program.serialize(Format::Json)?;
+    let back = Program::deserialize(&bytes, Format::Json)?;
+    assert_eq!(back.functions.len(), program.functions.len());
 
-// Explicit format
-let data = std::fs::read("program.casm")?;
-let program = Program::deserialize(&data, Format::Json)?;
-```
+    // Lower to a runnable CVM1 program and execute it.
+    let vm_program = crush_lang_sdk::compile::casm_to_vm(&back)?;
+    let result = crush_lang_sdk::Runtime::new().run(&vm_program)?;
+    print!("{}", result.output);
+    assert_eq!(result.output, "42\n");
 
-### Saving Programs
-
-```rust
-// Auto-detect format from extension
-program.save(Path::new("output.casmb"))?;
-
-// Explicit format
-let data = program.serialize(Format::Binary)?;
-std::fs::write("output.casmb", data)?;
-```
-
-### Format Enum
-
-```rust
-pub enum Format {
-    Json,   // Human-readable (.casm)
-    Binary, // Compact binary (.casmb)
-}
-
-impl Format {
-    pub fn from_path(path: &Path) -> Self {
-        match path.extension().and_then(|e| e.to_str()) {
-            Some("casmb") => Format::Binary,
-            _ => Format::Json,
-        }
-    }
+    // CVM1 blob round trip.
+    let blob = vm_program.to_blob();
+    let result = crush_lang_sdk::Runtime::new().run_blob(&blob)?;
+    assert_eq!(result.output, "42\n");
+    Ok(())
 }
 ```
 
-## Best Practices
+`Format::from_path` picks `Json` or `Binary` from a path. `Program::save(path)` and
+`Program::load(path)` combine that with file I/O.
 
-### Development Workflow
+## Practical advice
 
-1. **Write in JSON** during development
-2. **Version control JSON** files
-3. **Compile to binary** for production
-4. **Distribute binary** to end users
-
-### Example Workflow
-
-```bash
-# 1. Develop in JSON
-vim program.casm
-
-# 2. Test with JSON
-exo run program.casm
-
-# 3. Commit JSON to git
-git add program.casm
-git commit -m "Add new feature"
-
-# 4. Build binary for release
-exo compile program.casm --output program.casmb
-
-# 5. Distribute binary
-cp program.casmb /usr/local/bin/myapp.casmb
-```
-
-### CI/CD Pipeline
-
-```yaml
-# .github/workflows/build.yml
-- name: Compile CASM
-  run: |
-    exo compile src/*.casm --output-dir dist/
-    
-- name: Upload artifacts
-  uses: actions/upload-artifact@v2
-  with:
-    name: bytecode
-    path: dist/*.casmb
-```
-
-## Metadata Preservation
-
-Both formats preserve all metadata:
-
-```json
-// JSON format
-{
-  "op": "push_int",
-  "value": 42,
-  "lang": "python",
-  "meta": {
-    "file": "script.py",
-    "line": 10
-  }
-}
-```
-
-```text
-// Binary format (MessagePack)
-// Same data, just binary-encoded
-```
-
-Metadata is **fully preserved** in both formats, so debugging information is available even in production binaries.
-
-## Compression
-
-For even smaller sizes, compress the binary format:
-
-```bash
-# gzip compression
-gzip program.casmb
-# Result: program.casmb.gz (typically 60-70% of .casmb size)
-
-# brotli compression (better)
-brotli program.casmb
-# Result: program.casmb.br (typically 50-60% of .casmb size)
-```
-
-Combined savings:
-
-| Format | Size | vs JSON |
-|--------|------|---------|
-| JSON | 100% | - |
-| Binary | 45% | 55% smaller |
-| Binary + gzip | 30% | 70% smaller |
-| Binary + brotli | 25% | 75% smaller |
-
-## Validation
-
-Both formats are validated on load:
-
-```rust
-match Program::load("program.casm") {
-    Ok(program) => println!("Valid CASM program"),
-    Err(e) => eprintln!("Invalid CASM: {}", e),
-}
-```
-
-Common validation errors:
-- Missing required fields (`version`, `functions`)
-- Invalid instruction opcodes
-- Malformed JSON/MessagePack
-- Type mismatches
-
-## Future Formats
-
-Potential future serialization formats:
-
-- **WebAssembly**: For browser execution
-- **Protobuf**: For RPC and network protocols
-- **CBOR**: Alternative binary format
-- **Custom binary**: Optimized Crush-specific format
-
-## Summary
-
-| Aspect | JSON | Binary |
-|--------|------|--------|
-| **Extension** | `.casm` | `.casmb` |
-| **Encoding** | JSON | MessagePack |
-| **Readable** | ✓ | ✗ |
-| **Size** | Larger | Smaller (40-60% savings) |
-| **Speed** | Slower | Faster (2-3x) |
-| **Use Case** | Development, debugging | Production, distribution |
-| **Version Control** | ✓ Recommended | ✗ Not recommended |
-| **Metadata** | ✓ Preserved | ✓ Preserved |
-
-**Recommendation**: Use JSON for development, binary for production.
+- **Distribute `.cvm1`**; it is the format with a working load path in every tool, a
+  magic number and a version byte.
+- **Commit `.crush` source**, not generated IR; regenerate IR when you need to
+  inspect it (`crushc --emit casm` for text, `compile_crush_to_casm` for JSON).
+- When an *agent* produces programs, have it emit [CAST](../cast/ai-native.md) JSON
+  and let the compiler produce CASM — see the doctrine there.
