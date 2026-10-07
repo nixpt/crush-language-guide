@@ -36,6 +36,7 @@ Other checked fences (all optional-directive blocks run the same way):
                                      casm::Program::deserialize, lowered and run
     <!-- check: cast-json -->        a ```json block: JSON CAST, validated, compiled, run
     <!-- check: cast-load-fails TEXT -->  JSON CAST that the version-gated loader rejects
+    <!-- check: casmb-fails TEXT -->  JSON CASM whose .casmb (MessagePack) round trip fails
     <!-- check: asm-ai -->           a ```casm block run with the ai_native.* stub gates on
     (the json forms need --crush-ast, like the rust blocks: they use a helper
     built from scripts/casm-check/main.rs against that checkout)
@@ -78,7 +79,7 @@ def extract(md: Path):
             lang = m.group(1)
             kind = lang if lang in ("crush", "casm") else None
             if lang == "json":
-                kind = next((k for k in ("casm-json", "cast-json", "cast-load-fails") if k in pending), None)
+                kind = next((k for k in ("casmb-fails", "cast-load-fails", "casm-json", "cast-json") if k in pending), None)
             if kind:
                 last = {"file": md, "line": i + 2, "code": body, "d": pending, "expect": None, "kind": kind}
                 yield last
@@ -113,6 +114,7 @@ edition = "2024"
 
 [dependencies]
 crush-lang-sdk = {{ path = "{sdk}", features = ["stdlib"] }}
+casm = {{ path = "{casm}" }}
 anyhow = "1"
 
 [workspace]
@@ -122,7 +124,7 @@ anyhow = "1"
 def check_rust(block, crush_ast, tmp):
     work = Path(tmp)
     (work / "src").mkdir()
-    (work / "Cargo.toml").write_text(CARGO_TOML.format(sdk=Path(crush_ast).resolve() / "crates" / "crush-lang-sdk"))
+    (work / "Cargo.toml").write_text(CARGO_TOML.format(sdk=Path(crush_ast).resolve() / "crates" / "crush-lang-sdk", casm=Path(crush_ast).resolve() / "crates" / "casm"))
     (work / "src" / "main.rs").write_text(block["code"])
     rc, out, err = run(["cargo", "run", "--quiet"], work, 1800)
     if rc != 0:
@@ -176,12 +178,12 @@ def check_assembly(block, bins, work):
     else:
         if "casm-check" not in bins:
             return "skipped", "needs --crush-ast (json CASM/CAST helper)"
-        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-load-fails": "castload"}[kind]
+        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-load-fails": "castload", "casmb-fails": "casmb"}[kind]
         rc, out, err = run([bins["casm-check"], mode, str(src)], work, 60)
-    if kind == "cast-load-fails":
-        want = d["cast-load-fails"]
+    if kind in ("cast-load-fails", "casmb-fails"):
+        want = d[kind]
         if rc == 0:
-            return "fail", "expected the CAST loader to reject this, but it loaded"
+            return "fail", "expected the loader to reject this, but it loaded (remove the marker)"
         return ("green", f"loader rejects it ({want})") if want in out + err else ("fail", f"rejection lacks {want!r}: {first_line(out + err)}")
     if "runfail" in d:
         if rc == 0:

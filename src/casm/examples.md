@@ -1,576 +1,416 @@
 # CASM Examples
 
-This chapter provides practical examples of CASM programs, from simple to complex.
+Every program here is CASM **text assembly** — the form you can write by hand and run
+with `crush-run run FILE.casm --cap io.print` — and every one is executed by this
+guide's checker against crush-ast `v0.3.9`, with the output shown. The JSON IR is
+covered in [Program Structure](structure.md) and
+[Serialization](serialization.md). Opcode details are in the
+[Instruction Reference](instructions.md).
 
-## Example 1: Hello World
+All programs print with `CAP_CALL "io.print" N`, so run them with `--cap io.print`
+(a `.casm` file carries no permissions of its own).
 
-The simplest CASM program:
+## 1. Hello, world
 
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": [],
-      "body": [
-        {"op": "push_str", "value": "Hello, World!"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+```casm
+.func main
+    PUSH_STR "Hello, CASM!"
+    CAP_CALL "io.print" 1
+    HALT
 ```
 
-**Execution trace:**
+<!-- check: output -->
 ```text
-1. push_str "Hello, World!"  → Stack: ["Hello, World!"]
-2. cap_call io.print 1       → Prints "Hello, World!", Stack: []
-3. ret                       → Returns from main
+Hello, CASM!
 ```
 
-## Example 2: Variables and Arithmetic
+`io.print` takes any number of arguments (here `1`), prints them back to back and
+adds a newline.
 
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["x", "y", "sum"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "store", "name": "x"},
-        
-        {"op": "push_int", "value": 32},
-        {"op": "store", "name": "y"},
-        
-        {"op": "load", "name": "x"},
-        {"op": "load", "name": "y"},
-        {"op": "add"},
-        {"op": "store", "name": "sum"},
-        
-        {"op": "push_str", "value": "The sum is: "},
-        {"op": "load", "name": "sum"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+## 2. Variables and arithmetic
+
+`STORE n` pops into slot `n`; `LOAD n` pushes it back.
+
+```casm
+.func main
+    PUSH 6
+    STORE 0             ; a = 6
+    PUSH 7
+    STORE 1             ; b = 7
+    LOAD 0
+    LOAD 1
+    MUL
+    STORE 2             ; product = a * b
+    PUSH_STR "6 * 7 = "
+    LOAD 2
+    CAP_CALL "io.print" 2
+    HALT
 ```
 
-**Output:** `The sum is: 42`
-
-## Example 3: Conditional (If/Else)
-
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["age"],
-      "body": [
-        {"op": "push_int", "value": 18},
-        {"op": "store", "name": "age"},
-        
-        {"op": "load", "name": "age"},
-        {"op": "push_int", "value": 18},
-        {"op": "ge"},
-        {"op": "jmp_if_not", "target": 9},
-        
-        {"op": "push_str", "value": "You are an adult"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        {"op": "jmp", "target": 11},
-        
-        {"op": "push_str", "value": "You are a minor"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
-```
-
-**Control flow:**
+<!-- check: output -->
 ```text
-if age >= 18:
-    print("You are an adult")
+6 * 7 = 42
+```
+
+## 3. Conditionals
+
+`JZ` jumps when the popped value is falsy, so an `if` compiles to a `JZ` over the
+"then" branch plus a `JMP` over the "else" branch.
+
+```casm
+.func main
+    PUSH 3
+    STORE 0             ; n = 3
+    LOAD 0
+    PUSH 2
+    GT                  ; n > 2
+    JZ else
+    PUSH_STR "big"
+    CAP_CALL "io.print" 1
+    JMP end
 else:
-    print("You are a minor")
+    PUSH_STR "small"
+    CAP_CALL "io.print" 1
+end:
+    HALT
 ```
 
-## Example 4: While Loop
-
-Count from 1 to 5:
-
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["i"],
-      "body": [
-        {"op": "push_int", "value": 1},
-        {"op": "store", "name": "i"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 5},
-        {"op": "le"},
-        {"op": "jmp_if_not", "target": 14},
-        
-        {"op": "load", "name": "i"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 1},
-        {"op": "add"},
-        {"op": "store", "name": "i"},
-        
-        {"op": "jmp", "target": 2},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
-```
-
-**Output:**
+<!-- check: output -->
 ```text
-1
-2
-3
-4
-5
+big
 ```
 
-## Example 5: Function Calls
+## 4. Loops
 
-Factorial function:
-
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["result"],
-      "body": [
-        {"op": "push_int", "value": 5},
-        {"op": "call", "function": "factorial"},
-        {"op": "store", "name": "result"},
-        
-        {"op": "push_str", "value": "5! = "},
-        {"op": "load", "name": "result"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    },
-    "factorial": {
-      "params": ["n"],
-      "locals": ["temp"],
-      "body": [
-        {"op": "load", "name": "n"},
-        {"op": "push_int", "value": 1},
-        {"op": "le"},
-        {"op": "jmp_if_not", "target": 5},
-        
-        {"op": "push_int", "value": 1},
-        {"op": "ret"},
-        
-        {"op": "load", "name": "n"},
-        {"op": "push_int", "value": 1},
-        {"op": "sub"},
-        {"op": "call", "function": "factorial"},
-        {"op": "store", "name": "temp"},
-        
-        {"op": "load", "name": "n"},
-        {"op": "load", "name": "temp"},
-        {"op": "mul"},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+```casm
+.func main
+    PUSH 1
+    STORE 0             ; i = 1
+    PUSH 0
+    STORE 1             ; sum = 0
+loop:
+    LOAD 0
+    PUSH 5
+    GT                  ; i > 5 ?
+    JNZ done
+    LOAD 1
+    LOAD 0
+    ADD
+    STORE 1             ; sum = sum + i
+    LOAD 0
+    PUSH 1
+    ADD
+    STORE 0             ; i = i + 1
+    JMP loop
+done:
+    PUSH_STR "sum 1..5 = "
+    LOAD 1
+    CAP_CALL "io.print" 2
+    HALT
 ```
 
-**Output:** `5! = 120`
-
-## Example 6: Arrays
-
-Working with arrays:
-
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["arr", "len", "i"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "push_int", "value": 20},
-        {"op": "push_int", "value": 30},
-        {"op": "new_array", "size": 3},
-        {"op": "store", "name": "arr"},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "arr_len"},
-        {"op": "store", "name": "len"},
-        
-        {"op": "push_str", "value": "Array length: "},
-        {"op": "load", "name": "len"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "push_int", "value": 1},
-        {"op": "arr_get"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
-```
-
-**Output:**
+<!-- check: output -->
 ```text
-Array length: 3
-20
+sum 1..5 = 15
 ```
 
-## Example 7: Objects and Structs
+## 5. Functions
 
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["point"],
-      "body": [
-        {"op": "new_struct", "name": "Point"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "push_int", "value": 10},
-        {"op": "set_field", "name": "x"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "push_int", "value": 20},
-        {"op": "set_field", "name": "y"},
-        {"op": "store", "name": "point"},
-        
-        {"op": "load", "name": "point"},
-        {"op": "get_field", "name": "x"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+Arguments are pushed **last first**; the callee's first instructions `STORE` its
+parameters in order, so the first `STORE` receives the *first* argument. `RET`
+returns whatever the callee left on top of the stack.
+
+```casm
+.func main
+    PUSH 3              ; second argument (b)
+    PUSH 10             ; first argument  (a)
+    CALL sub
+    CAP_CALL "io.print" 1
+    HALT
+.func sub
+    STORE 0             ; a
+    STORE 1             ; b
+    LOAD 0
+    LOAD 1
+    SUB                 ; a - b
+    RET
 ```
 
-**Output:** `10`
-
-## Example 8: File I/O
-
-Reading and writing files:
-
-```json
-{
-  "version": "0.1",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["content"],
-      "body": [
-        {"op": "push_str", "value": "data.txt"},
-        {"op": "push_str", "value": "Hello from CASM!"},
-        {"op": "cap_call", "name": "fs.write", "argc": 2},
-        
-        {"op": "push_str", "value": "File written successfully"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "push_str", "value": "data.txt"},
-        {"op": "cap_call", "name": "fs.read", "argc": 1},
-        {"op": "store", "name": "content"},
-        
-        {"op": "push_str", "value": "File content: "},
-        {"op": "load", "name": "content"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print", "fs.read", "fs.write"]
-  }
-}
-```
-
-## Example 9: Error Handling
-
-Using metadata for error reporting:
-
-```json
-{
-  "version": "0.1",
-  "lang": "python",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["x", "y"],
-      "body": [
-        {
-          "op": "push_int",
-          "value": 10,
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 1, "column": 5}
-        },
-        {
-          "op": "store",
-          "name": "x",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 1}
-        },
-        {
-          "op": "push_int",
-          "value": 0,
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 2, "column": 5}
-        },
-        {
-          "op": "store",
-          "name": "y",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 2}
-        },
-        {
-          "op": "load",
-          "name": "x",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 8}
-        },
-        {
-          "op": "load",
-          "name": "y",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 12}
-        },
-        {
-          "op": "div",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3, "column": 10}
-        },
-        {
-          "op": "ret",
-          "lang": "python",
-          "meta": {"file": "script.py", "line": 3}
-        }
-      ]
-    }
-  }
-}
-```
-
-**Error output:**
+<!-- check: output -->
 ```text
-Error at script.py:3:10
-  |
-3 | result = x / y
-  |          ^^^^^
-  | Division by zero
+7
 ```
 
-## Example 10: Complete Program
+Recursion works the same way (each call gets fresh slots). The default call-depth
+quota is 256:
 
-A complete program with multiple functions and capabilities:
-
-```json
-{
-  "version": "0.1",
-  "lang": "crush",
-  "functions": {
-    "main": {
-      "params": [],
-      "locals": ["numbers", "sum", "avg"],
-      "body": [
-        {"op": "push_int", "value": 10},
-        {"op": "push_int", "value": 20},
-        {"op": "push_int", "value": 30},
-        {"op": "push_int", "value": 40},
-        {"op": "push_int", "value": 50},
-        {"op": "new_array", "size": 5},
-        {"op": "store", "name": "numbers"},
-        
-        {"op": "load", "name": "numbers"},
-        {"op": "call", "function": "sum_array"},
-        {"op": "store", "name": "sum"},
-        
-        {"op": "load", "name": "sum"},
-        {"op": "push_int", "value": 5},
-        {"op": "div"},
-        {"op": "store", "name": "avg"},
-        
-        {"op": "push_str", "value": "Sum: "},
-        {"op": "load", "name": "sum"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "push_str", "value": "Average: "},
-        {"op": "load", "name": "avg"},
-        {"op": "add"},
-        {"op": "cap_call", "name": "io.print", "argc": 1},
-        
-        {"op": "ret"}
-      ]
-    },
-    "sum_array": {
-      "params": ["arr"],
-      "locals": ["total", "i", "len"],
-      "body": [
-        {"op": "push_int", "value": 0},
-        {"op": "store", "name": "total"},
-        
-        {"op": "push_int", "value": 0},
-        {"op": "store", "name": "i"},
-        
-        {"op": "load", "name": "arr"},
-        {"op": "arr_len"},
-        {"op": "store", "name": "len"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "load", "name": "len"},
-        {"op": "lt"},
-        {"op": "jmp_if_not", "target": 23},
-        
-        {"op": "load", "name": "total"},
-        {"op": "load", "name": "arr"},
-        {"op": "load", "name": "i"},
-        {"op": "arr_get"},
-        {"op": "add"},
-        {"op": "store", "name": "total"},
-        
-        {"op": "load", "name": "i"},
-        {"op": "push_int", "value": 1},
-        {"op": "add"},
-        {"op": "store", "name": "i"},
-        
-        {"op": "jmp", "target": 9},
-        
-        {"op": "load", "name": "total"},
-        {"op": "ret"}
-      ]
-    }
-  },
-  "manifest": {
-    "permissions": ["io.print"]
-  }
-}
+```casm
+.func main
+    PUSH 10
+    CALL fact
+    CAP_CALL "io.print" 1
+    HALT
+.func fact
+    STORE 0             ; n
+    LOAD 0
+    PUSH 1
+    LE
+    JNZ base
+    LOAD 0
+    LOAD 0
+    PUSH 1
+    SUB
+    CALL fact           ; fact(n - 1)
+    MUL                 ; n * fact(n - 1)
+    RET
+base:
+    PUSH 1
+    RET
 ```
 
-**Output:**
+<!-- check: output -->
 ```text
-Sum: 150
-Average: 30
+3628800
 ```
 
-## Tips for Writing CASM
+## 6. Arrays and objects
 
-### 1. Use Comments in JSON
+```casm
+.func main
+    PUSH 10
+    PUSH 20
+    PUSH 30
+    NEW_ARRAY 3         ; [10, 20, 30]
+    STORE 0
+    LOAD 0
+    PUSH 40
+    ARR_PUSH            ; array v -> array
+    STORE 0
+    PUSH_STR "length: "
+    LOAD 0
+    ARR_LEN
+    CAP_CALL "io.print" 2
+    PUSH_STR "second: "
+    LOAD 0
+    PUSH 1
+    ARR_GET
+    CAP_CALL "io.print" 2
 
-While CASM itself doesn't support comments, you can add them in your JSON during development:
+    NEW_OBJ
+    PUSH_STR "Ada"
+    SET_FIELD "name"    ; obj v -> obj
+    STORE 1
+    LOAD 1
+    GET_FIELD "name"
+    CAP_CALL "io.print" 1
+    HALT
+```
 
-```json
-{
-  "body": [
-    {"op": "push_int", "value": 42},
-    {"_comment": "Print the value"},
-    {"op": "cap_call", "name": "io.print", "argc": 1}
-  ]
+<!-- check: output -->
+```text
+length: 4
+second: 20
+Ada
+```
+
+## 7. Errors
+
+`ENTER_TRY handler` … `THROW` jumps to the handler with the thrown value on the
+stack; `EXIT_TRY` retires the handler when the body finishes normally.
+
+```casm
+.func main
+    ENTER_TRY handler
+    PUSH_STR "disk full"
+    THROW
+    EXIT_TRY
+    JMP end
+handler:
+    STORE 0
+    PUSH_STR "recovered from: "
+    LOAD 0
+    CAP_CALL "io.print" 2
+end:
+    HALT
+```
+
+<!-- check: output -->
+```text
+recovered from: disk full
+```
+
+A capability that is not registered, or a type error, is **not** catchable this way:
+it ends the program with a `[runtime]` error.
+
+## 8. Host capabilities
+
+File access needs the `--fs` flag **and** the capability in the manifest, so run
+this one as `crush-run run prog.casm --cap io.print --cap fs.exists --fs`:
+
+<!-- check: flags --cap fs.exists --fs -->
+```casm
+.func main
+    PUSH_STR "no-such-file.txt"
+    CAP_CALL "fs.exists" 1
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+<!-- check: output -->
+```text
+0
+```
+
+The manifest is checked first. Leave out `--cap fs.exists` and the VM stops with
+`capability not declared in manifest: fs.exists`; pass `--cap fs.exists` but leave out
+`--fs` and it stops with `unknown capability: fs.exists` (declared, but the host never
+registered it).
+
+<!-- check: runfail capability not declared in manifest: fs.exists -->
+```casm
+.func main
+    PUSH_STR "no-such-file.txt"
+    CAP_CALL "fs.exists" 1
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+## 9. What the compiler writes
+
+The text assembly is also what `crushc --emit casm` prints, so you can read how
+Crush constructs lower. Labels there are byte offsets (`L42`).
+
+**`if` / `else`:**
+
+```crush
+let n = 3
+if n > 2 {
+    io.print("big")
+} else {
+    io.print("small")
 }
 ```
 
-(The VM will ignore unknown fields like `_comment`)
+<!-- check: output -->
+```text
+big
+```
 
-### 2. Label Jump Targets
+```casm
+.func main
+    PUSH 3
+    STORE 0
+    LOAD 0
+    PUSH 2
+    GT
+    JZ L42
+    PUSH_STR "big"
+    CAP_CALL "io.print" 1
+    JMP L49
+L42:
+    PUSH_STR "small"
+    CAP_CALL "io.print" 1
+L49:
+    PUSH_NULL
+    RET
+```
 
-Keep track of instruction indices:
+**`try` / `catch`:**
 
-```json
-{
-  "body": [
-    /* 0 */ {"op": "load", "name": "x"},
-    /* 1 */ {"op": "push_int", "value": 0},
-    /* 2 */ {"op": "gt"},
-    /* 3 */ {"op": "jmp_if_not", "target": 6},
-    /* 4 */ {"op": "push_str", "value": "Positive"},
-    /* 5 */ {"op": "jmp", "target": 7},
-    /* 6 */ {"op": "push_str", "value": "Non-positive"},
-    /* 7 */ {"op": "cap_call", "name": "io.print", "argc": 1}
-  ]
+```crush
+try {
+    throw "bad"
+} catch e {
+    io.print("caught ", e)
 }
 ```
 
-### 3. Always Include Metadata
-
-```json
-{
-  "op": "add",
-  "lang": "crush",
-  "meta": {
-    "file": "program.crush",
-    "line": 10,
-    "column": 15
-  }
-}
+<!-- check: output -->
+```text
+caught bad
 ```
 
-### 4. Validate Your CASM
-
-```bash
-crush validate program.casm
+```casm
+.func main
+    ENTER_TRY L15
+    PUSH_STR "bad"
+    THROW
+    EXIT_TRY
+    JMP L28
+L15:
+    STORE 0
+    PUSH_STR "caught "
+    LOAD 0
+    CAP_CALL "io.print" 2
+L28:
+    PUSH_NULL
+    RET
 ```
 
-## Next Steps
+**`for x in array`** expands into an index loop: the array in slot 1, the index in
+slot 2, and `ARR_LEN … GT … JZ` as the loop test:
 
-- **[Program Structure](structure.md)**: Understand CASM program anatomy
-- **[Instruction Reference](instructions.md)**: Complete instruction documentation
-- **[Crush Language](../crush/README.md)**: Learn the high-level Crush language
+```crush
+let t = 0
+for x in [1, 2, 3] { t = t + x }
+io.print(t)
+```
+
+<!-- check: output -->
+```text
+6
+```
+
+```casm
+.func main
+    PUSH 0
+    STORE 0
+    NEW_ARRAY 0
+    PUSH 1
+    ARR_PUSH
+    PUSH 2
+    ARR_PUSH
+    PUSH 3
+    ARR_PUSH
+    STORE 1
+    PUSH 0
+    STORE 2
+L60:
+    LOAD 1
+    ARR_LEN
+    LOAD 2
+    GT
+    JZ L114
+    LOAD 1
+    LOAD 2
+    ARR_GET
+    STORE 3
+    LOAD 0
+    LOAD 3
+    ADD
+    STORE 0
+    LOAD 2
+    PUSH 1
+    ADD
+    STORE 2
+    JMP L60
+L114:
+    LOAD 0
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
+```
+
+Notice the array literal: `NEW_ARRAY 0` followed by one `ARR_PUSH` per element —
+which is why the [IR's `new_array`](instructions.md#collections-and-objects) never
+needs its `size`.
+
+## Tips
+
+1. **Comment freely.** `;` and `#` start a comment in the text assembly (JSON has no comments).
+2. **Name your labels.** The assembler resolves them; you never count bytes.
+3. **Keep the entry function called `main`** and put it first.
+4. **Mind the stack.** Each `CAP_CALL` to a value-returning capability leaves a value;
+   a stray one at `HALT` shows up as `stack=1` in the `[steps=…, stack=…]` line that
+   `crush-run` prints. Compare it to `0` when debugging.
+5. **To see what a Crush construct costs, compile it:** `crushc FILE.crush --emit casm`.

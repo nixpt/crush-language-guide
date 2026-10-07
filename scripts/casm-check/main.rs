@@ -5,13 +5,14 @@
 //!   casm-check castload FILE JSON CAST  -> Program::deserialize (the version-gated loader) only
 //!   casm-check emit FILE     Crush source -> JSON CASM on stdout
 //!   casm-check emit-cast FILE Crush source -> JSON CAST on stdout
+//!   casm-check casmb FILE    JSON CASM -> binary (.casmb) -> deserialize again
 //!   casm-check asm-ai FILE   CVM1 text assembly, run with the ai_native.* stub gates enabled
 use crush_lang_sdk::compile::{casm_to_vm, compile_crush_to_casm, prepare_polyglot_blocks};
 use crush_lang_sdk::{HostCapsBuilder, Runtime};
 
 fn main() -> anyhow::Result<()> {
     let a: Vec<String> = std::env::args().collect();
-    anyhow::ensure!(a.len() == 3, "usage: casm-check <casm|cast|castload|emit|emit-cast|asm-ai> FILE");
+    anyhow::ensure!(a.len() == 3, "usage: casm-check <casm|cast|castload|casmb|emit|emit-cast|asm-ai> FILE");
     let data = std::fs::read(&a[2])?;
     let text = || String::from_utf8(data.clone());
     match a[1].as_str() {
@@ -40,6 +41,12 @@ fn main() -> anyhow::Result<()> {
             let mut p = crush_frontend::parse_source(&text()?)?;
             prepare_polyglot_blocks(&mut p);
             println!("{}", serde_json::to_string_pretty(&p)?);
+        }
+        "casmb" => {
+            let p = casm::Program::deserialize(&data, casm::Format::Json)?;
+            let bytes = p.serialize(casm::Format::Binary)?;
+            let q = casm::Program::deserialize(&bytes, casm::Format::Binary)?;
+            println!("round-tripped {} functions", q.functions.len());
         }
         "asm-ai" => {
             let caps = HostCapsBuilder::new().ai_native(true).build();
