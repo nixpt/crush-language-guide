@@ -1,0 +1,101 @@
+/* Run / Edit controls for ```crush blocks (interactive/crush-run.js).
+   Colours come from mdBook's theme variables, so every theme (light, rust,
+   coal, navy, ayu) gets matching controls. */
+
+.crush-block > pre { margin-bottom: 0; }
+
+.crush-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em 0.5em;
+    margin: 0.4em 0 1em;
+    font-size: 0.85em;
+}
+.crush-block > .crush-bar:has(~ .crush-out:not([hidden])) { margin-bottom: 0.4em; }
+
+.crush-btn {
+    font: inherit;
+    line-height: 1.6;
+    padding: 0 0.8em;
+    border: 1px solid var(--table-border-color);
+    border-radius: 4px;
+    background: var(--quote-bg);
+    color: var(--fg);
+    cursor: pointer;
+    text-decoration: none;
+}
+a.crush-btn, a.crush-btn:visited { color: var(--fg); }
+.crush-btn:hover { border-color: var(--icons-hover); text-decoration: none; }
+.crush-btn:focus-visible { outline: 2px solid var(--links); outline-offset: 1px; }
+.crush-btn:disabled { opacity: 0.6; cursor: progress; }
+.crush-btn[hidden] { display: none; }
+.crush-run { border-color: var(--links); color: var(--links); font-weight: 600; }
+
+.crush-badge {
+    padding: 0 0.6em;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.crush-badge-fail { color: var(--blockquote-warning-color); }
+.crush-badge-host { color: var(--blockquote-note-color); }
+.crush-badge-none { color: var(--icons); }
+.crush-why { color: var(--icons); flex: 1 1 18em; }
+.crush-why code { font-size: 0.95em; }
+
+.crush-editor {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 0.8em 1em;
+    font-family: var(--mono-font);
+    font-size: var(--code-font-size);
+    line-height: 1.45;
+    tab-size: 4;
+    color: var(--fg);
+    background: var(--quote-bg);
+    border: 1px solid var(--links);
+    border-radius: 4px;
+    resize: vertical;
+    overflow: auto;
+    white-space: pre;
+}
+.crush-editor[hidden] { display: none; }
+
+.crush-out { margin: 0 0 1.2em; }
+.crush-out[hidden] { display: none; }
+.crush-out pre.crush-output {
+    margin: 0;
+    padding: 0.6em 1em;
+    max-height: 24em;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-left: 3px solid var(--quote-border);
+    background: var(--quote-bg);
+    font-size: var(--code-font-size);
+}
+.crush-out pre.crush-error { border-left-color: var(--blockquote-caution-color); }
+.crush-status { font-size: 0.8em; color: var(--icons); margin-top: 0.3em; }
+.crush-matches { color: var(--blockquote-tip-color); font-weight: 600; }
+.crush-differs { color: var(--blockquote-caution-color); font-weight: 600; }
+
+.crush-verdict {
+    padding: 0.5em 1em;
+    margin-bottom: 0.4em;
+    border-left: 3px solid var(--blockquote-note-color);
+    background: var(--quote-bg);
+    font-size: 0.9em;
+}
+.crush-verdict p { margin: 0.2em 0 0; }
+.crush-verdict-refused { border-left-color: var(--blockquote-important-color); }
+.crush-verdict-stopped { border-left-color: var(--blockquote-warning-color); }
+.crush-verdict-error { border-left-color: var(--blockquote-caution-color); }
+
+@media print {
+    .crush-bar, .crush-out, .crush-editor { display: none !important; }
+    .crush-block > pre[hidden] { display: block !important; }
+}

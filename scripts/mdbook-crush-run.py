@@ -62,7 +62,7 @@ def host_needs(d, code):
     needs, flags = [], d.get("flags", "").split()
     langs = sorted(set(POLYGLOT.findall(code)))
     if "--polyglot" in flags and langs:
-        needs.append("runs " + ", ".join(f"`@{l}`" for l in langs) + " blocks (polyglot)")
+        needs.append("uses " + ", ".join(f"`@{l}`" for l in langs) + " blocks (polyglot)")
     calls = {}
     for ns, fn in CALL.findall(code):
         if ns == "io" and fn == "read":
@@ -90,28 +90,29 @@ def classify(block):
     """(kind, why) for one extracted ```crush block."""
     d, code = block["d"], block["code"]
     if "skip" in d:
-        return "none", "Not a standalone program: " + d["skip"]
+        return "none", "not a standalone program: " + d["skip"]
     if "compile" in d:
-        return "none", "A fragment: it compiles, but needs setup from the surrounding text to run"
+        return "none", "a fragment: it compiles, but needs setup from the surrounding text to run"
     if "error" in d:
-        return "fail", "Expected to fail: this example shows a compile error"
+        return "fail", "this example shows a compile error"
     if "runfail" in d and not d.get("flags"):
         # Nothing granted on the host either: the failure is the point, and the
         # browser reproduces it (an ungranted capability is refused the same way).
         if POLYGLOT.search(code) or "capability" in d["runfail"]:
-            return "fail", "Expected to fail: this example shows a refusal"
-        return "fail", "Expected to fail at run time"
+            return "fail", "this example shows a refusal"
+        return "fail", "this example shows a run-time error"
     needs = host_needs(d, code)
     if needs:
-        return "host", "Needs the host: " + "; ".join(needs) + ". The in-browser runtime does not provide that."
+        return "host", "; ".join(needs) + ", which the in-browser runtime does not provide"
     if "nyi" in d:
-        return "fail", f"Not implemented yet ({d['nyi']}): Run shows what happens today"
+        return "fail", f"not implemented yet ({d['nyi']}); Run shows what happens today"
     return "run", ""
 
 
 def blocks_of(text, rel):
     """Classified ```crush blocks of one page, with 1-based fence line numbers."""
-    for b in checker.extract(Path(rel), text):
+    # list(): extract() fills in a block's expected output after yielding it
+    for b in list(checker.extract(Path(rel), text)):
         if b["kind"] != "crush":
             continue
         kind, why = classify(b)

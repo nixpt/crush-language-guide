@@ -21,6 +21,11 @@ jobs:
         with:
           mdbook-version: 'latest'
 
+      # Every ```crush block's Run button / label, proven against the vendored
+      # crush-web build (src/play/pkg). Needs only node + python3.
+      - name: Check browser classification
+        run: node scripts/check-browser.mjs
+
       - name: Build mdBook
         run: mdbook build
 
@@ -31,3 +36,28 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./book
           cname: docs.crushlang.org
+
+  interactive:
+    # Headless Chromium drives the built book's Run / Edit controls.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: 'latest'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright + Chromium
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Build and test
+        run: |
+          mdbook build
+          python scripts/test-interactive.py

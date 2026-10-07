@@ -66,6 +66,10 @@ host, and so only works if the host grants it. Capability calls are written like
 any other dotted call — there is no `@` prefix. (The `@` sigil in Crush
 introduces polyglot blocks such as `@python { ... }`, and annotations.)
 
+Press **Run** under the example to run it in your browser, or **Edit** to change
+it first. [Running the Examples](running-examples.md) explains the buttons and
+labels, and what the in-browser runtime can and cannot do.
+
 ## Where the source lives
 
 The language implementation is the standalone

@@ -42,3 +42,16 @@ full list is in the docstring at the top of `check-examples.py`. Blocks that
 document something crush-ast does not do yet carry `<!-- check: nyi TICKET -->`: the
 checker requires them to *fail*, so the day the feature lands the check flags the
 page for an update.
+
+## The interactive book (Run / Edit buttons)
+
+| File | Role |
+|---|---|
+| `mdbook-crush-run.py` | mdBook preprocessor (wired in `book.toml`): wraps each ```` ```crush ```` block in a `<div class="crush-block" data-crush=run\|fail\|host\|none>` derived from the directives above plus the block's capability calls. `--manifest` prints every block's classification as JSON. |
+| `../interactive/crush-run.{js,css}` | The Run / Edit / Reset controls (mdBook `additional-js` / `additional-css`). |
+| `../src/play/` | `worker.js` + the vendored crush-web build (`pkg/`, provenance in `pkg/PROVENANCE.md`). |
+| `check-browser.mjs` | `node scripts/check-browser.mjs`: runs every block through `src/play/pkg` and fails if a label is wrong (a "runnable" block that fails, a "needs the host" block that would run, an output that differs from the page). Runs in CI. |
+| `test-interactive.py` | `mdbook build && scripts/test-interactive.py`: headless Chromium (Playwright) clicks Run on every runnable / expected-failure block, exercises Edit / Reset, no-JS, mobile width and a dark theme. Runs in CI. |
+
+When crush-web is rebuilt with more capabilities, update `BROWSER_CAPS` in
+`mdbook-crush-run.py`; `check-browser.mjs` tells you which labels changed.
