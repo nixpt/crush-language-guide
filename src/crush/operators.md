@@ -1,126 +1,199 @@
 # Operators
 
-Crush provides a comprehensive set of operators for arithmetic, comparison, logical operations, and more.
+Crush's operators are deliberately few. Everything in this chapter is verified
+against the current compiler.
 
-## Arithmetic Operators
+## Arithmetic
 
-### Basic Arithmetic
+| Operator | Meaning | Example |
+|---|---|---|
+| `+` | add / string concatenation | `5 + 3`, `"a" + "b"` |
+| `-` | subtract / unary negate | `10 - 4`, `-x` |
+| `*` | multiply | `6 * 7` |
+| `/` | divide (`Int / Int` truncates toward zero) | `20 / 4`, `-7 / 2` |
+| `%` | remainder | `17 % 5` |
 
 ```crush
-let sum = 5 + 3;        // 8
-let diff = 10 - 4;      // 6
-let product = 6 * 7;    // 42
-let quotient = 20 / 4;  // 5
-let remainder = 17 % 5; // 2
+print(5 + 3)
+print(10 - 4)
+print(6 * 7)
+print(20 / 4)
+print(17 % 5)
+print(-7 / 2)
+print(-(3 + 2))
 ```
 
-### Negation
-
-```crush
-let x = 42;
-let neg = -x;  // -42
+<!-- check: output -->
+```text
+8
+6
+42
+5
+2
+-3
+-5
 ```
 
-### String Concatenation
+Mixing `Int` and `Float` promotes to `Float` (`1 + 2.5` is `3.5`). `+` between a
+string and a number concatenates (`"n=" + 5` is `"n=5"`); `*` on a string does
+**not** repeat it.
 
-The `+` operator concatenates strings:
+There is no exponent operator (`**`), floor-division (`//`), or compound
+assignment (`+=`, `-=`, …) — use `math.pow(a, b)` (with `--stdlib`) and
+`x = x + 1`. See [Variables](variables.md).
+
+## Comparison
+
+`==`, `!=`, `<`, `>`, `<=`, `>=` return `Bool`. Operands must be of compatible
+types; comparing a string with an int is a compile error. Strings compare
+lexicographically; arrays compare element-wise with `==`.
 
 ```crush
-let greeting = "Hello, " + "World!";
-let message = "Count: " + 42;  // Auto-converts to string
+let a = 10
+let b = 20
+print(a == b)
+print(a != b)
+print(a < b)
+print(a >= b)
+print("apple" < "banana")
+print([1, 2] == [1, 2])
+print(1 == 1.0)
 ```
 
-## Comparison Operators
-
-```crush
-let a = 10;
-let b = 20;
-
-let equal = a == b;          // false
-let not_equal = a != b;      // true
-let less = a < b;            // true
-let greater = a > b;         // false
-let less_equal = a <= b;     // true
-let greater_equal = a >= b;  // false
+<!-- check: output -->
+```text
+false
+true
+true
+false
+true
+true
+true
 ```
 
-## Logical Operators
+## Logical
 
-Crush supports both keyword and symbolic forms — they compile to the same instructions:
-
-### AND
-
-```crush
-let result = true and false;   // false (keyword form)
-let result = true && false;    // false (symbolic form)
-let check = (x > 0) && (x < 100);
-```
-
-### OR
+Logic uses **symbols**: `&&`, `||`, `!`. The words `and`, `or` and `not` are not
+operators. `&&` and `||` short-circuit (crush-ast **CRUSH-125**):
 
 ```crush
-let result = true or false;    // true (keyword form)
-let result = true || false;    // true (symbolic form)
-let check = (x < 0) || (x > 100);
-```
-
-### NOT
-
-```crush
-let result = not true;   // false (keyword form)
-let result = !true;      // false (symbolic form)
-let check = !(x == 0);
-```
-
-## Range Operator
-
-`..` creates a range value (compiled to `make_range`):
-
-```crush
-for i in 0..10 {
-    io.print(i);  // 0, 1, ..., 9
+fn noisy() {
+    print("evaluated")
+    return true
 }
 
-let r = 1..5;  // range from 1 to 5 (exclusive)
+print(false && noisy())
+print(true || noisy())
+print(!(1 > 2))
 ```
 
-## Pipeline Operator
-
-`|>` passes the left-hand value as the first argument to the right-hand function (lowest precedence):
-
-```crush
-let result = data |> process |> format;
-// Equivalent to: format(process(data))
-
-let cleaned = "  hello  " |> str.trim |> str.to_upper;
+<!-- check: output -->
+```text
+false
+true
+true
 ```
 
-## Operator Precedence
+<!-- check: error -->
+```crush
+print(true and false)
+```
 
-From highest to lowest:
+Conditions in `if`/`while` must be `Bool` — see [Types](types.md#conditions-must-be-bool).
 
-| Precedence | Operators | Description |
-|------------|-----------|-------------|
-| 1 | `()`, `.`, `[]` | Grouping, field access, indexing |
-| 2 | `-`, `!`, `not` | Unary negation, logical NOT |
-| 3 | `*`, `/`, `%` | Multiplication, division, modulo |
-| 4 | `+`, `-` | Addition, subtraction |
-| 5 | `<`, `>`, `<=`, `>=` | Comparison |
-| 6 | `==`, `!=` | Equality |
-| 7 | `&&`, `and` | Logical AND |
-| 8 | `\|\|`, `or` | Logical OR |
-| 9 | `\|>` | Pipeline |
+## Range
 
-### Examples
+`a..b` is a half-open range (`a` inclusive, `b` exclusive). It is used by `for`,
+and also evaluates to an array of the integers in the range:
 
 ```crush
-let result = 2 + 3 * 4;           // 14 (not 20)
-let result = (2 + 3) * 4;         // 20
-let check = x > 0 and x < 100;    // Comparison before AND
-let r = fetch() |> parse |> save; // Pipeline is last
+for i in 2..5 {
+    print(i)
+}
+let r = 1..5
+print(r)
+```
+
+<!-- check: output -->
+```text
+2
+3
+4
+[1, 2, 3, 4]
+```
+
+An empty or reversed range (`5..2`) produces no iterations. Both bounds may be
+expressions: `for i in 0..len(items)`. There is no `range()` function.
+
+## Pipeline
+
+`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right.
+The right side must be a user-defined function (or a call to one):
+
+```crush
+fn inc(x) {
+    return x + 1
+}
+fn dbl(x) {
+    return x * 2
+}
+fn add(a, b) {
+    return a + b
+}
+
+print(3 |> inc |> dbl)
+print(3 |> add(4))
+```
+
+<!-- check: output -->
+```text
+8
+7
+```
+
+Piping into a **capability** such as `str.trim` or `conv.to_str` is rejected
+(`Pipeline right side must be function`); wrap it in a function first:
+
+<!-- check: error -->
+```crush
+print("  hi  " |> str.trim)
+```
+
+## Not available
+
+Bitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`) are **not** part of the
+Crush language today — the lexer rejects them — even though CASM has `bit_*`
+opcodes ([CASM reference](../casm/instructions.md)). There is no ternary
+`a ? b : c`, no null-coalescing `??`, and no `**`.
+
+## Precedence (high → low)
+
+| Level | Operators |
+|---|---|
+| 1 | `()`, `.`, `[]` — call, field access, indexing |
+| 2 | unary `-`, `!` |
+| 3 | `*` `/` `%` |
+| 4 | `+` `-` |
+| 5 | `<` `>` `<=` `>=` |
+| 6 | `==` `!=` |
+| 7 | `&&` |
+| 8 | `\|\|` |
+| 9 | `\|>` |
+
+```crush
+print(2 + 3 * 4)
+print((2 + 3) * 4)
+print(1 + 1 == 2 && 2 * 2 == 4)
+```
+
+<!-- check: output -->
+```text
+14
+20
+true
 ```
 
 ## Next Steps
 
-- **[Control Flow](control_flow.md)**: Use operators in conditions
-- **[Functions](functions.md)**: Function definitions
+- **[Control Flow](control_flow.md)**
+- **[Functions](functions.md)**

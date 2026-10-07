@@ -1,60 +1,95 @@
 # Arrays & Loops
 
-> Source: `tests/language/arrays_and_loops.crush`
-
-Array creation, indexed access, for-in iteration, and loop control.
+Array creation, indexing, `for` iteration, `break`/`continue`, and a classic
+loop exercise.
 
 ```crush
-let arr = [10, 20, 30, 40, 50];
-print("Array created: " + arr);
+let arr = [10, 20, 30, 40, 50]
+print("length: " + len(arr))
+print("first: " + arr[0] + ", third: " + arr[2])
 
-let size = len(arr);
-print("Array length: " + size);
-
-// Indexed access
-print(arr[0]);   // 10
-print(arr[2]);   // 30
-
-// Iterate all elements
+// iterate
+let sum = 0
 for x in arr {
-    print("Item: " + x);
+    sum = sum + x
 }
+print("sum: " + sum)
 
 // break — stop at 30
 for x in arr {
     if x == 30 {
-        break;
+        break
     }
-    print("Item: " + x);
+    print("before 30: " + x)
 }
 
 // continue — skip 30
 for x in arr {
     if x == 30 {
-        continue;
+        continue
     }
-    print("Item: " + x);
+    print("not 30: " + x)
 }
+
+// build an array, index by position
+let squares = []
+for i in 1..6 {
+    squares.push(i * i)
+}
+print(squares)
+
+// strings index too
+let s = "hello"
+print(s[0] + s[4])
+
+// fizzbuzz
+for n in 1..16 {
+    if n % 15 == 0 {
+        print("FizzBuzz")
+    } else if n % 3 == 0 {
+        print("Fizz")
+    } else if n % 5 == 0 {
+        print("Buzz")
+    } else {
+        print(n)
+    }
+}
+```
+
+<!-- check: output -->
+```text
+length: 5
+first: 10, third: 30
+sum: 150
+before 30: 10
+before 30: 20
+not 30: 10
+not 30: 20
+not 30: 40
+not 30: 50
+[1, 4, 9, 16, 25]
+ho
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
 ```
 
 **What this shows:**
-- Array literal `[v1, v2, ...]` and `len()` built-in
-- `arr[i]` zero-based integer indexing
-- `for x in iterable { }` — iterates arrays and ranges
-- `break` exits the loop immediately; `continue` skips to next iteration
 
-String characters are also indexable:
-
-```crush
-let s = "hello";
-print(s[0]);   // "h"
-print(s[4]);   // "o"
-```
-
-Range iteration with `..`:
-
-```crush
-for i in 0..10 {
-    print(i);   // 0 through 9
-}
-```
+- `[v1, v2, ...]` literals, `len(arr)`, zero-based `arr[i]`, and `arr.push(v)`
+- `for x in arr` and half-open ranges `for i in 1..6` (1 through 5)
+- `break` leaves the loop; `continue` skips to the next iteration
+- Strings index like arrays, yielding one-character strings
+- `if / else if / else` chains and `%`

@@ -1,11 +1,10 @@
 # Exception Handling
 
-> Source: `tests/language/exception_test.crush`
-
-`try`/`catch`/`throw` are fully implemented — not a future feature.
+`try` / `catch` / `throw` work, including across function calls. Any value can
+be thrown.
 
 ```crush
-print("Starting Exception Test")
+print("Starting")
 
 try {
     print("Inside try block")
@@ -16,38 +15,48 @@ try {
 }
 
 print("After catch block")
-```
 
-Output:
-```
-Starting Exception Test
-Inside try block
-Caught exception: Oops
-After catch block
-```
-
-**What this shows:**
-- `try { ... } catch e { ... }` — the caught value binds to `e`
-- `throw expr` — throws any value as an exception (string, Int, Map, etc.)
-- Execution after `throw` inside the `try` block is skipped
-- Execution after the `catch` block continues normally
-
-The compiler emits `enter_try` / `exit_try` / `throw` CASM instructions.
-
-## Defensive Pattern
-
-```crush
 fn safe_divide(a: Int, b: Int) -> Int {
     if b == 0 {
-        throw "division by zero";
+        throw "division by zero"
     }
-    return a / b;
+    return a / b
 }
 
 try {
-    let result = safe_divide(10, 0);
-    print(result);
+    print(safe_divide(10, 2))
+    print(safe_divide(10, 0))
 } catch e {
-    print("Error: " + e);
+    print("Error: " + e)
+}
+
+// any value can be thrown
+try {
+    throw {"code": 404, "msg": "not found"}
+} catch err {
+    print(err.code)
+    print(err.msg)
 }
 ```
+
+<!-- check: output -->
+```text
+Starting
+Inside try block
+Caught exception: Oops
+After catch block
+5
+Error: division by zero
+404
+not found
+```
+
+**What this shows:**
+
+- `try { ... } catch e { ... }` — the thrown value binds to `e`
+- `throw expr` — the rest of the `try` body is skipped
+- Output printed before the `throw` is kept (`5` above)
+- Thrown values may be strings, numbers, or objects (`err.code`)
+- `catch` handles only values raised with `throw`. A VM fault such as
+  `1 / 0`, a failed capability call, or a crashing polyglot block ends the program
+  instead — see [Control Flow](../crush/control_flow.md#what-catch-does-not-catch)

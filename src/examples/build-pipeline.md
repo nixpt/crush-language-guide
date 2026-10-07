@@ -1,71 +1,68 @@
 # Build Pipeline
 
-> Source: `crates/core/crush-lang/examples/build_pipeline.crush`
-> Donated from `nixpt/nakshatra` — used in production via `crush-run`.
+Crush's intended role is a small, auditable *conductor* for other tools: it
+decides what runs and in what order, while capability calls do the work. Here each
+step is a real process started through `process.exec`, and the pipeline stops at
+the first failure.
 
-This is Crush in its intended design role: a **capability-gated, event-sourced conductor**
-for external toolchains. Crush doesn't compile anything itself — it orchestrates native tools
-through capability calls, making the pipeline auditable and policy-checkable instead of an
-opaque shell script.
+Run it with `crush run --stdlib --process build.crush`.
 
+<!-- check: flags --process -->
 ```crush
-// Stub capability-bound host calls (in production these bind to
-// process.spawn / event.emit capabilities and compile to cap_call).
-fn run_tool(cmd: String) -> Int { return 0 }
-fn emit(topic: String, name: String) -> Int { return 0 }
+// A tiny build pipeline: run each step as a process, stop at the first failure.
+fn run_tool(cmd: String, arg: String) -> Int {
+    let raw = process.exec(cmd, arg)
+    let res = json.parse(raw)
+    return res.exit_code
+}
 
-// Run one build step: emit start event, run the tool,
-// emit success or failure, propagate the exit code.
-fn step(name: String, cmd: String) -> Int {
-    emit("build.step.start", name)
-    let code = run_tool(cmd)
+fn step(name: String, cmd: String, arg: String) -> Int {
+    print("[start] " + name)
+    let code = run_tool(cmd, arg)
     if code != 0 {
-        emit("build.step.failed", name)
+        print("[failed] " + name + " (exit " + code + ")")
         return code
     }
-    emit("build.step.ok", name)
+    print("[ok] " + name)
     return 0
 }
 
-fn main() -> Int {
-    emit("build.start", "kernel")
-
-    // 1. Configure
-    let c1 = step("config", "cp config/kernel.config kernel/.config")
-    if c1 != 0 { return c1 }
-
-    let c2 = step("olddefconfig", "make -C kernel olddefconfig")
-    if c2 != 0 { return c2 }
-
-    // 2. Compile (Crush conducts; gcc/Kbuild does the actual work)
-    let c3 = step("kernel", "make -C kernel -j8 bzImage")
-    if c3 != 0 { return c3 }
-
-    // 3. Build initramfs
-    let c4 = step("initramfs", "mkinitramfs --out build/init.cpio.gz")
-    if c4 != 0 { return c4 }
-
-    // 4. Smoke-boot in QEMU
-    let c5 = step("boot", "qemu-run --kernel kernel/arch/x86/boot/bzImage --initrd build/init.cpio.gz")
-    if c5 != 0 { return c5 }
-
-    emit("build.done", "kernel")
-    return 0
+fn main() {
+    let steps = [["configure", "echo", "config"], ["compile", "echo", "cc"], ["test", "false", "x"], ["package", "echo", "tar"]]
+    for s in steps {
+        let code = step(s[0], s[1], s[2])
+        if code != 0 {
+            print("pipeline stopped")
+            break
+        }
+    }
 }
-
-main()
 ```
 
-**Patterns demonstrated:**
+<!-- check: output -->
+```text
+[start] configure
+[ok] configure
+[start] compile
+[ok] compile
+[start] test
+[failed] test (exit 1)
+pipeline stopped
+```
 
-- **Multi-function decomposition** — `step()` encapsulates the emit-run-check pattern
-- **Fail-fast via exit code propagation** — `if code != 0 { return code }` short-circuits
-- **Event sourcing** — every step emits start/ok/failed events; the stream is replayable
-- **Capability-bound host calls** — `run_tool` and `emit` are stubs here; in production
-  they compile to `cap_call` against `process.spawn` and `event.emit` capabilities
-- **Self-contained example** — stubs replace real caps so the file runs without host wiring
+**What this shows:**
 
-**Grammar note from the source file:**
-> `spawn` is a RESERVED keyword (actor concurrency) — name process-spawning helpers
-> differently (e.g. `run_tool`). Statements are newline-terminated: no multi-line calls,
-> no list literals across lines.
+- **Capability-gated side effects.** `process.exec` only exists because of the
+  `--process` flag; without it the program fails with `unknown capability:
+  process.exec`.
+- **Structured results.** `process.exec(cmd, arg)` returns a JSON string with
+  `exit_code`, `stdout` and `stderr`; `json.parse` turns it into an object.
+- **Fail-fast.** `step` returns the exit code, `main` breaks out of the loop on
+  the first non-zero one.
+- **Data-driven steps.** The pipeline is an array of `[name, command, argument]`
+  triples, indexed with `s[0]`, `s[1]`, `s[2]`.
+
+`process.exec` takes exactly two arguments — the command and a single argument
+string — so multi-argument commands need to be wrapped (`process.exec("sh", "make
+-j8")` or similar). It runs with the full authority of the user, so enable
+`--process` only for programs you trust.

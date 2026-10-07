@@ -1,451 +1,366 @@
 # Data Types
 
-Crush has a simple, dynamic type system with optional type hints. This chapter covers all built-in types and their usage.
+Crush is dynamically typed at run time, with a **static checker** that catches
+obvious mismatches at compile time when you add type annotations. This chapter
+covers the values you can build today.
 
-## Primitive Types
+## Primitive types
 
-### Int
-
-Integer numbers (64-bit signed):
+| Type | Literal | Notes |
+|------|---------|-------|
+| Int | `42`, `-7` | 64-bit signed. Decimal literals only |
+| Float | `3.14` | 64-bit IEEE 754. No exponent literals (`1.5e3` is a parse error) |
+| String | `"hello"` | double quotes only; `len` counts **bytes** |
+| Bool | `true`, `false` | |
+| Null | `null` | absence of a value |
 
 ```crush
-let count = 42;
-let negative = -100;
-let hex = 0xFF;
-let binary = 0b1010;
-
-// Type hint
-let age: Int = 30;
+let count = 42
+let pi = 3.14
+let name = "Alice"
+let active = true
+let nothing = null
+print(count)
+print(pi)
+print(name)
+print(active)
+print(nothing)
 ```
 
-**Range:** -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
-
-### Float
-
-Floating-point numbers (64-bit IEEE 754):
-
-```crush
-let pi = 3.14159;
-let scientific = 1.5e-10;
-let negative = -2.5;
-
-// Type hint
-let temperature: Float = 98.6;
+<!-- check: output -->
+```text
+42
+3.14
+Alice
+true
+null
 ```
 
-### String
+### Numbers
 
-UTF-8 encoded text:
+`+ - * / %` work on `Int` and `Float`. Mixing the two promotes to `Float`.
+`/` on two `Int`s is **integer division**:
 
 ```crush
-let name = "Alice";
-let greeting = 'Hello';
-let multiline = """
-    This is a
-    multi-line string
-""";
-
-// Type hint
-let message: String = "Hello, World!";
+print(10 / 4)
+print(10.0 / 4)
+print(1 + 2.5)
+print(7 % 3)
 ```
 
-**String Operations:**
-
-```crush
-// Concatenation
-let full_name = first + " " + last;
-
-// Length (via capability)
-let len = str.len(name);
-
-// Substring (via capability)
-let sub = str.substring(text, 0, 5);
+<!-- check: output -->
+```text
+2
+2.5
+3.5
+1
 ```
 
-### Bool
+Dividing by zero is a **runtime error** (`[runtime] division by zero`). It is
+raised by the VM rather than thrown as a Crush value, so `try`/`catch` does not
+intercept it.
 
-Boolean values:
+> **Alpha caveat.** Integer arithmetic that overflows `i64` in a *constant
+> expression* currently panics the compiler's optimizer instead of reporting an
+> error. Keep literals within range.
+
+### Strings
+
+Concatenate with `+`. Adding a number to a string converts the number:
 
 ```crush
-let is_active = true;
-let is_complete = false;
-
-// Type hint
-let flag: Bool = true;
-
-// From comparisons
-let result = x > 10;  // Bool
+let first = "Ada"
+let last = "Lovelace"
+print(first + " " + last)
+print("Count: " + 42)
+print("Pi is " + 3.14)
 ```
 
-### Bytes
-
-Raw byte buffers for binary data:
-
-```crush
-let data = b"hello";
-
-// Type hint
-let buf: Bytes = b"data";
+<!-- check: output -->
+```text
+Ada Lovelace
+Count: 42
+Pi is 3.14
 ```
 
-### Error
-
-First-class error values for exception handling:
+`len(s)` is the byte length and `s[i]` yields a one-character string. With
+`--stdlib`, the `str.*` capabilities add `str.split`, `str.trim`,
+`str.to_upper`, `str.substring` and friends — see [Standard Library](stdlib.md).
 
 ```crush
-let err = Error("file not found");
+let s = "hello"
+print(len(s))
+print(s[1])
+print(str.to_upper(s))
+```
 
-// Check error
-if type.of(result) == "Error" {
-    io.print("Failed: " + result.message);
+<!-- check: output -->
+```text
+5
+e
+HELLO
+```
+
+## Collections
+
+### Arrays
+
+Ordered, mixed-type, zero-indexed. Index, assign by index, and `len`:
+
+```crush
+let numbers = [10, 20, 30]
+print(numbers[0])
+numbers[1] = 99
+print(numbers)
+print(len(numbers))
+
+let nested = [[1, 2], [3]]
+print(nested[0][1])
+```
+
+<!-- check: output -->
+```text
+10
+[10, 99, 30]
+3
+2
+```
+
+Append with `array.push(arr, value)` or the method form `arr.push(value)`; `+`
+joins two arrays:
+
+```crush
+let a = [1, 2]
+a.push(3)
+array.push(a, 4)
+print(a)
+print([1] + [2])
+```
+
+<!-- check: output -->
+```text
+[1, 2, 3, 4]
+[1, 2]
+```
+
+Iterate with `for`:
+
+```crush
+for item in ["a", "b"] {
+    print(item)
 }
 ```
 
-### Null
-
-Represents absence of a value:
-
-```crush
-let empty = null;
-
-// Type hint
-let optional: String? = null;  // Future feature
-
-// Checking for null
-if value == null {
-    io.print("No value");
-}
+<!-- check: output -->
+```text
+a
+b
 ```
 
-## Collection Types
-
-### Array
-
-Ordered collection of values:
+`array.pop(a)` removes and returns the last element, `a.append(v)` is an alias for
+`push`, and slices work:
 
 ```crush
-// Array literal
-let numbers = [1, 2, 3, 4, 5];
-let mixed = [1, "two", 3.0, true];  // Mixed types allowed
-
-// Type hint (future feature)
-// let scores: Array<Int> = [90, 85, 95];
-
-// Empty array
-let empty = [];
+let a = [1, 2, 3, 4]
+let last = array.pop(a)
+print(last)
+print(a)
+print(a[0:2])
 ```
 
-**Array Operations:**
+<!-- check: output -->
+```text
+4
+[1, 2, 3]
+[1, 2]
+```
+
+Reading past the end is a runtime error (`array index out of range`). The
+method form `a.pop()` is **not** available (`unknown capability: pop`); call
+`array.pop(a)`. Array mutation still has open gaps — see crush-ast **CRUSH-7**.
+
+### Objects (maps)
+
+Key–value pairs written `{"key": value}`. Keys may be bare identifiers or
+strings. Read and write fields with **dot notation**:
 
 ```crush
-// Access by index
-let first = numbers[0];
-let last = numbers[4];
-
-// Length
-let len = array.length(numbers);
-
-// Append
-array.push(numbers, 6);
-
-// Remove last
-let popped = array.pop(numbers);
-
-// Iterate
-for item in numbers {
-    io.print(item);
-}
+let person = {"name": "Alice", "age": 30}
+print(person.name)
+person.age = 31
+person.email = "alice@example.com"
+print(person.age)
+print(person.email)
 ```
 
-### Map (Object)
+<!-- check: output -->
+```text
+Alice
+31
+alice@example.com
+```
 
-Key-value pairs:
+Nested objects chain:
 
 ```crush
-// Map literal
-let person = {
-    "name": "Alice",
-    "age": 30,
-    "active": true
-};
-
-// Type hint (future feature)
-// let config: Map<String, Int> = {"max": 100};
-
-// Empty map
-let empty = {};
+let cfg = {"db": {"port": 5432}}
+print(cfg.db.port)
+cfg.db.port = 5433
+print(cfg.db.port)
 ```
 
-**Map Operations:**
+<!-- check: output -->
+```text
+5432
+5433
+```
 
+Printing an object lists its keys in an **unspecified order that can differ
+between runs**; to walk an object deterministically use `collections.keys(obj)`
+(sorted) with `--stdlib` — see [Standard Library](stdlib.md#collections--collections).
+
+> **Not yet implemented.** String-key subscripts (`person["name"]`) fail at run
+> time with `array index must be int, got str`, and `len(obj)` and `for k in obj`
+> are rejected (`expected array or string, got map`). Use dot access, and
+> `collections.keys(obj)` to enumerate. (crush-ast gap `GAP-MAP-SUBSCRIPT`.)
+
+<!-- check: nyi GAP-MAP-SUBSCRIPT -->
 ```crush
-// Access by key
-let name = person["name"];
-let age = person.age;  // Dot notation
-
-// Set value
-person["email"] = "alice@example.com";
-person.phone = "555-1234";
-
-// Check key exists
-if map.has_key(person, "email") {
-    io.print("Email exists");
-}
-
-// Iterate
-for key in map.keys(person) {
-    let value = person[key];
-    io.print(key + ": " + value);
-}
+let person = {"name": "Alice"}
+print(person["name"])
 ```
-
-## Type Conversion
-
-### Explicit Conversion
-
-```crush
-// Int to String
-let str = conv.to_string(42);
-
-// String to Int
-let num = conv.to_int("42");
-
-// Float to Int
-let rounded = conv.to_int(3.14);
-
-// Int to Float
-let decimal = conv.to_float(42);
-```
-
-### Implicit Conversion
-
-String concatenation auto-converts:
-
-```crush
-let message = "Count: " + 42;  // "Count: 42"
-let result = "Pi is " + 3.14;  // "Pi is 3.14"
-```
-
-## Type Checking
-
-### Runtime Type Checking
-
-```crush
-let value = 42;
-
-// Check type
-let type_name = type.of(value);  // "Int"
-
-if type_name == "Int" {
-    io.print("It's an integer");
-}
-```
-
-### Type Hints
-
-Type hints are optional annotations:
-
-```crush
-// Variable type hints
-let name: String = "Alice";
-let age: Int = 30;
-let score: Float = 95.5;
-let active: Bool = true;
-
-// Function parameter types
-fn greet(name: String, age: Int) {
-    io.print("Hello, " + name);
-}
-
-// Function return type
-fn calculate(x: Int, y: Int) -> Int {
-    return x + y;
-}
-```
-
-**Note:** Type hints are currently for documentation only. Runtime type checking is dynamic.
 
 ## Structs
 
-Custom data structures are implemented (`struct` keyword, `StructDef` AST node, `NewStruct` expression):
+Declare a struct with its field names (optionally with type hints) **on one line**,
+create it
+with `new Name()` — **no constructor arguments** — and assign fields
+individually:
 
+```crush
+struct Point { x: Float, y: Float }
+
+let p = new Point()
+p.x = 1.5
+p.y = 2.5
+print(p.x + p.y)
+```
+
+<!-- check: output -->
+```text
+4.0
+```
+
+Assigning to a field the struct doesn't declare is a compile error
+(`Struct 'Point' has no field 'z'`). Field type hints are **not enforced** at
+run time today, and an unassigned field reads as `null`.
+
+`Point { x: 1.0, y: 2.0 }` literals and `new Point(1.0, 2.0)` are rejected by the
+parser. A struct body that spans several lines is also rejected today — the parser
+doesn't skip newlines inside `struct { ... }` (see the GUIDE-3 ticket, gap
+`GAP-STRUCT-MULTILINE`):
+
+<!-- check: nyi GAP-STRUCT-MULTILINE -->
 ```crush
 struct Point {
     x: Float,
     y: Float
 }
+```
 
-fn main() {
-    let p = Point { x: 10.0, y: 20.0 };
-    io.print(p.x);
+## Type annotations
+
+You may annotate variables, parameters and return types with `Int`, `Float`,
+`String`, `Bool`, or `Any`. The compiler checks them statically:
+
+```crush
+fn double(n: Int) -> Int {
+    return n * 2
+}
+let label: String = "answer"
+print(label)
+print(double(21))
+```
+
+<!-- check: output -->
+```text
+answer
+42
+```
+
+Mismatches are rejected at compile time:
+
+<!-- check: error -->
+```crush
+let x: Int = "not a number"
+```
+
+<!-- check: error -->
+```crush
+fn double(n: Int) -> Int {
+    return n * 2
+}
+print(double("seven"))
+```
+
+Annotations are optional. Not available: generic forms (`Array<Int>`), array
+shorthand (`Int[]`), nullable `T?`, and `Function`/`Array`/`Map` as hint names —
+all fail with a parse or `Unknown type` error.
+
+## Conversion and inspection
+
+With `--stdlib`, the `conv.*` capabilities convert between types and report
+them:
+
+```crush
+print(conv.to_int("42") + 1)
+print(conv.to_str(5) + "x")
+print(conv.to_float(2))
+print(conv.type_of([1]))
+print(conv.type_of(null))
+```
+
+<!-- check: output -->
+```text
+43
+5x
+2.0
+array
+null
+```
+
+`conv.type_of` returns `int`, `float`, `string`, `bool`, `null`, `array` or
+`map`. There is no `type.of`.
+
+## Conditions must be Bool
+
+`if` and `while` conditions are type-checked: an `Int` or `String` is **not**
+silently truthy. Compare explicitly (`x != 0`, `s != ""`).
+
+<!-- check: error -->
+```crush
+if 1 {
+    print("yes")
 }
 ```
 
-## Function Type
+## Comparison
 
-Functions are first-class values. The `Function` type in hints represents any callable:
+`==`/`!=` compare values of the same type; comparing a string to an int is a
+compile error (`Cannot compare types string and int`). `1 == 1.0` is `true`.
 
-```crush
-fn apply(f: Function, x: Int) -> Int {
-    return f(x);
-}
+## Not available yet
 
-// Lambda type hint
-let cb: Function = |x| { return x * 2; };
-```
-
-## Optional / Nullable Types
-
-The `Type?` nullable hint syntax is recognized by the parser:
-
-```crush
-let name: String? = null;
-
-if name != null {
-    io.print(name);
-}
-```
-
-**Note:** The `??` null-coalescing operator is not yet implemented; use an explicit `if` check instead.
-
-## Enums (Future Feature)
-
-Enumerated types are not yet in the AST:
-
-```crush
-// Not yet supported:
-// enum Status { Pending, Active, Complete }
-```
-
-## Type Aliases (Future Feature)
-
-```crush
-// Not yet supported:
-// type UserId = Int;
-```
-
-## Type Inference
-
-Crush infers types from values:
-
-```crush
-let x = 42;           // Inferred as Int
-let pi = 3.14;        // Inferred as Float
-let name = "Alice";   // Inferred as String
-let flag = true;      // Inferred as Bool
-let items = [1, 2];   // Inferred as Array
-```
-
-## Type Compatibility
-
-### Numeric Types
-
-```crush
-let i: Int = 42;
-let f: Float = 3.14;
-
-// Int can be used where Float expected (auto-promotion)
-let sum: Float = i + f;  // 45.14
-
-// Float to Int requires explicit conversion
-let rounded: Int = conv.to_int(f);
-```
-
-### String Concatenation
-
-Any type can be concatenated with String:
-
-```crush
-let message = "Count: " + 42;
-let info = "Pi is " + 3.14;
-let status = "Active: " + true;
-```
-
-## Type System Summary
-
-| Type | Example | Notes |
-|------|---------|-------|
-| `Int` | `42` | 64-bit signed |
-| `Float` | `3.14` | 64-bit IEEE 754 |
-| `String` | `"Hello"` | UTF-8 |
-| `Bool` | `true` | |
-| `Bytes` | `b"data"` | raw binary buffer |
-| `Error` | `Error("msg")` | first-class error |
-| `Null` | `null` | absence of value |
-| `Void` | — | function return type only |
-| `Any` | — | dynamic/untyped hint |
-| `Array` | `[1, 2, 3]` | |
-| `Map` | `{"key": "value"}` | |
-| `Struct(Name)` | `Point { x: 1.0, y: 2.0 }` | user-defined |
-| `Function` | `\|x\| { ... }` | first-class callable |
-| `Optional(T)` | `T?` | nullable hint |
-
-## Best Practices
-
-### 1. Use Type Hints for Function Signatures
-
-```crush
-// Good: Clear interface
-fn calculate(x: Int, y: Int) -> Int {
-    return x + y;
-}
-
-// Okay: Less clear
-fn calculate(x, y) {
-    return x + y;
-}
-```
-
-### 2. Be Consistent with Types
-
-```crush
-// Good: Consistent types
-let numbers = [1, 2, 3, 4, 5];
-
-// Avoid: Mixed types (unless necessary)
-let mixed = [1, "two", 3.0];
-```
-
-### 3. Check for Null
-
-```crush
-if value != null {
-    // Safe to use value
-    io.print(value);
-}
-```
-
-### 4. Use Meaningful Type Names
-
-```crush
-// Good
-let user_count: Int = 100;
-let temperature: Float = 98.6;
-
-// Less clear
-let x: Int = 100;
-let y: Float = 98.6;
-```
-
-## Type Errors
-
-Common type-related errors:
-
-```crush
-// Division by zero
-let result = 10 / 0;  // Runtime error
-
-// Invalid conversion
-let num = conv.to_int("abc");  // Runtime error
-
-// Null access
-let value = null;
-io.print(value.field);  // Runtime error
-```
+| Feature | Status |
+|---|---|
+| `Bytes` literals (`b"..."`), `Error(...)` values | not parsed / undefined |
+| Optional types `T?`, `??` | not parsed |
+| Enums, type aliases, generics | not in the grammar |
+| Lambdas / `Function` values | crush-ast **CRUSH-75** (open) — see [Functions](functions.md) |
 
 ## Next Steps
 
-- **[Variables](variables.md)**: Variable scoping and management
-- **[Operators](operators.md)**: Detailed operator reference
-- **[Functions](functions.md)**: Working with functions
-- **[Control Flow](control_flow.md)**: If, while, for loops
+- **[Variables](variables.md)**: scope and mutation
+- **[Operators](operators.md)**: the operator reference
+- **[Functions](functions.md)**: calls, recursion, hints
+- **[Control Flow](control_flow.md)**: loops, `match`, `try`/`catch`

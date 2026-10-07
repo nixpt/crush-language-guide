@@ -1,499 +1,387 @@
 # Polyglot Programming
 
-Crush's killer feature: **embed multiple programming languages in a single program**. Write Python for data science, JavaScript for JSON, Bash for system tasks, and Rust for performance - all seamlessly integrated.
+A Crush program can embed code from other languages with `@language { ... }`
+blocks. This chapter describes what actually happens when you run one today —
+which languages work, how values cross the boundary, how errors and timeouts
+behave, and, importantly, **how much isolation you do and don't get**.
 
-## Language Blocks
+> **Status: alpha, and the security story is the part to read carefully.** By
+> default a polyglot block is an ordinary subprocess running with *your* user's
+> authority. An optional bubblewrap sandbox exists but is **off by default** and
+> not enabled by any command-line flag. See [Sandbox and authority](#sandbox-and-authority).
 
-Use `@language { ... }` syntax to embed code:
+## The model in one paragraph
 
+A block's source text is handed to a real interpreter — `python3 -c`, `node -e`,
+or `bash -c` — as a **child process**. Crush marshals some variables in, runs the
+interpreter, captures its standard output, and (for Python and JavaScript)
+marshals one result variable back. There is no embedded WebAssembly runtime, no
+WASI capability bridge, and no in-process interpreter.
+
+## Languages
+
+| Block | Runs | Aliases |
+|---|---|---|
+| `@python { }` | `python3 -c` | `@python3`, `@py` |
+| `@javascript { }` | `node -e` | `@js`, `@node`, `@es6`, `@ecmascript` |
+| `@bash { }` | `bash -c` | `@sh` |
+
+The interpreter must be on `PATH`. Any other tag (`@rust`, `@go`, `@c`, …) fails
+at run time with `unknown capability: no executor registered for language
+'rust'`.
+
+<!-- check: runfail no executor registered for language 'rust' -->
+<!-- check: flags --polyglot -->
 ```crush
-fn main() {
-    @python {
-        print("Hello from Python!")
-    }
-    
-    @javascript {
-        console.log("Hello from JavaScript!");
-    }
-    
-    @bash {
-        echo "Hello from Bash!"
-    }
+@rust {
+    fn main() {}
 }
 ```
 
-## Walker Implementation Status
+(crush-ast also ships **walkers** for Rust, Go, C, Zig, Wasm and others. A walker
+translates a *source file* into CAST for compilation — it is a separate
+mechanism, driven by the `crush-walker` tool, and is not what an `@lang { }`
+block does.)
 
-Each language needs a **walker** — a compiler component that parses source code and emits CAST.
-Walkers vary in completeness:
+## Enabling polyglot execution
 
-| Language | Syntax | Walker status | Supported constructs |
-|----------|--------|---------------|----------------------|
-| JavaScript/TypeScript | `@javascript { }` | Complete | Dual-backend (`swc` primary, `boa` optional). Full JS + TS + JSX/TSX |
-| Python | `@python { }` | Complete | Native frontend via `rustpython-parser` |
-| Rust | `@rust { }` | Complete | Native frontend via `syn` |
-| Bash | `@bash { }` | Complete | Full AST parsing via `brush-parser` |
-| C / C++ | `@c { }` | Mature | Tree-sitter-c and tree-sitter-cpp |
-| Go | `@go { }` | Mature | Tree-sitter-based walker |
-| Zig | `@zig { }` | Mature | Tree-sitter-based walker |
-| Wasm | `@wasm { }` | Mature | Integration tested with `.wat` and WASI |
+Polyglot is **off by default**, because running another interpreter is full
+ambient authority. Turn it on per run:
 
-## Polyglot Execution Model
+```sh
+crush run --polyglot program.crush        # same flag on crush-run
+```
 
-Each polyglot block executes inside a **WebAssembly (WASM) sandbox** using the **WASI capability model**:
+Without it the block is refused:
+
+<!-- check: runfail requires the 'polyglot.python' capability -->
+```crush
+@python {
+print("hi")
+}
+```
+
+An embedding host enables it explicitly with
+`HostCapsBuilder::polyglot(&["python", "javascript", "bash"])`; each language is
+gated by its own capability name (`polyglot.python`, `polyglot.javascript`,
+`polyglot.bash`).
+
+## Output
+
+Whatever the block writes to standard output appears in the program's output, in
+order. Two details to know: the block's output is **trimmed** (so it carries no
+trailing newline), and anything written to standard error is discarded when the
+block succeeds.
+
+<!-- check: flags --polyglot -->
+```crush
+print("one")
+@python {
+print("two")
+}
+print("three")
+```
+
+<!-- check: output -->
+```text
+one
+twothree
+```
+
+If you want the following output on a new line, end the block's output with an
+explicit blank line (`print()`), or print from Crush.
+
+## Passing values in and out
+
+### Python and JavaScript
+
+For `@python` and `@javascript` blocks, Crush analyses the block's own source:
+
+- **In:** every name the block *reads* that is a Crush variable already in scope
+  (a `let`, a parameter, a loop variable, or an earlier block's result) is
+  injected, with its type preserved.
+- **Out:** the **last name bound at the top level of the block** is marshaled
+  back and becomes a Crush variable of that name. Earlier assignments in the same
+  block do not escape.
+
+<!-- check: flags --polyglot -->
+```crush
+let base = 5
+@python {
+import math
+doubled = base * 2
+result = math.pow(base, 3)
+}
+print(result)
+```
+
+<!-- check: output -->
+```text
+125.0
+```
+
+Here `base` goes in, `result` (the last top-level binding) comes out, and
+`doubled` is local to the block — using it afterwards is a compile error
+(`Undefined variable`).
+
+Values travel as JSON, so the shareable types are exactly these:
+
+| Crush | Python | JavaScript |
+|---|---|---|
+| Int, Float | `int`, `float` | `number` |
+| String | `str` | `string` |
+| Bool | `bool` | `boolean` |
+| Null | `None` | `null` |
+| Array | `list` | `Array` |
+| Object | `dict` | `Object` |
+
+<!-- check: flags --polyglot -->
+```crush
+let n = 5
+let tags = ["a", "b"]
+let cfg = {"k": 1}
+@python {
+out = [n * 2, len(tags), cfg["k"], None, True]
+}
+print(out)
+```
+
+<!-- check: output -->
+```text
+[10, 2, 1, null, true]
+```
+
+An output variable that can't be serialised to JSON (a class instance, an open
+file, a function) fails the block with a clear error rather than being dropped:
+
+<!-- check: runfail cannot marshal output variable 'obj' -->
+<!-- check: flags --polyglot -->
+```crush
+@python {
+class C:
+    pass
+obj = C()
+}
+print(1)
+```
+
+Blocks compose through Crush variables, across languages:
+
+<!-- check: flags --polyglot -->
+```crush
+let x = 1
+@python {
+y = x + 1
+}
+@javascript {
+const z = y * 10
+}
+@python {
+w = z + 1
+}
+print(w)
+```
+
+<!-- check: output -->
+```text
+21
+```
+
+Blocks inside functions and loops see the enclosing scope:
+
+<!-- check: flags --polyglot -->
+```crush
+let total = 0
+for i in 0..3 {
+    @python {
+sq = i * i
+    }
+    total = total + sq
+}
+print(total)
+```
+
+<!-- check: output -->
+```text
+5
+```
+
+Python and JavaScript state does **not** persist between blocks: each block is a
+fresh interpreter, and only the marshaled result variable carries over. You
+cannot define a function in one block and call it from Crush or from another
+block.
+
+### Bash
+
+`@bash` blocks have no marshaling analysis. They receive the `let` variables
+declared **earlier at the top level of the same function body** as environment
+variables (stringified — an array arrives as `[1, 2]`), and nothing comes back
+except the printed output:
+
+<!-- check: flags --polyglot -->
+```crush
+let name = "crush"
+@bash {
+echo "hello $name"
+}
+```
+
+<!-- check: output -->
+```text
+hello crush
+```
+
+Two surprises: function **parameters** are not passed to a `@bash` block, and
+neither is the result of an earlier `@python`/`@javascript` block — copy it into
+a `let` first:
+
+<!-- check: flags --polyglot -->
+```crush
+@python {
+m = 7
+}
+let n = m
+@bash {
+echo "n=$n"
+}
+```
+
+<!-- check: output -->
+```text
+n=7
+```
+
+Bash also inherits the host environment (`$HOME`, `$PATH`, …) in the default,
+unsandboxed lane, so don't keep secrets in Crush variables around a `@bash` block
+you don't control.
+
+## Errors
+
+If the interpreter exits non-zero, the program stops with a
+`LangRuntimeError`. The message is the guest's own stderr, prefixed with the
+**Crush source line of the block**, so a Python traceback is attributed to the
+right place in your `.crush` file:
+
+<!-- check: runfail at .crush line 3 -->
+<!-- check: flags --polyglot -->
+```crush
+print("a")
+print("b")
+@python {
+raise ValueError("x")
+}
+```
 
 ```text
-┌─────────────────────────────────────────────────────┐
-│                  Crush Runtime                       │
-│  ┌───────────────────────────────────────────────┐  │
-│  │           Wasmtime / Wasmer Runtime           │  │
-│  │  ┌─────────────────────────────────────────┐  │  │
-│  │  │        Language WASM Modules            │  │  │
-│  │  │  • Python (RustPython/Pyodide)          │  │  │
-│  │  │  • JavaScript (QuickJS-wasm)            │  │  │
-│  │  │  • Rust (wasm32-wasi)                   │  │  │
-│  │  │  • C/Go (Emscripten/TinyGo)             │  │  │
-│  │  └─────────────────────────────────────────┘  │  │
-│  │                 WASI ABI                      │  │
-│  └───────────────────────────────────────────────┘  │
-│                        │                             │
-│                        ▼                             │
-│            Crush Capability Bridge                   │
-│     (Maps WASI pre-opens → Crush capabilities)      │
-└─────────────────────────────────────────────────────┘
+[runtime] @python block raised a runtime error: (at .crush line 3) Traceback (most recent call last):
+  File "<string>", line 2, in <module>
+    raise ValueError("x")
+ValueError: x
 ```
 
-### Why WASI?
+A guest failure is **not** catchable with Crush `try`/`catch`
+([Control Flow](control_flow.md#what-catch-does-not-catch)). Handle expected
+failures inside the block (`try:` / `except:` in Python) and return a value that
+says what happened. Failures to *start* a sandboxed block — package resolution,
+missing `bwrap` — are reported separately as `sandbox setup failed`, so a
+provisioning problem is never mistaken for a bug in your code.
 
-- **Cross-platform**: Same security on Linux, macOS, Windows
-- **Built-in capability model**: No custom sandboxing per language
-- **Pre-opened directories**: WASM modules only access granted paths
-- **Industry standard**: Used by Cloudflare Workers, Fastly, etc.
+## Timeouts
 
-### Execution Properties
+Every block runs under a **wall-clock limit of 30 seconds** (`Quotas::max_wall_time_ms`,
+default `30_000`). At the deadline the interpreter's whole process group is killed
+and the program ends with:
 
-- **Isolated**: Each capsule has its own memory space
-- **Capability-controlled**: Capsules only receive explicitly granted capabilities
-- **Type-safe**: Values are marshaled through CASM-compatible types
-- **Sandboxed**: Cannot escape the capsule boundary or access host system directly
-
-### Example
-
-[![Run in Codebucket (Codespaces)](https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github)](https://codespaces.new/nixpt/crush-website)
-
-```crush
-fn main() {
-    @python {
-        # This capsule has ONLY io.print capability
-        # Cannot access fs.write, net.http, etc.
-        print("Hello from isolated Python capsule")
-    }
-}
+```text
+[runtime] 'polyglot.python' exceeded its 30000ms wall-clock quota and was killed
 ```
 
-## Variable Sharing
+(crush-ast CRUSH-19.) The limit is a field of `Quotas`, so it is configurable
+when you embed the VM; `crush-run` doesn't expose a flag for it. In the sandboxed
+lane the limit also covers package provisioning. The instruction quota
+(`--max-steps`) does not apply to time spent inside a guest.
 
-Variables are shared **when representable in CASM's core type system**.
+## Sandbox and authority
 
-### Shareable Types
+**Default (no sandbox).** A polyglot block is a plain child process of the Crush
+runtime and inherits its environment, working directory, user and network. It is
+**not** subject to the capability flags in [Capability System](capabilities.md):
+`--fs-root` does not confine it, and withholding `--net` or `--process` does not
+stop a block from opening sockets or running commands. This was verified: with
+only `--polyglot`, a `@python` block reads `/etc/hostname`, and a `@bash` block
+runs `id` and `cat`.
 
-| CASM Type | Python | JavaScript | Bash | Rust | C | Go |
-|-----------|--------|------------|------|------|---|----|
-| Int | `int` | `number` | `$VAR` | `i64` | `int64_t` | `int64` |
-| Float | `float` | `number` | `$VAR` | `f64` | `double` | `float64` |
-| String | `str` | `string` | `$VAR` | `String` | `char*` | `string` |
-| Bool | `bool` | `boolean` | `true/false` | `bool` | `bool` | `bool` |
-| Array | `list` | `Array` | `array` | `Vec` | `array` | `[]` |
-| Map | `dict` | `Object` | `assoc` | `HashMap` | `struct` | `map` |
-
-### Language-Specific Objects Stay Local
-
-Python classes, JavaScript Promises, Rust structs, and other language-specific objects **remain local to their capsule**.
-
-```crush
-fn main() {
-    let x = 42;  // ✓ Shareable: Int
-    
-    @python {
-        # x is available as Python int
-        result = x * 2  # ✓ Shareable: becomes Crush Int
-        
-        class MyClass:  # ✗ Not shareable: Python-specific
-            pass
-        
-        obj = MyClass()  # ✗ Not shareable
-    }
-    
-    io.print(result);  // ✓ Works: result is Int
-    // io.print(obj);  // ✗ Error: obj not CASM-compatible
-}
-```
-
-### How It Works
-
-1. Crush variables are **marshaled** to language blocks as native types
-2. Language blocks can read and modify shareable values
-3. Changes are **marshaled back** to Crush after block execution
-4. Non-shareable objects are discarded when the capsule exits
-
-## Library Availability
-
-Because polyglot blocks run in WASM, **not all libraries are available**:
-
-### ✅ Allowed (Pure Computation)
-- Math, string manipulation, algorithms
-- JSON, YAML, TOML parsing
-- Regex, compression, crypto (pure implementations)
-- Data structures, collections
-
-### ✅ Allowed (Via Capabilities)
-- File I/O → requires `fs.*` capability
-- Network → requires `net.*` capability
-- Stdout/stdin → requires `io.*` capability
-
-### ❌ Blocked (By Design)
-- Raw syscalls, FFI to host
-- Process spawning (`subprocess`, `os.system`)
-- Arbitrary file access (`os.open`, `std::fs`)
-- Dynamic library loading
-
-> **Key insight**: Libraries that perform I/O work **only if** Crush grants the corresponding capability.
-
-## Python Integration
-
-### Basic Python
-
+<!-- check: flags --polyglot -->
 ```crush
 @python {
-    import math  # Pure computation - allowed
-    result = math.sqrt(16)
-    print(f"Square root: {result}")
+host = open("/etc/hostname").read().strip()
 }
+print(len(host) > 0)
 ```
 
-### JSON Processing
+<!-- check: output -->
+```text
+true
+```
 
+Only use `--polyglot` on programs you trust, in an environment you are prepared
+to lose.
+
+**Sandboxed lane (opt-in at build time).** crush-ast can instead provision the
+language runtime with [`buckets`](https://github.com/nixpt/buckets) and run the
+block under `bwrap` (bubblewrap) — CRUSH-20, with registry dependencies added in
+CRUSH-66. It is gated behind the `sandboxed-polyglot` Cargo feature of `crush-vm`,
+which is **off by default** and **not re-exported as a `crush-lang-sdk` feature**
+(so there is no `--features` shortcut and no CLI flag). You enable it by building
+the workspace with `--features crush-vm/sandboxed-polyglot`. It needs `bwrap`
+installed and, on first use, network access to download the runtime.
+
+What that lane does (verified against crush-ast `4e9c388`):
+
+| | Default | Sandboxed |
+|---|---|---|
+| interpreter | host's `python3` / `node` / `bash` | pinned `python@3.11`, `node@20`, `bash@5` from buckets |
+| host files (`/etc/hostname`) | readable | not visible (`FileNotFoundError`) |
+| network | inherited | **blocked** (`allow_network: false`) |
+| working directory | inherited | bound **read-write** |
+| `@lang[deps]` | ignored | resolved and bound read-only |
+
+Dependencies go in square brackets after the language tag. Registry specs are
+prefixed `pypi:` or `npm:`; bare names are buckets package aliases. A bare
+`numpy` is **not** assumed to mean PyPI.
+
+<!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
 ```crush
-@python {
-    import json  # Pure library - allowed
-    
-    data = '{"name": "Alice", "age": 30}'
-    parsed = json.loads(data)
-    print(parsed["name"])
+@python[pypi:six] {
+import six
+v = six.__version__
 }
+print(v)
 ```
 
-> **Note**: Libraries like `pandas`, `numpy`, and `sklearn` require WASM-compatible builds. Pure computation libraries (`math`, `json`, `re`) work out of the box.
-
-## JavaScript Integration
-
-### JSON Processing
-
-```crush
-@javascript {
-    const data = {
-        name: "Alice",
-        age: 30,
-        scores: [90, 85, 95]
-    };
-    
-    const json = JSON.stringify(data, null, 2);
-    console.log(json);
-}
+```text
+1.17.0
 ```
 
-### Async Operations
+The first run prints buckets' progress lines (`resolved python.org@^3.11 → …`) to
+standard error while it downloads. In a default build the `[...]` part still
+parses, but the dependencies are **silently ignored**, so `import six` then fails
+with `ModuleNotFoundError`. An unknown package fails with
+`@python block sandbox setup failed: Failed to resolve version for 'pypi:…'`.
 
-```crush
-@javascript {
-    async function fetchData() {
-        const response = await fetch('https://api.example.com/data');
-        const data = await response.json();
-        return data;
-    }
-    
-    const result = await fetchData();
-}
-```
+Even the sandboxed lane is a first cut: the working directory is writable, memory
+is not limited, and only `python`, `javascript` and `bash` are wired up.
 
-## Bash Integration
+## Limitations summary
 
-Bash blocks execute in a **restricted shell environment** with only capability-backed commands:
-
-### Using Capabilities
-
-```crush
-@bash {
-    # These map to Crush capabilities
-    crush_print "Hello from Bash"
-    
-    # File operations require fs.* capabilities
-    contents=$(crush_read "./data/file.txt")
-    crush_print "$contents"
-}
-```
-
-> **Note**: Direct system commands (`apt-get`, `systemctl`, etc.) are not available. Bash blocks use capability-backed builtins.
-
-## Rust Integration
-
-### Performance-Critical Code
-
-```crush
-@rust {
-    fn fibonacci(n: u64) -> u64 {
-        match n {
-            0 => 0,
-            1 => 1,
-            _ => fibonacci(n - 1) + fibonacci(n - 2)
-        }
-    }
-    
-    let result = fibonacci(20);
-}
-
-io.print("Fibonacci: " + result);
-```
-
-### Capability Calls from Rust
-
-Rust capsules **cannot access host `std` directly**. They must use capability calls:
-
-```crush
-@rust {
-    // ✗ Invalid: Direct host access bypasses capabilities
-    // use std::fs::File;
-    // let file = File::create("output.txt")?;
-    
-    // ✓ Correct: Use capability calls
-    extern "C" {
-        fn fs_write(path: *const u8, data: *const u8, len: usize);
-    }
-    
-    let data = b"Hello from Rust!";
-    unsafe {
-        fs_write(
-            b"output.txt\0".as_ptr(),
-            data.as_ptr(),
-            data.len()
-        );
-    }
-}
-```
-
-> **Security Note**: Rust capsules are sandboxed like all other language capsules. They cannot access the host filesystem, network, or system calls without explicit capability grants.
-
-## C Integration
-
-### Low-Level Operations
-
-```crush
-@c {
-    #include <stdio.h>
-    #include <stdlib.h>
-    
-    int* allocate_array(int size) {
-        return (int*)malloc(size * sizeof(int));
-    }
-    
-    int sum = 0;
-    for (int i = 0; i < 10; i++) {
-        sum += i;
-    }
-}
-
-io.print("Sum: " + sum);
-```
-
-## Go Integration
-
-### Concurrency
-
-```crush
-@go {
-    package main
-    
-    import (
-        "fmt"
-        "sync"
-    )
-    
-    func worker(id int, wg *sync.WaitGroup) {
-        defer wg.Done()
-        fmt.Printf("Worker %d done\n", id)
-    }
-    
-    var wg sync.WaitGroup
-    for i := 0; i < 5; i++ {
-        wg.Add(1)
-        go worker(i, &wg)
-    }
-    wg.Wait()
-}
-```
-
-## Complete Example: Multi-Language Pipeline
-
-```crush
-fn main() {
-    // Fetch data with JavaScript
-    @javascript {
-        const fetch = require('node-fetch');
-        const response = await fetch('https://api.github.com/repos/rust-lang/rust');
-        const data = await response.json();
-        repoData = data;
-    }
-    
-    // Process with Python
-    @python {
-        import json
-        
-        # Extract relevant fields
-        processed = {
-            'name': repoData['name'],
-            'stars': repoData['stargazers_count'],
-            'forks': repoData['forks_count']
-        }
-        
-        # Calculate popularity score
-        score = processed['stars'] + processed['forks'] * 2
-        processed['score'] = score
-    }
-    
-    // Format with Rust
-    @rust {
-        let formatted = format!(
-            "Repository: {}\nStars: {}\nForks: {}\nScore: {}",
-            processed["name"],
-            processed["stars"],
-            processed["forks"],
-            processed["score"]
-        );
-    }
-    
-    // Output
-    io.print(formatted);
-    
-    // Save with Bash
-    @bash {
-        echo "$formatted" > repo_stats.txt
-        cat repo_stats.txt
-    }
-}
-```
-
-## Best Practices
-
-### 1. Use the Right Language for the Job
-
-```crush
-// Good: Python for data processing
-@python {
-    import pandas as pd
-    df = pd.read_csv("data.csv")
-    result = df.groupby("category").sum()
-}
-
-// Good: Bash for system tasks
-@bash {
-    systemctl restart nginx
-}
-
-// Good: Rust for performance
-@rust {
-    fn compute_intensive_task() -> i64 {
-        // ...
-    }
-}
-```
-
-### 2. Minimize Language Switches
-
-```crush
-// Less efficient: Multiple switches
-@python { x = 1 }
-@python { y = 2 }
-@python { z = x + y }
-
-// Better: Single block
-@python {
-    x = 1
-    y = 2
-    z = x + y
-}
-```
-
-### 3. Handle Language-Specific Errors
-
-```crush
-@python {
-    try:
-        data = process_file("input.csv")
-    except Exception as e:
-        error_msg = str(e)
-}
-
-if error_msg != null {
-    io.eprint("Python error: " + error_msg);
-}
-```
-
-## Variable Type Mapping
-
-| Crush Type | Python | JavaScript | Bash | Rust | C | Go |
-|------------|--------|------------|------|------|---|-----|
-| Int | `int` | `number` | `$VAR` | `i64` | `int64_t` | `int64` |
-| Float | `float` | `number` | `$VAR` | `f64` | `double` | `float64` |
-| String | `str` | `string` | `$VAR` | `String` | `char*` | `string` |
-| Bool | `bool` | `boolean` | `true/false` | `bool` | `bool` | `bool` |
-| Array | `list` | `Array` | `array` | `Vec` | `array` | `[]` |
-| Map | `dict` | `Object` | `assoc array` | `HashMap` | `struct` | `map` |
-
-## Limitations
-
-### 1. No Direct Function Calls Across Languages
-
-```crush
-// Not supported:
-@python {
-    def helper():
-        return 42
-}
-
-// Can't call Python function from Crush
-// let x = helper();  // Error
-```
-
-**Workaround:** Use variables:
-
-```crush
-@python {
-    def helper():
-        return 42
-    result = helper()
-}
-
-let x = result;  // OK
-```
-
-### 2. Language Block Isolation
-
-Each language block runs in its own context:
-
-```crush
-@python {
-    x = 42
-}
-
-@python {
-    # x is not available here
-    # Must re-import from Crush
-    print(x)  # Error unless x was exported from Crush
-}
-```
+- Languages: Python, JavaScript (Node), Bash. Nothing else executes.
+- Value passing is JSON-only, one output variable, Python/JS only.
+- No shared interpreter state or cross-block function calls.
+- Guest errors and timeouts abort the program; they can't be caught from Crush.
+- Default execution is **unsandboxed**; the sandbox is a build-time opt-in.
 
 ## Next Steps
 
-- **[Standard Library](stdlib.md)**: Additional capabilities
-- **[CAST Specification](../cast/README.md)**: The walker output format
-- **[CASM Overview](../casm/README.md)**: The bytecode walkers compile to
+- **[Capability System](capabilities.md)**: what the flags do and don't confine
+- **[Standard Library](stdlib.md)**
+- **[CAST Specification](../cast/README.md)**
