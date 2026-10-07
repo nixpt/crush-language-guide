@@ -1,293 +1,242 @@
 # Capability System
 
-The capability system is Crush's security model. All interactions with the outside world (I/O, filesystem, network) require explicit capability permissions.
+Crush programs can't touch the outside world directly. Every interaction with the
+host — printing, reading a file, making an HTTP request, spawning a process,
+running another language — is a **capability call**, and a capability only exists
+if the host that is running the program has explicitly turned it on. There is no
+ambient authority.
 
-## What are Capabilities?
+> **Status: alpha.** The model below is real and enforced, but the set of
+> capabilities is small and the permission granularity is coarse (on/off per
+> group, with a directory root for the filesystem). Read
+> [What is not enforced](#what-is-not-enforced) before relying on it for
+> isolation.
 
-Capabilities are **permissions** that grant access to external resources:
+## Calling a capability
 
-- `io.print` - Print to stdout
-- `io.read` - Read from stdin
-- `fs.read` - Read files
-- `fs.write` - Write files
-- `net.http` - Make HTTP requests
-- `sys.exec` - Execute commands
-
-## Capability Calls
-
-Use the `@` prefix to call capabilities:
-
-```crush
-io.print("Hello, World!");
-```
-
-### With Arguments
+A capability call looks like an ordinary dotted function call — **no `@` prefix**:
 
 ```crush
-fs.write("file.txt", "content");
-let content = fs.read("file.txt");
+io.print("Hello, ", "Crush")
+let upper = str.concat("a", "b")
+print(upper)
 ```
 
-### Storing Results
+<!-- check: output -->
+```text
+Hello, Crush
+ab
+```
+
+`io.print(a, b, ...)` takes any number of arguments, joins them with no
+separator, and appends a newline. The built-in `print(x)` takes exactly one.
+(The `@` sigil exists in Crush, but it introduces polyglot blocks and
+annotations, never capability calls — see [Syntax](syntax.md#language-blocks).)
+
+## Always available
+
+These work with no flags:
+
+| Capability | Description |
+|---|---|
+| `io.print(...)` | print to stdout |
+| `io.read()` | read one line from stdin (empty string at EOF) |
+| `str.concat(...)`, `str.len(s)` | concatenate / byte length |
+| `conv.chr(n)`, `conv.ord(s)` | codepoint ↔ one-character string |
 
 ```crush
-let user_input = io.read();
-let file_data = fs.read("config.json");
+print(conv.chr(65))
+print(conv.ord("A"))
+print(str.len("héllo"))
 ```
 
-## Declaring Permissions
+<!-- check: output -->
+```text
+A
+65
+6
+```
 
-Capabilities must be declared in the program manifest:
+`io.read` reads from standard input:
+
+<!-- check: stdin Ada -->
+<!-- check: compile -->
+```crush
+let name = io.read()
+io.print("Hello, " + name)
+```
+
+## Enabling more capabilities
+
+With the CLI, each *group* of capabilities is switched on by a flag on
+`crush-run run` (or `crush run`). Anything not switched on is simply **not
+registered**, and calling it fails at run time with `unknown capability`:
+
+| Flag | Capabilities enabled |
+|---|---|
+| `--stdlib` | `str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`, `path.*`, `regex.*`, `bytes.*`, `buffer.*`, `binary.*`, `result.*`, `time.format/parse`, `env.os/arch`, `system.*` — pure computation, see [Standard Library](stdlib.md) |
+| `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `text.head/tail/wc/cut/grep` |
+| `--env` | `env.get` |
+| `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep` |
+| `--net` | `net.http_get`, `net.http_post` |
+| `--process` | `process.exec` |
+| `--crypto` | `crypto.sha256`, `crypto.random` |
+| `--db PATH` | `db.query`, `db.execute` on that SQLite file |
+| `--graphics` | `graphics.canvas/rect/circle/text/to_svg` |
+| `--bus` | `message_bus.publish/subscribe/recv` |
+| `--task` | `task.start/stop/list` |
+| `--akg` | `akg.write/read/search` |
+| `--polyglot` | `@python { }`, `@javascript { }`, `@bash { }` blocks — see [Polyglot](polyglot.md) |
+
+`crush-run caps` prints the list for your build. Some groups (`--stdlib`,
+`--net`, `--db`, `--graphics`) are Cargo features of `crush-lang-sdk`; if your binary was
+built without one, its flag prints `warning: --… requires the '…' feature (not
+enabled in this build)` and the group stays absent. Note that **`stdlib` is off by
+default** (crush-ast CRUSH-113); build with `--features stdlib`.
+
+Without the flag, the call fails:
+
+<!-- check: runfail unknown capability: fs.read -->
+```crush
+print(fs.read("data.txt"))
+```
+
+With it, and with the filesystem confined to a directory:
+
+<!-- check: runfail path escapes sandbox root -->
+<!-- check: flags --fs -->
+```crush
+print(fs.read("../outside.txt"))
+```
+
+Filesystem paths must be relative and resolve **inside** `--fs-root` (default `.`):
+absolute paths and `..` escapes are rejected. This is the one place the permission
+has a scope.
+
+### Filesystem
+
+<!-- check: flags --fs -->
+```crush
+print(fs.exists("missing.txt"))
+```
+
+<!-- check: output -->
+```text
+0
+```
+
+| Capability | Arguments | Returns |
+|---|---|---|
+| `fs.read` | `path` | file contents (string) |
+| `fs.exists` | `path` | `1` / `0` |
+| `fs.list` | `dir` | array of names |
+| `fs.write` | `path, data` | nothing — **see the note below** |
+
+> **Known bug — `fs.write`.** It declares no return value, and the compiler emits
+> a `pop` after a call used as a statement, so any program that calls it ends with
+> `[runtime] stack underflow` (the write itself may still happen). Treat `fs.write`
+> as not usable from `.crush` source until this is fixed. Capabilities that
+> return nothing share the problem; `io.print` and `time.sleep` are unaffected.
+
+<!-- check: nyi GAP-VOID-CAP-STATEMENT -->
+<!-- check: flags --fs -->
+```crush
+fs.write("out.txt", "hello")
+print(fs.read("out.txt"))
+```
+
+### Environment, time, processes, network
+
+<!-- check: flags --env --time --process -->
+```crush
+print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
+print(time.now() > 0)
+print(process.exec("echo", "hi"))
+```
+
+<!-- check: output -->
+```text
+null
+true
+{"exit_code":0,"stderr":"","stdout":"hi\n"}
+```
+
+- `env.get(name)` → string, or `null` if unset.
+- `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`
+  (bounded by the wall-clock quota).
+- `process.exec(cmd, args)` — exactly **two** arguments (the command and one
+  argument string) — returns a JSON string with `exit_code`, `stdout`, `stderr`.
+- `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;
+  size capped by `--net-max-response-bytes` (default 1 MiB).
+- `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).
+
+A host capability that fails (missing file, refused connection, path escape)
+aborts the program with `[runtime] unknown capability: <name>: <reason>` — the
+"unknown capability" wording is misleading there, and the error is not
+catchable by [`try`/`catch`](control_flow.md#what-catch-does-not-catch).
+
+## Resource limits
+
+Separately from capabilities, the VM enforces **quotas**; exceeding one ends the
+program with a `[runtime]` error:
+
+| Quota | Default | CLI flag |
+|---|---|---|
+| instructions | 1,000,000 | `--max-steps` |
+| stack slots | 4,096 | `--max-stack` |
+| output bytes | 1 MiB | `--max-output` |
+| call depth | 256 | `--max-call-depth` |
+| wall-clock per polyglot subprocess | 30,000 ms | (set via `Quotas::max_wall_time_ms` when embedding) |
+
+Output is buffered: if a program fails at run time, anything it printed before
+the failure is **not** shown.
+
+## Embedding: declaring permissions
+
+When you embed the VM from Rust you choose the capability set yourself
+(`crush_lang_sdk::HostCaps`, `Runtime`, `ProgramBuilder`), and a CASM program
+names the capabilities it is allowed to call in its manifest — a list of names:
 
 ```json
 {
-  "manifest": {
-    "permissions": {
-      "io.print": true,
-      "io.read": true,
-      "fs.read": ["./data", "./config"],
-      "fs.write": ["./output"],
-      "net.connect": ["https://api.example.com"]
-    }
-  }
+  "version": "1.0",
+  "manifest": { "permissions": ["io.print"] },
+  "functions": { "main": { "params": [], "locals": [], "body": [] } }
 }
 ```
 
-**Permission Scoping:**
-- `true` - Full access to that capability
-- `[paths]` - Restricted to specific paths or URLs
-- Omitted - Denied (default deny-by-default)
+A capability call whose name is not both **registered** by the host and **listed**
+in the program's permissions is refused. See [Getting Started](../getting-started.md)
+and [CASM structure](../casm/structure.md). For `.casm` text run with `crush-run`,
+`--cap NAME` adds names to that list.
 
-**Without the permission, the capability call will fail at runtime.**
+There is no path or URL scoping in the manifest (`"fs.read": ["./data"]` is not a
+thing): scoping today is the host's job — e.g. `--fs-root`.
 
-## Standard Capabilities
+## What is not enforced
 
-> **Host-provided, not bundled.** crush-vm registers `io.print`, `io.eprint`, and `io.read`
-> as built-in primitives. All other capabilities listed here (`fs.*`, `net.*`, `sys.*`) are
-> **host-provided** — they must be registered by the embedding host process. The bare
-> crush-ast crates define the capability *interface*; the implementation comes from the host
-> (e.g. exosphere's `corecaps`, or a custom host registration). If a cap is not registered,
-> the call fails at runtime regardless of what the manifest declares.
+Be honest with yourself about the isolation you actually get:
 
-### I/O Capabilities
+- **Polyglot blocks run outside this capability model.** With `--polyglot`,
+  `@python { }` / `@javascript { }` / `@bash { }` blocks run as ordinary
+  subprocesses with the **host process's authority**: a Python block can read any
+  file the user can. The `fs`/`net`/`process` flags above do not constrain it. An
+  optional build-time sandbox (bubblewrap, via `buckets`) exists but is **off by
+  default** — see [Polyglot](polyglot.md#sandbox-and-authority).
+- Quotas bound instructions and (for polyglot) wall-clock time, not memory.
+- `process.exec` runs any command the user can run; only enable it for programs
+  you trust.
 
-| Capability | Description | Arguments | Returns | Scope |
-|------------|-------------|-----------|---------|-------|
-| `io.print` | Print to stdout | `message: String` | `null` | N/A |
-| `io.read` | Read from stdin | none | `String` | N/A |
-| `io.eprint` | Print to stderr | `message: String` | `null` | N/A |
+## Not implemented
 
-**Example:**
-
-```crush
-io.print("Enter your name:");
-let name = io.read();
-io.print("Hello, " + name);
-```
-
-### Filesystem Capabilities
-
-| Capability | Description | Arguments | Returns | Scope |
-|------------|-------------|-----------|---------|-------|
-| `fs.read` | Read file | `path: String` | `String` | Path list |
-| `fs.write` | Write file | `path: String, content: String` | `null` | Path list |
-| `fs.exists` | Check if exists | `path: String` | `Bool` | Path list |
-| `fs.delete` | Delete file | `path: String` | `null` | Path list |
-| `fs.list` | List directory | `path: String` | `Array<String>` | Path list |
-
-**Example:**
-
-```crush
-if fs.exists("config.json") {
-    let config = fs.read("config.json");
-    io.print(config);
-} else {
-    fs.write("config.json", "{}");
-}
-```
-
-### System Capabilities
-
-| Capability | Description | Arguments | Returns |
-|------------|-------------|-----------|---------|
-| `sys.exec` | Execute command | `cmd: String` | `String` |
-| `sys.env` | Get env variable | `name: String` | `String` |
-| `sys.args` | Get CLI args | none | `Array<String>` |
-| `sys.exit` | Exit program | `code: Int` | never |
-
-**Example:**
-
-```crush
-let args = sys.args();
-if args.length < 2 {
-    io.eprint("Usage: program <file>");
-    sys.exit(1);
-}
-```
-
-### Network Capabilities
-
-| Capability | Description | Arguments | Returns |
-|------------|-------------|-----------|---------|
-| `net.http` | HTTP request | `url: String` | `String` |
-| `net.get` | HTTP GET | `url: String` | `String` |
-| `net.post` | HTTP POST | `url: String, body: String` | `String` |
-
-**Example:**
-
-```crush
-let response = net.get("https://api.example.com/data");
-io.print(response);
-```
-
-## Security Model
-
-### Principle of Least Privilege
-
-Only request capabilities you actually use:
-
-```crush
-// Good: Minimal permissions
-{
-  "permissions": ["io.print"]
-}
-
-// Bad: Excessive permissions
-{
-  "permissions": ["io.print", "fs.read", "fs.write", "net.http", "sys.exec"]
-}
-```
-
-### No Ambient Authority
-
-Unlike traditional OS permissions, capabilities are:
-- **Explicit**: Must be declared in manifest
-- **Granular**: `fs.read` vs `fs.write` vs `fs.delete`
-- **Auditable**: Easy to see what a program can do
-
-### Capability Denial
-
-If a program calls a capability it doesn't have:
-
-```crush
-// Manifest: {"permissions": ["io.print"]}
-
-fn main() {
-    io.print("Hello");  // ✓ Allowed
-    fs.read("file.txt");  // ✗ Runtime error: Permission denied
-}
-```
-
-## Best Practices
-
-### 1. Declare Only What You Need
-
-```crush
-// Good
-{
-  "permissions": ["io.print", "fs.read"]
-}
-
-// Avoid
-{
-  "permissions": ["io.*", "fs.*", "net.*"]
-}
-```
-
-### 2. Check Before Using
-
-```crush
-if fs.exists("config.json") {
-    let config = fs.read("config.json");
-} else {
-    io.print("Config not found");
-}
-```
-
-### 3. Handle Errors
-
-```crush
-// Future: try-catch
-try {
-    let data = fs.read("file.txt");
-} catch (error) {
-    io.eprint("Failed to read file: " + error);
-}
-```
-
-## Capability Composition
-
-Capabilities can be composed:
-
-```crush
-fn read_and_print(filename: String) {
-    let content = fs.read(filename);
-    io.print(content);
-}
-
-// Requires both fs.read and io.print
-```
+The following capabilities appeared in earlier revisions of this guide but do not
+exist in the runtime: `io.eprint`, `fs.delete`, `sys.exec`, `sys.env`, `sys.args`,
+`sys.exit`, `net.get`, `net.post`, `net.http`, `type.of`, `console.print`,
+`array.length`, `map.keys`, `map.has_key`, and `module.load` (what `import`
+lowers to — crush-ast **CRUSH-110**). Use the replacements above
+(`env.get`, `net.http_get`, `conv.type_of`, `len`, …).
 
 ## Next Steps
 
-- **[Polyglot Programming](polyglot.md)**: Embed multiple languages
-- **[Standard Library](stdlib.md)**: Additional capabilities
-
-## What is actually implemented today
-
-The chapters above describe the capability model. This section records, separately, **which
-capabilities the runtime currently ships** — because the two have drifted, and a guide that
-documents a capability the runtime does not have is worse than one that stays silent.
-
-Verified by running each call against `crush-run` (built with `--features stdlib`):
-
-**Available**
-
-| capability | notes |
-|---|---|
-| `io.print` | built-in, always available |
-| `str.concat`, `str.len` | built-in |
-| `str.trim`, `str.to_upper`, `str.substring` | require `--stdlib` |
-| `conv.to_int` | requires `--stdlib` |
-| `math.*` | requires `--stdlib` |
-| `fs.read`, `fs.write`, `fs.exists`, `fs.list` | require `--fs` |
-| `env.get` | requires `--env` |
-| `time.now` | requires `--time` |
-
-Run `crush-run caps` for the authoritative list on your build — and note that capability
-*groups* behind a Cargo feature (`--stdlib`, `--net`, `--db`, `--graphics`) will warn if that
-feature was not compiled in. **A "not enabled in this build" warning is not the same as "does
-not exist."**
-
-**Not implemented — documented in this guide but NOT in the runtime**
-
-`io.eprint` · `io.read` · `fs.delete` · `sys.exit` · `sys.args` · `sys.env` · `sys.exec` ·
-`type.of` · `console.print` · `array.push` · `array.pop` · `array.length` · `map.keys` ·
-`map.has_key`
-
-Examples using these will **not run**. They are retained here as intent, not as documentation
-of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.
-
-## A note on syntax: what `@` means in Crush
-
-Capability calls are written **unprefixed**: `io.print("hi")`, not `@io.print("hi")`. Earlier
-revisions of this guide used an `@` sigil; the parser has never accepted it in expression
-position, and every example here has been corrected.
-
-That correction is narrow, and it is important not to over-generalise it. **`@` is a real and
-load-bearing sigil in Crush — it just does not introduce a capability call.** It is overloaded
-across several distinct constructs, and stripping it blindly will corrupt them:
-
-| form | example | what it is |
-|---|---|---|
-| **polyglot block** | `@python { ... }`, `@javascript { ... }` | embed another language; the `@` is **required** |
-| **compiler directive** | `@gpu`, `@kernel`, `@target` | steer the backend (e.g. the PTX/GPU path) |
-| **AST / AI annotation** | `@invariant`, `@decision`, `@covers`, `@writes`, `@synthesize` | typed metadata attached to CAST nodes |
-| **capability call** | ~~`@io.print(...)`~~ → `io.print(...)` | **no sigil.** This is the one that was wrong. |
-
-The lexer emits a single `AtIdent` token for all of these; what a given `@name` *means* is
-decided by the parser from context, not by the sigil.
-
-So: if you are writing a tool that rewrites Crush source, **do not treat `@` as a single
-construct.** Note in particular that some annotations carry a dot (`@wip.started_by`), so a
-"strip `@` from anything shaped like `@x.y`" rule will silently eat them.
+- **[Standard Library](stdlib.md)**
+- **[Polyglot Programming](polyglot.md)**
