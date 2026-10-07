@@ -101,7 +101,7 @@ do not support.
 
 - You embed a scripting layer in a Rust application and need to bound and gate what
   scripts can do.
-- You want agents or tools to emit programs as validated data ([CAST](../cast/README.md))
+- You want agents or tools to emit programs as validated data ([CAST](../cast/index.md))
   rather than as source text.
 - You are experimenting with a capability-first language.
 

@@ -22,7 +22,7 @@ They fit together like this:
 
 `crushc` runs the whole chain; `crush-run run FILE.crush` compiles in memory and
 runs. The CASM IR is the **interchange point**: every front-end (the Crush parser,
-the polyglot walkers, an agent writing [CAST](../cast/README.md) directly) ends up
+the polyglot walkers, an agent writing [CAST](../cast/index.md) directly) ends up
 there, and every back-end (the VM, the AOT compilers `crush-aot` / `crush-aotc`,
 the FastVM lowering) starts there.
 
@@ -100,4 +100,4 @@ function called `main`.
 - **[Instruction Reference](instructions.md)** — every opcode, with stack effects.
 - **[Examples](examples.md)** — hand-written programs, all run by the guide's checker.
 - **[Serialization](serialization.md)** — `.casm`, `.casmb`, `.cvm1` and the version gates.
-- **[Crush Language Guide](../crush/README.md)** — the source language that compiles to it.
+- **[Crush Language Guide](../crush/index.md)** — the source language that compiles to it.

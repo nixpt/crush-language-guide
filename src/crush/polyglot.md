@@ -384,4 +384,4 @@ is not limited, and only `python`, `javascript` and `bash` are wired up.
 
 - **[Capability System](capabilities.md)**: what the flags do and don't confine
 - **[Standard Library](stdlib.md)**
-- **[CAST Specification](../cast/README.md)**
+- **[CAST Specification](../cast/index.md)**

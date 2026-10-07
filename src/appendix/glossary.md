@@ -14,13 +14,13 @@ is no ambient authority. See [Capabilities](../crush/capabilities.md).
 ### CAST (Crush AST)
 The JSON abstract syntax tree between front ends and the compiler: produced by the
 Crush parser and the language walkers, or written directly by an agent. See
-[CAST](../cast/README.md).
+[CAST](../cast/index.md).
 
 ### CASM (Crush Assembly)
 The stack-machine instruction set programs compile to. The name covers the **IR**
 (JSON, `casm::Program`), the **text assembly** (`.func`/`PUSH`/`CAP_CALL`, the
 `.casm` files `crush-run` reads) and, one step down, the **CVM1** binary. See
-[CASM](../casm/README.md).
+[CASM](../casm/index.md).
 
 ### CVM1
 The binary bytecode format the VM executes (`.cvm1`): magic `CVM1`, a version byte, a

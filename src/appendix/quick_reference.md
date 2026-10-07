@@ -201,7 +201,7 @@ Annotations (`: Int`, `-> Int`) are checked at compile time and are optional.
 | `--db PATH` | `db.query` `db.execute` |
 | `--polyglot` | `@python` `@javascript` `@bash` |
 
-## CASM text assembly ([CASM](../casm/README.md))
+## CASM text assembly ([CASM](../casm/index.md))
 
 ```casm
 .func main

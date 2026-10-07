@@ -128,7 +128,7 @@ crates give direct access to the IR, bytecode, or VM.
 | [`crush-frontend`](https://crates.io/crates/crush-frontend) | Parser, semantic analyzer, optimizer, and CASM compiler (`parse_source`). |
 | [`crush-vm`](https://crates.io/crates/crush-vm) | The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM. |
 | [`crush-cast`](https://crates.io/crates/crush-cast) | The CAST intermediate representation. |
-| [`casm`](https://crates.io/crates/casm) | The CASM IR (`casm::Program`, JSON and MessagePack) — see [CASM](casm/README.md). |
+| [`casm`](https://crates.io/crates/casm) | The CASM IR (`casm::Program`, JSON and MessagePack) — see [CASM](casm/index.md). |
 | [`crush-errors`](https://crates.io/crates/crush-errors) | Shared error types. |
 | [`tree-sitter-crush`](https://crates.io/crates/tree-sitter-crush) | Tree-sitter grammar (editor tooling, syntax highlighting). |
 
@@ -184,8 +184,8 @@ its manifest ([CASM structure](casm/structure.md)).
 
 ## 5. Where next
 
-- **[The language](crush/README.md)**: syntax, types, control flow, functions
+- **[The language](crush/index.md)**: syntax, types, control flow, functions
 - **[Capability System](crush/capabilities.md)** and **[Polyglot](crush/polyglot.md)**:
   the security model — read the "what is not enforced" sections
-- **[Examples](examples/README.md)**: runnable programs
-- **[CAST](cast/README.md)** and **[CASM](casm/README.md)**: the compiler's formats
+- **[Examples](examples/index.md)**: runnable programs
+- **[CAST](cast/index.md)** and **[CASM](casm/index.md)**: the compiler's formats
