@@ -21,10 +21,10 @@ intermediate representation (CAST) that other languages can be translated into.
 | Section | What you'll learn |
 |---------|-------------------|
 | [Getting Started](getting-started.md) | Build the toolchain, run a program, embed the VM from Rust |
-| [Crush Language](crush/README.md) | Syntax, types, control flow, functions, capabilities, polyglot blocks |
-| [Examples](examples/README.md) | Runnable programs |
-| [CAST](cast/README.md) | The AST format that walkers and the compiler share |
-| [CASM](casm/README.md) | The bytecode formats the VM executes |
+| [Crush Language](crush/index.md) | Syntax, types, control flow, functions, capabilities, polyglot blocks |
+| [Examples](examples/index.md) | Runnable programs |
+| [CAST](cast/index.md) | The AST format that walkers and the compiler share |
+| [CASM](casm/index.md) | The bytecode formats the VM executes |
 | [Appendix](appendix/glossary.md) | Glossary, quick reference, language comparisons |
 
 ## The compilation pipeline
@@ -81,5 +81,5 @@ compiler running inside the agent-native OS.
 
 ## License
 
-Licensed under either of [MIT](../LICENSE-MIT) or
-[Apache License 2.0](../LICENSE-APACHE) at your option.
+Licensed under either of [MIT](https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-MIT) or
+[Apache License 2.0](https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-APACHE) at your option.

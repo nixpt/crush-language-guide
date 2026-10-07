@@ -47,7 +47,7 @@ extension: `.casmb` means binary, **anything else is JSON**.
 
 The compiler writes pretty-printed JSON with `meta` on every instruction, so a
 compiled program is verbose: the five-line `add` program in the
-[overview](README.md) is about 3 KB as IR JSON and 199 bytes as `.cvm1`.
+[overview](index.md) is about 3 KB as IR JSON and 199 bytes as `.cvm1`.
 
 ## CASM IR: MessagePack (`.casmb`)
 
@@ -113,7 +113,7 @@ The old docs said `"version": "0.1"` for CASM; that is now rejected (major `0`).
 > versioned loader (`Program::deserialize`/`load`) therefore rejects the front end's
 > *own* output, while plain `serde_json` and `validate_json` accept it. Example
 > programs in `examples/cast/` carry `"0.1.0"` and load fine. See
-> [CAST](../cast/README.md#serialization).
+> [CAST](../cast/index.md#serialization).
 
 ## Rust API
 

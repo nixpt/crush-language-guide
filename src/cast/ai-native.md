@@ -2,7 +2,7 @@
 
 ## The doctrine
 
-CAST is JSON. An agent that knows the [schema](README.md) can emit a complete
+CAST is JSON. An agent that knows the [schema](index.md) can emit a complete
 program as one JSON document — no lexer, no parser, no walker — validate it, and
 hand it to the compiler:
 
@@ -45,7 +45,7 @@ fn main() -> anyhow::Result<()> {
 `crush_frontend::compile_cast` are the entry points; the version-gated
 `crush_cast::Program::deserialize` currently rejects the front end's own `1.0.0`
 stamp, so parse with `serde_json` as above or write `"cast_version": "0.1.0"`. See
-[CAST serialization](README.md#serialization).)
+[CAST serialization](index.md#serialization).)
 
 Writing CAST rather than source buys an agent three things: no syntax errors (the
 schema is the grammar), a validator that answers with a path and a hint, and
@@ -82,7 +82,7 @@ and **six statements** (coordination steps in a statement list).
 | `LearningLoop` | `learning_target`, `strategy`, `adaptations` |
 | `ContextAware` | `expression` (any expression), `requires_context`, `provides_context` |
 | `SemanticMatch` | `target` (expression), `concept`, `confidence_threshold` |
-| `Synthesize` | `output_type` (a [`CastType`](README.md#types)), `constraints`, `context_refs`, `examples?` |
+| `Synthesize` | `output_type` (a [`CastType`](index.md#types)), `constraints`, `context_refs`, `examples?` |
 
 ### Statements
 
@@ -305,5 +305,5 @@ IR→CVM1 lowering does not currently emit any of them. The IR column is what
 ## See also
 
 - [`examples/cast/`](https://github.com/nixpt/crush-ast/tree/main/examples/cast) in crush-ast — the example corpus (validates; most need host capabilities or hit the AI limits above to run)
-- [CAST schema](README.md) — the non-AI nodes
+- [CAST schema](index.md) — the non-AI nodes
 - [CASM Instruction Reference](../casm/instructions.md#polyglot-concurrency-ai-and-dom)

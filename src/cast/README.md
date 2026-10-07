@@ -1,7 +1,7 @@
 # CAST — the Crush AST
 
 **CAST** is the JSON abstract syntax tree that sits between source languages and
-[CASM](../casm/README.md). The Crush parser produces it, the polyglot *walkers*
+[CASM](../casm/index.md). The Crush parser produces it, the polyglot *walkers*
 produce it from other languages, and an AI agent can write it directly (see
 [AI-Native CAST](ai-native.md)). The compiler (`crush_frontend`) turns it into CASM.
 
