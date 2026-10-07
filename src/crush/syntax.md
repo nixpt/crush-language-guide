@@ -1,560 +1,409 @@
 # Syntax and Grammar
 
-This chapter covers the fundamental syntax and grammar rules of the Crush language.
+This chapter covers the lexical structure and grammar that the Crush parser
+(`crush-frontend`) accepts today. Every `crush` example in this guide is run
+through the real toolchain by `scripts/check-examples.py`; where something is
+described in the design but the parser does not accept it yet, the page says so
+and links the crush-ast ticket.
 
-## Lexical Structure
+> **Status: alpha.** The language is small and still moving. If a feature isn't
+> in this chapter, assume it doesn't exist yet.
 
-### Comments
+## A program
+
+A Crush file is a sequence of statements. There are two styles, and they can be
+mixed:
+
+- **Script style** — bare top-level statements run top to bottom.
+- **`fn main()`** — an explicit entry function.
+
+When a file has both, the top-level statements run first and then `main`'s body
+runs.
 
 ```crush
-// Single-line comment
-
-/*
- * Multi-line comment
- * Can span multiple lines
- */
+print("top-level runs first")
 
 fn main() {
-    // Comments can appear anywhere
-    io.print("Hello");  // Including after statements
+    print("then main")
 }
 ```
 
-### Identifiers
-
-Identifiers (variable names, function names) must:
-- Start with a letter or underscore
-- Contain only letters, digits, and underscores
-- Not be a reserved keyword
-
-```crush
-// Valid identifiers
-let x = 1;
-let my_variable = 2;
-let _private = 3;
-let counter123 = 4;
-
-// Invalid identifiers
-// let 123abc = 5;  // Cannot start with digit
-// let my-var = 6;  // Hyphens not allowed
+<!-- check: output -->
+```text
+top-level runs first
+then main
 ```
 
-### Keywords
+Functions can be called before they are defined:
 
-Reserved keywords in Crush:
+```crush
+print(seven())
+
+fn seven() {
+    return 7
+}
+```
+
+<!-- check: output -->
+```text
+7
+```
+
+## Comments
+
+Single-line comments start with `//` or `#`. There are no block comments —
+`/* ... */` is a parse error.
+
+```crush
+// a slash comment
+# a hash comment
+print("hello") // trailing comments work too
+```
+
+<!-- check: output -->
+```text
+hello
+```
+
+## Identifiers
+
+Identifiers start with a letter or underscore and continue with letters, digits
+and underscores. Hyphens are not allowed, and a name can't be a keyword.
+
+```crush
+let counter1 = 1
+let _private = 2
+let my_variable = 3
+print(counter1 + _private + my_variable)
+```
+
+<!-- check: output -->
+```text
+6
+```
+
+## Keywords
 
 ```text
-fn          let         mut         if          else
-while       for         in          return      break
-continue    import      export      use         as
-true        false       null        spawn       yield
-struct      match       try         catch       throw
-capability  async       await       lang
+let   fn      if       else    while   for     in
+return break  continue struct  new     try     catch
+throw  match  use      import  export  capability
+async  await  spawn    yield   lang    mut
+true   false  null
 ```
 
-### Literals
+`mut` and `capability` are reserved, but `let mut x = ...` is **not** accepted
+(see [Variables](variables.md)), and `capability` has no usable statement form
+yet. `and`, `or` and `not` are **not** keywords — logic uses `&&`, `||` and `!`.
+
+The lexer also recognises a handful of localised keyword aliases —
+`karya`/`manau`/`yadi`/`natra`/`farkau`/`jaba_samma`/`sahi`/`galat` (Nepali) plus a
+few Chinese and Japanese forms — which map to `fn`/`let`/`if`/`else`/`return`/
+`while`/`true`/`false`:
 
 ```crush
-// Integer literals
-let dec = 42;
-let hex = 0x2A;
-let bin = 0b101010;
-
-// Float literals
-let pi = 3.14159;
-let sci = 1.5e-10;
-
-// String literals
-let s1 = "Hello";
-let s2 = 'World';
-let multiline = """
-    This is a
-    multi-line string
-""";
-
-// Boolean literals
-let t = true;
-let f = false;
-
-// Null literal
-let n = null;
-```
-
-## Statements vs Expressions
-
-### Statements
-
-Statements perform actions but don't produce values:
-
-```crush
-// Variable declaration
-let x = 42;
-
-// Function definition
-fn greet() {
-    io.print("Hello");
+karya sign(x) {
+    yadi x > 0 { farkau "positive" } natra { farkau "not positive" }
 }
-
-// Control flow
-if x > 0 {
-    io.print("Positive");
-}
-
-// Expression statement
-io.print("Hello");
+manau r = sign(1)
+print(r)
 ```
 
-### Expressions
-
-Expressions produce values:
-
-```crush
-// Arithmetic expressions
-let sum = 5 + 3;
-
-// Function calls
-let result = calculate(10);
-
-// Conditionals as expressions (future feature)
-// let max = if a > b { a } else { b };
+<!-- check: output -->
+```text
+positive
 ```
 
-## Semicolons
+## Literals
 
-Semicolons are **required** at the end of statements:
+| Kind | Examples | Notes |
+|---|---|---|
+| Integer | `42`, `-7` | decimal only — `0x2A`, `0b101` and `1_000` are not lexed |
+| Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |
+| String | `"hello"` | **double quotes only**; escapes `\n \t \" \\` |
+| Boolean | `true`, `false` | |
+| Null | `null` | |
+| Array | `[1, 2, 3]` | see [Types](types.md) |
+| Object | `{"a": 1, b: 2}` | see [Types](types.md) |
+
+Single-quoted and triple-quoted strings are parse errors; a string literal may
+contain a raw newline.
 
 ```crush
-let x = 42;
-io.print(x);
-return x;
+let n = 42
+let pi = 3.14
+let s = "tab:\there"
+print(n)
+print(pi)
+print(s)
 ```
 
-Exception: The last expression in a block doesn't need a semicolon:
+<!-- check: output -->
+```text
+42
+3.14
+tab:	here
+```
+
+## Statements and semicolons
+
+Semicolons are **optional**. A statement ends at a newline, or you may write `;`
+(and `a; b` on one line) if you prefer. Both of these are the same program:
 
 ```crush
-fn add(a: Int, b: Int) -> Int {
-    return a + b;  // Semicolon required
-}
+let a = 1; let b = 2;
+print(a + b);
+```
 
-fn add_implicit(a: Int, b: Int) -> Int {
-    a + b  // No semicolon (implicit return, future feature)
-}
+<!-- check: output -->
+```text
+3
+```
+
+```crush
+let a = 1
+let b = 2
+print(a + b)
+```
+
+<!-- check: output -->
+```text
+3
+```
+
+### Return values
+
+A function returns a value only through an explicit `return`. A bare final
+expression is **not** an implicit return — it yields `null`:
+
+```crush
+fn explicit() { return 5 }
+fn implicit() { 5 }
+print(explicit())
+print(implicit())
+```
+
+<!-- check: output -->
+```text
+5
+null
 ```
 
 ## Blocks
 
-Blocks are delimited by curly braces `{}`:
+Blocks are delimited by `{ }` and are used by functions, `if`, loops and
+`try`/`catch`. A bare block as a statement is not supported; use `if true { ... }`
+if you need one.
+
+Crush has **function-level scope**, not block scope: a `let` inside an `if` or
+loop body that reuses an existing name rebinds the same variable (see
+[Variables](variables.md)).
+
+## Variables and functions
 
 ```crush
-{
-    let x = 10;
-    let y = 20;
-    io.print(x + y);
+let x = 42
+let name: String = "Alice"
+
+fn add(a: Int, b: Int) -> Int {
+    return a + b
 }
 
-fn main() {
-    // Function body is a block
-    let message = "Hello";
-    io.print(message);
-}
-
-if condition {
-    // If body is a block
-    io.print("True");
-}
+print(add(x, 1))
+print(name)
 ```
 
-## Variable Declaration
-
-```crush
-// Basic declaration
-let x = 42;
-
-// With type hint
-let name: String = "Alice";
-
-// Multiple declarations
-let a = 1;
-let b = 2;
-let c = 3;
+<!-- check: output -->
+```text
+43
+Alice
 ```
 
-## Function Definition
-
-```crush
-// Basic function
-fn greet() {
-    io.print("Hello!");
-}
-
-// With parameters
-fn add(a: Int, b: Int) {
-    return a + b;
-}
-
-// With return type
-fn multiply(x: Int, y: Int) -> Int {
-    return x * y;
-}
-
-// With type hints
-fn process(data: String, count: Int) -> Bool {
-    // ...
-    return true;
-}
-```
+Type annotations on variables, parameters and return values are checked at
+compile time — see [Types](types.md).
 
 ## Operators
 
-### Arithmetic
+Full tables are in [Operators](operators.md). In short: `+ - * / %`,
+`== != < > <= >=`, `&& || !`, unary `-`, and the pipeline `|>`. There is no `**`,
+`//`, `+=`/`-=`, `and`/`or`/`not`, or ternary `? :`.
 
-```crush
-let sum = a + b;      // Addition
-let diff = a - b;     // Subtraction
-let prod = a * b;     // Multiplication
-let quot = a / b;     // Division
-let rem = a % b;      // Modulo
-let neg = -a;         // Negation
-```
+### Precedence (high → low)
 
-### Comparison
-
-```crush
-let eq = a == b;      // Equal
-let ne = a != b;      // Not equal
-let lt = a < b;       // Less than
-let gt = a > b;       // Greater than
-let le = a <= b;      // Less or equal
-let ge = a >= b;      // Greater or equal
-```
-
-### Logical
-
-```crush
-let and_result = a and b;   // Logical AND
-let or_result = a or b;     // Logical OR
-let not_result = not a;     // Logical NOT
-```
-
-### String Concatenation
-
-```crush
-let greeting = "Hello, " + name + "!";
-let message = "Count: " + count;  // Auto-converts to string
-```
-
-## Operator Precedence
-
-From highest to lowest:
-
-1. Function calls, field access: `f()`, `obj.field`
-2. Unary: `-`, `not`
+1. Calls, field access, indexing: `f()`, `obj.field`, `a[i]`
+2. Unary: `-`, `!`
 3. Multiplicative: `*`, `/`, `%`
 4. Additive: `+`, `-`
 5. Comparison: `<`, `>`, `<=`, `>=`
 6. Equality: `==`, `!=`
-7. Logical AND: `and`
-8. Logical OR: `or`
-
-Use parentheses to override precedence:
+7. Logical AND: `&&`
+8. Logical OR: `||`
+9. Pipeline: `|>`
 
 ```crush
-let result = (a + b) * c;
-let condition = (x > 0) and (y < 10);
+print(1 + 2 * 3)
+print((1 + 2) * 3)
+print(1 < 2 && 2 < 3)
 ```
 
-## Control Flow Syntax
+<!-- check: output -->
+```text
+7
+9
+true
+```
 
-### If Statement
+## Control flow
 
 ```crush
-if condition {
-    // then block
-}
-
-if condition {
-    // then block
+let x = 5
+if x > 3 {
+    print("big")
+} else if x > 1 {
+    print("medium")
 } else {
-    // else block
+    print("small")
 }
 
-if condition1 {
-    // block 1
-} else if condition2 {
-    // block 2
-} else {
-    // block 3
+let i = 0
+while i < 3 {
+    i = i + 1
+}
+print(i)
+
+for n in 0..3 {
+    print(n)
 }
 ```
 
-### While Loop
+<!-- check: output -->
+```text
+big
+3
+0
+1
+2
+```
+
+`break` and `continue` work in `while` and `for`. See [Control Flow](control_flow.md).
+
+## Capability calls
+
+A capability call looks like an ordinary dotted call — **no `@` prefix**:
 
 ```crush
-while condition {
-    // loop body
-}
-
-while i < 10 {
-    io.print(i);
-    i = i + 1;
-}
+io.print("Hello, ", "Crush")
 ```
 
-### For Loop
-
-```crush
-for item in collection {
-    // loop body
-}
-
-for i in range(0, 10) {
-    io.print(i);
-}
+<!-- check: output -->
+```text
+Hello, Crush
 ```
 
-### Break and Continue
+(`io.print` accepts any number of arguments and concatenates them with no
+separator; the built-in `print(x)` takes exactly one.) Which capabilities exist,
+and which command-line flags grant them, is covered in
+[Capability System](capabilities.md).
 
-```crush
-while true {
-    if should_exit {
-        break;
-    }
-    if should_skip {
-        continue;
-    }
-    // ...
-}
-```
+## Language blocks
 
-## Capability Calls
+Another language's code is embedded with `@language { ... }`. The `@` here is
+required; it is what introduces the block. Polyglot execution is **off by
+default** and needs `--polyglot`:
 
-Capability calls use the `@` prefix:
-
-```crush
-// Basic capability call
-io.print("Hello");
-
-// With multiple arguments
-fs.write("file.txt", "content");
-
-// Storing result
-let content = fs.read("file.txt");
-
-// Chaining (if result is an object)
-let data = net.http("https://api.example.com").json();
-```
-
-## Language Blocks
-
-Embed other languages with `@language { ... }`:
-
+<!-- check: flags --polyglot -->
 ```crush
 @python {
-    print("Hello from Python")
-    x = 42
-}
-
-@javascript {
-    console.log("Hello from JavaScript");
-    const y = 100;
-}
-
-@bash {
-    echo "Hello from Bash"
-    ls -la
+print("Hello from Python")
 }
 ```
 
-## Import Statements
+<!-- check: output -->
+```text
+Hello from Python
+```
+
+See [Polyglot Programming](polyglot.md) for the supported languages, how
+variables cross the boundary, and the (important) security caveats.
+
+## Imports and exports
+
+`import a.b` and `use @lang ...` **parse**, but importing does not load anything
+yet: `import` is lowered to a `module.load` capability that nothing registers, so
+a program containing one fails at run time with `unknown capability:
+module.load` (crush-ast **CRUSH-110**). Every program is currently a single
+file. There is no `std.*` module tree.
+
+<!-- check: nyi CRUSH-110 -->
+```crush
+import std.io
+print("never reached")
+```
+
+`export name` parses and marks an existing variable or function for export. It
+is not an expression-level declaration:
 
 ```crush
-// Import module
-import std.io;
-
-// Import with alias
-import std.fs as filesystem;
-
-// Import specific items (future feature)
-// import std.io.{print, read};
+let result = 6 * 7
+export result
+print(result)
 ```
 
-> **Important**: `import` creates **aliases** for capabilities, not direct access. The `@` prefix is still required for all capability calls:
->
-> ```crush
-> import std.io as console;
-> 
-> console.print("Hello");  // ✓ Correct
-> // console.print("Hello");  // ✗ Error: missing @
-> ```
-
-## Export Statements
-
-```crush
-// Export variable for other capsules
-export result = calculate();
-
-// Export function
-export fn utility() {
-    // ...
-}
+<!-- check: output -->
+```text
+42
 ```
 
-## Type Annotations
+`export let x = ...` and `export fn f() {...}` are parse errors.
 
-```crush
-// Variable type hints
-let name: String = "Alice";
-let age: Int = 30;
-let score: Float = 95.5;
-let active: Bool = true;
+## Annotations
 
-// Function parameter and return types
-fn calculate(x: Int, y: Int) -> Int {
-    return x + y;
-}
+`@name` also introduces compiler/AI annotations such as `@invariant` and
+`@decision`, attached to the next declaration. These are metadata for tooling,
+not runtime behaviour; see the note at the end of the
+[Capability System](capabilities.md) chapter and the [AI-Native CAST](../cast/ai-native.md)
+chapter.
 
-// Array types (future feature)
-// let numbers: Array<Int> = [1, 2, 3];
+## Style
 
-// Map types (future feature)
-// let config: Map<String, Int> = {"key": 42};
-```
+- `snake_case` for functions and variables, `PascalCase` for structs.
+- Four-space indentation; keep lines under ~100 characters.
+- Omit semicolons unless you are putting two statements on one line.
 
-## Code Organization
+## Grammar summary
 
-### Single File
-
-```crush
-// Imports at top
-import std.io;
-import std.fs;
-
-// Function definitions
-fn helper() {
-    // ...
-}
-
-fn main() {
-    // Entry point
-}
-```
-
-### Multiple Files (future feature)
-
-```crush
-// lib.crush
-export fn utility() {
-    // ...
-}
-
-// main.crush
-import lib;
-
-fn main() {
-    lib.utility();
-}
-```
-
-## Style Guidelines
-
-### Naming Conventions
-
-```crush
-// Functions: snake_case
-fn calculate_total() { }
-
-// Variables: snake_case
-let user_name = "Alice";
-
-// Constants: SCREAMING_SNAKE_CASE (future feature)
-// const MAX_SIZE = 100;
-
-// Types: PascalCase
-struct UserData { }
-```
-
-### Indentation
-
-Use 4 spaces (not tabs):
-
-```crush
-fn main() {
-    if condition {
-        while loop {
-            io.print("Nested");
-        }
-    }
-}
-```
-
-### Line Length
-
-Keep lines under 100 characters when possible.
-
-### Spacing
-
-```crush
-// Spaces around operators
-let sum = a + b;
-
-// Space after commas
-fn call(a, b, c) { }
-
-// No space before semicolon
-let x = 42;
-
-// Space after keywords
-if condition {
-while loop {
-```
-
-## Grammar Summary
+This is the grammar the parser implements, simplified (from
+`crates/crush-frontend/src/parser/mod.rs`):
 
 ```ebnf
-program         = statement*
+program     = statement* ;
 
-statement       = var_decl
-                | fn_def
-                | if_stmt
-                | while_stmt
-                | for_stmt
-                | return_stmt
-                | expr_stmt
-                | import_stmt
-                | export_stmt
+statement   = let_stmt | fn_def | struct_def | if_stmt | while_stmt
+            | for_stmt | return_stmt | break | continue
+            | try_stmt | throw_stmt | export_stmt | import_stmt
+            | lang_block | expr_stmt ;
 
-var_decl        = "let" IDENT (":" type)? "=" expression ";"
+let_stmt    = "let" IDENT ( ":" type )? "=" expression ";"? ;
+fn_def      = "async"? "fn" IDENT "(" params? ")" ( "->" type )? block ;
+struct_def  = "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;
+if_stmt     = "if" expression block ( "else" ( if_stmt | block ) )? ;
+while_stmt  = "while" expression block ;
+for_stmt    = "for" IDENT "in" expression block ;
+try_stmt    = "try" block "catch" IDENT block ;
+throw_stmt  = "throw" expression ;
+export_stmt = "export" IDENT ;
+lang_block  = "@" IDENT ( "[" deps "]" )? "{" raw source "}" ;
+block       = "{" statement* "}" ;
 
-fn_def          = "fn" IDENT "(" params? ")" ("->" type)? block
-
-if_stmt         = "if" expression block ("else" (if_stmt | block))?
-
-while_stmt      = "while" expression block
-
-for_stmt        = "for" IDENT "in" expression block
-
-return_stmt     = "return" expression? ";"
-
-expr_stmt       = expression ";"
-
-expression      = literal
-                | IDENT
-                | binary_op
-                | unary_op
-                | call
-                | cap_call
-                | lang_block
-
-cap_call        = "@" IDENT "." IDENT "(" args? ")"
-
-lang_block      = "@" IDENT "{" ... "}"
-
-block           = "{" statement* "}"
+expression  = literal | IDENT | expression binop expression
+            | unop expression | call | field | index
+            | "new" IDENT "(" ")" | "match" expression "{" arms "}" ;
+call        = expression "(" args? ")" ;
 ```
 
 ## Next Steps
 
-- **[Data Types](types.md)**: Learn about Crush's type system
-- **[Variables](variables.md)**: Variable scoping and management
-- **[Control Flow](control_flow.md)**: Detailed control flow guide
-- **[Functions](functions.md)**: Function definition and calling
+- **[Data Types](types.md)**: the type system and collections
+- **[Variables](variables.md)**: declaration and scope
+- **[Control Flow](control_flow.md)**: loops, `match`, errors
+- **[Functions](functions.md)**: parameters, returns, recursion
