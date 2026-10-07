@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,180 +181,158 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="functions"><a class="header" href="#functions">Functions</a></h1>
-<p>Functions are first-class values in Crush. This chapter covers function definition, calling, parameters, and return values.</p>
-<h2 id="function-definition"><a class="header" href="#function-definition">Function Definition</a></h2>
-<h3 id="basic-function"><a class="header" href="#basic-function">Basic Function</a></h3>
-<pre><code class="language-crush">fn greet() {
-    io.print("Hello!");
-}
-</code></pre>
-<h3 id="with-parameters"><a class="header" href="#with-parameters">With Parameters</a></h3>
+<p>This chapter covers defining and calling functions. Crush functions are named,
+top-level declarations. <strong>Functions are not first-class values yet</strong> — you can
+call one by name, but you can’t store it in a variable or pass it as an argument
+(see <a href="#higher-order-functions-and-lambdas">Higher-order functions</a>).</p>
+<h2 id="defining-functions"><a class="header" href="#defining-functions">Defining functions</a></h2>
 <pre><code class="language-crush">fn greet(name: String) {
-    io.print("Hello, " + name + "!");
+    print("Hello, " + name + "!")
 }
-</code></pre>
-<h3 id="with-return-value"><a class="header" href="#with-return-value">With Return Value</a></h3>
-<pre><code class="language-crush">fn add(a: Int, b: Int) -&gt; Int {
-    return a + b;
-}
-</code></pre>
-<h3 id="multiple-parameters"><a class="header" href="#multiple-parameters">Multiple Parameters</a></h3>
-<pre><code class="language-crush">fn calculate(x: Int, y: Int, operation: String) -&gt; Int {
-    if operation == "add" {
-        return x + y;
-    } else if operation == "multiply" {
-        return x * y;
-    }
-    return 0;
-}
-</code></pre>
-<h2 id="function-calls"><a class="header" href="#function-calls">Function Calls</a></h2>
-<pre><code class="language-crush">// No arguments
-greet();
 
-// With arguments
-greet("Alice");
-
-// Storing result
-let sum = add(5, 3);
-
-// Nested calls
-let result = calculate(add(2, 3), 4, "multiply");
-</code></pre>
-<h2 id="return-values"><a class="header" href="#return-values">Return Values</a></h2>
-<h3 id="explicit-return"><a class="header" href="#explicit-return">Explicit Return</a></h3>
-<pre><code class="language-crush">fn get_value() -&gt; Int {
-    return 42;
+fn add(a: Int, b: Int) -&gt; Int {
+    return a + b
 }
+
+greet("Alice")
+print(add(5, 3))
 </code></pre>
-<h3 id="multiple-return-points"><a class="header" href="#multiple-return-points">Multiple Return Points</a></h3>
+<!-- check: output -->
+<pre><code class="language-text">Hello, Alice!
+8
+</code></pre>
+<ul>
+<li>Parameter and return <strong>type hints are optional</strong>. When present they are checked
+at compile time at call sites (<code>add("x", 1)</code> is a compile error).</li>
+<li>The number of arguments is checked at compile time: <code>add(1)</code> →
+<code>Function 'add' expects 2 arguments, found 1</code>.</li>
+<li>There are no default parameter values (<code>fn f(x = 1)</code> is a parse error) and no
+variadic parameters.</li>
+<li>A function may be called before its definition appears in the file.</li>
+</ul>
+<h2 id="returning-values"><a class="header" href="#returning-values">Returning values</a></h2>
+<p>Return with <code>return</code>. A function that falls off the end — or uses a bare
+<code>return</code> — yields <code>null</code>. A final expression is <strong>not</strong> an implicit return:</p>
 <pre><code class="language-crush">fn check_sign(x: Int) -&gt; String {
     if x &gt; 0 {
-        return "positive";
+        return "positive"
     } else if x &lt; 0 {
-        return "negative";
+        return "negative"
     }
-    return "zero";
-}
-</code></pre>
-<h3 id="void-functions"><a class="header" href="#void-functions">Void Functions</a></h3>
-<p>Functions without return values:</p>
-<pre><code class="language-crush">fn log_message(msg: String) {
-    io.print("[LOG] " + msg);
-    // No return statement
-}
-</code></pre>
-<h2 id="parameters"><a class="header" href="#parameters">Parameters</a></h2>
-<h3 id="positional-parameters"><a class="header" href="#positional-parameters">Positional Parameters</a></h3>
-<pre><code class="language-crush">fn create_user(name: String, age: Int, active: Bool) {
-    // ...
+    return "zero"
 }
 
-create_user("Alice", 30, true);
-</code></pre>
-<h3 id="default-parameters-future-feature"><a class="header" href="#default-parameters-future-feature">Default Parameters (Future Feature)</a></h3>
-<pre><code class="language-crush">fn greet(name: String = "Guest") {
-    io.print("Hello, " + name);
+fn log_message(msg: String) {
+    print("[LOG] " + msg)
 }
 
-greet();         // "Hello, Guest"
-greet("Alice");  // "Hello, Alice"
+print(check_sign(5))
+print(check_sign(-2))
+print(check_sign(0))
+log_message("done")
+print(log_message("again"))
 </code></pre>
+<!-- check: output -->
+<pre><code class="language-text">positive
+negative
+zero
+[LOG] done
+[LOG] again
+null
+</code></pre>
+<p>The return-type hint is not checked against what the body actually returns
+today: <code>fn f() -&gt; Int { return "s" }</code> compiles.</p>
 <h2 id="recursion"><a class="header" href="#recursion">Recursion</a></h2>
 <pre><code class="language-crush">fn factorial(n: Int) -&gt; Int {
     if n &lt;= 1 {
-        return 1;
+        return 1
     }
-    return n * factorial(n - 1);
+    return n * factorial(n - 1)
 }
 
-fn main() {
-    let result = factorial(5);  // 120
-    io.print(result);
+fn fib(n) {
+    if n &lt; 2 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
 }
+
+print(factorial(5))
+print(fib(15))
 </code></pre>
-<h2 id="higher-order-functions"><a class="header" href="#higher-order-functions">Higher-Order Functions</a></h2>
-<p>Functions are first-class values and can be passed as arguments:</p>
-<pre><code class="language-crush">fn apply(f: Function, x: Int) -&gt; Int {
-    return f(x);
-}
-
-fn double(n: Int) -&gt; Int {
-    return n * 2;
-}
-
-fn main() {
-    let result = apply(double, 21);  // 42
-}
+<!-- check: output -->
+<pre><code class="language-text">120
+610
 </code></pre>
-<h2 id="lambdas-and-closures"><a class="header" href="#lambdas-and-closures">Lambdas and Closures</a></h2>
-<p>Anonymous functions use the <code>|params| { body }</code> syntax (the <code>Lambda</code> AST node):</p>
-<pre><code class="language-crush">let double = |x| { return x * 2; };
-let result = double(21);  // 42
-
-// Single-expression form
-let square = |x| =&gt; x * x;
+<p>Mutual recursion works too. Recursion depth is capped by the VM’s call-depth
+quota — <strong>256 frames by default</strong> (<code>--max-call-depth N</code> on <code>crush-run</code>); exceeding
+it ends the program with <code>call depth quota exceeded</code>. The other default quotas are
+1,000,000 instructions (<code>--max-steps</code>), a 4096-slot stack (<code>--max-stack</code>), 1 MiB of
+output (<code>--max-output</code>), and a 30-second wall-clock limit per polyglot block.</p>
+<!-- check: runfail call depth quota exceeded -->
+<pre><code class="language-crush">fn d(n) {
+    return d(n - 1)
+}
+print(d(1))
 </code></pre>
-<p>Closures capture variables from the enclosing scope:</p>
-<pre><code class="language-crush">fn make_adder(x: Int) -&gt; Function {
-    return |y| { return x + y; };
+<h2 id="higher-order-functions-and-lambdas"><a class="header" href="#higher-order-functions-and-lambdas">Higher-order functions and lambdas</a></h2>
+<blockquote>
+<p><strong>Not yet implemented.</strong> Passing a function by name (<code>apply(double, 21)</code>),
+storing one in a variable (<code>let f = double</code>), and anonymous functions
+(<code>|x| { ... }</code>, <code>|x| =&gt; x * 2</code>) all fail to compile. The lexer reads a bare <code>|</code>
+as an identifier, so the lambda parser is unreachable (crush-ast <strong>CRUSH-75</strong>,
+open); closures that capture variables are a separate, larger gap. Until then,
+write ordinary named functions and call them directly, or use the
+pipeline operator (<code>x |&gt; f</code>), which does accept a function <strong>name</strong>:</p>
+</blockquote>
+<!-- check: nyi CRUSH-75 -->
+<pre><code class="language-crush">fn double(n) {
+    return n * 2
 }
-
-fn main() {
-    let add_five = make_adder(5);
-    let result = add_five(10);  // 15
-}
+let f = double
+print(f(21))
 </code></pre>
-<h2 id="async-functions"><a class="header" href="#async-functions">Async Functions</a></h2>
-<p>Use <code>async</code>/<code>await</code> for asynchronous operations. <code>spawn</code> launches a task concurrently:</p>
-<pre><code class="language-crush">async fn fetch_data(url: String) -&gt; String {
-    let response = await net.get(url);
-    return response;
-}
-
-fn main() {
-    let task = spawn fetch_data("https://api.example.com/data");
-    let result = await task;
-    io.print(result);
-}
+<!-- check: nyi CRUSH-75 -->
+<pre><code class="language-crush">let double = |x| { return x * 2 }
+print(double(21))
 </code></pre>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-use-type-hints"><a class="header" href="#1-use-type-hints">1. Use Type Hints</a></h3>
-<pre><code class="language-crush">// Good
-fn calculate(x: Int, y: Int) -&gt; Int {
-    return x + y;
+<pre><code class="language-crush">fn double(n) {
+    return n * 2
 }
-
-// Less clear
-fn calculate(x, y) {
-    return x + y;
+fn inc(n) {
+    return n + 1
 }
+print(5 |&gt; double |&gt; inc)
 </code></pre>
-<h3 id="2-keep-functions-focused"><a class="header" href="#2-keep-functions-focused">2. Keep Functions Focused</a></h3>
-<pre><code class="language-crush">// Good: Single responsibility
-fn validate_email(email: String) -&gt; Bool {
-    // ...
-}
-
-fn send_email(to: String, subject: String, body: String) {
-    // ...
-}
+<!-- check: output -->
+<pre><code class="language-text">11
 </code></pre>
-<h3 id="3-use-descriptive-names"><a class="header" href="#3-use-descriptive-names">3. Use Descriptive Names</a></h3>
-<pre><code class="language-crush">// Good
-fn calculate_total_price(items: Array, tax_rate: Float) -&gt; Float {
-    // ...
+<h2 id="concurrency-spawn-yield-async-await"><a class="header" href="#concurrency-spawn-yield-async-await">Concurrency: <code>spawn</code>, <code>yield</code>, <code>async</code>, <code>await</code></a></h2>
+<p>These keywords are in the grammar, but the end-to-end path is incomplete: a
+program that contains <code>spawn f()</code>, <code>async fn</code>, or <code>await</code> is rejected by the
+assembler (<code>SPAWN takes 1 operand(s), got 0</code>). The AI/concurrency opcodes are
+tracked under crush-ast <strong>CRUSH-1</strong> / <strong>CRUSH-34</strong>. A bare <code>yield</code> statement
+compiles and runs (it is a no-op without a spawned task).</p>
+<!-- check: nyi CRUSH-34 -->
+<pre><code class="language-crush">fn worker() {
+    print("worker")
 }
-
-// Avoid
-fn calc(x, y) {
-    // ...
-}
+spawn worker()
+yield
+print("main")
 </code></pre>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best practices</a></h2>
+<ul>
+<li>Keep functions small and give parameters type hints — they document the
+interface and catch mistakes at compile time.</li>
+<li>Pass data in as parameters: functions cannot see top-level variables
+(<a href="variables.html#module-level-variables-are-not-visible-inside-functions">Variables</a>).</li>
+<li>Prefer descriptive names (<code>calculate_total_price</code>, not <code>calc</code>).</li>
+</ul>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="capabilities.html">Capability System</a></strong>: Secure I/O operations</li>
-<li><strong><a href="polyglot.html">Polyglot Programming</a></strong>: Embed multiple languages</li>
+<li><strong><a href="capabilities.html">Capability System</a></strong></li>
+<li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
 
                     </main>

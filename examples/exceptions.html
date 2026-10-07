@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,11 +181,9 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h1>
-<blockquote>
-<p>Source: <code>tests/language/exception_test.crush</code></p>
-</blockquote>
-<p><code>try</code>/<code>catch</code>/<code>throw</code> are fully implemented — not a future feature.</p>
-<pre><code class="language-crush">print("Starting Exception Test")
+<p><code>try</code> / <code>catch</code> / <code>throw</code> work, including across function calls. Any value can
+be thrown.</p>
+<pre><code class="language-crush">print("Starting")
 
 try {
     print("Inside try block")
@@ -196,36 +194,49 @@ try {
 }
 
 print("After catch block")
-</code></pre>
-<p>Output:</p>
-<pre><code>Starting Exception Test
-Inside try block
-Caught exception: Oops
-After catch block
-</code></pre>
-<p><strong>What this shows:</strong></p>
-<ul>
-<li><code>try { ... } catch e { ... }</code> — the caught value binds to <code>e</code></li>
-<li><code>throw expr</code> — throws any value as an exception (string, Int, Map, etc.)</li>
-<li>Execution after <code>throw</code> inside the <code>try</code> block is skipped</li>
-<li>Execution after the <code>catch</code> block continues normally</li>
-</ul>
-<p>The compiler emits <code>enter_try</code> / <code>exit_try</code> / <code>throw</code> CASM instructions.</p>
-<h2 id="defensive-pattern"><a class="header" href="#defensive-pattern">Defensive Pattern</a></h2>
-<pre><code class="language-crush">fn safe_divide(a: Int, b: Int) -&gt; Int {
+
+fn safe_divide(a: Int, b: Int) -&gt; Int {
     if b == 0 {
-        throw "division by zero";
+        throw "division by zero"
     }
-    return a / b;
+    return a / b
 }
 
 try {
-    let result = safe_divide(10, 0);
-    print(result);
+    print(safe_divide(10, 2))
+    print(safe_divide(10, 0))
 } catch e {
-    print("Error: " + e);
+    print("Error: " + e)
+}
+
+// any value can be thrown
+try {
+    throw {"code": 404, "msg": "not found"}
+} catch err {
+    print(err.code)
+    print(err.msg)
 }
 </code></pre>
+<!-- check: output -->
+<pre><code class="language-text">Starting
+Inside try block
+Caught exception: Oops
+After catch block
+5
+Error: division by zero
+404
+not found
+</code></pre>
+<p><strong>What this shows:</strong></p>
+<ul>
+<li><code>try { ... } catch e { ... }</code> — the thrown value binds to <code>e</code></li>
+<li><code>throw expr</code> — the rest of the <code>try</code> body is skipped</li>
+<li>Output printed before the <code>throw</code> is kept (<code>5</code> above)</li>
+<li>Thrown values may be strings, numbers, or objects (<code>err.code</code>)</li>
+<li><code>catch</code> handles only values raised with <code>throw</code>. A VM fault such as
+<code>1 / 0</code>, a failed capability call, or a crashing polyglot block ends the program
+instead — see <a href="../crush/control_flow.html#what-catch-does-not-catch">Control Flow</a></li>
+</ul>
 
                     </main>
 

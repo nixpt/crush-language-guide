@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Concurrency &amp; Structs - The Crush Language Guide</title>
+        <title>Structs (and Concurrency) - The Crush Language Guide</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,52 +180,58 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="concurrency--structs"><a class="header" href="#concurrency--structs">Concurrency &amp; Structs</a></h1>
-<blockquote>
-<p>Source: <code>tests/language/concurrency_structs.crush</code></p>
-</blockquote>
-<p>Struct instantiation with field access, plus <code>spawn</code>/<code>yield</code> for cooperative multitasking.</p>
-<pre><code class="language-crush">// Struct instantiation
-let p = new Point();
-p.x = 10;
-p.y = 20;
-print("Point x: " + p.x);
-print("Point y: " + p.y);
+                        <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
+<p>A struct is declared once, created with <code>new Name()</code>, and filled in by assigning
+fields. Structs are passed by reference.</p>
+<pre><code class="language-crush">struct Point { x: Float, y: Float }
 
-// Spawn a concurrent task
-print("Main starting spawn");
-spawn worker();
-
-print("Main yielding 1");
-yield;
-
-print("Main yielding 2");
-yield;
-
-print("Main resumed");
-
-fn worker() {
-    print("Worker running");
-    yield;
-    print("Worker finishing");
+fn dist2(a, b) {
+    let dx = a.x - b.x
+    let dy = a.y - b.y
+    return dx * dx + dy * dy
 }
+
+let p = new Point()
+p.x = 1.0
+p.y = 2.0
+let q = new Point()
+q.x = 4.0
+q.y = 6.0
+
+print("p = (" + p.x + ", " + p.y + ")")
+print("squared distance: " + dist2(p, q))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">p = (1.0, 2.0)
+squared distance: 25.0
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>new StructName()</code> instantiates a struct</li>
-<li>Field assignment and access via <code>.</code> operator</li>
-<li><code>spawn fn()</code> — launches a function as a cooperative task</li>
-<li><code>yield</code> — suspends the current task and switches to another ready task</li>
-<li><code>spawn</code>/<code>yield</code> implement M:1 cooperative concurrency (no preemption)</li>
+<li><code>struct Point { x: Float, y: Float }</code> — declare it on <strong>one line</strong>; the parser
+does not yet accept a struct body that spans lines</li>
+<li><code>new Point()</code> takes no arguments; set each field with <code>p.x = ...</code></li>
+<li>Field access works inside functions, including on parameters (<code>a.x</code>)</li>
+<li><code>Float</code> arithmetic: <code>3.0 * 3.0 + 4.0 * 4.0</code> is <code>25.0</code></li>
 </ul>
-<p>The tree-sitter grammar also supports struct definitions with typed fields:</p>
-<pre><code class="language-crush">struct Point {
-    x: Float,
-    y: Float
+<h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
+<p>Earlier revisions of this guide demonstrated <code>spawn worker()</code> with cooperative
+<code>yield</code>. That does <strong>not</strong> run today: the compiler emits a <code>SPAWN</code> instruction
+without its operand and the assembler rejects the program
+(<code>SPAWN takes 1 operand(s), got 0</code>). The scheduler for green threads exists in
+<code>crush-vm</code>, but the source-level path is unfinished — crush-ast <strong>CRUSH-34</strong>
+(spawn/await/yield execution) is open. A bare <code>yield</code> statement compiles and is a
+no-op.</p>
+<!-- check: nyi CRUSH-34 -->
+<pre><code class="language-crush">fn worker() {
+    print("worker running")
+    yield
+    print("worker finishing")
 }
 
-let p = Point { x: 10.0, y: 20.0 };
-print(p.x);
+spawn worker()
+print("main")
+yield
+print("main again")
 </code></pre>
 
                     </main>

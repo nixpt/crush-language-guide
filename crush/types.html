@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,345 +181,287 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="data-types"><a class="header" href="#data-types">Data Types</a></h1>
-<p>Crush has a simple, dynamic type system with optional type hints. This chapter covers all built-in types and their usage.</p>
-<h2 id="primitive-types"><a class="header" href="#primitive-types">Primitive Types</a></h2>
-<h3 id="int"><a class="header" href="#int">Int</a></h3>
-<p>Integer numbers (64-bit signed):</p>
-<pre><code class="language-crush">let count = 42;
-let negative = -100;
-let hex = 0xFF;
-let binary = 0b1010;
-
-// Type hint
-let age: Int = 30;
+<p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
+obvious mismatches at compile time when you add type annotations. This chapter
+covers the values you can build today.</p>
+<h2 id="primitive-types"><a class="header" href="#primitive-types">Primitive types</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Type</th><th>Literal</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Int</td><td><code>42</code>, <code>-7</code></td><td>64-bit signed. Decimal literals only</td></tr>
+<tr><td>Float</td><td><code>3.14</code></td><td>64-bit IEEE 754. No exponent literals (<code>1.5e3</code> is a parse error)</td></tr>
+<tr><td>String</td><td><code>"hello"</code></td><td>double quotes only; <code>len</code> counts <strong>bytes</strong></td></tr>
+<tr><td>Bool</td><td><code>true</code>, <code>false</code></td><td></td></tr>
+<tr><td>Null</td><td><code>null</code></td><td>absence of a value</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-crush">let count = 42
+let pi = 3.14
+let name = "Alice"
+let active = true
+let nothing = null
+print(count)
+print(pi)
+print(name)
+print(active)
+print(nothing)
 </code></pre>
-<p><strong>Range:</strong> -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807</p>
-<h3 id="float"><a class="header" href="#float">Float</a></h3>
-<p>Floating-point numbers (64-bit IEEE 754):</p>
-<pre><code class="language-crush">let pi = 3.14159;
-let scientific = 1.5e-10;
-let negative = -2.5;
-
-// Type hint
-let temperature: Float = 98.6;
+<!-- check: output -->
+<pre><code class="language-text">42
+3.14
+Alice
+true
+null
 </code></pre>
-<h3 id="string"><a class="header" href="#string">String</a></h3>
-<p>UTF-8 encoded text:</p>
-<pre><code class="language-crush">let name = "Alice";
-let greeting = 'Hello';
-let multiline = """
-    This is a
-    multi-line string
-""";
-
-// Type hint
-let message: String = "Hello, World!";
+<h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
+<p><code>+ - * / %</code> work on <code>Int</code> and <code>Float</code>. Mixing the two promotes to <code>Float</code>.
+<code>/</code> on two <code>Int</code>s is <strong>integer division</strong>:</p>
+<pre><code class="language-crush">print(10 / 4)
+print(10.0 / 4)
+print(1 + 2.5)
+print(7 % 3)
 </code></pre>
-<p><strong>String Operations:</strong></p>
-<pre><code class="language-crush">// Concatenation
-let full_name = first + " " + last;
-
-// Length (via capability)
-let len = str.len(name);
-
-// Substring (via capability)
-let sub = str.substring(text, 0, 5);
+<!-- check: output -->
+<pre><code class="language-text">2
+2.5
+3.5
+1
 </code></pre>
-<h3 id="bool"><a class="header" href="#bool">Bool</a></h3>
-<p>Boolean values:</p>
-<pre><code class="language-crush">let is_active = true;
-let is_complete = false;
-
-// Type hint
-let flag: Bool = true;
-
-// From comparisons
-let result = x &gt; 10;  // Bool
+<p>Dividing by zero is a <strong>runtime error</strong> (<code>[runtime] division by zero</code>). It is
+raised by the VM rather than thrown as a Crush value, so <code>try</code>/<code>catch</code> does not
+intercept it.</p>
+<blockquote>
+<p><strong>Alpha caveat.</strong> Integer arithmetic that overflows <code>i64</code> in a <em>constant
+expression</em> currently panics the compiler’s optimizer instead of reporting an
+error. Keep literals within range.</p>
+</blockquote>
+<h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
+<p>Concatenate with <code>+</code>. Adding a number to a string converts the number:</p>
+<pre><code class="language-crush">let first = "Ada"
+let last = "Lovelace"
+print(first + " " + last)
+print("Count: " + 42)
+print("Pi is " + 3.14)
 </code></pre>
-<h3 id="bytes"><a class="header" href="#bytes">Bytes</a></h3>
-<p>Raw byte buffers for binary data:</p>
-<pre><code class="language-crush">let data = b"hello";
-
-// Type hint
-let buf: Bytes = b"data";
+<!-- check: output -->
+<pre><code class="language-text">Ada Lovelace
+Count: 42
+Pi is 3.14
 </code></pre>
-<h3 id="error"><a class="header" href="#error">Error</a></h3>
-<p>First-class error values for exception handling:</p>
-<pre><code class="language-crush">let err = Error("file not found");
+<p><code>len(s)</code> is the byte length and <code>s[i]</code> yields a one-character string. With
+<code>--stdlib</code>, the <code>str.*</code> capabilities add <code>str.split</code>, <code>str.trim</code>,
+<code>str.to_upper</code>, <code>str.substring</code> and friends — see <a href="stdlib.html">Standard Library</a>.</p>
+<pre><code class="language-crush">let s = "hello"
+print(len(s))
+print(s[1])
+print(str.to_upper(s))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">5
+e
+HELLO
+</code></pre>
+<h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
+<h3 id="arrays"><a class="header" href="#arrays">Arrays</a></h3>
+<p>Ordered, mixed-type, zero-indexed. Index, assign by index, and <code>len</code>:</p>
+<pre><code class="language-crush">let numbers = [10, 20, 30]
+print(numbers[0])
+numbers[1] = 99
+print(numbers)
+print(len(numbers))
 
-// Check error
-if type.of(result) == "Error" {
-    io.print("Failed: " + result.message);
+let nested = [[1, 2], [3]]
+print(nested[0][1])
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">10
+[10, 99, 30]
+3
+2
+</code></pre>
+<p>Append with <code>array.push(arr, value)</code> or the method form <code>arr.push(value)</code>; <code>+</code>
+joins two arrays:</p>
+<pre><code class="language-crush">let a = [1, 2]
+a.push(3)
+array.push(a, 4)
+print(a)
+print([1] + [2])
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">[1, 2, 3, 4]
+[1, 2]
+</code></pre>
+<p>Iterate with <code>for</code>:</p>
+<pre><code class="language-crush">for item in ["a", "b"] {
+    print(item)
 }
 </code></pre>
-<h3 id="null"><a class="header" href="#null">Null</a></h3>
-<p>Represents absence of a value:</p>
-<pre><code class="language-crush">let empty = null;
-
-// Type hint
-let optional: String? = null;  // Future feature
-
-// Checking for null
-if value == null {
-    io.print("No value");
-}
+<!-- check: output -->
+<pre><code class="language-text">a
+b
 </code></pre>
-<h2 id="collection-types"><a class="header" href="#collection-types">Collection Types</a></h2>
-<h3 id="array"><a class="header" href="#array">Array</a></h3>
-<p>Ordered collection of values:</p>
-<pre><code class="language-crush">// Array literal
-let numbers = [1, 2, 3, 4, 5];
-let mixed = [1, "two", 3.0, true];  // Mixed types allowed
-
-// Type hint (future feature)
-// let scores: Array&lt;Int&gt; = [90, 85, 95];
-
-// Empty array
-let empty = [];
+<p><code>array.pop(a)</code> removes and returns the last element, <code>a.append(v)</code> is an alias for
+<code>push</code>, and slices work:</p>
+<pre><code class="language-crush">let a = [1, 2, 3, 4]
+let last = array.pop(a)
+print(last)
+print(a)
+print(a[0:2])
 </code></pre>
-<p><strong>Array Operations:</strong></p>
-<pre><code class="language-crush">// Access by index
-let first = numbers[0];
-let last = numbers[4];
-
-// Length
-let len = array.length(numbers);
-
-// Append
-array.push(numbers, 6);
-
-// Remove last
-let popped = array.pop(numbers);
-
-// Iterate
-for item in numbers {
-    io.print(item);
-}
+<!-- check: output -->
+<pre><code class="language-text">4
+[1, 2, 3]
+[1, 2]
 </code></pre>
-<h3 id="map-object"><a class="header" href="#map-object">Map (Object)</a></h3>
-<p>Key-value pairs:</p>
-<pre><code class="language-crush">// Map literal
-let person = {
-    "name": "Alice",
-    "age": 30,
-    "active": true
-};
-
-// Type hint (future feature)
-// let config: Map&lt;String, Int&gt; = {"max": 100};
-
-// Empty map
-let empty = {};
+<p>Reading past the end is a runtime error (<code>array index out of range</code>). The
+method form <code>a.pop()</code> is <strong>not</strong> available (<code>unknown capability: pop</code>); call
+<code>array.pop(a)</code>. Array mutation still has open gaps — see crush-ast <strong>CRUSH-7</strong>.</p>
+<h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
+<p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
+strings. Read and write fields with <strong>dot notation</strong>:</p>
+<pre><code class="language-crush">let person = {"name": "Alice", "age": 30}
+print(person.name)
+person.age = 31
+person.email = "alice@example.com"
+print(person.age)
+print(person.email)
 </code></pre>
-<p><strong>Map Operations:</strong></p>
-<pre><code class="language-crush">// Access by key
-let name = person["name"];
-let age = person.age;  // Dot notation
-
-// Set value
-person["email"] = "alice@example.com";
-person.phone = "555-1234";
-
-// Check key exists
-if map.has_key(person, "email") {
-    io.print("Email exists");
-}
-
-// Iterate
-for key in map.keys(person) {
-    let value = person[key];
-    io.print(key + ": " + value);
-}
+<!-- check: output -->
+<pre><code class="language-text">Alice
+31
+alice@example.com
 </code></pre>
-<h2 id="type-conversion"><a class="header" href="#type-conversion">Type Conversion</a></h2>
-<h3 id="explicit-conversion"><a class="header" href="#explicit-conversion">Explicit Conversion</a></h3>
-<pre><code class="language-crush">// Int to String
-let str = conv.to_string(42);
-
-// String to Int
-let num = conv.to_int("42");
-
-// Float to Int
-let rounded = conv.to_int(3.14);
-
-// Int to Float
-let decimal = conv.to_float(42);
+<p>Nested objects chain:</p>
+<pre><code class="language-crush">let cfg = {"db": {"port": 5432}}
+print(cfg.db.port)
+cfg.db.port = 5433
+print(cfg.db.port)
 </code></pre>
-<h3 id="implicit-conversion"><a class="header" href="#implicit-conversion">Implicit Conversion</a></h3>
-<p>String concatenation auto-converts:</p>
-<pre><code class="language-crush">let message = "Count: " + 42;  // "Count: 42"
-let result = "Pi is " + 3.14;  // "Pi is 3.14"
+<!-- check: output -->
+<pre><code class="language-text">5432
+5433
 </code></pre>
-<h2 id="type-checking"><a class="header" href="#type-checking">Type Checking</a></h2>
-<h3 id="runtime-type-checking"><a class="header" href="#runtime-type-checking">Runtime Type Checking</a></h3>
-<pre><code class="language-crush">let value = 42;
-
-// Check type
-let type_name = type.of(value);  // "Int"
-
-if type_name == "Int" {
-    io.print("It's an integer");
-}
+<p>Printing an object lists its keys in an <strong>unspecified order that can differ
+between runs</strong>; to walk an object deterministically use <code>collections.keys(obj)</code>
+(sorted) with <code>--stdlib</code> — see <a href="stdlib.html#collections--collections">Standard Library</a>.</p>
+<blockquote>
+<p><strong>Not yet implemented.</strong> String-key subscripts (<code>person["name"]</code>) fail at run
+time with <code>array index must be int, got str</code>, and <code>len(obj)</code> and <code>for k in obj</code>
+are rejected (<code>expected array or string, got map</code>). Use dot access, and
+<code>collections.keys(obj)</code> to enumerate. (crush-ast gap <code>GAP-MAP-SUBSCRIPT</code>.)</p>
+</blockquote>
+<!-- check: nyi GAP-MAP-SUBSCRIPT -->
+<pre><code class="language-crush">let person = {"name": "Alice"}
+print(person["name"])
 </code></pre>
-<h3 id="type-hints"><a class="header" href="#type-hints">Type Hints</a></h3>
-<p>Type hints are optional annotations:</p>
-<pre><code class="language-crush">// Variable type hints
-let name: String = "Alice";
-let age: Int = 30;
-let score: Float = 95.5;
-let active: Bool = true;
-
-// Function parameter types
-fn greet(name: String, age: Int) {
-    io.print("Hello, " + name);
-}
-
-// Function return type
-fn calculate(x: Int, y: Int) -&gt; Int {
-    return x + y;
-}
-</code></pre>
-<p><strong>Note:</strong> Type hints are currently for documentation only. Runtime type checking is dynamic.</p>
 <h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
-<p>Custom data structures are implemented (<code>struct</code> keyword, <code>StructDef</code> AST node, <code>NewStruct</code> expression):</p>
+<p>Declare a struct with its field names (optionally with type hints) <strong>on one line</strong>,
+create it
+with <code>new Name()</code> — <strong>no constructor arguments</strong> — and assign fields
+individually:</p>
+<pre><code class="language-crush">struct Point { x: Float, y: Float }
+
+let p = new Point()
+p.x = 1.5
+p.y = 2.5
+print(p.x + p.y)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">4.0
+</code></pre>
+<p>Assigning to a field the struct doesn’t declare is a compile error
+(<code>Struct 'Point' has no field 'z'</code>). Field type hints are <strong>not enforced</strong> at
+run time today, and an unassigned field reads as <code>null</code>.</p>
+<p><code>Point { x: 1.0, y: 2.0 }</code> literals and <code>new Point(1.0, 2.0)</code> are rejected by the
+parser. A struct body that spans several lines is also rejected today — the parser
+doesn’t skip newlines inside <code>struct { ... }</code> (see the GUIDE-3 ticket, gap
+<code>GAP-STRUCT-MULTILINE</code>):</p>
+<!-- check: nyi GAP-STRUCT-MULTILINE -->
 <pre><code class="language-crush">struct Point {
     x: Float,
     y: Float
 }
-
-fn main() {
-    let p = Point { x: 10.0, y: 20.0 };
-    io.print(p.x);
+</code></pre>
+<h2 id="type-annotations"><a class="header" href="#type-annotations">Type annotations</a></h2>
+<p>You may annotate variables, parameters and return types with <code>Int</code>, <code>Float</code>,
+<code>String</code>, <code>Bool</code>, or <code>Any</code>. The compiler checks them statically:</p>
+<pre><code class="language-crush">fn double(n: Int) -&gt; Int {
+    return n * 2
+}
+let label: String = "answer"
+print(label)
+print(double(21))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">answer
+42
+</code></pre>
+<p>Mismatches are rejected at compile time:</p>
+<!-- check: error -->
+<pre><code class="language-crush">let x: Int = "not a number"
+</code></pre>
+<!-- check: error -->
+<pre><code class="language-crush">fn double(n: Int) -&gt; Int {
+    return n * 2
+}
+print(double("seven"))
+</code></pre>
+<p>Annotations are optional. Not available: generic forms (<code>Array&lt;Int&gt;</code>), array
+shorthand (<code>Int[]</code>), nullable <code>T?</code>, and <code>Function</code>/<code>Array</code>/<code>Map</code> as hint names —
+all fail with a parse or <code>Unknown type</code> error.</p>
+<h2 id="conversion-and-inspection"><a class="header" href="#conversion-and-inspection">Conversion and inspection</a></h2>
+<p>With <code>--stdlib</code>, the <code>conv.*</code> capabilities convert between types and report
+them:</p>
+<pre><code class="language-crush">print(conv.to_int("42") + 1)
+print(conv.to_str(5) + "x")
+print(conv.to_float(2))
+print(conv.type_of([1]))
+print(conv.type_of(null))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">43
+5x
+2.0
+array
+null
+</code></pre>
+<p><code>conv.type_of</code> returns <code>int</code>, <code>float</code>, <code>string</code>, <code>bool</code>, <code>null</code>, <code>array</code> or
+<code>map</code>. There is no <code>type.of</code>.</p>
+<h2 id="conditions-must-be-bool"><a class="header" href="#conditions-must-be-bool">Conditions must be Bool</a></h2>
+<p><code>if</code> and <code>while</code> conditions are type-checked: an <code>Int</code> or <code>String</code> is <strong>not</strong>
+silently truthy. Compare explicitly (<code>x != 0</code>, <code>s != ""</code>).</p>
+<!-- check: error -->
+<pre><code class="language-crush">if 1 {
+    print("yes")
 }
 </code></pre>
-<h2 id="function-type"><a class="header" href="#function-type">Function Type</a></h2>
-<p>Functions are first-class values. The <code>Function</code> type in hints represents any callable:</p>
-<pre><code class="language-crush">fn apply(f: Function, x: Int) -&gt; Int {
-    return f(x);
-}
-
-// Lambda type hint
-let cb: Function = |x| { return x * 2; };
-</code></pre>
-<h2 id="optional--nullable-types"><a class="header" href="#optional--nullable-types">Optional / Nullable Types</a></h2>
-<p>The <code>Type?</code> nullable hint syntax is recognized by the parser:</p>
-<pre><code class="language-crush">let name: String? = null;
-
-if name != null {
-    io.print(name);
-}
-</code></pre>
-<p><strong>Note:</strong> The <code>??</code> null-coalescing operator is not yet implemented; use an explicit <code>if</code> check instead.</p>
-<h2 id="enums-future-feature"><a class="header" href="#enums-future-feature">Enums (Future Feature)</a></h2>
-<p>Enumerated types are not yet in the AST:</p>
-<pre><code class="language-crush">// Not yet supported:
-// enum Status { Pending, Active, Complete }
-</code></pre>
-<h2 id="type-aliases-future-feature"><a class="header" href="#type-aliases-future-feature">Type Aliases (Future Feature)</a></h2>
-<pre><code class="language-crush">// Not yet supported:
-// type UserId = Int;
-</code></pre>
-<h2 id="type-inference"><a class="header" href="#type-inference">Type Inference</a></h2>
-<p>Crush infers types from values:</p>
-<pre><code class="language-crush">let x = 42;           // Inferred as Int
-let pi = 3.14;        // Inferred as Float
-let name = "Alice";   // Inferred as String
-let flag = true;      // Inferred as Bool
-let items = [1, 2];   // Inferred as Array
-</code></pre>
-<h2 id="type-compatibility"><a class="header" href="#type-compatibility">Type Compatibility</a></h2>
-<h3 id="numeric-types"><a class="header" href="#numeric-types">Numeric Types</a></h3>
-<pre><code class="language-crush">let i: Int = 42;
-let f: Float = 3.14;
-
-// Int can be used where Float expected (auto-promotion)
-let sum: Float = i + f;  // 45.14
-
-// Float to Int requires explicit conversion
-let rounded: Int = conv.to_int(f);
-</code></pre>
-<h3 id="string-concatenation"><a class="header" href="#string-concatenation">String Concatenation</a></h3>
-<p>Any type can be concatenated with String:</p>
-<pre><code class="language-crush">let message = "Count: " + 42;
-let info = "Pi is " + 3.14;
-let status = "Active: " + true;
-</code></pre>
-<h2 id="type-system-summary"><a class="header" href="#type-system-summary">Type System Summary</a></h2>
+<h2 id="comparison"><a class="header" href="#comparison">Comparison</a></h2>
+<p><code>==</code>/<code>!=</code> compare values of the same type; comparing a string to an int is a
+compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0</code> is <code>true</code>.</p>
+<h2 id="not-available-yet"><a class="header" href="#not-available-yet">Not available yet</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Type</th><th>Example</th><th>Notes</th></tr>
+<tr><th>Feature</th><th>Status</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Int</code></td><td><code>42</code></td><td>64-bit signed</td></tr>
-<tr><td><code>Float</code></td><td><code>3.14</code></td><td>64-bit IEEE 754</td></tr>
-<tr><td><code>String</code></td><td><code>"Hello"</code></td><td>UTF-8</td></tr>
-<tr><td><code>Bool</code></td><td><code>true</code></td><td></td></tr>
-<tr><td><code>Bytes</code></td><td><code>b"data"</code></td><td>raw binary buffer</td></tr>
-<tr><td><code>Error</code></td><td><code>Error("msg")</code></td><td>first-class error</td></tr>
-<tr><td><code>Null</code></td><td><code>null</code></td><td>absence of value</td></tr>
-<tr><td><code>Void</code></td><td>—</td><td>function return type only</td></tr>
-<tr><td><code>Any</code></td><td>—</td><td>dynamic/untyped hint</td></tr>
-<tr><td><code>Array</code></td><td><code>[1, 2, 3]</code></td><td></td></tr>
-<tr><td><code>Map</code></td><td><code>{"key": "value"}</code></td><td></td></tr>
-<tr><td><code>Struct(Name)</code></td><td><code>Point { x: 1.0, y: 2.0 }</code></td><td>user-defined</td></tr>
-<tr><td><code>Function</code></td><td><code>|x| { ... }</code></td><td>first-class callable</td></tr>
-<tr><td><code>Optional(T)</code></td><td><code>T?</code></td><td>nullable hint</td></tr>
+<tr><td><code>Bytes</code> literals (<code>b"..."</code>), <code>Error(...)</code> values</td><td>not parsed / undefined</td></tr>
+<tr><td>Optional types <code>T?</code>, <code>??</code></td><td>not parsed</td></tr>
+<tr><td>Enums, type aliases, generics</td><td>not in the grammar</td></tr>
+<tr><td>Lambdas / <code>Function</code> values</td><td>crush-ast <strong>CRUSH-75</strong> (open) — see <a href="functions.html">Functions</a></td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-use-type-hints-for-function-signatures"><a class="header" href="#1-use-type-hints-for-function-signatures">1. Use Type Hints for Function Signatures</a></h3>
-<pre><code class="language-crush">// Good: Clear interface
-fn calculate(x: Int, y: Int) -&gt; Int {
-    return x + y;
-}
-
-// Okay: Less clear
-fn calculate(x, y) {
-    return x + y;
-}
-</code></pre>
-<h3 id="2-be-consistent-with-types"><a class="header" href="#2-be-consistent-with-types">2. Be Consistent with Types</a></h3>
-<pre><code class="language-crush">// Good: Consistent types
-let numbers = [1, 2, 3, 4, 5];
-
-// Avoid: Mixed types (unless necessary)
-let mixed = [1, "two", 3.0];
-</code></pre>
-<h3 id="3-check-for-null"><a class="header" href="#3-check-for-null">3. Check for Null</a></h3>
-<pre><code class="language-crush">if value != null {
-    // Safe to use value
-    io.print(value);
-}
-</code></pre>
-<h3 id="4-use-meaningful-type-names"><a class="header" href="#4-use-meaningful-type-names">4. Use Meaningful Type Names</a></h3>
-<pre><code class="language-crush">// Good
-let user_count: Int = 100;
-let temperature: Float = 98.6;
-
-// Less clear
-let x: Int = 100;
-let y: Float = 98.6;
-</code></pre>
-<h2 id="type-errors"><a class="header" href="#type-errors">Type Errors</a></h2>
-<p>Common type-related errors:</p>
-<pre><code class="language-crush">// Division by zero
-let result = 10 / 0;  // Runtime error
-
-// Invalid conversion
-let num = conv.to_int("abc");  // Runtime error
-
-// Null access
-let value = null;
-io.print(value.field);  // Runtime error
-</code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="variables.html">Variables</a></strong>: Variable scoping and management</li>
-<li><strong><a href="operators.html">Operators</a></strong>: Detailed operator reference</li>
-<li><strong><a href="functions.html">Functions</a></strong>: Working with functions</li>
-<li><strong><a href="control_flow.html">Control Flow</a></strong>: If, while, for loops</li>
+<li><strong><a href="variables.html">Variables</a></strong>: scope and mutation</li>
+<li><strong><a href="operators.html">Operators</a></strong>: the operator reference</li>
+<li><strong><a href="functions.html">Functions</a></strong>: calls, recursion, hints</li>
+<li><strong><a href="control_flow.html">Control Flow</a></strong>: loops, <code>match</code>, <code>try</code>/<code>catch</code></li>
 </ul>
 
                     </main>

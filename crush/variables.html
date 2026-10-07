@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,173 +181,181 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="variables-and-scoping"><a class="header" href="#variables-and-scoping">Variables and Scoping</a></h1>
-<p>This chapter covers variable declaration, assignment, scoping rules, and variable management in Crush.</p>
-<h2 id="variable-declaration"><a class="header" href="#variable-declaration">Variable Declaration</a></h2>
-<h3 id="basic-declaration"><a class="header" href="#basic-declaration">Basic Declaration</a></h3>
-<pre><code class="language-crush">let x = 42;
-let name = "Alice";
-let active = true;
+<p>This chapter covers declaration, assignment, and the scoping rules the compiler
+enforces today.</p>
+<h2 id="declaration"><a class="header" href="#declaration">Declaration</a></h2>
+<p>Every variable is introduced with <code>let</code> and <strong>must be initialised</strong>:</p>
+<pre><code class="language-crush">let x = 42
+let name = "Alice"
+let active = true
+print(x)
 </code></pre>
-<h3 id="explicit-mutability"><a class="header" href="#explicit-mutability">Explicit Mutability</a></h3>
-<p>Use <code>mut</code> to mark a variable as explicitly mutable (same behavior as <code>let</code> today, but signals intent):</p>
-<pre><code class="language-crush">let mut counter = 0;
-counter = counter + 1;
+<!-- check: output -->
+<pre><code class="language-text">42
 </code></pre>
-<h3 id="with-type-hints"><a class="header" href="#with-type-hints">With Type Hints</a></h3>
-<pre><code class="language-crush">let age: Int = 30;
-let score: Float = 95.5;
-let message: String = "Hello";
-let flag: Bool = true;
+<p>A bare <code>let x</code> (no value) is a parse error. So is <code>let mut x = 0</code> — <code>mut</code> is a
+reserved word, but it is not accepted in a declaration, and there is no <code>const</code>.
+Every <code>let</code> variable is simply reassignable.</p>
+<!-- check: error -->
+<pre><code class="language-crush">let x
 </code></pre>
-<h2 id="assignment-and-reassignment"><a class="header" href="#assignment-and-reassignment">Assignment and Reassignment</a></h2>
-<p>Variables declared with <code>let</code> are mutable by default:</p>
-<pre><code class="language-crush">let counter = 0;
-counter = 1;
-counter = counter + 1;  // counter is now 2
+<!-- check: error -->
+<pre><code class="language-crush">let mut counter = 0
 </code></pre>
-<h3 id="compound-assignment-future-feature"><a class="header" href="#compound-assignment-future-feature">Compound Assignment (Future Feature)</a></h3>
-<pre><code class="language-crush">counter += 1;   // counter = counter + 1
-counter -= 1;   // counter = counter - 1
-counter *= 2;   // counter = counter * 2
-counter /= 2;   // counter = counter / 2
+<h3 id="type-hints"><a class="header" href="#type-hints">Type hints</a></h3>
+<pre><code class="language-crush">let age: Int = 30
+let score: Float = 95.5
+let message: String = "Hello"
+let flag: Bool = true
+print(age)
 </code></pre>
-<h2 id="scoping-rules"><a class="header" href="#scoping-rules">Scoping Rules</a></h2>
-<h3 id="function-scope"><a class="header" href="#function-scope">Function Scope</a></h3>
-<p>Variables declared in a function are local to that function:</p>
+<!-- check: output -->
+<pre><code class="language-text">30
+</code></pre>
+<p>The initial value is checked against the hint at compile time
+(<code>let x: Int = "s"</code> is rejected). The hint is <strong>not</strong> re-checked on later
+assignment today.</p>
+<h2 id="assignment"><a class="header" href="#assignment">Assignment</a></h2>
+<p>Reassign with <code>=</code>:</p>
+<pre><code class="language-crush">let counter = 0
+counter = counter + 1
+counter = counter + 1
+print(counter)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">2
+</code></pre>
+<p>Compound assignment (<code>+=</code>, <code>-=</code>, <code>*=</code>, <code>/=</code>) and <code>++</code>/<code>--</code> are <strong>not implemented</strong>:
+use <code>counter = counter + 1</code>. Assigning to a name that was never declared is a
+compile error (<code>Undefined variable</code>).</p>
+<!-- check: error -->
+<pre><code class="language-crush">counter += 1
+</code></pre>
+<p>Variables are dynamically typed at run time, so a <code>let</code>-declared name can later
+hold a value of a different type (unless the compiler can see the mismatch for a
+hinted parameter or initialiser).</p>
+<h2 id="scoping-rules"><a class="header" href="#scoping-rules">Scoping rules</a></h2>
+<h3 id="function-scope"><a class="header" href="#function-scope">Function scope</a></h3>
+<p>Variables declared in a function are local to it, and parameters are local copies:</p>
+<pre><code class="language-crush">fn bump(n) {
+    n = n + 1
+    return n
+}
+
+let v = 1
+print(bump(v))
+print(v)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">2
+1
+</code></pre>
+<p>Arrays and objects are passed <strong>by reference</strong>, so a function can mutate its
+argument in place:</p>
+<pre><code class="language-crush">fn add_nine(items) {
+    items.push(9)
+}
+
+let xs = [1]
+add_nine(xs)
+print(xs)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">[1, 9]
+</code></pre>
+<p>Using a function’s local outside it is a compile error:</p>
+<!-- check: error -->
 <pre><code class="language-crush">fn example() {
-    let x = 10;  // Local to example()
-    io.print(x);
+    let x = 10
+    print(x)
+}
+example()
+print(x)
+</code></pre>
+<h3 id="module-level-variables-are-not-visible-inside-functions"><a class="header" href="#module-level-variables-are-not-visible-inside-functions">Module-level variables are not visible inside functions</a></h3>
+<p>Top-level statements form the program’s entry body, <strong>not</strong> a shared global
+scope. A function cannot read a variable declared at the top level — pass it as
+an argument:</p>
+<!-- check: error -->
+<pre><code class="language-crush">let LEVEL = "production"
+
+fn get_level() {
+    return LEVEL
+}
+print(get_level())
+</code></pre>
+<pre><code class="language-crush">let level = "production"
+
+fn describe(l) {
+    return "running in " + l
+}
+print(describe(level))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">running in production
+</code></pre>
+<p>(If you need shared state across functions today, thread it through parameters,
+or keep it in an object/array you pass around.)</p>
+<h3 id="block-scope"><a class="header" href="#block-scope">Block scope</a></h3>
+<p>A name first declared inside an <code>if</code>, <code>while</code> or <code>for</code> body is not visible after
+the block ends. A <code>for</code> loop variable is likewise local to the loop:</p>
+<!-- check: error -->
+<pre><code class="language-crush">if true {
+    let y = 2
+}
+print(y)
+</code></pre>
+<!-- check: error -->
+<pre><code class="language-crush">for i in 0..3 {
+    print(i)
+}
+print(i)
+</code></pre>
+<h3 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h3>
+<p><strong>Across functions</strong> a local simply hides nothing — each function has its own
+variables:</p>
+<pre><code class="language-crush">let x = 10
+
+fn show() {
+    let x = 20
+    print(x)
 }
 
-fn main() {
-    example();
-    // io.print(x);  // Error: x not in scope
+show()
+print(x)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">20
+10
+</code></pre>
+<p><strong>Within one function</strong>, re-declaring an outer name in an inner block does <em>not</em>
+create a new shadowing variable; it assigns to the outer one. After this program
+the outer <code>x</code> is <code>2</code>:</p>
+<pre><code class="language-crush">let x = 1
+if true {
+    let x = 2
 }
+print(x)
 </code></pre>
-<h3 id="block-scope"><a class="header" href="#block-scope">Block Scope</a></h3>
-<p>Variables declared in a block are local to that block:</p>
-<pre><code class="language-crush">fn main() {
-    let x = 10;
-    
-    if true {
-        let y = 20;  // Local to if block
-        io.print(x);  // Can access outer x
-        io.print(y);
-    }
-    
-    io.print(x);  // OK
-    // io.print(y);  // Error: y not in scope
-}
+<!-- check: output -->
+<pre><code class="language-text">2
 </code></pre>
-<h3 id="global-scope-module-level"><a class="header" href="#global-scope-module-level">Global Scope (Module Level)</a></h3>
-<p>Variables at module level are accessible throughout the module:</p>
-<pre><code class="language-crush">let GLOBAL_CONFIG = "production";
-
-fn get_config() -&gt; String {
-    return GLOBAL_CONFIG;
-}
-
-fn main() {
-    io.print(GLOBAL_CONFIG);
-}
-</code></pre>
-<h2 id="variable-shadowing"><a class="header" href="#variable-shadowing">Variable Shadowing</a></h2>
-<p>Inner scopes can shadow outer variables:</p>
-<pre><code class="language-crush">fn main() {
-    let x = 10;
-    io.print(x);  // 10
-    
-    {
-        let x = 20;  // Shadows outer x
-        io.print(x);  // 20
-    }
-    
-    io.print(x);  // 10 (outer x restored)
-}
-</code></pre>
-<h2 id="export-and-import"><a class="header" href="#export-and-import">Export and Import</a></h2>
-<h3 id="exporting-variables"><a class="header" href="#exporting-variables">Exporting Variables</a></h3>
-<pre><code class="language-crush">// capsule_a.crush
-export result = calculate();
-export config = {"mode": "production"};
-</code></pre>
-<h3 id="importing-variables"><a class="header" href="#importing-variables">Importing Variables</a></h3>
-<pre><code class="language-crush">// capsule_b.crush
-let data = import.var("capsule_a", "result");
-let cfg = import.var("capsule_a", "config");
-</code></pre>
-<h2 id="constants-future-feature"><a class="header" href="#constants-future-feature">Constants (Future Feature)</a></h2>
-<pre><code class="language-crush">const PI = 3.14159;
-const MAX_SIZE = 100;
-
-// PI = 3.14;  // Error: cannot reassign constant
-</code></pre>
-<h2 id="variable-lifetime"><a class="header" href="#variable-lifetime">Variable Lifetime</a></h2>
-<p>Variables live until their scope ends:</p>
-<pre><code class="language-crush">fn main() {
-    let x = allocate_resource();
-    // x is alive
-    
-    if condition {
-        let y = another_resource();
-        // Both x and y are alive
-    }  // y is destroyed here
-    
-    // Only x is alive
-}  // x is destroyed here
-</code></pre>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-declare-variables-close-to-use"><a class="header" href="#1-declare-variables-close-to-use">1. Declare Variables Close to Use</a></h3>
-<pre><code class="language-crush">// Good
-fn process() {
-    let data = fetch_data();
-    transform(data);
-}
-
-// Less ideal
-fn process() {
-    let data;
-    // ... many lines ...
-    data = fetch_data();
-    transform(data);
-}
-</code></pre>
-<h3 id="2-use-meaningful-names"><a class="header" href="#2-use-meaningful-names">2. Use Meaningful Names</a></h3>
-<pre><code class="language-crush">// Good
-let user_count = 100;
-let temperature_celsius = 25.5;
-
-// Avoid
-let x = 100;
-let temp = 25.5;
-</code></pre>
-<h3 id="3-minimize-scope"><a class="header" href="#3-minimize-scope">3. Minimize Scope</a></h3>
-<pre><code class="language-crush">// Good: Narrow scope
-if needs_processing {
-    let temp_data = process();
-    use(temp_data);
-}
-
-// Less ideal: Wider scope
-let temp_data;
-if needs_processing {
-    temp_data = process();
-    use(temp_data);
-}
-</code></pre>
-<h3 id="4-initialize-variables"><a class="header" href="#4-initialize-variables">4. Initialize Variables</a></h3>
-<pre><code class="language-crush">// Good
-let counter = 0;
-
-// Avoid (future: may require initialization)
-// let counter;
-// counter = 0;
-</code></pre>
+<p>Choose distinct names for inner variables rather than relying on shadowing.</p>
+<h2 id="exporting-a-variable"><a class="header" href="#exporting-a-variable">Exporting a variable</a></h2>
+<p><code>export name</code> marks an already-declared variable or function for export. See
+<a href="syntax.html#imports-and-exports">Syntax</a>; importing it from another file is not
+possible yet (crush-ast <strong>CRUSH-110</strong>).</p>
+<h2 id="best-practices"><a class="header" href="#best-practices">Best practices</a></h2>
+<ul>
+<li>Initialise at declaration and keep scopes narrow.</li>
+<li>Pass state explicitly: functions can’t see top-level variables.</li>
+<li>Prefer new names over shadowing.</li>
+</ul>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="operators.html">Operators</a></strong>: Learn about operators</li>
-<li><strong><a href="control_flow.html">Control Flow</a></strong>: If, while, for loops</li>
-<li><strong><a href="functions.html">Functions</a></strong>: Function parameters and returns</li>
+<li><strong><a href="operators.html">Operators</a></strong></li>
+<li><strong><a href="control_flow.html">Control Flow</a></strong></li>
+<li><strong><a href="functions.html">Functions</a></strong></li>
 </ul>
 
                     </main>

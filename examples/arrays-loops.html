@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,58 +181,95 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="arrays--loops"><a class="header" href="#arrays--loops">Arrays &amp; Loops</a></h1>
-<blockquote>
-<p>Source: <code>tests/language/arrays_and_loops.crush</code></p>
-</blockquote>
-<p>Array creation, indexed access, for-in iteration, and loop control.</p>
-<pre><code class="language-crush">let arr = [10, 20, 30, 40, 50];
-print("Array created: " + arr);
+<p>Array creation, indexing, <code>for</code> iteration, <code>break</code>/<code>continue</code>, and a classic
+loop exercise.</p>
+<pre><code class="language-crush">let arr = [10, 20, 30, 40, 50]
+print("length: " + len(arr))
+print("first: " + arr[0] + ", third: " + arr[2])
 
-let size = len(arr);
-print("Array length: " + size);
-
-// Indexed access
-print(arr[0]);   // 10
-print(arr[2]);   // 30
-
-// Iterate all elements
+// iterate
+let sum = 0
 for x in arr {
-    print("Item: " + x);
+    sum = sum + x
 }
+print("sum: " + sum)
 
 // break — stop at 30
 for x in arr {
     if x == 30 {
-        break;
+        break
     }
-    print("Item: " + x);
+    print("before 30: " + x)
 }
 
 // continue — skip 30
 for x in arr {
     if x == 30 {
-        continue;
+        continue
     }
-    print("Item: " + x);
+    print("not 30: " + x)
 }
+
+// build an array, index by position
+let squares = []
+for i in 1..6 {
+    squares.push(i * i)
+}
+print(squares)
+
+// strings index too
+let s = "hello"
+print(s[0] + s[4])
+
+// fizzbuzz
+for n in 1..16 {
+    if n % 15 == 0 {
+        print("FizzBuzz")
+    } else if n % 3 == 0 {
+        print("Fizz")
+    } else if n % 5 == 0 {
+        print("Buzz")
+    } else {
+        print(n)
+    }
+}
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">length: 5
+first: 10, third: 30
+sum: 150
+before 30: 10
+before 30: 20
+not 30: 10
+not 30: 20
+not 30: 40
+not 30: 50
+[1, 4, 9, 16, 25]
+ho
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li>Array literal <code>[v1, v2, ...]</code> and <code>len()</code> built-in</li>
-<li><code>arr[i]</code> zero-based integer indexing</li>
-<li><code>for x in iterable { }</code> — iterates arrays and ranges</li>
-<li><code>break</code> exits the loop immediately; <code>continue</code> skips to next iteration</li>
+<li><code>[v1, v2, ...]</code> literals, <code>len(arr)</code>, zero-based <code>arr[i]</code>, and <code>arr.push(v)</code></li>
+<li><code>for x in arr</code> and half-open ranges <code>for i in 1..6</code> (1 through 5)</li>
+<li><code>break</code> leaves the loop; <code>continue</code> skips to the next iteration</li>
+<li>Strings index like arrays, yielding one-character strings</li>
+<li><code>if / else if / else</code> chains and <code>%</code></li>
 </ul>
-<p>String characters are also indexable:</p>
-<pre><code class="language-crush">let s = "hello";
-print(s[0]);   // "h"
-print(s[4]);   // "o"
-</code></pre>
-<p>Range iteration with <code>..</code>:</p>
-<pre><code class="language-crush">for i in 0..10 {
-    print(i);   // 0 through 9
-}
-</code></pre>
 
                     </main>
 

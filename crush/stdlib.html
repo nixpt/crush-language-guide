@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,87 +181,211 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="standard-library"><a class="header" href="#standard-library">Standard Library</a></h1>
-<p>The Crush standard library provides additional capabilities and utilities beyond the core language.</p>
-<blockquote>
-<p><strong>Host-provided, not bundled.</strong> The capability framework and a small set of primitives
-(<code>io.print</code>, <code>io.eprint</code>, <code>io.read</code>) are built into crush-vm. Everything else — <code>fs.*</code>,
-<code>net.*</code>, <code>sys.*</code>, and the full corecaps suite — must be registered by the <strong>embedding
-host</strong>. The bare crush-ast crates ship the <em>interface</em>, not the implementation. When
-embedding crush-ast, only the capabilities your host explicitly registers are available
-at runtime.</p>
-</blockquote>
-<h2 id="importing-modules"><a class="header" href="#importing-modules">Importing Modules</a></h2>
-<pre><code class="language-crush">import std.io;
-import std.fs;
-import std.net;
-import std.sys;
+<p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
+as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
+system: there is no <code>import std.io</code>, and <code>import</code> does not load anything yet
+(crush-ast <strong>CRUSH-110</strong>). You call these functions by their full dotted name.</p>
+<h2 id="turning-it-on"><a class="header" href="#turning-it-on">Turning it on</a></h2>
+<p>Almost all of the library lives behind a Cargo feature <strong>and</strong> a CLI flag:</p>
+<ol>
+<li>Build the toolchain with the <code>stdlib</code> feature of <code>crush-lang-sdk</code>
+(<code>cargo build -p crush-lang-sdk --features stdlib</code>). It is <strong>off by default</strong>
+(crush-ast <strong>CRUSH-113</strong>); on a build without it, <code>--stdlib</code> only prints
+<code>warning: --stdlib requires the 'stdlib' feature</code>.</li>
+<li>Run with <code>--stdlib</code>: <code>crush run --stdlib prog.crush</code>.</li>
+</ol>
+<p>The examples in this chapter are all executed with <code>--stdlib</code>. These are
+pure-computation capabilities — they do no I/O. For files, network, time and
+processes see <a href="capabilities.html">Capability System</a>.</p>
+<p>Arguments are positional and the arity is checked (<code>[runtime] str.replace takes 3 arg(s), got 2</code>). Note that some predicates return <code>1</code>/<code>0</code> rather than
+<code>true</code>/<code>false</code> (for example <code>str.starts_with</code>, <code>regex.test</code>,
+<code>collections.includes</code>), so compare with <code>== 1</code> rather than assuming a <code>Bool</code>.</p>
+<h2 id="strings--str"><a class="header" href="#strings--str">Strings — <code>str.*</code></a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Function</th><th>Result</th></tr>
+</thead>
+<tbody>
+<tr><td><code>str.split(s, delim)</code></td><td>array of parts</td></tr>
+<tr><td><code>str.join(array, delim)</code></td><td>string</td></tr>
+<tr><td><code>str.trim(s)</code>, <code>str.trim_start(s)</code>, <code>str.trim_end(s)</code></td><td>string</td></tr>
+<tr><td><code>str.replace(s, old, new)</code></td><td>string</td></tr>
+<tr><td><code>str.contains(s, sub)</code>, <code>str.starts_with(s, p)</code>, <code>str.ends_with(s, p)</code></td><td>truthy</td></tr>
+<tr><td><code>str.to_upper(s)</code>, <code>str.to_lower(s)</code></td><td>string</td></tr>
+<tr><td><code>str.pad_left(s, width, fill)</code>, <code>str.pad_right(s, width, fill)</code></td><td>string</td></tr>
+<tr><td><code>str.repeat(s, n)</code></td><td>string</td></tr>
+<tr><td><code>str.substring(s, start, end)</code></td><td>string (<code>end</code> exclusive)</td></tr>
+<tr><td><code>str.char_at(s, i)</code>, <code>str.index_of(s, sub)</code></td><td>one-char string / index</td></tr>
+<tr><td><code>str.format(template, args)</code></td><td><code>{}</code> placeholders filled from <code>args</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>str.concat(...)</code> and <code>str.len(s)</code> are always available, even without <code>--stdlib</code>.</p>
+<pre><code class="language-crush">print(str.split("a,b,c", ","))
+print(str.join(["a", "b"], "-"))
+print("[" + str.trim("  x  ") + "]")
+print(str.replace("hello world", "world", "crush"))
+print(str.to_upper("abc"))
+print(str.pad_left("7", 3, "0"))
+print(str.repeat("ab", 3))
+print(str.substring("hello", 1, 3))
+print(str.index_of("hello", "l"))
 </code></pre>
-<h3 id="with-aliases"><a class="header" href="#with-aliases">With Aliases</a></h3>
-<pre><code class="language-crush">import std.fs as filesystem;
-import std.io as console;
+<!-- check: output -->
+<pre><code class="language-text">[a, b, c]
+a-b
+[x]
+hello crush
+ABC
+007
+ababab
+el
+2
 </code></pre>
-<h2 id="available-modules"><a class="header" href="#available-modules">Available Modules</a></h2>
-<h3 id="io-module-stdio"><a class="header" href="#io-module-stdio">I/O Module (<code>std.io</code>)</a></h3>
-<p>Input/output operations:</p>
-<ul>
-<li><code>io.print(message)</code> - Print to stdout</li>
-<li><code>io.read()</code> - Read from stdin</li>
-<li><code>io.eprint(message)</code> - Print to stderr</li>
-</ul>
-<h3 id="filesystem-module-stdfs"><a class="header" href="#filesystem-module-stdfs">Filesystem Module (<code>std.fs</code>)</a></h3>
-<p>File and directory operations:</p>
-<ul>
-<li><code>fs.read(path)</code> - Read file</li>
-<li><code>fs.write(path, content)</code> - Write file</li>
-<li><code>fs.exists(path)</code> - Check if exists</li>
-<li><code>fs.delete(path)</code> - Delete file</li>
-<li><code>fs.list(path)</code> - List directory</li>
-</ul>
-<h3 id="system-module-stdsys"><a class="header" href="#system-module-stdsys">System Module (<code>std.sys</code>)</a></h3>
-<p>System-level operations:</p>
-<ul>
-<li><code>sys.exec(command)</code> - Execute command</li>
-<li><code>sys.env(name)</code> - Get environment variable</li>
-<li><code>sys.args()</code> - Get command-line arguments</li>
-<li><code>sys.exit(code)</code> - Exit program</li>
-</ul>
-<h3 id="network-module-stdnet"><a class="header" href="#network-module-stdnet">Network Module (<code>std.net</code>)</a></h3>
-<p>Network operations:</p>
-<ul>
-<li><code>net.http(url)</code> - HTTP request</li>
-<li><code>net.get(url)</code> - HTTP GET</li>
-<li><code>net.post(url, body)</code> - HTTP POST</li>
-</ul>
-<h2 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h2>
-<pre><code class="language-crush">import std.io;
-import std.fs;
-import std.sys;
-
-fn main() {
-    // Get command-line arguments
-    let args = sys.args();
-
-    if args.length &lt; 2 {
-        io.eprint("Usage: program &lt;filename&gt;");
-        sys.exit(1);
-    }
-
-    let filename = args[1];
-
-    // Check if file exists
-    if fs.exists(filename) {
-        let content = fs.read(filename);
-        io.print(content);
-    } else {
-        io.eprint("File not found: " + filename);
-        sys.exit(1);
-    }
+<p>(Arrays print as <code>[a, b, c]</code> — strings inside an array are shown unquoted.)</p>
+<h2 id="math--math"><a class="header" href="#math--math">Math — <code>math.*</code></a></h2>
+<p><code>math.sqrt</code>, <code>math.abs</code>, <code>math.floor</code>, <code>math.ceil</code>, <code>math.round</code>, <code>math.sin</code>,
+<code>math.cos</code>, <code>math.tan</code>, <code>math.pow(base, exp)</code>, <code>math.min(a, b)</code>, <code>math.max(a, b)</code>,
+<code>math.pi()</code>. Results are <code>Float</code>. <code>math.random()</code>, <code>math.random_int(lo, hi)</code>
+(requires <code>lo &lt; hi</code>) and <code>math.seed(n)</code> use a deterministic built-in generator
+(crush-ast CRUSH-116), so seeded runs are reproducible.</p>
+<pre><code class="language-crush">print(math.sqrt(16))
+print(math.pow(2, 10))
+print(math.floor(-1.5))
+print(math.round(3.6))
+print(math.max(2.5, 1))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">4.0
+1024.0
+-2.0
+4.0
+2.5
+</code></pre>
+<h2 id="conversion--conv"><a class="header" href="#conversion--conv">Conversion — <code>conv.*</code></a></h2>
+<p><code>conv.to_int</code>, <code>conv.to_float</code>, <code>conv.to_str</code>, <code>conv.to_bool</code>,
+<code>conv.parse_int(text, radix)</code>, <code>conv.parse_float</code>, <code>conv.type_of</code>, plus the
+always-on <code>conv.chr</code> / <code>conv.ord</code>.</p>
+<pre><code class="language-crush">print(conv.to_int("42") + 1)
+print(conv.to_int(3.9))
+print(conv.parse_int("ff", 16))
+print(conv.parse_int("101", 2))
+print(conv.to_float("2"))
+print(conv.type_of(3.5))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">43
+3
+255
+5
+2.0
+float
+</code></pre>
+<h2 id="collections--collections"><a class="header" href="#collections--collections">Collections — <code>collections.*</code></a></h2>
+<p><code>collections.len</code>, <code>reverse</code>, <code>includes</code>, <code>flatten</code>, <code>chunk(array, n)</code>, <code>zip</code>,
+<code>unique</code>, <code>all</code>, <code>any</code>, <code>find</code>, <code>sort_by(array, key)</code>, <code>pluck(array, key)</code>,
+and for objects: <code>keys</code>, <code>values</code>, <code>entries</code>, <code>merge</code>.</p>
+<pre><code class="language-crush">let scores = {"ada": 3, "grace": 5}
+print(collections.keys(scores))
+print(collections.values(scores))
+print(collections.keys(collections.merge(scores, {"linus": 1})))
+print(collections.reverse([1, 2, 3]))
+print(collections.chunk([1, 2, 3, 4], 2))
+print(collections.unique([1, 1, 2, 2, 3]))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">[ada, grace]
+[3, 5]
+[ada, grace, linus]
+[3, 2, 1]
+[[1, 2], [3, 4]]
+[1, 2, 3]
+</code></pre>
+<p><code>collections.keys(obj)</code> returns the keys <strong>sorted</strong>, and is how you iterate an
+object deterministically — <code>for k in obj</code> isn’t supported, and printing an object
+directly lists its keys in an unspecified (per-run) order:</p>
+<pre><code class="language-crush">let m = {"a": 1, "b": 2}
+for k in collections.keys(m) {
+    print(k)
 }
 </code></pre>
+<!-- check: output -->
+<pre><code class="language-text">a
+b
+</code></pre>
+<h2 id="json--json"><a class="header" href="#json--json">JSON — <code>json.*</code></a></h2>
+<p><code>json.parse(text)</code> → object/array/scalar; <code>json.stringify(value)</code>;
+<code>json.stringify_pretty(value)</code>.</p>
+<pre><code class="language-crush">let o = json.parse("{\"name\": \"Ada\", \"n\": 3}")
+print(o.name)
+print(o.n + 1)
+print(json.stringify({"x": 1}))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">Ada
+4
+{"x":1}
+</code></pre>
+<h2 id="paths--path"><a class="header" href="#paths--path">Paths — <code>path.*</code></a></h2>
+<p><code>path.join(a, b)</code>, <code>dirname</code>, <code>basename</code>, <code>extension</code>, <code>stem</code>, <code>is_absolute</code>,
+<code>normalize</code> — pure string manipulation, no filesystem access.</p>
+<pre><code class="language-crush">print(path.join("a", "b.txt"))
+print(path.dirname("/x/y/z.txt"))
+print(path.basename("/x/y/z.txt"))
+print(path.stem("z.tar.gz"))
+print(path.normalize("a/./b/../c"))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">a/b.txt
+/x/y
+z.txt
+z.tar
+a/c
+</code></pre>
+<h2 id="regular-expressions--regex"><a class="header" href="#regular-expressions--regex">Regular expressions — <code>regex.*</code></a></h2>
+<p><strong>The pattern comes first</strong>, then the text: <code>regex.test(pattern, text)</code>,
+<code>regex.find_all(pattern, text)</code>, <code>regex.replace(pattern, text, replacement)</code>,
+<code>regex.split(pattern, text)</code>.</p>
+<pre><code class="language-crush">print(regex.find_all("[0-9]+", "a1b22"))
+print(regex.replace("[0-9]", "a1b2", "#"))
+print(regex.split("[,;] *", "a, b;c"))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">[1, 22]
+a#b#
+[a, b, c]
+</code></pre>
+<blockquote>
+<p><strong>Known bug.</strong> <code>regex.match</code> is registered but can’t be called from source:
+<code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
+</blockquote>
+<!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
+<pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
+</code></pre>
+<h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
+<p>Also registered under <code>--stdlib</code>: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
+<code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
+<code>binary.write_*</code> (u16/u32/u64, big/little endian), <code>result.*</code> (<code>ok</code>, <code>err</code>,
+<code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
+<code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
+helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
+<pre><code class="language-crush">print(result.unwrap(result.ok(5)))
+print(env.os())
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">5
+linux
+</code></pre>
+<p>(The second line depends on the machine running the example.)</p>
+<h2 id="not-in-the-library"><a class="header" href="#not-in-the-library">Not in the library</a></h2>
+<p>There is no <code>std.*</code> module tree, <code>io.eprint</code>, <code>sys.*</code>, <code>array.length</code> or
+<code>map.*</code>. For output use <code>print</code>/<code>io.print</code>; for the process environment use
+<code>env.get</code> (<code>--env</code>); for arguments, there is currently no accessor.</p>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="capabilities.html">Capability System</a></strong> - How capabilities gate stdlib access</li>
-<li><strong><a href="polyglot.html">Polyglot Programming</a></strong> - Embed multiple languages</li>
+<li><strong><a href="capabilities.html">Capability System</a></strong></li>
+<li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
 
                     </main>

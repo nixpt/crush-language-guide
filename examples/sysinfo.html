@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>System Info Dashboard - The Crush Language Guide</title>
+        <title>System Info Report - The Crush Language Guide</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,80 +180,45 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="system-info-dashboard"><a class="header" href="#system-info-dashboard">System Info Dashboard</a></h1>
-<blockquote>
-<p>Source: <code>exosphere-apps/crates/apps/super-surfer/apps/sysinfo.crush</code></p>
-</blockquote>
-<p>A complete Super-Surfer app that queries system capabilities and renders an HTML
-dashboard. Shows how Crush acts as a conductor over capability-gated host calls.</p>
-<pre><code class="language-crush">capability system readonly
-
-fn main() {
-    let hostname = sys.hostname()
-    let os       = sys.os_name()
-    let cpus     = sys.cpu_count()
-    let cpu      = sys.cpu_usage()
-    let memory   = sys.memory_info()
-    let disk     = sys.disk_usage()
-    let uptime   = sys.uptime()
-    let processes = sys.process_count()
-    let now      = time.now()
-
-    // Round to 2 decimal places
-    let mem_used  = math.round(memory.used_gb * 100) / 100
-    let mem_total = math.round(memory.total_gb * 100) / 100
-    let mem_pct   = math.round(memory.percent)
-    let disk_pct  = math.round(disk.percent)
-    let cpu_pct   = math.round(cpu)
-
-    // Build an HTML card grid
-    let html = "&lt;div style='max-width:800px;margin:0 auto;padding:40px 32px;'&gt;"
-    let html = html + "&lt;h1&gt;System Information&lt;/h1&gt;"
-    let html = html + "&lt;p&gt;Generated at " + now + "&lt;/p&gt;"
-
-    let html = html + "&lt;div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;'&gt;"
-
-    // CPU card
-    let html = html + "&lt;div&gt;&lt;div&gt;CPU&lt;/div&gt;"
-    let html = html + "&lt;div&gt;" + str(cpu_pct) + "%&lt;/div&gt;"
-    let html = html + "&lt;div&gt;" + str(cpus) + " cores&lt;/div&gt;&lt;/div&gt;"
-
-    // Memory card
-    let html = html + "&lt;div&gt;&lt;div&gt;Memory&lt;/div&gt;"
-    let html = html + "&lt;div&gt;" + str(mem_pct) + "%&lt;/div&gt;"
-    let html = html + "&lt;div&gt;" + str(mem_used) + " / " + str(mem_total) + " GB&lt;/div&gt;&lt;/div&gt;"
-
-    let html = html + "&lt;/div&gt;"
-    let html = html + "&lt;/div&gt;"
-
-    return html
+                        <h1 id="system-info-report"><a class="header" href="#system-info-report">System Info Report</a></h1>
+<p>Crush as a <em>conductor</em>: gather facts from the host through capability calls, then
+assemble them. The program needs three capability groups, so it is run with
+<code>crush run --stdlib --env --time sysinfo.crush</code>; with any flag missing, the
+corresponding call fails with <code>unknown capability</code>.</p>
+<!-- check: flags --env --time -->
+<pre><code class="language-crush">// Gather host facts through capabilities and render a small report.
+let os = env.os()
+let arch = env.arch()
+let home = env.get("HOME")
+let lines = ["System report", "-------------", "os:   " + os, "arch: " + arch]
+print(str.join(lines, "\n"))
+if home != null {
+    print("home is set")
 }
+print("clock ok: " + (time.now() &gt; 0))
 </code></pre>
+<!-- check: output -->
+<pre><code class="language-text">System report
+-------------
+os:   linux
+arch: x86_64
+home is set
+clock ok: true
+</code></pre>
+<p>(The <code>os</code> and <code>arch</code> lines depend on the machine that runs the example.)</p>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>capability system readonly</code> — manifest-level capability declaration at the top of the file</li>
-<li>Struct field access: <code>memory.used_gb</code>, <code>disk.percent</code></li>
-<li><code>math.round()</code> for formatting</li>
-<li><code>str()</code> coercion for concatenation</li>
-<li>Functions that return HTML strings (Super-Surfer renders the return value)</li>
-<li>The conductor pattern: Crush drives many host calls then assembles their results</li>
+<li><code>env.os()</code> / <code>env.arch()</code> (<code>--stdlib</code>), <code>env.get(name)</code> (<code>--env</code>, returns <code>null</code>
+when the variable is unset), <code>time.now()</code> (<code>--time</code>) — each group is
+deny-by-default</li>
+<li><code>str.join(array, delimiter)</code> to assemble text</li>
+<li><code>"label" + (expression)</code> concatenation with a <code>Bool</code> result</li>
+<li>Calls that don’t exist yet: this page used to show <code>sys.hostname()</code>,
+<code>sys.cpu_usage()</code>, <code>sys.memory_info()</code> and a <code>capability system readonly</code>
+declaration. None of those exist in the runtime today; host metrics beyond
+<code>env.*</code> and <code>time.*</code> have to come from <code>process.exec</code> (see
+<a href="build-pipeline.html">Build Pipeline</a>) or a polyglot block.</li>
 </ul>
-<h2 id="capabilities-used"><a class="header" href="#capabilities-used">Capabilities Used</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Call</th><th>Capability</th></tr>
-</thead>
-<tbody>
-<tr><td><code>sys.hostname()</code></td><td><code>sys.hostname</code></td></tr>
-<tr><td><code>sys.cpu_usage()</code></td><td><code>sys.cpu_usage</code></td></tr>
-<tr><td><code>sys.memory_info()</code></td><td><code>sys.memory_info</code></td></tr>
-<tr><td><code>sys.disk_usage()</code></td><td><code>sys.disk_usage</code></td></tr>
-<tr><td><code>time.now()</code></td><td><code>time.now</code></td></tr>
-<tr><td><code>math.round()</code></td><td><code>math.round</code> (stdlib, no cap needed)</td></tr>
-</tbody>
-</table>
-</div>
 
                     </main>
 

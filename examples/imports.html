@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,52 +182,60 @@
                     <main>
                         <h1 id="import-styles"><a class="header" href="#import-styles">Import Styles</a></h1>
 <blockquote>
-<p>Source: <code>crates/core/crush-lang/walkers/tree-sitter-crush/test_imports.crush</code></p>
+<p><strong>Not yet implemented.</strong> Every form of <code>import</code> parses, but <strong>none of them load
+anything</strong> — the compiler lowers each to a capability that the runtime does not
+provide. The only import form that runs is <code>use @lang</code>, which only declares
+that a polyglot block will use a module. This is crush-ast <strong>CRUSH-110</strong> (open):
+today there is no way to share code between files.</p>
 </blockquote>
-<p>Crush has several import forms. Standard modules use <code>import</code>; external resources
-and capabilities use <code>use @</code>.</p>
-<pre><code class="language-crush">// Standard module import
-import io;
-import fs as files;                    // aliased
-import net { http_get, http_post };    // selective
-
-// MCP server — wire a remote API as typed capabilities
-use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github;
-
-// Capability import — grant specific cap handles under an alias
-use @cap "fs.read" { "fs.read", "fs.list" } as reader;
-
-// Polyglot import — pull a symbol from a language module
-use @lang python "sys" { "version", "path" } as pysys;
-
-// External resources
-import @git "https://github.com/nixpt/exosphere.git" as exo;
-import @http "https://example.com/data.json" as data;
-
-fn main() {
-    io.print("Imports working!");
-}
-</code></pre>
-<h2 id="form-reference"><a class="header" href="#form-reference">Form Reference</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Form</th><th>Purpose</th></tr>
+<tr><th>Form</th><th style="text-align: center">Parses</th><th>Runs</th></tr>
 </thead>
 <tbody>
-<tr><td><code>import module</code></td><td>Crush stdlib module (<code>io</code>, <code>fs</code>, <code>net</code>, <code>sys</code>, <code>math</code>, <code>time</code>, …)</td></tr>
-<tr><td><code>import module as alias</code></td><td>Module with alias</td></tr>
-<tr><td><code>import module { a, b }</code></td><td>Selective import — only named symbols</td></tr>
-<tr><td><code>use @mcp "url" { tools } as alias</code></td><td>Wire an MCP server as capabilities</td></tr>
-<tr><td><code>use @cap "cap.path" { names } as alias</code></td><td>Import specific capability handles</td></tr>
-<tr><td><code>use @lang python "module" { symbols }</code></td><td>Import a polyglot language module</td></tr>
-<tr><td><code>import @git "url" as alias</code></td><td>Bind a git repository as a resource</td></tr>
-<tr><td><code>import @http "url" as alias</code></td><td>Bind an HTTP resource</td></tr>
+<tr><td><code>import io</code> / <code>import fs as files</code> / <code>import net { a, b }</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: module.load</code></td></tr>
+<tr><td><code>use @mcp "url" { tools } as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: mcp.connect</code></td></tr>
+<tr><td><code>use @cap "cap.path" { names } as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: cap.acquire</code></td></tr>
+<tr><td><code>import @git "url" as alias</code>, <code>import @http "url" as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: external.load</code></td></tr>
+<tr><td><code>use @lang python "math" as math</code></td><td style="text-align: center">yes</td><td>runs; see below</td></tr>
 </tbody>
 </table>
 </div>
-<p>All <code>use @...</code> forms are enforced by the capability system: the runtime only grants
-the declared access; anything undeclared is denied at execution time.</p>
+<p>Each failing form is checked below, so this page will say so the day one starts
+working:</p>
+<!-- check: nyi CRUSH-110 -->
+<pre><code class="language-crush">import fs as files
+print("loaded")
+</code></pre>
+<!-- check: nyi CRUSH-110 -->
+<pre><code class="language-crush">use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
+print("loaded")
+</code></pre>
+<!-- check: nyi CRUSH-110 -->
+<pre><code class="language-crush">import @http "https://example.com/data.json" as data
+print("loaded")
+</code></pre>
+<h2 id="use-lang"><a class="header" href="#use-lang"><code>use @lang</code></a></h2>
+<p><code>use @lang &lt;language&gt; "&lt;module&gt;" as &lt;alias&gt;</code> declares a module for a polyglot
+block. It is accepted and runs, but the alias is not wired to the block’s
+variables — the block still has to <code>import</code> the module itself:</p>
+<!-- check: flags --polyglot -->
+<pre><code class="language-crush">use @lang python "math" as math
+
+@python {
+import math
+v = math.factorial(5)
+}
+print(v)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">120
+</code></pre>
+<h2 id="sharing-code-today"><a class="header" href="#sharing-code-today">Sharing code today</a></h2>
+<p>Put helper functions in the same file, or do the work in a polyglot block. The
+only cross-file mechanism that exists is outside the language: run several
+programs and pass data through files or the host.</p>
 
                     </main>
 

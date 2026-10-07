@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,10 +181,8 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="fibonacci--functions"><a class="header" href="#fibonacci--functions">Fibonacci &amp; Functions</a></h1>
-<blockquote>
-<p>Source: <code>crates/core/crush-lang/tests/fixtures/fibonacci.crush</code></p>
-</blockquote>
-<p>The canonical recursion example — also validates type-hinted function signatures.</p>
+<p>The canonical recursion example, with typed function signatures. Run it with
+<code>crush run fib.crush</code>.</p>
 <pre><code class="language-crush">fn fib(n: Int) -&gt; Int {
     if n &lt;= 1 {
         return n
@@ -192,25 +190,44 @@
     return fib(n - 1) + fib(n - 2)
 }
 
-fn main() {
-    let result = fib(10)
-    return result
+fn factorial(n: Int) -&gt; Int {
+    if n &lt;= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
 }
+
+fn main() {
+    for i in 0..10 {
+        print("fib(" + i + ") = " + fib(i))
+    }
+    print("10! = " + factorial(10))
+}
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+10! = 3628800
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>fn name(param: Type) -&gt; ReturnType</code> — typed function signature</li>
-<li>Recursive calls work without any special annotation</li>
-<li><code>return</code> is explicit; there is no implicit last-expression return</li>
+<li><code>fn name(param: Type) -&gt; ReturnType</code> — a typed signature (hints are checked at
+call sites)</li>
+<li>Recursion needs no special annotation; the default call-depth limit is 256
+frames, which is far more than this needs</li>
+<li><code>return</code> is explicit — there is no implicit last-expression return</li>
+<li><code>"text" + number</code> converts the number, so <code>print</code> can build a line</li>
+<li>A program may have both top-level statements and <code>fn main()</code>; the top-level
+statements run first, then <code>main</code></li>
 </ul>
-<p>A simpler function that doubles its argument (from <code>function_call.crush</code>):</p>
-<pre><code class="language-crush">fn double(n: Int) {
-    return n * 2
-}
-
-double(21)
-</code></pre>
-<p>Functions without a <code>-&gt; Type</code> annotation implicitly return <code>Void</code>.</p>
 
                     </main>
 

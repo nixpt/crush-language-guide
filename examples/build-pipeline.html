@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,75 +181,64 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="build-pipeline"><a class="header" href="#build-pipeline">Build Pipeline</a></h1>
-<blockquote>
-<p>Source: <code>crates/core/crush-lang/examples/build_pipeline.crush</code>
-Donated from <code>nixpt/nakshatra</code> — used in production via <code>crush-run</code>.</p>
-</blockquote>
-<p>This is Crush in its intended design role: a <strong>capability-gated, event-sourced conductor</strong>
-for external toolchains. Crush doesn’t compile anything itself — it orchestrates native tools
-through capability calls, making the pipeline auditable and policy-checkable instead of an
-opaque shell script.</p>
-<pre><code class="language-crush">// Stub capability-bound host calls (in production these bind to
-// process.spawn / event.emit capabilities and compile to cap_call).
-fn run_tool(cmd: String) -&gt; Int { return 0 }
-fn emit(topic: String, name: String) -&gt; Int { return 0 }
+<p>Crush’s intended role is a small, auditable <em>conductor</em> for other tools: it
+decides what runs and in what order, while capability calls do the work. Here each
+step is a real process started through <code>process.exec</code>, and the pipeline stops at
+the first failure.</p>
+<p>Run it with <code>crush run --stdlib --process build.crush</code>.</p>
+<!-- check: flags --process -->
+<pre><code class="language-crush">// A tiny build pipeline: run each step as a process, stop at the first failure.
+fn run_tool(cmd: String, arg: String) -&gt; Int {
+    let raw = process.exec(cmd, arg)
+    let res = json.parse(raw)
+    return res.exit_code
+}
 
-// Run one build step: emit start event, run the tool,
-// emit success or failure, propagate the exit code.
-fn step(name: String, cmd: String) -&gt; Int {
-    emit("build.step.start", name)
-    let code = run_tool(cmd)
+fn step(name: String, cmd: String, arg: String) -&gt; Int {
+    print("[start] " + name)
+    let code = run_tool(cmd, arg)
     if code != 0 {
-        emit("build.step.failed", name)
+        print("[failed] " + name + " (exit " + code + ")")
         return code
     }
-    emit("build.step.ok", name)
+    print("[ok] " + name)
     return 0
 }
 
-fn main() -&gt; Int {
-    emit("build.start", "kernel")
-
-    // 1. Configure
-    let c1 = step("config", "cp config/kernel.config kernel/.config")
-    if c1 != 0 { return c1 }
-
-    let c2 = step("olddefconfig", "make -C kernel olddefconfig")
-    if c2 != 0 { return c2 }
-
-    // 2. Compile (Crush conducts; gcc/Kbuild does the actual work)
-    let c3 = step("kernel", "make -C kernel -j8 bzImage")
-    if c3 != 0 { return c3 }
-
-    // 3. Build initramfs
-    let c4 = step("initramfs", "mkinitramfs --out build/init.cpio.gz")
-    if c4 != 0 { return c4 }
-
-    // 4. Smoke-boot in QEMU
-    let c5 = step("boot", "qemu-run --kernel kernel/arch/x86/boot/bzImage --initrd build/init.cpio.gz")
-    if c5 != 0 { return c5 }
-
-    emit("build.done", "kernel")
-    return 0
+fn main() {
+    let steps = [["configure", "echo", "config"], ["compile", "echo", "cc"], ["test", "false", "x"], ["package", "echo", "tar"]]
+    for s in steps {
+        let code = step(s[0], s[1], s[2])
+        if code != 0 {
+            print("pipeline stopped")
+            break
+        }
+    }
 }
-
-main()
 </code></pre>
-<p><strong>Patterns demonstrated:</strong></p>
+<!-- check: output -->
+<pre><code class="language-text">[start] configure
+[ok] configure
+[start] compile
+[ok] compile
+[start] test
+[failed] test (exit 1)
+pipeline stopped
+</code></pre>
+<p><strong>What this shows:</strong></p>
 <ul>
-<li><strong>Multi-function decomposition</strong> — <code>step()</code> encapsulates the emit-run-check pattern</li>
-<li><strong>Fail-fast via exit code propagation</strong> — <code>if code != 0 { return code }</code> short-circuits</li>
-<li><strong>Event sourcing</strong> — every step emits start/ok/failed events; the stream is replayable</li>
-<li><strong>Capability-bound host calls</strong> — <code>run_tool</code> and <code>emit</code> are stubs here; in production
-they compile to <code>cap_call</code> against <code>process.spawn</code> and <code>event.emit</code> capabilities</li>
-<li><strong>Self-contained example</strong> — stubs replace real caps so the file runs without host wiring</li>
+<li><strong>Capability-gated side effects.</strong> <code>process.exec</code> only exists because of the
+<code>--process</code> flag; without it the program fails with <code>unknown capability: process.exec</code>.</li>
+<li><strong>Structured results.</strong> <code>process.exec(cmd, arg)</code> returns a JSON string with
+<code>exit_code</code>, <code>stdout</code> and <code>stderr</code>; <code>json.parse</code> turns it into an object.</li>
+<li><strong>Fail-fast.</strong> <code>step</code> returns the exit code, <code>main</code> breaks out of the loop on
+the first non-zero one.</li>
+<li><strong>Data-driven steps.</strong> The pipeline is an array of <code>[name, command, argument]</code>
+triples, indexed with <code>s[0]</code>, <code>s[1]</code>, <code>s[2]</code>.</li>
 </ul>
-<p><strong>Grammar note from the source file:</strong></p>
-<blockquote>
-<p><code>spawn</code> is a RESERVED keyword (actor concurrency) — name process-spawning helpers
-differently (e.g. <code>run_tool</code>). Statements are newline-terminated: no multi-line calls,
-no list literals across lines.</p>
-</blockquote>
+<p><code>process.exec</code> takes exactly two arguments — the command and a single argument
+string — so multi-argument commands need to be wrapped (<code>process.exec("sh", "make -j8")</code> or similar). It runs with the full authority of the user, so enable
+<code>--process</code> only for programs you trust.</p>
 
                     </main>
 

@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,266 +181,221 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="capability-system"><a class="header" href="#capability-system">Capability System</a></h1>
-<p>The capability system is Crush’s security model. All interactions with the outside world (I/O, filesystem, network) require explicit capability permissions.</p>
-<h2 id="what-are-capabilities"><a class="header" href="#what-are-capabilities">What are Capabilities?</a></h2>
-<p>Capabilities are <strong>permissions</strong> that grant access to external resources:</p>
-<ul>
-<li><code>io.print</code> - Print to stdout</li>
-<li><code>io.read</code> - Read from stdin</li>
-<li><code>fs.read</code> - Read files</li>
-<li><code>fs.write</code> - Write files</li>
-<li><code>net.http</code> - Make HTTP requests</li>
-<li><code>sys.exec</code> - Execute commands</li>
-</ul>
-<h2 id="capability-calls"><a class="header" href="#capability-calls">Capability Calls</a></h2>
-<p>Use the <code>@</code> prefix to call capabilities:</p>
-<pre><code class="language-crush">io.print("Hello, World!");
-</code></pre>
-<h3 id="with-arguments"><a class="header" href="#with-arguments">With Arguments</a></h3>
-<pre><code class="language-crush">fs.write("file.txt", "content");
-let content = fs.read("file.txt");
-</code></pre>
-<h3 id="storing-results"><a class="header" href="#storing-results">Storing Results</a></h3>
-<pre><code class="language-crush">let user_input = io.read();
-let file_data = fs.read("config.json");
-</code></pre>
-<h2 id="declaring-permissions"><a class="header" href="#declaring-permissions">Declaring Permissions</a></h2>
-<p>Capabilities must be declared in the program manifest:</p>
-<pre><code class="language-json">{
-  "manifest": {
-    "permissions": {
-      "io.print": true,
-      "io.read": true,
-      "fs.read": ["./data", "./config"],
-      "fs.write": ["./output"],
-      "net.connect": ["https://api.example.com"]
-    }
-  }
-}
-</code></pre>
-<p><strong>Permission Scoping:</strong></p>
-<ul>
-<li><code>true</code> - Full access to that capability</li>
-<li><code>[paths]</code> - Restricted to specific paths or URLs</li>
-<li>Omitted - Denied (default deny-by-default)</li>
-</ul>
-<p><strong>Without the permission, the capability call will fail at runtime.</strong></p>
-<h2 id="standard-capabilities"><a class="header" href="#standard-capabilities">Standard Capabilities</a></h2>
+<p>Crush programs can’t touch the outside world directly. Every interaction with the
+host — printing, reading a file, making an HTTP request, spawning a process,
+running another language — is a <strong>capability call</strong>, and a capability only exists
+if the host that is running the program has explicitly turned it on. There is no
+ambient authority.</p>
 <blockquote>
-<p><strong>Host-provided, not bundled.</strong> crush-vm registers <code>io.print</code>, <code>io.eprint</code>, and <code>io.read</code>
-as built-in primitives. All other capabilities listed here (<code>fs.*</code>, <code>net.*</code>, <code>sys.*</code>) are
-<strong>host-provided</strong> — they must be registered by the embedding host process. The bare
-crush-ast crates define the capability <em>interface</em>; the implementation comes from the host
-(e.g. exosphere’s <code>corecaps</code>, or a custom host registration). If a cap is not registered,
-the call fails at runtime regardless of what the manifest declares.</p>
+<p><strong>Status: alpha.</strong> The model below is real and enforced, but the set of
+capabilities is small and the permission granularity is coarse (on/off per
+group, with a directory root for the filesystem). Read
+<a href="#what-is-not-enforced">What is not enforced</a> before relying on it for
+isolation.</p>
 </blockquote>
-<h3 id="io-capabilities"><a class="header" href="#io-capabilities">I/O Capabilities</a></h3>
+<h2 id="calling-a-capability"><a class="header" href="#calling-a-capability">Calling a capability</a></h2>
+<p>A capability call looks like an ordinary dotted function call — <strong>no <code>@</code> prefix</strong>:</p>
+<pre><code class="language-crush">io.print("Hello, ", "Crush")
+let upper = str.concat("a", "b")
+print(upper)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">Hello, Crush
+ab
+</code></pre>
+<p><code>io.print(a, b, ...)</code> takes any number of arguments, joins them with no
+separator, and appends a newline. The built-in <code>print(x)</code> takes exactly one.
+(The <code>@</code> sigil exists in Crush, but it introduces polyglot blocks and
+annotations, never capability calls — see <a href="syntax.html#language-blocks">Syntax</a>.)</p>
+<h2 id="always-available"><a class="header" href="#always-available">Always available</a></h2>
+<p>These work with no flags:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Capability</th><th>Description</th><th>Arguments</th><th>Returns</th><th>Scope</th></tr>
+<tr><th>Capability</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>io.print</code></td><td>Print to stdout</td><td><code>message: String</code></td><td><code>null</code></td><td>N/A</td></tr>
-<tr><td><code>io.read</code></td><td>Read from stdin</td><td>none</td><td><code>String</code></td><td>N/A</td></tr>
-<tr><td><code>io.eprint</code></td><td>Print to stderr</td><td><code>message: String</code></td><td><code>null</code></td><td>N/A</td></tr>
+<tr><td><code>io.print(...)</code></td><td>print to stdout</td></tr>
+<tr><td><code>io.read()</code></td><td>read one line from stdin (empty string at EOF)</td></tr>
+<tr><td><code>str.concat(...)</code>, <code>str.len(s)</code></td><td>concatenate / byte length</td></tr>
+<tr><td><code>conv.chr(n)</code>, <code>conv.ord(s)</code></td><td>codepoint ↔ one-character string</td></tr>
 </tbody>
 </table>
 </div>
-<p><strong>Example:</strong></p>
-<pre><code class="language-crush">io.print("Enter your name:");
-let name = io.read();
-io.print("Hello, " + name);
+<pre><code class="language-crush">print(conv.chr(65))
+print(conv.ord("A"))
+print(str.len("héllo"))
 </code></pre>
-<h3 id="filesystem-capabilities"><a class="header" href="#filesystem-capabilities">Filesystem Capabilities</a></h3>
+<!-- check: output -->
+<pre><code class="language-text">A
+65
+6
+</code></pre>
+<p><code>io.read</code> reads from standard input:</p>
+<!-- check: stdin Ada -->
+<!-- check: compile -->
+<pre><code class="language-crush">let name = io.read()
+io.print("Hello, " + name)
+</code></pre>
+<h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
+<p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
+<code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
+registered</strong>, and calling it fails at run time with <code>unknown capability</code>:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Capability</th><th>Description</th><th>Arguments</th><th>Returns</th><th>Scope</th></tr>
+<tr><th>Flag</th><th>Capabilities enabled</th></tr>
 </thead>
 <tbody>
-<tr><td><code>fs.read</code></td><td>Read file</td><td><code>path: String</code></td><td><code>String</code></td><td>Path list</td></tr>
-<tr><td><code>fs.write</code></td><td>Write file</td><td><code>path: String, content: String</code></td><td><code>null</code></td><td>Path list</td></tr>
-<tr><td><code>fs.exists</code></td><td>Check if exists</td><td><code>path: String</code></td><td><code>Bool</code></td><td>Path list</td></tr>
-<tr><td><code>fs.delete</code></td><td>Delete file</td><td><code>path: String</code></td><td><code>null</code></td><td>Path list</td></tr>
-<tr><td><code>fs.list</code></td><td>List directory</td><td><code>path: String</code></td><td><code>Array&lt;String&gt;</code></td><td>Path list</td></tr>
+<tr><td><code>--stdlib</code></td><td><code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>, <code>path.*</code>, <code>regex.*</code>, <code>bytes.*</code>, <code>buffer.*</code>, <code>binary.*</code>, <code>result.*</code>, <code>time.format/parse</code>, <code>env.os/arch</code>, <code>system.*</code> — pure computation, see <a href="stdlib.html">Standard Library</a></td></tr>
+<tr><td><code>--fs</code></td><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code>, <code>text.head/tail/wc/cut/grep</code></td></tr>
+<tr><td><code>--env</code></td><td><code>env.get</code></td></tr>
+<tr><td><code>--time</code></td><td><code>time.now</code>, <code>time.now_ms</code>, <code>time.now_iso</code>, <code>time.elapsed</code>, <code>time.sleep</code></td></tr>
+<tr><td><code>--net</code></td><td><code>net.http_get</code>, <code>net.http_post</code></td></tr>
+<tr><td><code>--process</code></td><td><code>process.exec</code></td></tr>
+<tr><td><code>--crypto</code></td><td><code>crypto.sha256</code>, <code>crypto.random</code></td></tr>
+<tr><td><code>--db PATH</code></td><td><code>db.query</code>, <code>db.execute</code> on that SQLite file</td></tr>
+<tr><td><code>--graphics</code></td><td><code>graphics.canvas/rect/circle/text/to_svg</code></td></tr>
+<tr><td><code>--bus</code></td><td><code>message_bus.publish/subscribe/recv</code></td></tr>
+<tr><td><code>--task</code></td><td><code>task.start/stop/list</code></td></tr>
+<tr><td><code>--akg</code></td><td><code>akg.write/read/search</code></td></tr>
+<tr><td><code>--polyglot</code></td><td><code>@python { }</code>, <code>@javascript { }</code>, <code>@bash { }</code> blocks — see <a href="polyglot.html">Polyglot</a></td></tr>
 </tbody>
 </table>
 </div>
-<p><strong>Example:</strong></p>
-<pre><code class="language-crush">if fs.exists("config.json") {
-    let config = fs.read("config.json");
-    io.print(config);
-} else {
-    fs.write("config.json", "{}");
-}
+<p><code>crush-run caps</code> prints the list for your build. Some groups (<code>--stdlib</code>,
+<code>--net</code>, <code>--db</code>, <code>--graphics</code>) are Cargo features of <code>crush-lang-sdk</code>; if your binary was
+built without one, its flag prints <code>warning: --… requires the '…' feature (not enabled in this build)</code> and the group stays absent. Note that <strong><code>stdlib</code> is off by
+default</strong> (crush-ast CRUSH-113); build with <code>--features stdlib</code>.</p>
+<p>Without the flag, the call fails:</p>
+<!-- check: runfail unknown capability: fs.read -->
+<pre><code class="language-crush">print(fs.read("data.txt"))
 </code></pre>
-<h3 id="system-capabilities"><a class="header" href="#system-capabilities">System Capabilities</a></h3>
+<p>With it, and with the filesystem confined to a directory:</p>
+<!-- check: runfail path escapes sandbox root -->
+<!-- check: flags --fs -->
+<pre><code class="language-crush">print(fs.read("../outside.txt"))
+</code></pre>
+<p>Filesystem paths must be relative and resolve <strong>inside</strong> <code>--fs-root</code> (default <code>.</code>):
+absolute paths and <code>..</code> escapes are rejected. This is the one place the permission
+has a scope.</p>
+<h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
+<!-- check: flags --fs -->
+<pre><code class="language-crush">print(fs.exists("missing.txt"))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">0
+</code></pre>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Capability</th><th>Description</th><th>Arguments</th><th>Returns</th></tr>
+<tr><th>Capability</th><th>Arguments</th><th>Returns</th></tr>
 </thead>
 <tbody>
-<tr><td><code>sys.exec</code></td><td>Execute command</td><td><code>cmd: String</code></td><td><code>String</code></td></tr>
-<tr><td><code>sys.env</code></td><td>Get env variable</td><td><code>name: String</code></td><td><code>String</code></td></tr>
-<tr><td><code>sys.args</code></td><td>Get CLI args</td><td>none</td><td><code>Array&lt;String&gt;</code></td></tr>
-<tr><td><code>sys.exit</code></td><td>Exit program</td><td><code>code: Int</code></td><td>never</td></tr>
+<tr><td><code>fs.read</code></td><td><code>path</code></td><td>file contents (string)</td></tr>
+<tr><td><code>fs.exists</code></td><td><code>path</code></td><td><code>1</code> / <code>0</code></td></tr>
+<tr><td><code>fs.list</code></td><td><code>dir</code></td><td>array of names</td></tr>
+<tr><td><code>fs.write</code></td><td><code>path, data</code></td><td>nothing — <strong>see the note below</strong></td></tr>
 </tbody>
 </table>
 </div>
-<p><strong>Example:</strong></p>
-<pre><code class="language-crush">let args = sys.args();
-if args.length &lt; 2 {
-    io.eprint("Usage: program &lt;file&gt;");
-    sys.exit(1);
-}
+<blockquote>
+<p><strong>Known bug — <code>fs.write</code>.</strong> It declares no return value, and the compiler emits
+a <code>pop</code> after a call used as a statement, so any program that calls it ends with
+<code>[runtime] stack underflow</code> (the write itself may still happen). Treat <code>fs.write</code>
+as not usable from <code>.crush</code> source until this is fixed. Capabilities that
+return nothing share the problem; <code>io.print</code> and <code>time.sleep</code> are unaffected.</p>
+</blockquote>
+<!-- check: nyi GAP-VOID-CAP-STATEMENT -->
+<!-- check: flags --fs -->
+<pre><code class="language-crush">fs.write("out.txt", "hello")
+print(fs.read("out.txt"))
 </code></pre>
-<h3 id="network-capabilities"><a class="header" href="#network-capabilities">Network Capabilities</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Capability</th><th>Description</th><th>Arguments</th><th>Returns</th></tr>
-</thead>
-<tbody>
-<tr><td><code>net.http</code></td><td>HTTP request</td><td><code>url: String</code></td><td><code>String</code></td></tr>
-<tr><td><code>net.get</code></td><td>HTTP GET</td><td><code>url: String</code></td><td><code>String</code></td></tr>
-<tr><td><code>net.post</code></td><td>HTTP POST</td><td><code>url: String, body: String</code></td><td><code>String</code></td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Example:</strong></p>
-<pre><code class="language-crush">let response = net.get("https://api.example.com/data");
-io.print(response);
+<h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
+<!-- check: flags --env --time --process -->
+<pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
+print(time.now() &gt; 0)
+print(process.exec("echo", "hi"))
 </code></pre>
-<h2 id="security-model"><a class="header" href="#security-model">Security Model</a></h2>
-<h3 id="principle-of-least-privilege"><a class="header" href="#principle-of-least-privilege">Principle of Least Privilege</a></h3>
-<p>Only request capabilities you actually use:</p>
-<pre><code class="language-crush">// Good: Minimal permissions
-{
-  "permissions": ["io.print"]
-}
-
-// Bad: Excessive permissions
-{
-  "permissions": ["io.print", "fs.read", "fs.write", "net.http", "sys.exec"]
-}
+<!-- check: output -->
+<pre><code class="language-text">null
+true
+{"exit_code":0,"stderr":"","stdout":"hi\n"}
 </code></pre>
-<h3 id="no-ambient-authority"><a class="header" href="#no-ambient-authority">No Ambient Authority</a></h3>
-<p>Unlike traditional OS permissions, capabilities are:</p>
 <ul>
-<li><strong>Explicit</strong>: Must be declared in manifest</li>
-<li><strong>Granular</strong>: <code>fs.read</code> vs <code>fs.write</code> vs <code>fs.delete</code></li>
-<li><strong>Auditable</strong>: Easy to see what a program can do</li>
+<li><code>env.get(name)</code> → string, or <code>null</code> if unset.</li>
+<li><code>time.now()</code> Unix seconds; <code>time.now_ms()</code>; <code>time.now_iso()</code>; <code>time.sleep(ms)</code>
+(bounded by the wall-clock quota).</li>
+<li><code>process.exec(cmd, args)</code> — exactly <strong>two</strong> arguments (the command and one
+argument string) — returns a JSON string with <code>exit_code</code>, <code>stdout</code>, <code>stderr</code>.</li>
+<li><code>net.http_get(url)</code> / <code>net.http_post(url, body)</code> — response body as a string;
+size capped by <code>--net-max-response-bytes</code> (default 1 MiB).</li>
+<li><code>crypto.sha256(data)</code>, <code>crypto.random(n)</code> (base64, <code>n ≤ 4096</code>).</li>
 </ul>
-<h3 id="capability-denial"><a class="header" href="#capability-denial">Capability Denial</a></h3>
-<p>If a program calls a capability it doesn’t have:</p>
-<pre><code class="language-crush">// Manifest: {"permissions": ["io.print"]}
-
-fn main() {
-    io.print("Hello");  // ✓ Allowed
-    fs.read("file.txt");  // ✗ Runtime error: Permission denied
+<p>A host capability that fails (missing file, refused connection, path escape)
+aborts the program with <code>[runtime] unknown capability: &lt;name&gt;: &lt;reason&gt;</code> — the
+“unknown capability” wording is misleading there, and the error is not
+catchable by <a href="control_flow.html#what-catch-does-not-catch"><code>try</code>/<code>catch</code></a>.</p>
+<h2 id="resource-limits"><a class="header" href="#resource-limits">Resource limits</a></h2>
+<p>Separately from capabilities, the VM enforces <strong>quotas</strong>; exceeding one ends the
+program with a <code>[runtime]</code> error:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Quota</th><th>Default</th><th>CLI flag</th></tr>
+</thead>
+<tbody>
+<tr><td>instructions</td><td>1,000,000</td><td><code>--max-steps</code></td></tr>
+<tr><td>stack slots</td><td>4,096</td><td><code>--max-stack</code></td></tr>
+<tr><td>output bytes</td><td>1 MiB</td><td><code>--max-output</code></td></tr>
+<tr><td>call depth</td><td>256</td><td><code>--max-call-depth</code></td></tr>
+<tr><td>wall-clock per polyglot subprocess</td><td>30,000 ms</td><td>(set via <code>Quotas::max_wall_time_ms</code> when embedding)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Output is buffered: if a program fails at run time, anything it printed before
+the failure is <strong>not</strong> shown.</p>
+<h2 id="embedding-declaring-permissions"><a class="header" href="#embedding-declaring-permissions">Embedding: declaring permissions</a></h2>
+<p>When you embed the VM from Rust you choose the capability set yourself
+(<code>crush_lang_sdk::HostCaps</code>, <code>Runtime</code>, <code>ProgramBuilder</code>), and a CASM program
+names the capabilities it is allowed to call in its manifest — a list of names:</p>
+<pre><code class="language-json">{
+  "version": "1.0",
+  "manifest": { "permissions": ["io.print"] },
+  "functions": { "main": { "params": [], "locals": [], "body": [] } }
 }
 </code></pre>
-<h2 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h2>
-<h3 id="1-declare-only-what-you-need"><a class="header" href="#1-declare-only-what-you-need">1. Declare Only What You Need</a></h3>
-<pre><code class="language-crush">// Good
-{
-  "permissions": ["io.print", "fs.read"]
-}
-
-// Avoid
-{
-  "permissions": ["io.*", "fs.*", "net.*"]
-}
-</code></pre>
-<h3 id="2-check-before-using"><a class="header" href="#2-check-before-using">2. Check Before Using</a></h3>
-<pre><code class="language-crush">if fs.exists("config.json") {
-    let config = fs.read("config.json");
-} else {
-    io.print("Config not found");
-}
-</code></pre>
-<h3 id="3-handle-errors"><a class="header" href="#3-handle-errors">3. Handle Errors</a></h3>
-<pre><code class="language-crush">// Future: try-catch
-try {
-    let data = fs.read("file.txt");
-} catch (error) {
-    io.eprint("Failed to read file: " + error);
-}
-</code></pre>
-<h2 id="capability-composition"><a class="header" href="#capability-composition">Capability Composition</a></h2>
-<p>Capabilities can be composed:</p>
-<pre><code class="language-crush">fn read_and_print(filename: String) {
-    let content = fs.read(filename);
-    io.print(content);
-}
-
-// Requires both fs.read and io.print
-</code></pre>
+<p>A capability call whose name is not both <strong>registered</strong> by the host and <strong>listed</strong>
+in the program’s permissions is refused. See <a href="../getting-started.html">Getting Started</a>
+and <a href="../casm/structure.html">CASM structure</a>. For <code>.casm</code> text run with <code>crush-run</code>,
+<code>--cap NAME</code> adds names to that list.</p>
+<p>There is no path or URL scoping in the manifest (<code>"fs.read": ["./data"]</code> is not a
+thing): scoping today is the host’s job — e.g. <code>--fs-root</code>.</p>
+<h2 id="what-is-not-enforced"><a class="header" href="#what-is-not-enforced">What is not enforced</a></h2>
+<p>Be honest with yourself about the isolation you actually get:</p>
+<ul>
+<li><strong>Polyglot blocks run outside this capability model.</strong> With <code>--polyglot</code>,
+<code>@python { }</code> / <code>@javascript { }</code> / <code>@bash { }</code> blocks run as ordinary
+subprocesses with the <strong>host process’s authority</strong>: a Python block can read any
+file the user can. The <code>fs</code>/<code>net</code>/<code>process</code> flags above do not constrain it. An
+optional build-time sandbox (bubblewrap, via <code>buckets</code>) exists but is <strong>off by
+default</strong> — see <a href="polyglot.html#sandbox-and-authority">Polyglot</a>.</li>
+<li>Quotas bound instructions and (for polyglot) wall-clock time, not memory.</li>
+<li><code>process.exec</code> runs any command the user can run; only enable it for programs
+you trust.</li>
+</ul>
+<h2 id="not-implemented"><a class="header" href="#not-implemented">Not implemented</a></h2>
+<p>The following capabilities appeared in earlier revisions of this guide but do not
+exist in the runtime: <code>io.eprint</code>, <code>fs.delete</code>, <code>sys.exec</code>, <code>sys.env</code>, <code>sys.args</code>,
+<code>sys.exit</code>, <code>net.get</code>, <code>net.post</code>, <code>net.http</code>, <code>type.of</code>, <code>console.print</code>,
+<code>array.length</code>, <code>map.keys</code>, <code>map.has_key</code>, and <code>module.load</code> (what <code>import</code>
+lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
+(<code>env.get</code>, <code>net.http_get</code>, <code>conv.type_of</code>, <code>len</code>, …).</p>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="polyglot.html">Polyglot Programming</a></strong>: Embed multiple languages</li>
-<li><strong><a href="stdlib.html">Standard Library</a></strong>: Additional capabilities</li>
+<li><strong><a href="stdlib.html">Standard Library</a></strong></li>
+<li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
-<h2 id="what-is-actually-implemented-today"><a class="header" href="#what-is-actually-implemented-today">What is actually implemented today</a></h2>
-<p>The chapters above describe the capability model. This section records, separately, <strong>which
-capabilities the runtime currently ships</strong> — because the two have drifted, and a guide that
-documents a capability the runtime does not have is worse than one that stays silent.</p>
-<p>Verified by running each call against <code>crush-run</code> (built with <code>--features stdlib</code>):</p>
-<p><strong>Available</strong></p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>capability</th><th>notes</th></tr>
-</thead>
-<tbody>
-<tr><td><code>io.print</code></td><td>built-in, always available</td></tr>
-<tr><td><code>str.concat</code>, <code>str.len</code></td><td>built-in</td></tr>
-<tr><td><code>str.trim</code>, <code>str.to_upper</code>, <code>str.substring</code></td><td>require <code>--stdlib</code></td></tr>
-<tr><td><code>conv.to_int</code></td><td>requires <code>--stdlib</code></td></tr>
-<tr><td><code>math.*</code></td><td>requires <code>--stdlib</code></td></tr>
-<tr><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code></td><td>require <code>--fs</code></td></tr>
-<tr><td><code>env.get</code></td><td>requires <code>--env</code></td></tr>
-<tr><td><code>time.now</code></td><td>requires <code>--time</code></td></tr>
-</tbody>
-</table>
-</div>
-<p>Run <code>crush-run caps</code> for the authoritative list on your build — and note that capability
-<em>groups</em> behind a Cargo feature (<code>--stdlib</code>, <code>--net</code>, <code>--db</code>, <code>--graphics</code>) will warn if that
-feature was not compiled in. <strong>A “not enabled in this build” warning is not the same as “does
-not exist.”</strong></p>
-<p><strong>Not implemented — documented in this guide but NOT in the runtime</strong></p>
-<p><code>io.eprint</code> · <code>io.read</code> · <code>fs.delete</code> · <code>sys.exit</code> · <code>sys.args</code> · <code>sys.env</code> · <code>sys.exec</code> ·
-<code>type.of</code> · <code>console.print</code> · <code>array.push</code> · <code>array.pop</code> · <code>array.length</code> · <code>map.keys</code> ·
-<code>map.has_key</code></p>
-<p>Examples using these will <strong>not run</strong>. They are retained here as intent, not as documentation
-of behaviour. If you hit one, that is a gap in the runtime, not a mistake in your code.</p>
-<h2 id="a-note-on-syntax-what--means-in-crush"><a class="header" href="#a-note-on-syntax-what--means-in-crush">A note on syntax: what <code>@</code> means in Crush</a></h2>
-<p>Capability calls are written <strong>unprefixed</strong>: <code>io.print("hi")</code>, not <code>@io.print("hi")</code>. Earlier
-revisions of this guide used an <code>@</code> sigil; the parser has never accepted it in expression
-position, and every example here has been corrected.</p>
-<p>That correction is narrow, and it is important not to over-generalise it. <strong><code>@</code> is a real and
-load-bearing sigil in Crush — it just does not introduce a capability call.</strong> It is overloaded
-across several distinct constructs, and stripping it blindly will corrupt them:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>form</th><th>example</th><th>what it is</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>polyglot block</strong></td><td><code>@python { ... }</code>, <code>@javascript { ... }</code></td><td>embed another language; the <code>@</code> is <strong>required</strong></td></tr>
-<tr><td><strong>compiler directive</strong></td><td><code>@gpu</code>, <code>@kernel</code>, <code>@target</code></td><td>steer the backend (e.g. the PTX/GPU path)</td></tr>
-<tr><td><strong>AST / AI annotation</strong></td><td><code>@invariant</code>, <code>@decision</code>, <code>@covers</code>, <code>@writes</code>, <code>@synthesize</code></td><td>typed metadata attached to CAST nodes</td></tr>
-<tr><td><strong>capability call</strong></td><td><del><code>@io.print(...)</code></del> → <code>io.print(...)</code></td><td><strong>no sigil.</strong> This is the one that was wrong.</td></tr>
-</tbody>
-</table>
-</div>
-<p>The lexer emits a single <code>AtIdent</code> token for all of these; what a given <code>@name</code> <em>means</em> is
-decided by the parser from context, not by the sigil.</p>
-<p>So: if you are writing a tool that rewrites Crush source, <strong>do not treat <code>@</code> as a single
-construct.</strong> Note in particular that some annotations carry a dot (<code>@wip.started_by</code>), so a
-“strip <code>@</code> from anything shaped like <code>@x.y</code>” rule will silently eat them.</p>
 
                     </main>
 

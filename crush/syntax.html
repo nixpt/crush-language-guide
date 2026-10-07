@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,453 +181,313 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="syntax-and-grammar"><a class="header" href="#syntax-and-grammar">Syntax and Grammar</a></h1>
-<p>This chapter covers the fundamental syntax and grammar rules of the Crush language.</p>
-<h2 id="lexical-structure"><a class="header" href="#lexical-structure">Lexical Structure</a></h2>
-<h3 id="comments"><a class="header" href="#comments">Comments</a></h3>
-<pre><code class="language-crush">// Single-line comment
-
-/*
- * Multi-line comment
- * Can span multiple lines
- */
+<p>This chapter covers the lexical structure and grammar that the Crush parser
+(<code>crush-frontend</code>) accepts today. Every <code>crush</code> example in this guide is run
+through the real toolchain by <code>scripts/check-examples.py</code>; where something is
+described in the design but the parser does not accept it yet, the page says so
+and links the crush-ast ticket.</p>
+<blockquote>
+<p><strong>Status: alpha.</strong> The language is small and still moving. If a feature isn’t
+in this chapter, assume it doesn’t exist yet.</p>
+</blockquote>
+<h2 id="a-program"><a class="header" href="#a-program">A program</a></h2>
+<p>A Crush file is a sequence of statements. There are two styles, and they can be
+mixed:</p>
+<ul>
+<li><strong>Script style</strong> — bare top-level statements run top to bottom.</li>
+<li><strong><code>fn main()</code></strong> — an explicit entry function.</li>
+</ul>
+<p>When a file has both, the top-level statements run first and then <code>main</code>’s body
+runs.</p>
+<pre><code class="language-crush">print("top-level runs first")
 
 fn main() {
-    // Comments can appear anywhere
-    io.print("Hello");  // Including after statements
+    print("then main")
 }
 </code></pre>
-<h3 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h3>
-<p>Identifiers (variable names, function names) must:</p>
-<ul>
-<li>Start with a letter or underscore</li>
-<li>Contain only letters, digits, and underscores</li>
-<li>Not be a reserved keyword</li>
-</ul>
-<pre><code class="language-crush">// Valid identifiers
-let x = 1;
-let my_variable = 2;
-let _private = 3;
-let counter123 = 4;
-
-// Invalid identifiers
-// let 123abc = 5;  // Cannot start with digit
-// let my-var = 6;  // Hyphens not allowed
+<!-- check: output -->
+<pre><code class="language-text">top-level runs first
+then main
 </code></pre>
-<h3 id="keywords"><a class="header" href="#keywords">Keywords</a></h3>
-<p>Reserved keywords in Crush:</p>
-<pre><code class="language-text">fn          let         mut         if          else
-while       for         in          return      break
-continue    import      export      use         as
-true        false       null        spawn       yield
-struct      match       try         catch       throw
-capability  async       await       lang
-</code></pre>
-<h3 id="literals"><a class="header" href="#literals">Literals</a></h3>
-<pre><code class="language-crush">// Integer literals
-let dec = 42;
-let hex = 0x2A;
-let bin = 0b101010;
+<p>Functions can be called before they are defined:</p>
+<pre><code class="language-crush">print(seven())
 
-// Float literals
-let pi = 3.14159;
-let sci = 1.5e-10;
-
-// String literals
-let s1 = "Hello";
-let s2 = 'World';
-let multiline = """
-    This is a
-    multi-line string
-""";
-
-// Boolean literals
-let t = true;
-let f = false;
-
-// Null literal
-let n = null;
-</code></pre>
-<h2 id="statements-vs-expressions"><a class="header" href="#statements-vs-expressions">Statements vs Expressions</a></h2>
-<h3 id="statements"><a class="header" href="#statements">Statements</a></h3>
-<p>Statements perform actions but don’t produce values:</p>
-<pre><code class="language-crush">// Variable declaration
-let x = 42;
-
-// Function definition
-fn greet() {
-    io.print("Hello");
+fn seven() {
+    return 7
 }
-
-// Control flow
-if x &gt; 0 {
-    io.print("Positive");
-}
-
-// Expression statement
-io.print("Hello");
 </code></pre>
-<h3 id="expressions"><a class="header" href="#expressions">Expressions</a></h3>
-<p>Expressions produce values:</p>
-<pre><code class="language-crush">// Arithmetic expressions
-let sum = 5 + 3;
-
-// Function calls
-let result = calculate(10);
-
-// Conditionals as expressions (future feature)
-// let max = if a &gt; b { a } else { b };
+<!-- check: output -->
+<pre><code class="language-text">7
 </code></pre>
-<h2 id="semicolons"><a class="header" href="#semicolons">Semicolons</a></h2>
-<p>Semicolons are <strong>required</strong> at the end of statements:</p>
-<pre><code class="language-crush">let x = 42;
-io.print(x);
-return x;
+<h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
+<p>Single-line comments start with <code>//</code> or <code>#</code>. There are no block comments —
+<code>/* ... */</code> is a parse error.</p>
+<pre><code class="language-crush">// a slash comment
+# a hash comment
+print("hello") // trailing comments work too
 </code></pre>
-<p>Exception: The last expression in a block doesn’t need a semicolon:</p>
-<pre><code class="language-crush">fn add(a: Int, b: Int) -&gt; Int {
-    return a + b;  // Semicolon required
+<!-- check: output -->
+<pre><code class="language-text">hello
+</code></pre>
+<h2 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h2>
+<p>Identifiers start with a letter or underscore and continue with letters, digits
+and underscores. Hyphens are not allowed, and a name can’t be a keyword.</p>
+<pre><code class="language-crush">let counter1 = 1
+let _private = 2
+let my_variable = 3
+print(counter1 + _private + my_variable)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">6
+</code></pre>
+<h2 id="keywords"><a class="header" href="#keywords">Keywords</a></h2>
+<pre><code class="language-text">let   fn      if       else    while   for     in
+return break  continue struct  new     try     catch
+throw  match  use      import  export  capability
+async  await  spawn    yield   lang    mut
+true   false  null
+</code></pre>
+<p><code>mut</code> and <code>capability</code> are reserved, but <code>let mut x = ...</code> is <strong>not</strong> accepted
+(see <a href="variables.html">Variables</a>), and <code>capability</code> has no usable statement form
+yet. <code>and</code>, <code>or</code> and <code>not</code> are <strong>not</strong> keywords — logic uses <code>&amp;&amp;</code>, <code>||</code> and <code>!</code>.</p>
+<p>The lexer also recognises a handful of localised keyword aliases —
+<code>karya</code>/<code>manau</code>/<code>yadi</code>/<code>natra</code>/<code>farkau</code>/<code>jaba_samma</code>/<code>sahi</code>/<code>galat</code> (Nepali) plus a
+few Chinese and Japanese forms — which map to <code>fn</code>/<code>let</code>/<code>if</code>/<code>else</code>/<code>return</code>/
+<code>while</code>/<code>true</code>/<code>false</code>:</p>
+<pre><code class="language-crush">karya sign(x) {
+    yadi x &gt; 0 { farkau "positive" } natra { farkau "not positive" }
 }
-
-fn add_implicit(a: Int, b: Int) -&gt; Int {
-    a + b  // No semicolon (implicit return, future feature)
-}
+manau r = sign(1)
+print(r)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">positive
+</code></pre>
+<h2 id="literals"><a class="header" href="#literals">Literals</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Kind</th><th>Examples</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td>Integer</td><td><code>42</code>, <code>-7</code></td><td>decimal only — <code>0x2A</code>, <code>0b101</code> and <code>1_000</code> are not lexed</td></tr>
+<tr><td>Float</td><td><code>3.14</code>, <code>0.5</code></td><td>no exponent form (<code>1.5e3</code> is rejected)</td></tr>
+<tr><td>String</td><td><code>"hello"</code></td><td><strong>double quotes only</strong>; escapes <code>\n \t \" \\</code></td></tr>
+<tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
+<tr><td>Null</td><td><code>null</code></td><td></td></tr>
+<tr><td>Array</td><td><code>[1, 2, 3]</code></td><td>see <a href="types.html">Types</a></td></tr>
+<tr><td>Object</td><td><code>{"a": 1, b: 2}</code></td><td>see <a href="types.html">Types</a></td></tr>
+</tbody>
+</table>
+</div>
+<p>Single-quoted and triple-quoted strings are parse errors; a string literal may
+contain a raw newline.</p>
+<pre><code class="language-crush">let n = 42
+let pi = 3.14
+let s = "tab:\there"
+print(n)
+print(pi)
+print(s)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">42
+3.14
+tab:	here
+</code></pre>
+<h2 id="statements-and-semicolons"><a class="header" href="#statements-and-semicolons">Statements and semicolons</a></h2>
+<p>Semicolons are <strong>optional</strong>. A statement ends at a newline, or you may write <code>;</code>
+(and <code>a; b</code> on one line) if you prefer. Both of these are the same program:</p>
+<pre><code class="language-crush">let a = 1; let b = 2;
+print(a + b);
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">3
+</code></pre>
+<pre><code class="language-crush">let a = 1
+let b = 2
+print(a + b)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">3
+</code></pre>
+<h3 id="return-values"><a class="header" href="#return-values">Return values</a></h3>
+<p>A function returns a value only through an explicit <code>return</code>. A bare final
+expression is <strong>not</strong> an implicit return — it yields <code>null</code>:</p>
+<pre><code class="language-crush">fn explicit() { return 5 }
+fn implicit() { 5 }
+print(explicit())
+print(implicit())
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">5
+null
 </code></pre>
 <h2 id="blocks"><a class="header" href="#blocks">Blocks</a></h2>
-<p>Blocks are delimited by curly braces <code>{}</code>:</p>
-<pre><code class="language-crush">{
-    let x = 10;
-    let y = 20;
-    io.print(x + y);
+<p>Blocks are delimited by <code>{ }</code> and are used by functions, <code>if</code>, loops and
+<code>try</code>/<code>catch</code>. A bare block as a statement is not supported; use <code>if true { ... }</code>
+if you need one.</p>
+<p>Crush has <strong>function-level scope</strong>, not block scope: a <code>let</code> inside an <code>if</code> or
+loop body that reuses an existing name rebinds the same variable (see
+<a href="variables.html">Variables</a>).</p>
+<h2 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h2>
+<pre><code class="language-crush">let x = 42
+let name: String = "Alice"
+
+fn add(a: Int, b: Int) -&gt; Int {
+    return a + b
 }
 
-fn main() {
-    // Function body is a block
-    let message = "Hello";
-    io.print(message);
-}
-
-if condition {
-    // If body is a block
-    io.print("True");
-}
+print(add(x, 1))
+print(name)
 </code></pre>
-<h2 id="variable-declaration"><a class="header" href="#variable-declaration">Variable Declaration</a></h2>
-<pre><code class="language-crush">// Basic declaration
-let x = 42;
-
-// With type hint
-let name: String = "Alice";
-
-// Multiple declarations
-let a = 1;
-let b = 2;
-let c = 3;
+<!-- check: output -->
+<pre><code class="language-text">43
+Alice
 </code></pre>
-<h2 id="function-definition"><a class="header" href="#function-definition">Function Definition</a></h2>
-<pre><code class="language-crush">// Basic function
-fn greet() {
-    io.print("Hello!");
-}
-
-// With parameters
-fn add(a: Int, b: Int) {
-    return a + b;
-}
-
-// With return type
-fn multiply(x: Int, y: Int) -&gt; Int {
-    return x * y;
-}
-
-// With type hints
-fn process(data: String, count: Int) -&gt; Bool {
-    // ...
-    return true;
-}
-</code></pre>
+<p>Type annotations on variables, parameters and return values are checked at
+compile time — see <a href="types.html">Types</a>.</p>
 <h2 id="operators"><a class="header" href="#operators">Operators</a></h2>
-<h3 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h3>
-<pre><code class="language-crush">let sum = a + b;      // Addition
-let diff = a - b;     // Subtraction
-let prod = a * b;     // Multiplication
-let quot = a / b;     // Division
-let rem = a % b;      // Modulo
-let neg = -a;         // Negation
-</code></pre>
-<h3 id="comparison"><a class="header" href="#comparison">Comparison</a></h3>
-<pre><code class="language-crush">let eq = a == b;      // Equal
-let ne = a != b;      // Not equal
-let lt = a &lt; b;       // Less than
-let gt = a &gt; b;       // Greater than
-let le = a &lt;= b;      // Less or equal
-let ge = a &gt;= b;      // Greater or equal
-</code></pre>
-<h3 id="logical"><a class="header" href="#logical">Logical</a></h3>
-<pre><code class="language-crush">let and_result = a and b;   // Logical AND
-let or_result = a or b;     // Logical OR
-let not_result = not a;     // Logical NOT
-</code></pre>
-<h3 id="string-concatenation"><a class="header" href="#string-concatenation">String Concatenation</a></h3>
-<pre><code class="language-crush">let greeting = "Hello, " + name + "!";
-let message = "Count: " + count;  // Auto-converts to string
-</code></pre>
-<h2 id="operator-precedence"><a class="header" href="#operator-precedence">Operator Precedence</a></h2>
-<p>From highest to lowest:</p>
+<p>Full tables are in <a href="operators.html">Operators</a>. In short: <code>+ - * / %</code>,
+<code>== != &lt; &gt; &lt;= &gt;=</code>, <code>&amp;&amp; || !</code>, unary <code>-</code>, and the pipeline <code>|&gt;</code>. There is no <code>**</code>,
+<code>//</code>, <code>+=</code>/<code>-=</code>, <code>and</code>/<code>or</code>/<code>not</code>, or ternary <code>? :</code>.</p>
+<h3 id="precedence-high--low"><a class="header" href="#precedence-high--low">Precedence (high → low)</a></h3>
 <ol>
-<li>Function calls, field access: <code>f()</code>, <code>obj.field</code></li>
-<li>Unary: <code>-</code>, <code>not</code></li>
+<li>Calls, field access, indexing: <code>f()</code>, <code>obj.field</code>, <code>a[i]</code></li>
+<li>Unary: <code>-</code>, <code>!</code></li>
 <li>Multiplicative: <code>*</code>, <code>/</code>, <code>%</code></li>
 <li>Additive: <code>+</code>, <code>-</code></li>
 <li>Comparison: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></li>
 <li>Equality: <code>==</code>, <code>!=</code></li>
-<li>Logical AND: <code>and</code></li>
-<li>Logical OR: <code>or</code></li>
+<li>Logical AND: <code>&amp;&amp;</code></li>
+<li>Logical OR: <code>||</code></li>
+<li>Pipeline: <code>|&gt;</code></li>
 </ol>
-<p>Use parentheses to override precedence:</p>
-<pre><code class="language-crush">let result = (a + b) * c;
-let condition = (x &gt; 0) and (y &lt; 10);
+<pre><code class="language-crush">print(1 + 2 * 3)
+print((1 + 2) * 3)
+print(1 &lt; 2 &amp;&amp; 2 &lt; 3)
 </code></pre>
-<h2 id="control-flow-syntax"><a class="header" href="#control-flow-syntax">Control Flow Syntax</a></h2>
-<h3 id="if-statement"><a class="header" href="#if-statement">If Statement</a></h3>
-<pre><code class="language-crush">if condition {
-    // then block
-}
-
-if condition {
-    // then block
+<!-- check: output -->
+<pre><code class="language-text">7
+9
+true
+</code></pre>
+<h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
+<pre><code class="language-crush">let x = 5
+if x &gt; 3 {
+    print("big")
+} else if x &gt; 1 {
+    print("medium")
 } else {
-    // else block
+    print("small")
 }
 
-if condition1 {
-    // block 1
-} else if condition2 {
-    // block 2
-} else {
-    // block 3
+let i = 0
+while i &lt; 3 {
+    i = i + 1
+}
+print(i)
+
+for n in 0..3 {
+    print(n)
 }
 </code></pre>
-<h3 id="while-loop"><a class="header" href="#while-loop">While Loop</a></h3>
-<pre><code class="language-crush">while condition {
-    // loop body
-}
-
-while i &lt; 10 {
-    io.print(i);
-    i = i + 1;
-}
+<!-- check: output -->
+<pre><code class="language-text">big
+3
+0
+1
+2
 </code></pre>
-<h3 id="for-loop"><a class="header" href="#for-loop">For Loop</a></h3>
-<pre><code class="language-crush">for item in collection {
-    // loop body
-}
-
-for i in range(0, 10) {
-    io.print(i);
-}
+<p><code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>. See <a href="control_flow.html">Control Flow</a>.</p>
+<h2 id="capability-calls"><a class="header" href="#capability-calls">Capability calls</a></h2>
+<p>A capability call looks like an ordinary dotted call — <strong>no <code>@</code> prefix</strong>:</p>
+<pre><code class="language-crush">io.print("Hello, ", "Crush")
 </code></pre>
-<h3 id="break-and-continue"><a class="header" href="#break-and-continue">Break and Continue</a></h3>
-<pre><code class="language-crush">while true {
-    if should_exit {
-        break;
-    }
-    if should_skip {
-        continue;
-    }
-    // ...
-}
+<!-- check: output -->
+<pre><code class="language-text">Hello, Crush
 </code></pre>
-<h2 id="capability-calls"><a class="header" href="#capability-calls">Capability Calls</a></h2>
-<p>Capability calls use the <code>@</code> prefix:</p>
-<pre><code class="language-crush">// Basic capability call
-io.print("Hello");
-
-// With multiple arguments
-fs.write("file.txt", "content");
-
-// Storing result
-let content = fs.read("file.txt");
-
-// Chaining (if result is an object)
-let data = net.http("https://api.example.com").json();
-</code></pre>
-<h2 id="language-blocks"><a class="header" href="#language-blocks">Language Blocks</a></h2>
-<p>Embed other languages with <code>@language { ... }</code>:</p>
+<p>(<code>io.print</code> accepts any number of arguments and concatenates them with no
+separator; the built-in <code>print(x)</code> takes exactly one.) Which capabilities exist,
+and which command-line flags grant them, is covered in
+<a href="capabilities.html">Capability System</a>.</p>
+<h2 id="language-blocks"><a class="header" href="#language-blocks">Language blocks</a></h2>
+<p>Another language’s code is embedded with <code>@language { ... }</code>. The <code>@</code> here is
+required; it is what introduces the block. Polyglot execution is <strong>off by
+default</strong> and needs <code>--polyglot</code>:</p>
+<!-- check: flags --polyglot -->
 <pre><code class="language-crush">@python {
-    print("Hello from Python")
-    x = 42
-}
-
-@javascript {
-    console.log("Hello from JavaScript");
-    const y = 100;
-}
-
-@bash {
-    echo "Hello from Bash"
-    ls -la
+print("Hello from Python")
 }
 </code></pre>
-<h2 id="import-statements"><a class="header" href="#import-statements">Import Statements</a></h2>
-<pre><code class="language-crush">// Import module
-import std.io;
-
-// Import with alias
-import std.fs as filesystem;
-
-// Import specific items (future feature)
-// import std.io.{print, read};
+<!-- check: output -->
+<pre><code class="language-text">Hello from Python
 </code></pre>
-<blockquote>
-<p><strong>Important</strong>: <code>import</code> creates <strong>aliases</strong> for capabilities, not direct access. The <code>@</code> prefix is still required for all capability calls:</p>
-<pre><code class="language-crush">import std.io as console;
-
-console.print("Hello");  // ✓ Correct
-// console.print("Hello");  // ✗ Error: missing @
+<p>See <a href="polyglot.html">Polyglot Programming</a> for the supported languages, how
+variables cross the boundary, and the (important) security caveats.</p>
+<h2 id="imports-and-exports"><a class="header" href="#imports-and-exports">Imports and exports</a></h2>
+<p><code>import a.b</code> and <code>use @lang ...</code> <strong>parse</strong>, but importing does not load anything
+yet: <code>import</code> is lowered to a <code>module.load</code> capability that nothing registers, so
+a program containing one fails at run time with <code>unknown capability: module.load</code> (crush-ast <strong>CRUSH-110</strong>). Every program is currently a single
+file. There is no <code>std.*</code> module tree.</p>
+<!-- check: nyi CRUSH-110 -->
+<pre><code class="language-crush">import std.io
+print("never reached")
 </code></pre>
-</blockquote>
-<h2 id="export-statements"><a class="header" href="#export-statements">Export Statements</a></h2>
-<pre><code class="language-crush">// Export variable for other capsules
-export result = calculate();
-
-// Export function
-export fn utility() {
-    // ...
-}
+<p><code>export name</code> parses and marks an existing variable or function for export. It
+is not an expression-level declaration:</p>
+<pre><code class="language-crush">let result = 6 * 7
+export result
+print(result)
 </code></pre>
-<h2 id="type-annotations"><a class="header" href="#type-annotations">Type Annotations</a></h2>
-<pre><code class="language-crush">// Variable type hints
-let name: String = "Alice";
-let age: Int = 30;
-let score: Float = 95.5;
-let active: Bool = true;
-
-// Function parameter and return types
-fn calculate(x: Int, y: Int) -&gt; Int {
-    return x + y;
-}
-
-// Array types (future feature)
-// let numbers: Array&lt;Int&gt; = [1, 2, 3];
-
-// Map types (future feature)
-// let config: Map&lt;String, Int&gt; = {"key": 42};
+<!-- check: output -->
+<pre><code class="language-text">42
 </code></pre>
-<h2 id="code-organization"><a class="header" href="#code-organization">Code Organization</a></h2>
-<h3 id="single-file"><a class="header" href="#single-file">Single File</a></h3>
-<pre><code class="language-crush">// Imports at top
-import std.io;
-import std.fs;
+<p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors.</p>
+<h2 id="annotations"><a class="header" href="#annotations">Annotations</a></h2>
+<p><code>@name</code> also introduces compiler/AI annotations such as <code>@invariant</code> and
+<code>@decision</code>, attached to the next declaration. These are metadata for tooling,
+not runtime behaviour; see the note at the end of the
+<a href="capabilities.html">Capability System</a> chapter and the <a href="../cast/ai-native.html">AI-Native CAST</a>
+chapter.</p>
+<h2 id="style"><a class="header" href="#style">Style</a></h2>
+<ul>
+<li><code>snake_case</code> for functions and variables, <code>PascalCase</code> for structs.</li>
+<li>Four-space indentation; keep lines under ~100 characters.</li>
+<li>Omit semicolons unless you are putting two statements on one line.</li>
+</ul>
+<h2 id="grammar-summary"><a class="header" href="#grammar-summary">Grammar summary</a></h2>
+<p>This is the grammar the parser implements, simplified (from
+<code>crates/crush-frontend/src/parser/mod.rs</code>):</p>
+<pre><code class="language-ebnf">program     = statement* ;
 
-// Function definitions
-fn helper() {
-    // ...
-}
+statement   = let_stmt | fn_def | struct_def | if_stmt | while_stmt
+            | for_stmt | return_stmt | break | continue
+            | try_stmt | throw_stmt | export_stmt | import_stmt
+            | lang_block | expr_stmt ;
 
-fn main() {
-    // Entry point
-}
-</code></pre>
-<h3 id="multiple-files-future-feature"><a class="header" href="#multiple-files-future-feature">Multiple Files (future feature)</a></h3>
-<pre><code class="language-crush">// lib.crush
-export fn utility() {
-    // ...
-}
+let_stmt    = "let" IDENT ( ":" type )? "=" expression ";"? ;
+fn_def      = "async"? "fn" IDENT "(" params? ")" ( "-&gt;" type )? block ;
+struct_def  = "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;
+if_stmt     = "if" expression block ( "else" ( if_stmt | block ) )? ;
+while_stmt  = "while" expression block ;
+for_stmt    = "for" IDENT "in" expression block ;
+try_stmt    = "try" block "catch" IDENT block ;
+throw_stmt  = "throw" expression ;
+export_stmt = "export" IDENT ;
+lang_block  = "@" IDENT ( "[" deps "]" )? "{" raw source "}" ;
+block       = "{" statement* "}" ;
 
-// main.crush
-import lib;
-
-fn main() {
-    lib.utility();
-}
-</code></pre>
-<h2 id="style-guidelines"><a class="header" href="#style-guidelines">Style Guidelines</a></h2>
-<h3 id="naming-conventions"><a class="header" href="#naming-conventions">Naming Conventions</a></h3>
-<pre><code class="language-crush">// Functions: snake_case
-fn calculate_total() { }
-
-// Variables: snake_case
-let user_name = "Alice";
-
-// Constants: SCREAMING_SNAKE_CASE (future feature)
-// const MAX_SIZE = 100;
-
-// Types: PascalCase
-struct UserData { }
-</code></pre>
-<h3 id="indentation"><a class="header" href="#indentation">Indentation</a></h3>
-<p>Use 4 spaces (not tabs):</p>
-<pre><code class="language-crush">fn main() {
-    if condition {
-        while loop {
-            io.print("Nested");
-        }
-    }
-}
-</code></pre>
-<h3 id="line-length"><a class="header" href="#line-length">Line Length</a></h3>
-<p>Keep lines under 100 characters when possible.</p>
-<h3 id="spacing"><a class="header" href="#spacing">Spacing</a></h3>
-<pre><code class="language-crush">// Spaces around operators
-let sum = a + b;
-
-// Space after commas
-fn call(a, b, c) { }
-
-// No space before semicolon
-let x = 42;
-
-// Space after keywords
-if condition {
-while loop {
-</code></pre>
-<h2 id="grammar-summary"><a class="header" href="#grammar-summary">Grammar Summary</a></h2>
-<pre><code class="language-ebnf">program         = statement*
-
-statement       = var_decl
-                | fn_def
-                | if_stmt
-                | while_stmt
-                | for_stmt
-                | return_stmt
-                | expr_stmt
-                | import_stmt
-                | export_stmt
-
-var_decl        = "let" IDENT (":" type)? "=" expression ";"
-
-fn_def          = "fn" IDENT "(" params? ")" ("-&gt;" type)? block
-
-if_stmt         = "if" expression block ("else" (if_stmt | block))?
-
-while_stmt      = "while" expression block
-
-for_stmt        = "for" IDENT "in" expression block
-
-return_stmt     = "return" expression? ";"
-
-expr_stmt       = expression ";"
-
-expression      = literal
-                | IDENT
-                | binary_op
-                | unary_op
-                | call
-                | cap_call
-                | lang_block
-
-cap_call        = "@" IDENT "." IDENT "(" args? ")"
-
-lang_block      = "@" IDENT "{" ... "}"
-
-block           = "{" statement* "}"
+expression  = literal | IDENT | expression binop expression
+            | unop expression | call | field | index
+            | "new" IDENT "(" ")" | "match" expression "{" arms "}" ;
+call        = expression "(" args? ")" ;
 </code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="types.html">Data Types</a></strong>: Learn about Crush’s type system</li>
-<li><strong><a href="variables.html">Variables</a></strong>: Variable scoping and management</li>
-<li><strong><a href="control_flow.html">Control Flow</a></strong>: Detailed control flow guide</li>
-<li><strong><a href="functions.html">Functions</a></strong>: Function definition and calling</li>
+<li><strong><a href="types.html">Data Types</a></strong>: the type system and collections</li>
+<li><strong><a href="variables.html">Variables</a></strong>: declaration and scope</li>
+<li><strong><a href="control_flow.html">Control Flow</a></strong>: loops, <code>match</code>, errors</li>
+<li><strong><a href="functions.html">Functions</a></strong>: parameters, returns, recursion</li>
 </ul>
 
                     </main>

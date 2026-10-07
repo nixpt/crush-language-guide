@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-54769e70.js";
+            window.path_to_searchindex_js = "searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-deec98d4.js"></script>
+        <script src="toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,49 +181,134 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>The Crush toolchain is published on <a href="https://crates.io">crates.io</a> as a set of
-small, composable crates (all at <code>0.2.0</code>). You embed Crush in a Rust application
-by depending on the SDK; the lower-level crates are available if you need direct
-access to the IR, bytecode, or VM.</p>
-<h2 id="the-crates"><a class="header" href="#the-crates">The crates</a></h2>
+<p>Crush is alpha software. This page gets you from a clean machine to a running
+program, and then shows how to embed the VM in a Rust application. Everything here
+was run against crush-ast <code>main</code> (workspace version <code>0.3.8</code>).</p>
+<h2 id="1-build-the-toolchain"><a class="header" href="#1-build-the-toolchain">1. Build the toolchain</a></h2>
+<p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
+Build it from source — this is the path this guide’s examples are validated
+against:</p>
+<pre><code class="language-sh">git clone https://github.com/nixpt/crush-ast
+git clone https://github.com/nixpt/buckets      # must sit NEXT TO crush-ast
+cd crush-ast
+cargo build --release -p crush-lang-sdk --features stdlib,net,db,graphics
+</code></pre>
+<p>Two things to know:</p>
+<ul>
+<li><strong><code>buckets</code> must be a sibling directory.</strong> <code>crush-vm</code> has an optional
+path-dependency on <code>../buckets</code> (the sandbox provisioner), and Cargo resolves it
+even when the feature is off, so a lone <code>crush-ast</code> checkout fails with
+<code>failed to read .../buckets/Cargo.toml</code>.</li>
+<li><strong><code>--features stdlib</code> is not optional for this guide.</strong> The standard library is
+off by default (crush-ast CRUSH-113); without it <code>--stdlib</code> only prints a
+warning and <code>str.*</code>, <code>math.*</code>, <code>conv.*</code> and friends don’t exist.</li>
+</ul>
+<p>You need Rust 1.85 or newer. The build produces these binaries in
+<code>target/release/</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Binary</th><th>What it does</th></tr>
+</thead>
+<tbody>
+<tr><td><code>crush</code></td><td>The front door: <code>crush run FILE</code>, <code>crush build FILE</code>, <code>crush repl</code></td></tr>
+<tr><td><code>crush-run</code></td><td>Run a <code>.crush</code>, <code>.casm</code> or <code>.cvm1</code> file (all the capability flags live here)</td></tr>
+<tr><td><code>crushc</code></td><td>Compile <code>.crush</code> to bytecode (<code>.cvm1</code>), or <code>--emit casm|ast|types</code>; <code>-C</code> only checks</td></tr>
+<tr><td><code>crush-compile</code></td><td>Assemble CASM text into a <code>.cvm1</code> binary</td></tr>
+<tr><td><code>crush-repl</code></td><td>Interactive REPL</td></tr>
+</tbody>
+</table>
+</div>
+<p>Put them on your <code>PATH</code>, or install them with the bundled installer
+(<code>cargo run -p crush-installer -- install --bin-dir target/release</code> copies them
+into <code>~/.crush/bin</code>; it does not currently include the <code>crush</code> wrapper).</p>
+<blockquote>
+<p><strong>A note on crates.io.</strong> The crates are published, but not in lockstep, and the
+SDK lags the repository. As of this writing: <code>crush-vm</code> <strong>0.3.6</strong>; <code>casm</code>,
+<code>crush-errors</code>, <code>crush-diagnostics</code>, <code>crush-lint</code>, <code>crush-ffi</code>, <code>crush-installer</code>
+and <code>tree-sitter-crush</code> <strong>0.3.7</strong>; <code>crush-frontend</code>, <code>crush-cast</code>, <code>crush-cson</code>,
+<code>crush-index</code>, <code>crush-jit</code> and <code>crush-python</code> <strong>0.3.0</strong>; and <strong><code>crush-lang-sdk</code>
+0.2.0</strong>, which predates the <code>crush</code> binary and the capability behaviour
+documented here. <code>crush-pkg</code>, <code>crush-aot</code>, <code>crush-aotc</code> and the walker CLI are
+not on crates.io. <code>cargo install crush-lang-sdk</code> therefore gives you an older
+toolchain than this guide describes; use the source build above.</p>
+</blockquote>
+<h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
+<p>Save this as <code>hello.crush</code>:</p>
+<pre><code class="language-crush">let name = "Crush"
+print("Hello, " + name + "!")
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">Hello, Crush!
+</code></pre>
+<p>Run it:</p>
+<pre><code class="language-sh">crush run hello.crush
+</code></pre>
+<pre><code class="language-text">Hello, Crush!
+[steps=6, stack=0]
+</code></pre>
+<p>The <code>[steps=…]</code> line is a run summary on standard error. Compile-only checking is
+<code>crushc -C hello.crush</code>; to see the bytecode, <code>crushc --emit casm hello.crush</code>.</p>
+<h3 id="capabilities-need-flags"><a class="header" href="#capabilities-need-flags">Capabilities need flags</a></h3>
+<p>A program can only reach the outside world through capabilities, and each group is
+off until you switch it on:</p>
+<pre><code class="language-sh">crush run --stdlib prog.crush                    # str.* math.* conv.* json.* ...
+crush run --fs --fs-root ./data prog.crush       # fs.read / fs.write / fs.exists / fs.list
+crush run --polyglot prog.crush                  # @python / @javascript / @bash blocks
+</code></pre>
+<p>For example, this reads a file, so it needs <code>--fs</code>:</p>
+<!-- check: runfail unknown capability: fs.read -->
+<pre><code class="language-crush">print(fs.read("notes.txt"))
+</code></pre>
+<p>Run it without the flag and it fails with <code>unknown capability: fs.read</code>. The full
+flag list is in <a href="crush/capabilities.html">Capability System</a> (<code>crush-run run --help</code>
+prints it too).</p>
+<h3 id="limits-worth-knowing-on-day-one"><a class="header" href="#limits-worth-knowing-on-day-one">Limits worth knowing on day one</a></h3>
+<ul>
+<li>Output is buffered: if a program fails at run time, what it printed before the
+failure is not shown.</li>
+<li>Defaults: 1,000,000 instructions, 256 call frames, 1 MiB of output, 30 s per
+polyglot block (all in <a href="crush/capabilities.html#resource-limits">Capability System</a>).</li>
+<li>Functions can’t see top-level variables, and <code>import</code> doesn’t load code yet — see
+<a href="crush/variables.html">Variables</a> and <a href="crush/syntax.html#imports-and-exports">Syntax</a>.</li>
+</ul>
+<h2 id="3-the-crates"><a class="header" href="#3-the-crates">3. The crates</a></h2>
+<p>Embedding Crush in a Rust program means depending on the SDK; the lower-level
+crates give direct access to the IR, bytecode, or VM.</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Crate</th><th>What it gives you</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="https://crates.io/crates/crush-lang-sdk"><code>crush-lang-sdk</code></a></td><td><strong>Start here.</strong> Ergonomic <code>Runtime</code> + <code>ProgramBuilder</code> over the VM: load, compile, and run Crush programs; register host capabilities.</td></tr>
+<tr><td><a href="https://crates.io/crates/crush-lang-sdk"><code>crush-lang-sdk</code></a></td><td><strong>Start here.</strong> <code>Runtime</code>, <code>ProgramBuilder</code>, host-capability registration, and the <code>compile</code> module that turns Crush source into a runnable program.</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-frontend"><code>crush-frontend</code></a></td><td>Parser, semantic analyzer, optimizer, and CASM compiler (<code>parse_source</code>).</td></tr>
-<tr><td><a href="https://crates.io/crates/crush-vm"><code>crush-vm</code></a></td><td>The CVM1 runtime: bytecode assembler/disassembler and the sandboxed interpreter with quotas + capability gates.</td></tr>
-<tr><td><a href="https://crates.io/crates/crush-cast"><code>crush-cast</code></a></td><td>The CAST intermediate representation (the stable AST).</td></tr>
-<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM bytecode format.</td></tr>
+<tr><td><a href="https://crates.io/crates/crush-vm"><code>crush-vm</code></a></td><td>The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM.</td></tr>
+<tr><td><a href="https://crates.io/crates/crush-cast"><code>crush-cast</code></a></td><td>The CAST intermediate representation.</td></tr>
+<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM bytecode format (JSON IR + binary <code>.casmb</code>).</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-errors"><code>crush-errors</code></a></td><td>Shared error types.</td></tr>
 <tr><td><a href="https://crates.io/crates/tree-sitter-crush"><code>tree-sitter-crush</code></a></td><td>Tree-sitter grammar (editor tooling, syntax highlighting).</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="add-it-to-a-project"><a class="header" href="#add-it-to-a-project">Add it to a project</a></h2>
-<pre><code class="language-sh">cargo add crush-lang-sdk
-</code></pre>
-<p>or in <code>Cargo.toml</code>:</p>
-<pre><code class="language-toml">[dependencies]
-crush-lang-sdk = "0.2"
-</code></pre>
-<p>The SDK pulls in <code>crush-vm</code>, <code>crush-frontend</code>, <code>crush-cast</code>, <code>casm</code>, and
-<code>crush-errors</code> transitively — you usually don’t depend on them directly.</p>
-<h3 id="optional-features"><a class="header" href="#optional-features">Optional features</a></h3>
-<p><code>crush-lang-sdk</code> keeps its default surface lean; opt into host integrations as
-needed:</p>
-<pre><code class="language-toml">crush-lang-sdk = { version = "0.2", features = ["net", "db", "graphics"] }
-</code></pre>
-<ul>
-<li><code>net</code> — networking host capabilities (<code>@net.*</code>)</li>
-<li><code>db</code> — database host capabilities</li>
-<li><code>graphics</code> — graphics host capabilities</li>
-<li><code>repl-helper</code> — richer REPL line editing</li>
-</ul>
-<h2 id="quick-start-embedding"><a class="header" href="#quick-start-embedding">Quick start (embedding)</a></h2>
-<pre class="playground"><code class="language-rust no_run">use crush_lang_sdk::{Runtime, ProgramBuilder};
+<p>SDK Cargo features: <code>stdlib</code> (the standard library), <code>net</code>, <code>db</code>, <code>graphics</code>,
+<code>repl-helper</code>, plus the default <code>native-plugins</code>, <code>polyglot-python</code> and
+<code>polyglot-javascript</code> (the free-variable analysis that marshals values into and out
+of <code>@python</code>/<code>@javascript</code> blocks).</p>
+<h2 id="4-embedding"><a class="header" href="#4-embedding">4. Embedding</a></h2>
+<p>Compile Crush source and run it on the VM — the same thing <code>crush run</code> does:</p>
+<pre class="playground"><code class="language-rust no_run">use crush_lang_sdk::compile::compile_crush_source;
+use crush_lang_sdk::Runtime;
+
+fn main() -&gt; anyhow::Result&lt;()&gt; {
+    let program = compile_crush_source(r#"print("hello from crush")"#)?;
+    let result = Runtime::new().run(&amp;program)?;
+    assert_eq!(result.output, "hello from crush\n");
+    Ok(())
+}</code></pre>
+<p>Or hand-write CVM1 assembly (what <code>crushc --emit casm</code> prints) with
+<code>ProgramBuilder</code>:</p>
+<pre class="playground"><code class="language-rust no_run">use crush_lang_sdk::{ProgramBuilder, Runtime};
 
 fn main() -&gt; anyhow::Result&lt;()&gt; {
     let program = ProgramBuilder::new()
@@ -235,28 +320,24 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
         .build()?;
 
     let result = Runtime::new().run(&amp;program)?;
-    assert_eq!(result.output, "hello, cvm1");
+    assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>To compile Crush <em>source</em> (rather than hand-written CASM), use
-<code>crush_frontend::parse_source</code> to produce a <a href="cast/README.html">CAST</a> <code>Program</code>,
-then compile and run it through the SDK.</p>
-<h2 id="a-note-on-capabilities"><a class="header" href="#a-note-on-capabilities">A note on capabilities</a></h2>
-<p>Crush is <strong>capability-gated</strong>: a program can only call host functions
-(<code>io.print</code>, <code>fs.read</code>, <code>net.get</code>, …) that it declares a permission for and
-that the host has actually registered. The published crates give you:</p>
+<p>Both snippets are compiled and run against crush-ast <code>main</code> as part of this
+guide’s checks (<code>scripts/embed-check</code>). <code>Runtime::new()</code> registers only the
+built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
+library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass
+it with <code>Runtime::with_quotas(..).with_host_caps(..)</code>, which is exactly what
+<code>crush-run</code> does for its flags. The permission names a program may call are part of
+its manifest (<a href="casm/structure.html">CASM structure</a>).</p>
+<h2 id="5-where-next"><a class="header" href="#5-where-next">5. Where next</a></h2>
 <ul>
-<li>the <strong>capability framework</strong> — <code>HostCaps</code> / <code>HostCap</code> and the SDK’s
-<code>host_caps</code> extension point to register your own handlers, plus built-in
-basics like <code>io.print</code>;</li>
-<li>the <strong><code>stdlib</code></strong> module and the feature-gated host capabilities above.</li>
+<li><strong><a href="crush/README.html">The language</a></strong>: syntax, types, control flow, functions</li>
+<li><strong><a href="crush/capabilities.html">Capability System</a></strong> and <strong><a href="crush/polyglot.html">Polyglot</a></strong>:
+the security model — read the “what is not enforced” sections</li>
+<li><strong><a href="examples/README.html">Examples</a></strong>: runnable programs</li>
+<li><strong><a href="cast/README.html">CAST</a></strong> and <strong><a href="casm/README.html">CASM</a></strong>: the compiler’s formats</li>
 </ul>
-<p>The <em>full</em> batteries-included capability set documented in the
-<a href="crush/stdlib.html">Standard Library</a> and <a href="crush/capabilities.html">Capability System</a>
-chapters describes the capability <strong>interface</strong>. A host environment supplies the
-implementations — the <a href="https://github.com/nixpt/exosphere">exosphere</a> agent-native
-OS ships the complete corecaps set; when you embed Crush in your own application
-you register exactly the capabilities you want to expose.</p>
 
                     </main>
 

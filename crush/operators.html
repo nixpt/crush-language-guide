@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,97 +181,169 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="operators"><a class="header" href="#operators">Operators</a></h1>
-<p>Crush provides a comprehensive set of operators for arithmetic, comparison, logical operations, and more.</p>
-<h2 id="arithmetic-operators"><a class="header" href="#arithmetic-operators">Arithmetic Operators</a></h2>
-<h3 id="basic-arithmetic"><a class="header" href="#basic-arithmetic">Basic Arithmetic</a></h3>
-<pre><code class="language-crush">let sum = 5 + 3;        // 8
-let diff = 10 - 4;      // 6
-let product = 6 * 7;    // 42
-let quotient = 20 / 4;  // 5
-let remainder = 17 % 5; // 2
-</code></pre>
-<h3 id="negation"><a class="header" href="#negation">Negation</a></h3>
-<pre><code class="language-crush">let x = 42;
-let neg = -x;  // -42
-</code></pre>
-<h3 id="string-concatenation"><a class="header" href="#string-concatenation">String Concatenation</a></h3>
-<p>The <code>+</code> operator concatenates strings:</p>
-<pre><code class="language-crush">let greeting = "Hello, " + "World!";
-let message = "Count: " + 42;  // Auto-converts to string
-</code></pre>
-<h2 id="comparison-operators"><a class="header" href="#comparison-operators">Comparison Operators</a></h2>
-<pre><code class="language-crush">let a = 10;
-let b = 20;
-
-let equal = a == b;          // false
-let not_equal = a != b;      // true
-let less = a &lt; b;            // true
-let greater = a &gt; b;         // false
-let less_equal = a &lt;= b;     // true
-let greater_equal = a &gt;= b;  // false
-</code></pre>
-<h2 id="logical-operators"><a class="header" href="#logical-operators">Logical Operators</a></h2>
-<p>Crush supports both keyword and symbolic forms — they compile to the same instructions:</p>
-<h3 id="and"><a class="header" href="#and">AND</a></h3>
-<pre><code class="language-crush">let result = true and false;   // false (keyword form)
-let result = true &amp;&amp; false;    // false (symbolic form)
-let check = (x &gt; 0) &amp;&amp; (x &lt; 100);
-</code></pre>
-<h3 id="or"><a class="header" href="#or">OR</a></h3>
-<pre><code class="language-crush">let result = true or false;    // true (keyword form)
-let result = true || false;    // true (symbolic form)
-let check = (x &lt; 0) || (x &gt; 100);
-</code></pre>
-<h3 id="not"><a class="header" href="#not">NOT</a></h3>
-<pre><code class="language-crush">let result = not true;   // false (keyword form)
-let result = !true;      // false (symbolic form)
-let check = !(x == 0);
-</code></pre>
-<h2 id="range-operator"><a class="header" href="#range-operator">Range Operator</a></h2>
-<p><code>..</code> creates a range value (compiled to <code>make_range</code>):</p>
-<pre><code class="language-crush">for i in 0..10 {
-    io.print(i);  // 0, 1, ..., 9
-}
-
-let r = 1..5;  // range from 1 to 5 (exclusive)
-</code></pre>
-<h2 id="pipeline-operator"><a class="header" href="#pipeline-operator">Pipeline Operator</a></h2>
-<p><code>|&gt;</code> passes the left-hand value as the first argument to the right-hand function (lowest precedence):</p>
-<pre><code class="language-crush">let result = data |&gt; process |&gt; format;
-// Equivalent to: format(process(data))
-
-let cleaned = "  hello  " |&gt; str.trim |&gt; str.to_upper;
-</code></pre>
-<h2 id="operator-precedence"><a class="header" href="#operator-precedence">Operator Precedence</a></h2>
-<p>From highest to lowest:</p>
+<p>Crush’s operators are deliberately few. Everything in this chapter is verified
+against the current compiler.</p>
+<h2 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Precedence</th><th>Operators</th><th>Description</th></tr>
+<tr><th>Operator</th><th>Meaning</th><th>Example</th></tr>
 </thead>
 <tbody>
-<tr><td>1</td><td><code>()</code>, <code>.</code>, <code>[]</code></td><td>Grouping, field access, indexing</td></tr>
-<tr><td>2</td><td><code>-</code>, <code>!</code>, <code>not</code></td><td>Unary negation, logical NOT</td></tr>
-<tr><td>3</td><td><code>*</code>, <code>/</code>, <code>%</code></td><td>Multiplication, division, modulo</td></tr>
-<tr><td>4</td><td><code>+</code>, <code>-</code></td><td>Addition, subtraction</td></tr>
-<tr><td>5</td><td><code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></td><td>Comparison</td></tr>
-<tr><td>6</td><td><code>==</code>, <code>!=</code></td><td>Equality</td></tr>
-<tr><td>7</td><td><code>&amp;&amp;</code>, <code>and</code></td><td>Logical AND</td></tr>
-<tr><td>8</td><td><code>||</code>, <code>or</code></td><td>Logical OR</td></tr>
-<tr><td>9</td><td><code>|&gt;</code></td><td>Pipeline</td></tr>
+<tr><td><code>+</code></td><td>add / string concatenation</td><td><code>5 + 3</code>, <code>"a" + "b"</code></td></tr>
+<tr><td><code>-</code></td><td>subtract / unary negate</td><td><code>10 - 4</code>, <code>-x</code></td></tr>
+<tr><td><code>*</code></td><td>multiply</td><td><code>6 * 7</code></td></tr>
+<tr><td><code>/</code></td><td>divide (<code>Int / Int</code> truncates toward zero)</td><td><code>20 / 4</code>, <code>-7 / 2</code></td></tr>
+<tr><td><code>%</code></td><td>remainder</td><td><code>17 % 5</code></td></tr>
 </tbody>
 </table>
 </div>
-<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
-<pre><code class="language-crush">let result = 2 + 3 * 4;           // 14 (not 20)
-let result = (2 + 3) * 4;         // 20
-let check = x &gt; 0 and x &lt; 100;    // Comparison before AND
-let r = fetch() |&gt; parse |&gt; save; // Pipeline is last
+<pre><code class="language-crush">print(5 + 3)
+print(10 - 4)
+print(6 * 7)
+print(20 / 4)
+print(17 % 5)
+print(-7 / 2)
+print(-(3 + 2))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">8
+6
+42
+5
+2
+-3
+-5
+</code></pre>
+<p>Mixing <code>Int</code> and <code>Float</code> promotes to <code>Float</code> (<code>1 + 2.5</code> is <code>3.5</code>). <code>+</code> between a
+string and a number concatenates (<code>"n=" + 5</code> is <code>"n=5"</code>); <code>*</code> on a string does
+<strong>not</strong> repeat it.</p>
+<p>There is no exponent operator (<code>**</code>), floor-division (<code>//</code>), or compound
+assignment (<code>+=</code>, <code>-=</code>, …) — use <code>math.pow(a, b)</code> (with <code>--stdlib</code>) and
+<code>x = x + 1</code>. See <a href="variables.html">Variables</a>.</p>
+<h2 id="comparison"><a class="header" href="#comparison">Comparison</a></h2>
+<p><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> return <code>Bool</code>. Operands must be of compatible
+types; comparing a string with an int is a compile error. Strings compare
+lexicographically; arrays compare element-wise with <code>==</code>.</p>
+<pre><code class="language-crush">let a = 10
+let b = 20
+print(a == b)
+print(a != b)
+print(a &lt; b)
+print(a &gt;= b)
+print("apple" &lt; "banana")
+print([1, 2] == [1, 2])
+print(1 == 1.0)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">false
+true
+true
+false
+true
+true
+true
+</code></pre>
+<h2 id="logical"><a class="header" href="#logical">Logical</a></h2>
+<p>Logic uses <strong>symbols</strong>: <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>. The words <code>and</code>, <code>or</code> and <code>not</code> are not
+operators. <code>&amp;&amp;</code> and <code>||</code> short-circuit (crush-ast <strong>CRUSH-125</strong>):</p>
+<pre><code class="language-crush">fn noisy() {
+    print("evaluated")
+    return true
+}
+
+print(false &amp;&amp; noisy())
+print(true || noisy())
+print(!(1 &gt; 2))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">false
+true
+true
+</code></pre>
+<!-- check: error -->
+<pre><code class="language-crush">print(true and false)
+</code></pre>
+<p>Conditions in <code>if</code>/<code>while</code> must be <code>Bool</code> — see <a href="types.html#conditions-must-be-bool">Types</a>.</p>
+<h2 id="range"><a class="header" href="#range">Range</a></h2>
+<p><code>a..b</code> is a half-open range (<code>a</code> inclusive, <code>b</code> exclusive). It is used by <code>for</code>,
+and also evaluates to an array of the integers in the range:</p>
+<pre><code class="language-crush">for i in 2..5 {
+    print(i)
+}
+let r = 1..5
+print(r)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">2
+3
+4
+[1, 2, 3, 4]
+</code></pre>
+<p>An empty or reversed range (<code>5..2</code>) produces no iterations. Both bounds may be
+expressions: <code>for i in 0..len(items)</code>. There is no <code>range()</code> function.</p>
+<h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
+<p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right.
+The right side must be a user-defined function (or a call to one):</p>
+<pre><code class="language-crush">fn inc(x) {
+    return x + 1
+}
+fn dbl(x) {
+    return x * 2
+}
+fn add(a, b) {
+    return a + b
+}
+
+print(3 |&gt; inc |&gt; dbl)
+print(3 |&gt; add(4))
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">8
+7
+</code></pre>
+<p>Piping into a <strong>capability</strong> such as <code>str.trim</code> or <code>conv.to_str</code> is rejected
+(<code>Pipeline right side must be function</code>); wrap it in a function first:</p>
+<!-- check: error -->
+<pre><code class="language-crush">print("  hi  " |&gt; str.trim)
+</code></pre>
+<h2 id="not-available"><a class="header" href="#not-available">Not available</a></h2>
+<p>Bitwise operators (<code>&amp;</code>, <code>|</code>, <code>^</code>, <code>~</code>, <code>&lt;&lt;</code>, <code>&gt;&gt;</code>) are <strong>not</strong> part of the
+Crush language today — the lexer rejects them — even though CASM has <code>bit_*</code>
+opcodes (<a href="../casm/instructions.html">CASM reference</a>). There is no ternary
+<code>a ? b : c</code>, no null-coalescing <code>??</code>, and no <code>**</code>.</p>
+<h2 id="precedence-high--low"><a class="header" href="#precedence-high--low">Precedence (high → low)</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Level</th><th>Operators</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td><code>()</code>, <code>.</code>, <code>[]</code> — call, field access, indexing</td></tr>
+<tr><td>2</td><td>unary <code>-</code>, <code>!</code></td></tr>
+<tr><td>3</td><td><code>*</code> <code>/</code> <code>%</code></td></tr>
+<tr><td>4</td><td><code>+</code> <code>-</code></td></tr>
+<tr><td>5</td><td><code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></td></tr>
+<tr><td>6</td><td><code>==</code> <code>!=</code></td></tr>
+<tr><td>7</td><td><code>&amp;&amp;</code></td></tr>
+<tr><td>8</td><td><code>||</code></td></tr>
+<tr><td>9</td><td><code>|&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-crush">print(2 + 3 * 4)
+print((2 + 3) * 4)
+print(1 + 1 == 2 &amp;&amp; 2 * 2 == 4)
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">14
+20
+true
 </code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="control_flow.html">Control Flow</a></strong>: Use operators in conditions</li>
-<li><strong><a href="functions.html">Functions</a></strong>: Function definitions</li>
+<li><strong><a href="control_flow.html">Control Flow</a></strong></li>
+<li><strong><a href="functions.html">Functions</a></strong></li>
 </ul>
 
                     </main>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Async LLM Dashboard - The Crush Language Guide</title>
+        <title>Polyglot Pipeline - The Crush Language Guide</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,100 +180,51 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="async-llm-dashboard"><a class="header" href="#async-llm-dashboard">Async LLM Dashboard</a></h1>
-<blockquote>
-<p>Source: <code>examples/crush-pipefish-dashboard/dashboard.crush</code></p>
-</blockquote>
-<p>A Super-Surfer web application that integrates with pipefish (the local LLM server)
-via the <code>seahorse</code> module. Demonstrates <code>async</code>/<code>await</code>, DOM manipulation, event
-listeners, and try/catch around async calls.</p>
-<pre><code class="language-crush">import seahorse
+                        <h1 id="polyglot-pipeline"><a class="header" href="#polyglot-pipeline">Polyglot Pipeline</a></h1>
+<p>The same data, handled by the language best suited to each step, with Crush
+variables as the glue. This replaces an earlier “Async LLM Dashboard” page whose
+<code>dom.*</code>, <code>seahorse</code> and <code>async</code>/<code>await</code> calls do not run in the current
+toolchain.</p>
+<p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
+on <code>PATH</code>).</p>
+<!-- check: flags --polyglot -->
+<pre><code class="language-crush">// Three languages, one program. Values flow through Crush variables.
+let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
-let current_model = "llama3.2";
-let is_generating = false;
-
-fn init() {
-    dom.set_text_content(dom.get_element_by_id("status"), "Ready");
-    dom.set_text_content(dom.get_element_by_id("model-name"), current_model);
-    update_model_list();
-    setup_event_handlers();
-    print("Dashboard initialized");
+@python {
+import statistics
+mean = statistics.mean(numbers)
 }
 
-fn setup_event_handlers() {
-    dom.add_event_listener(
-        dom.get_element_by_id("generate-btn"),
-        "click",
-        "on_generate_click"
-    );
-    dom.add_event_listener(
-        dom.get_element_by_id("model-select"),
-        "change",
-        "on_model_change"
-    );
+@javascript {
+const spread = Math.max(...numbers) - Math.min(...numbers)
 }
 
-fn on_generate_click() {
-    if is_generating {
-        return;
-    }
-
-    let prompt_input = dom.get_element_by_id("prompt-input");
-    let prompt = dom.get_attribute(prompt_input, "value");
-
-    if prompt == "" {
-        show_error("Please enter a prompt");
-        return;
-    }
-
-    is_generating = true;
-    update_ui_for_generation(true);
-
-    let temperature = get_temperature();
-    let max_tokens = get_max_tokens();
-
-    // Fire and forget — UI stays responsive while generation runs
-    generate_async(current_model, prompt, temperature, max_tokens);
+let m = mean
+let s = spread
+@bash {
+echo "mean=$m spread=$s"
 }
-
-// async fn runs in the background; the caller is not blocked
-async fn generate_async(model: String, prompt: String, temp: Float, max_tokens: Int) {
-    try {
-        let result = await seahorse.generate(model, prompt, {
-            "temperature": temp,
-            "max_tokens": max_tokens
-        });
-        display_result(result);
-    } catch error {
-        show_error("Generation failed: " + error);
-    }
-
-    is_generating = false;
-    update_ui_for_generation(false);
-}
+print("")
+print("done")
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">mean=3.875 spread=8
+done
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>import module</code> — loads the <code>seahorse</code> LLM client module</li>
-<li><code>dom.get_element_by_id()</code> / <code>dom.set_text_content()</code> / <code>dom.get_attribute()</code> — DOM capability calls</li>
-<li><code>dom.add_event_listener(element, event, handler_name)</code> — string-named event handler wiring</li>
-<li><code>async fn</code> — declares a function that runs asynchronously</li>
-<li><code>await expr</code> — suspends until the async value resolves</li>
-<li>Fire-and-forget: <code>generate_async(...)</code> is called without <code>await</code> so the caller returns immediately</li>
-<li><code>try { await ... } catch error { ... }</code> — exception handling around async operations</li>
-<li>Module-level mutable state: <code>is_generating</code> guards against double-submission</li>
+<li><code>@python</code>: reads the Crush variable <code>numbers</code>, and its last top-level binding,
+<code>mean</code>, becomes a Crush variable</li>
+<li><code>@javascript</code>: the same protocol; <code>spread</code> comes back as a number</li>
+<li><code>@bash</code>: receives the <code>let</code> variables declared before it as environment
+variables. Results of earlier blocks are not passed automatically, so they are
+copied into <code>let m = mean</code> / <code>let s = spread</code> first</li>
+<li>Block output is trimmed and has no trailing newline, which is why <code>print("")</code>
+is used to finish the line</li>
+<li>All three run as ordinary subprocesses with your user’s authority — see
+<a href="../crush/polyglot.html#sandbox-and-authority">Polyglot Programming</a></li>
 </ul>
-<h2 id="asyncawait-basics"><a class="header" href="#asyncawait-basics">Async/Await Basics</a></h2>
-<pre><code class="language-crush">// Simple sequential await
-io.print("Test: Sequential awaits")
-await async.sleep(50)
-io.print("First sleep done")
-await async.sleep(50)
-io.print("Second sleep done")
-</code></pre>
-<blockquote>
-<p>Source: <code>tests/language/async_test.crush</code></p>
-</blockquote>
 
                     </main>
 

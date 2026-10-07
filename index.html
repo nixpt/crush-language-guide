@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-54769e70.js";
+            window.path_to_searchindex_js = "searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-deec98d4.js"></script>
+        <script src="toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,9 +189,15 @@
   The Crush Language Guide
 </h1>
 
-<p><strong>Crush</strong> is a capability-based, polyglot programming language and virtual runtime. It lets you
-write in multiple languages (Python, Rust, Bash, C, Go) within a single program while enforcing
-fine-grained security through an explicit capability system.</p>
+<p><strong>Crush</strong> is a capability-based scripting language with polyglot blocks, plus the
+toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
+intermediate representation (CAST) that other languages can be translated into.</p>
+<blockquote>
+<p><strong>Alpha.</strong> This guide documents what the toolchain does today, verified against
+crush-ast <code>main</code> — every <code>crush</code> example on these pages is executed by
+<code>scripts/check-examples.py</code>. Features that exist in the design but not in the
+implementation are marked <em>not yet implemented</em>, with the crush-ast ticket.</p>
+</blockquote>
 <h2 id="what-this-guide-covers"><a class="header" href="#what-this-guide-covers">What this guide covers</a></h2>
 <div class="table-wrapper">
 <table>
@@ -199,34 +205,44 @@ fine-grained security through an explicit capability system.</p>
 <tr><th>Section</th><th>What you’ll learn</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="crush/README.html">Crush Language</a></td><td>Syntax, types, control flow, functions, capabilities, polyglot embedding</td></tr>
-<tr><td><a href="cast/README.html">CAST</a></td><td>The intermediate AST format that walkers produce</td></tr>
-<tr><td><a href="casm/README.html">CASM</a></td><td>The stack-based bytecode the VM executes</td></tr>
+<tr><td><a href="getting-started.html">Getting Started</a></td><td>Build the toolchain, run a program, embed the VM from Rust</td></tr>
+<tr><td><a href="crush/README.html">Crush Language</a></td><td>Syntax, types, control flow, functions, capabilities, polyglot blocks</td></tr>
+<tr><td><a href="examples/README.html">Examples</a></td><td>Runnable programs</td></tr>
+<tr><td><a href="cast/README.html">CAST</a></td><td>The AST format that walkers and the compiler share</td></tr>
+<tr><td><a href="casm/README.html">CASM</a></td><td>The bytecode formats the VM executes</td></tr>
 <tr><td><a href="appendix/glossary.html">Appendix</a></td><td>Glossary, quick reference, language comparisons</td></tr>
 </tbody>
 </table>
 </div>
 <h2 id="the-compilation-pipeline"><a class="header" href="#the-compilation-pipeline">The compilation pipeline</a></h2>
-<pre><code>Source (.crush / .py / .rs / ...)
-         │
-    Walker (language-specific)
-         │
-    CAST  (Crush AST — JSON)
-         │
-    Crush Compiler
-         │
-    CASM  (Crush Assembly — JSON / binary .castb)
-         │
-    crush-vm  (CVM1 — bytecode VM)
+<pre><code> Crush source (.crush)                     Other languages (.py / .rs / .go / ...)
+        │                                              │
+  crush-frontend                                walker (language-specific)
+  parse · check · optimize                              │
+        │                                               │
+        └───────────────►  CAST  (JSON AST)  ◄──────────┘
+                              │
+                        compiler
+                              │
+                  CASM  (bytecode: JSON IR or CVM1 text)
+                              │
+             assembler → CVM1 binary (.cvm1)
+                              │
+        crush-vm  (portable VM · FastVM · JIT · AOT backends)
 </code></pre>
+<p><code>crush run prog.crush</code> runs the whole left-hand path in one step.</p>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
-<p><a href="https://codespaces.new/nixpt/crush-website"><img src="https://img.shields.io/badge/Run_in-Codebucket_(Codespaces)-blue?logo=github" alt="Run in Codebucket (Codespaces)"></a></p>
 <pre><code class="language-crush">fn main() {
-    io.print("Hello, Crush!");
+    io.print("Hello, Crush!")
 }
 </code></pre>
-<p>The <code>@</code> prefix marks a <strong>capability call</strong> — a crossing of the VM boundary that requires an
-explicit permission in the program manifest.</p>
+<!-- check: output -->
+<pre><code class="language-text">Hello, Crush!
+</code></pre>
+<p><code>io.print</code> is a <strong>capability call</strong>: a call that crosses the VM boundary to the
+host, and so only works if the host grants it. Capability calls are written like
+any other dotted call — there is no <code>@</code> prefix. (The <code>@</code> sigil in Crush
+introduces polyglot blocks such as <code>@python { ... }</code>, and annotations.)</p>
 <h2 id="where-the-source-lives"><a class="header" href="#where-the-source-lives">Where the source lives</a></h2>
 <p>The language implementation is the standalone
 <a href="https://github.com/nixpt/crush-ast">crush-ast</a> repository, extracted from

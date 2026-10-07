@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-54769e70.js";
+            window.path_to_searchindex_js = "../searchindex-d22bf6d6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-deec98d4.js"></script>
+        <script src="../toc-36566637.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,51 +181,87 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="crush-overview"><a class="header" href="#crush-overview">Crush Overview</a></h1>
-<p><strong>Crush</strong> is a capability-based, polyglot virtual operating system (vOS) and language. It is designed to provide a secure, high-performance environment where multiple languages can coexist and interact seamlessly.</p>
-<h2 id="what-is-crush"><a class="header" href="#what-is-crush">What is Crush?</a></h2>
-<p>Crush is both a programming language and a runtime environment. It features:</p>
+<p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
+and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
+and an intermediate representation (CAST) that other languages can be translated
+into. It is <strong>alpha software</strong> — this guide documents what runs today and says so
+when something doesn’t.</p>
+<h2 id="what-crush-is"><a class="header" href="#what-crush-is">What Crush is</a></h2>
 <ul>
-<li><strong>Everything is a Capsule</strong>: High-level isolation for all code units.</li>
-<li><strong>Capability-Based Security</strong>: Fine-grained, explicit permissions for all system interactions.</li>
-<li><strong>Polyglot Execution</strong>: First-class support for Python, Rust, Bash, C, and Go.</li>
-<li><strong>Exo-Core Architecture</strong>: A minimal virtualization layer that manages hardware interactions via a Hardware Abstraction Layer (HAL).</li>
+<li><strong>A language.</strong> <code>let</code>, <code>fn</code>, <code>if</code>/<code>while</code>/<code>for</code>, structs, <code>match</code>, <code>try</code>/<code>catch</code>,
+arrays and objects, a pipeline operator. Dynamically typed at run time with
+optional compile-time type hints. See <a href="syntax.html">Syntax</a>.</li>
+<li><strong>Capability-gated.</strong> A program can’t print files, open sockets or start
+processes unless the host turns the matching capability on. Capability calls
+are ordinary dotted calls — <code>fs.read("x")</code>, <code>io.print("y")</code>. See
+<a href="capabilities.html">Capability System</a>.</li>
+<li><strong>Polyglot.</strong> <code>@python { }</code>, <code>@javascript { }</code> and <code>@bash { }</code> blocks run
+other languages and exchange variables with Crush. They currently run as
+ordinary subprocesses <strong>outside</strong> the capability model unless you build the
+optional sandbox. See <a href="polyglot.html">Polyglot Programming</a>.</li>
+<li><strong>A pipeline.</strong> Source becomes CAST (an AST in JSON), then CASM (bytecode), then
+runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time backends
+also in the repository.</li>
 </ul>
-<h2 id="the-crush-language"><a class="header" href="#the-crush-language">The Crush Language</a></h2>
-<p>The Crush language provides a clean, expression-oriented syntax that acts as the glue for the vOS.</p>
-<pre><code class="language-crush">fn main() {
-    io.print("Hello, Crush!");
+<h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
+<pre><code class="language-crush">print("Hello, Crush!")
+</code></pre>
+<!-- check: output -->
+<pre><code class="language-text">Hello, Crush!
+</code></pre>
+<p>Run it with the toolchain built from <a href="https://github.com/nixpt/crush-ast">crush-ast</a>
+(see <a href="../getting-started.html">Getting Started</a>):</p>
+<pre><code class="language-sh">crush run hello.crush
+</code></pre>
+<h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
+<pre><code class="language-crush">struct Point { x: Int, y: Int }
+
+fn distance_sq(p) {
+    return p.x * p.x + p.y * p.y
 }
+
+let p = new Point()
+p.x = 3
+p.y = 4
+print(distance_sq(p))
 </code></pre>
-<h3 id="the--operator"><a class="header" href="#the--operator">The <code>@</code> Operator</a></h3>
-<p>In Crush, the <code>@</code> prefix is used to denote a <strong>Capability Call</strong>. This visual marker identifies code that crosses the VM boundary to interact with the host or other capsules.</p>
-<pre><code class="language-crush">fs.read("config.json");  // Crossing the boundary to the filesystem
-let x = 1 + 2;             // Internal VM computation (no @)
+<!-- check: output -->
+<pre><code class="language-text">25
 </code></pre>
-<h2 id="core-philosophy"><a class="header" href="#core-philosophy">Core Philosophy</a></h2>
-<h3 id="1-security-by-capability"><a class="header" href="#1-security-by-capability">1. Security by Capability</a></h3>
-<p>Unlike traditional operating systems where permissions are tied to the user, Crush ties permissions to the <strong>Capsule</strong>. A capsule can only perform actions (like reading a file or opening a socket) if it has been explicitly granted that capability in its <code>Capsule.toml</code>.</p>
-<h3 id="2-radical-polyglotism"><a class="header" href="#2-radical-polyglotism">2. Radical Polyglotism</a></h3>
-<p>Crush doesn’t force you to choose one language. You can use the best tool for the job:</p>
-<ul>
-<li><strong>Rust</strong> for performance-critical logic.</li>
-<li><strong>Python</strong> for data processing and AI.</li>
-<li><strong>Bash</strong> for system orchestration.</li>
-<li><strong>Crush</strong> for high-level logic and capability management.</li>
-</ul>
-<h3 id="3-identity-and-isolation"><a class="header" href="#3-identity-and-isolation">3. Identity and Isolation</a></h3>
-<p>Each capsule runs in its own isolated environment. The <code>exo-core</code> ensures that capsules cannot interfere with each other’s memory or resources unless explicitly allowed via shared handles.</p>
-<h2 id="execution-model"><a class="header" href="#execution-model">Execution Model</a></h2>
+<h2 id="security-model-in-short"><a class="header" href="#security-model-in-short">Security model, in short</a></h2>
 <ol>
-<li><strong>Source</strong>: Write code in any supported language.</li>
-<li><strong>Walker</strong>: A language-specific walker generates a <a href="../cast/README.html">Crush AST (CAST)</a>.</li>
-<li><strong>Compiler</strong>: The Crush compiler transforms CAST into <a href="../casm/README.html">Crush Assembly (CASM)</a>.</li>
-<li><strong>VM</strong>: The Crush VM executes CASM, enforcing security and resource limits.</li>
+<li><strong>Deny by default.</strong> Every capability group (<code>--fs</code>, <code>--net</code>, <code>--process</code>,
+<code>--polyglot</code>, …) is off until you enable it on the command line (or register
+it, when embedding).</li>
+<li><strong>Quotas.</strong> Instruction count, stack depth, output size, call depth and
+wall-clock time for polyglot blocks are bounded.</li>
+<li><strong>Honest limits.</strong> Polyglot blocks run with the host’s authority in the default
+build; the bubblewrap sandbox is opt-in at build time. The
+<a href="capabilities.html#what-is-not-enforced">capability chapter</a> lists what is <em>not</em>
+enforced.</li>
 </ol>
+<h2 id="where-things-stand"><a class="header" href="#where-things-stand">Where things stand</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Area</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td>Core language (functions, loops, structs, <code>try</code>/<code>catch</code>, <code>match</code> expressions)</td><td>works</td></tr>
+<tr><td>Lambdas and closures, <code>import</code>, <code>spawn</code>/<code>async</code>/<code>await</code></td><td>not yet — see the chapters for ticket links</td></tr>
+<tr><td>Capabilities and <code>--stdlib</code></td><td>works; small</td></tr>
+<tr><td>Polyglot: Python, JavaScript, Bash</td><td>works (host authority by default)</td></tr>
+<tr><td>Polyglot sandbox</td><td>opt-in build, verified on Linux with <code>bwrap</code></td></tr>
+<tr><td>CAST / CASM formats</td><td>documented in their own sections</td></tr>
+</tbody>
+</table>
+</div>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li><strong><a href="syntax.html">Syntax &amp; Fundamentals</a></strong>: Deep dive into the Crush language.</li>
-<li><strong><a href="capabilities.html">The Capability System</a></strong>: Understand how security works.</li>
-<li><strong><a href="polyglot.html">Polyglot Programming</a></strong>: Master cross-language execution.</li>
+<li><strong><a href="syntax.html">Syntax &amp; Grammar</a></strong></li>
+<li><strong><a href="types.html">Types</a></strong></li>
+<li><strong><a href="capabilities.html">Capability System</a></strong></li>
+<li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
 
                     </main>
