@@ -2,7 +2,7 @@
 
 Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application. Everything here
-was run against crush-ast `main` (workspace version `0.3.8`).
+was run against crush-ast `v0.3.9` (the release on crates.io).
 
 ## 1. Build the toolchain
 
@@ -42,15 +42,21 @@ Put them on your `PATH`, or install them with the bundled installer
 (`cargo run -p crush-installer -- install --bin-dir target/release` copies them
 into `~/.crush/bin`; it does not currently include the `crush` wrapper).
 
-> **A note on crates.io.** The crates are published, but not in lockstep, and the
-> SDK lags the repository. As of this writing: `crush-vm` **0.3.6**; `casm`,
-> `crush-errors`, `crush-diagnostics`, `crush-lint`, `crush-ffi`, `crush-installer`
-> and `tree-sitter-crush` **0.3.7**; `crush-frontend`, `crush-cast`, `crush-cson`,
-> `crush-index`, `crush-jit` and `crush-python` **0.3.0**; and **`crush-lang-sdk`
-> 0.2.0**, which predates the `crush` binary and the capability behaviour
-> documented here. `crush-pkg`, `crush-aot`, `crush-aotc` and the walker CLI are
-> not on crates.io. `cargo install crush-lang-sdk` therefore gives you an older
-> toolchain than this guide describes; use the source build above.
+> **Crates.io.** The `0.3.9` release is published: `crush-lang-sdk` (which installs
+> `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and `crush-diff`),
+> `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-errors`,
+> `crush-diagnostics`, `crush-ffi`, `crush-cson`, `crush-index`, `crush-walker-core`,
+> `crush-lang-python` and `crush-lang-js`. So `cargo install crush-lang-sdk` works and
+> gives the toolchain this guide describes, and an embedding project can depend on
+> `crush-lang-sdk = "0.3.9"`. Four crates lag: `crush-lint`, `crush-installer` and
+> `tree-sitter-crush` are at `0.3.7`, `crush-jit` and `crush-python` at `0.3.0`;
+> `crush-pkg`, `crush-aot` and `crush-aotc` are not published. **Never depend on
+> `crush-lang-sdk` `0.2`**: that line has been yanked, and it runs `@lang` blocks
+> without the `--polyglot` gate.
+>
+> The `cargo install` route does not enable the optional SDK features
+> (`stdlib`, `net`, `db`, `graphics`): add them with
+> `cargo install crush-lang-sdk --features stdlib,net,db,graphics`.
 
 ## 2. Hello, Crush
 
@@ -122,7 +128,7 @@ crates give direct access to the IR, bytecode, or VM.
 | [`crush-frontend`](https://crates.io/crates/crush-frontend) | Parser, semantic analyzer, optimizer, and CASM compiler (`parse_source`). |
 | [`crush-vm`](https://crates.io/crates/crush-vm) | The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM. |
 | [`crush-cast`](https://crates.io/crates/crush-cast) | The CAST intermediate representation. |
-| [`casm`](https://crates.io/crates/casm) | The CASM bytecode format (JSON IR + binary `.casmb`). |
+| [`casm`](https://crates.io/crates/casm) | The CASM IR (`casm::Program`, JSON and MessagePack) — see [CASM](casm/README.md). |
 | [`crush-errors`](https://crates.io/crates/crush-errors) | Shared error types. |
 | [`tree-sitter-crush`](https://crates.io/crates/tree-sitter-crush) | Tree-sitter grammar (editor tooling, syntax highlighting). |
 
