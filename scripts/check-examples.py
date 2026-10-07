@@ -35,6 +35,7 @@ Other checked fences (all optional-directive blocks run the same way):
     <!-- check: casm-json -->        a ```json block: JSON CASM, loaded through
                                      casm::Program::deserialize, lowered and run
     <!-- check: cast-json -->        a ```json block: JSON CAST, validated, compiled, run
+    <!-- check: cast-validate -->    a ```json block: JSON CAST that must validate, compile and lower (not run)
     <!-- check: cast-load-fails TEXT -->  JSON CAST that the version-gated loader rejects
     <!-- check: casmb-fails TEXT -->  JSON CASM whose .casmb (MessagePack) round trip fails
     <!-- check: asm-ai -->           a ```casm block run with the ai_native.* stub gates on
@@ -79,7 +80,7 @@ def extract(md: Path):
             lang = m.group(1)
             kind = lang if lang in ("crush", "casm") else None
             if lang == "json":
-                kind = next((k for k in ("casmb-fails", "cast-load-fails", "casm-json", "cast-json") if k in pending), None)
+                kind = next((k for k in ("casmb-fails", "cast-load-fails", "casm-json", "cast-json", "cast-validate") if k in pending), None)
             if kind:
                 last = {"file": md, "line": i + 2, "code": body, "d": pending, "expect": None, "kind": kind}
                 yield last
@@ -115,6 +116,9 @@ edition = "2024"
 [dependencies]
 crush-lang-sdk = {{ path = "{sdk}", features = ["stdlib"] }}
 casm = {{ path = "{casm}" }}
+crush-cast = {{ path = "{cast}" }}
+crush-frontend = {{ path = "{frontend}" }}
+serde_json = "1"
 anyhow = "1"
 
 [workspace]
@@ -124,7 +128,7 @@ anyhow = "1"
 def check_rust(block, crush_ast, tmp):
     work = Path(tmp)
     (work / "src").mkdir()
-    (work / "Cargo.toml").write_text(CARGO_TOML.format(sdk=Path(crush_ast).resolve() / "crates" / "crush-lang-sdk", casm=Path(crush_ast).resolve() / "crates" / "casm"))
+    (work / "Cargo.toml").write_text(CARGO_TOML.format(sdk=Path(crush_ast).resolve() / "crates" / "crush-lang-sdk", casm=Path(crush_ast).resolve() / "crates" / "casm", cast=Path(crush_ast).resolve() / "crates" / "crush-cast", frontend=Path(crush_ast).resolve() / "crates" / "crush-frontend"))
     (work / "src" / "main.rs").write_text(block["code"])
     rc, out, err = run(["cargo", "run", "--quiet"], work, 1800)
     if rc != 0:
@@ -178,7 +182,7 @@ def check_assembly(block, bins, work):
     else:
         if "casm-check" not in bins:
             return "skipped", "needs --crush-ast (json CASM/CAST helper)"
-        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-load-fails": "castload", "casmb-fails": "casmb"}[kind]
+        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-validate": "castvalidate", "cast-load-fails": "castload", "casmb-fails": "casmb"}[kind]
         rc, out, err = run([bins["casm-check"], mode, str(src)], work, 60)
     if kind in ("cast-load-fails", "casmb-fails"):
         want = d[kind]

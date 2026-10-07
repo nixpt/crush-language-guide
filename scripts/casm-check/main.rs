@@ -2,6 +2,7 @@
 //!
 //!   casm-check casm FILE     JSON CASM  -> Program::deserialize (version gate) -> CVM1 -> run
 //!   casm-check cast FILE     JSON CAST  -> validate_json -> compile -> CVM1 -> run
+//!   casm-check castvalidate FILE  JSON CAST -> validate_json -> compile -> lower (no run)
 //!   casm-check castload FILE JSON CAST  -> Program::deserialize (the version-gated loader) only
 //!   casm-check emit FILE     Crush source -> JSON CASM on stdout
 //!   casm-check emit-cast FILE Crush source -> JSON CAST on stdout
@@ -12,7 +13,7 @@ use crush_lang_sdk::{HostCapsBuilder, Runtime};
 
 fn main() -> anyhow::Result<()> {
     let a: Vec<String> = std::env::args().collect();
-    anyhow::ensure!(a.len() == 3, "usage: casm-check <casm|cast|castload|casmb|emit|emit-cast|asm-ai> FILE");
+    anyhow::ensure!(a.len() == 3, "usage: casm-check <casm|cast|castvalidate|castload|casmb|emit|emit-cast|asm-ai> FILE");
     let data = std::fs::read(&a[2])?;
     let text = || String::from_utf8(data.clone());
     match a[1].as_str() {
@@ -28,6 +29,15 @@ fn main() -> anyhow::Result<()> {
             let p: crush_cast::Program = serde_json::from_str(&s)?;
             let c = crush_frontend::compile_cast_owned(p)?;
             print!("{}", Runtime::new().run(&casm_to_vm(&c)?)?.output);
+        }
+        "castvalidate" => {
+            let s = text()?;
+            if let Err(errs) = crush_cast::validate_json(&s) {
+                anyhow::bail!("invalid CAST: {errs:?}");
+            }
+            let p: crush_cast::Program = serde_json::from_str(&s)?;
+            casm_to_vm(&crush_frontend::compile_cast_owned(p)?)?;
+            println!("valid, compiles, lowers");
         }
         "castload" => {
             let p = crush_cast::Program::deserialize(&data, crush_cast::Format::Json)?;
