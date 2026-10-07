@@ -205,10 +205,10 @@ implementation are marked <em>not yet implemented</em>, with the crush-ast ticke
 </thead>
 <tbody>
 <tr><td><a href="#getting-started">Getting Started</a></td><td>Build the toolchain, run a program, embed the VM from Rust</td></tr>
-<tr><td><a href="crush/README.html">Crush Language</a></td><td>Syntax, types, control flow, functions, capabilities, polyglot blocks</td></tr>
-<tr><td><a href="examples/README.html">Examples</a></td><td>Runnable programs</td></tr>
-<tr><td><a href="cast/README.html">CAST</a></td><td>The AST format that walkers and the compiler share</td></tr>
-<tr><td><a href="casm/README.html">CASM</a></td><td>The bytecode formats the VM executes</td></tr>
+<tr><td><a href="#crush-overview">Crush Language</a></td><td>Syntax, types, control flow, functions, capabilities, polyglot blocks</td></tr>
+<tr><td><a href="#examples">Examples</a></td><td>Runnable programs</td></tr>
+<tr><td><a href="#cast--the-crush-ast">CAST</a></td><td>The AST format that walkers and the compiler share</td></tr>
+<tr><td><a href="#casm-overview">CASM</a></td><td>The bytecode formats the VM executes</td></tr>
 <tr><td><a href="#glossary">Appendix</a></td><td>Glossary, quick reference, language comparisons</td></tr>
 </tbody>
 </table>
@@ -253,8 +253,8 @@ a subprocess-based walker registry that invokes the crush-ast walker binaries,
 and its own <code>crush-cast</code>/<code>casm</code>/<code>nanovm</code> crates for the Crush language
 compiler running inside the agent-native OS.</p>
 <h2 id="license"><a class="header" href="#license">License</a></h2>
-<p>Licensed under either of <a href="../LICENSE-MIT">MIT</a> or
-<a href="../LICENSE-APACHE">Apache License 2.0</a> at your option.</p>
+<p>Licensed under either of <a href="https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-MIT">MIT</a> or
+<a href="https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-APACHE">Apache License 2.0</a> at your option.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
 <p>Crush is alpha software. This page gets you from a clean machine to a running
@@ -366,7 +366,7 @@ crates give direct access to the IR, bytecode, or VM.</p>
 <tr><td><a href="https://crates.io/crates/crush-frontend"><code>crush-frontend</code></a></td><td>Parser, semantic analyzer, optimizer, and CASM compiler (<code>parse_source</code>).</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-vm"><code>crush-vm</code></a></td><td>The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM.</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-cast"><code>crush-cast</code></a></td><td>The CAST intermediate representation.</td></tr>
-<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM IR (<code>casm::Program</code>, JSON and MessagePack) — see <a href="casm/README.html">CASM</a>.</td></tr>
+<tr><td><a href="https://crates.io/crates/casm"><code>casm</code></a></td><td>The CASM IR (<code>casm::Program</code>, JSON and MessagePack) — see <a href="#casm-overview">CASM</a>.</td></tr>
 <tr><td><a href="https://crates.io/crates/crush-errors"><code>crush-errors</code></a></td><td>Shared error types.</td></tr>
 <tr><td><a href="https://crates.io/crates/tree-sitter-crush"><code>tree-sitter-crush</code></a></td><td>Tree-sitter grammar (editor tooling, syntax highlighting).</td></tr>
 </tbody>
@@ -413,11 +413,11 @@ it with <code>Runtime::with_quotas(..).with_host_caps(..)</code>, which is exact
 its manifest (<a href="#program-structure">CASM structure</a>).</p>
 <h2 id="5-where-next"><a class="header" href="#5-where-next">5. Where next</a></h2>
 <ul>
-<li><strong><a href="crush/README.html">The language</a></strong>: syntax, types, control flow, functions</li>
+<li><strong><a href="#crush-overview">The language</a></strong>: syntax, types, control flow, functions</li>
 <li><strong><a href="#capability-system">Capability System</a></strong> and <strong><a href="#polyglot-programming">Polyglot</a></strong>:
 the security model — read the “what is not enforced” sections</li>
-<li><strong><a href="examples/README.html">Examples</a></strong>: runnable programs</li>
-<li><strong><a href="cast/README.html">CAST</a></strong> and <strong><a href="casm/README.html">CASM</a></strong>: the compiler’s formats</li>
+<li><strong><a href="#examples">Examples</a></strong>: runnable programs</li>
+<li><strong><a href="#cast--the-crush-ast">CAST</a></strong> and <strong><a href="#casm-overview">CASM</a></strong>: the compiler’s formats</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="crush-overview"><a class="header" href="#crush-overview">Crush Overview</a></h1>
@@ -2348,7 +2348,7 @@ is not limited, and only <code>python</code>, <code>javascript</code> and <code>
 <ul>
 <li><strong><a href="#capability-system">Capability System</a></strong>: what the flags do and don’t confine</li>
 <li><strong><a href="#standard-library">Standard Library</a></strong></li>
-<li><strong><a href="cast/README.html">CAST Specification</a></strong></li>
+<li><strong><a href="#cast--the-crush-ast">CAST Specification</a></strong></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="standard-library"><a class="header" href="#standard-library">Standard Library</a></h1>
@@ -3089,7 +3089,7 @@ is used to finish the line</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="cast--the-crush-ast"><a class="header" href="#cast--the-crush-ast">CAST — the Crush AST</a></h1>
 <p><strong>CAST</strong> is the JSON abstract syntax tree that sits between source languages and
-<a href="casm/README.html">CASM</a>. The Crush parser produces it, the polyglot <em>walkers</em>
+<a href="#casm-overview">CASM</a>. The Crush parser produces it, the polyglot <em>walkers</em>
 produce it from other languages, and an AI agent can write it directly (see
 <a href="#ai-native-cast">AI-Native CAST</a>). The compiler (<code>crush_frontend</code>) turns it into CASM.</p>
 <pre><code> Crush source ──parse──┐
@@ -3387,7 +3387,7 @@ when the call is a statement and the capability returns a value).</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
 <h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
-<p>CAST is JSON. An agent that knows the <a href="cast/README.html">schema</a> can emit a complete
+<p>CAST is JSON. An agent that knows the <a href="#cast--the-crush-ast">schema</a> can emit a complete
 program as one JSON document — no lexer, no parser, no walker — validate it, and
 hand it to the compiler:</p>
 <pre><code>agent output (JSON) ──▶ validate_json ──▶ compile_cast ──▶ CASM ──▶ crush-vm
@@ -3424,7 +3424,7 @@ hand it to the compiler:</p>
 <code>crush_frontend::compile_cast</code> are the entry points; the version-gated
 <code>crush_cast::Program::deserialize</code> currently rejects the front end’s own <code>1.0.0</code>
 stamp, so parse with <code>serde_json</code> as above or write <code>"cast_version": "0.1.0"</code>. See
-<a href="cast/README.html#serialization">CAST serialization</a>.)</p>
+<a href="#serialization">CAST serialization</a>.)</p>
 <p>Writing CAST rather than source buys an agent three things: no syntax errors (the
 schema is the grammar), a validator that answers with a path and a hint, and
 <code>meta</code> fields it can use to tag nodes with their own provenance.</p>
@@ -3456,7 +3456,7 @@ and <strong>six statements</strong> (coordination steps in a statement list).</p
 <tr><td><code>LearningLoop</code></td><td><code>learning_target</code>, <code>strategy</code>, <code>adaptations</code></td></tr>
 <tr><td><code>ContextAware</code></td><td><code>expression</code> (any expression), <code>requires_context</code>, <code>provides_context</code></td></tr>
 <tr><td><code>SemanticMatch</code></td><td><code>target</code> (expression), <code>concept</code>, <code>confidence_threshold</code></td></tr>
-<tr><td><code>Synthesize</code></td><td><code>output_type</code> (a <a href="cast/README.html#types"><code>CastType</code></a>), <code>constraints</code>, <code>context_refs</code>, <code>examples?</code></td></tr>
+<tr><td><code>Synthesize</code></td><td><code>output_type</code> (a <a href="#types"><code>CastType</code></a>), <code>constraints</code>, <code>context_refs</code>, <code>examples?</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -3675,7 +3675,7 @@ IR→CVM1 lowering does not currently emit any of them. The IR column is what
 <h2 id="see-also"><a class="header" href="#see-also">See also</a></h2>
 <ul>
 <li><a href="https://github.com/nixpt/crush-ast/tree/main/examples/cast"><code>examples/cast/</code></a> in crush-ast — the example corpus (validates; most need host capabilities or hit the AI limits above to run)</li>
-<li><a href="cast/README.html">CAST schema</a> — the non-AI nodes</li>
+<li><a href="#cast--the-crush-ast">CAST schema</a> — the non-AI nodes</li>
 <li><a href="#polyglot-concurrency-ai-and-dom">CASM Instruction Reference</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -3703,7 +3703,7 @@ that read a file expect one of them — <code>crush-run</code> expects text.)</p
 </code></pre>
 <p><code>crushc</code> runs the whole chain; <code>crush-run run FILE.crush</code> compiles in memory and
 runs. The CASM IR is the <strong>interchange point</strong>: every front-end (the Crush parser,
-the polyglot walkers, an agent writing <a href="cast/README.html">CAST</a> directly) ends up
+the polyglot walkers, an agent writing <a href="#cast--the-crush-ast">CAST</a> directly) ends up
 there, and every back-end (the VM, the AOT compilers <code>crush-aot</code> / <code>crush-aotc</code>,
 the FastVM lowering) starts there.</p>
 <h2 id="what-is-real-and-what-is-not"><a class="header" href="#what-is-real-and-what-is-not">What is real and what is not</a></h2>
@@ -3769,7 +3769,7 @@ function called <code>main</code>.</p>
 <li><strong><a href="#instruction-set-reference">Instruction Reference</a></strong> — every opcode, with stack effects.</li>
 <li><strong><a href="#casm-examples">Examples</a></strong> — hand-written programs, all run by the guide’s checker.</li>
 <li><strong><a href="#serialization-formats">Serialization</a></strong> — <code>.casm</code>, <code>.casmb</code>, <code>.cvm1</code> and the version gates.</li>
-<li><strong><a href="crush/README.html">Crush Language Guide</a></strong> — the source language that compiles to it.</li>
+<li><strong><a href="#crush-overview">Crush Language Guide</a></strong> — the source language that compiles to it.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="instruction-set-reference"><a class="header" href="#instruction-set-reference">Instruction Set Reference</a></h1>
@@ -4346,7 +4346,7 @@ program, for debuggers, and is not serialized.</p>
 <ul>
 <li><a href="#instruction-set-reference">Instruction Reference</a></li>
 <li><a href="#serialization-formats">Serialization</a> — file extensions and version checks</li>
-<li><a href="cast/README.html">CAST</a> — the layer above</li>
+<li><a href="#cast--the-crush-ast">CAST</a> — the layer above</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="serialization-formats"><a class="header" href="#serialization-formats">Serialization Formats</a></h1>
@@ -4396,7 +4396,7 @@ extension: <code>.casmb</code> means binary, <strong>anything else is JSON</stro
 </code></pre>
 <p>The compiler writes pretty-printed JSON with <code>meta</code> on every instruction, so a
 compiled program is verbose: the five-line <code>add</code> program in the
-<a href="casm/README.html">overview</a> is about 3 KB as IR JSON and 199 bytes as <code>.cvm1</code>.</p>
+<a href="#casm-overview">overview</a> is about 3 KB as IR JSON and 199 bytes as <code>.cvm1</code>.</p>
 <h2 id="casm-ir-messagepack-casmb"><a class="header" href="#casm-ir-messagepack-casmb">CASM IR: MessagePack (<code>.casmb</code>)</a></h2>
 <p><code>Program::serialize(Format::Binary)</code> writes the line <code>#!/usr/bin/env crush run</code>
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
@@ -4452,7 +4452,7 @@ Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</co
 versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
 <em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
 programs in <code>examples/cast/</code> carry <code>"0.1.0"</code> and load fine. See
-<a href="cast/README.html#serialization">CAST</a>.</p>
+<a href="#serialization">CAST</a>.</p>
 </blockquote>
 <h2 id="rust-api"><a class="header" href="#rust-api">Rust API</a></h2>
 <pre class="playground"><code class="language-rust no_run">use casm::{Format, Program};
@@ -4840,12 +4840,12 @@ is no ambient authority. See <a href="#capability-system">Capabilities</a>.</p>
 <h3 id="cast-crush-ast"><a class="header" href="#cast-crush-ast">CAST (Crush AST)</a></h3>
 <p>The JSON abstract syntax tree between front ends and the compiler: produced by the
 Crush parser and the language walkers, or written directly by an agent. See
-<a href="cast/README.html">CAST</a>.</p>
+<a href="#cast--the-crush-ast">CAST</a>.</p>
 <h3 id="casm-crush-assembly"><a class="header" href="#casm-crush-assembly">CASM (Crush Assembly)</a></h3>
 <p>The stack-machine instruction set programs compile to. The name covers the <strong>IR</strong>
 (JSON, <code>casm::Program</code>), the <strong>text assembly</strong> (<code>.func</code>/<code>PUSH</code>/<code>CAP_CALL</code>, the
 <code>.casm</code> files <code>crush-run</code> reads) and, one step down, the <strong>CVM1</strong> binary. See
-<a href="casm/README.html">CASM</a>.</p>
+<a href="#casm-overview">CASM</a>.</p>
 <h3 id="cvm1"><a class="header" href="#cvm1">CVM1</a></h3>
 <p>The binary bytecode format the VM executes (<code>.cvm1</code>): magic <code>CVM1</code>, a version byte, a
 JSON manifest, a constant pool and flat code. Also the name of the default
@@ -5073,7 +5073,7 @@ flag they are refused:</p>
 </tbody>
 </table>
 </div>
-<h2 id="casm-text-assembly-casm"><a class="header" href="#casm-text-assembly-casm">CASM text assembly (<a href="casm/README.html">CASM</a>)</a></h2>
+<h2 id="casm-text-assembly-casm"><a class="header" href="#casm-text-assembly-casm">CASM text assembly (<a href="#casm-overview">CASM</a>)</a></h2>
 <pre><code class="language-casm">.func main
     PUSH 40
     PUSH 2
@@ -5216,7 +5216,7 @@ do not support.</p>
 <ul>
 <li>You embed a scripting layer in a Rust application and need to bound and gate what
 scripts can do.</li>
-<li>You want agents or tools to emit programs as validated data (<a href="cast/README.html">CAST</a>)
+<li>You want agents or tools to emit programs as validated data (<a href="#cast--the-crush-ast">CAST</a>)
 rather than as source text.</li>
 <li>You are experimenting with a capability-first language.</li>
 </ul>

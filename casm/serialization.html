@@ -227,7 +227,7 @@ extension: <code>.casmb</code> means binary, <strong>anything else is JSON</stro
 </code></pre>
 <p>The compiler writes pretty-printed JSON with <code>meta</code> on every instruction, so a
 compiled program is verbose: the five-line <code>add</code> program in the
-<a href="README.html">overview</a> is about 3 KB as IR JSON and 199 bytes as <code>.cvm1</code>.</p>
+<a href="index.html">overview</a> is about 3 KB as IR JSON and 199 bytes as <code>.cvm1</code>.</p>
 <h2 id="casm-ir-messagepack-casmb"><a class="header" href="#casm-ir-messagepack-casmb">CASM IR: MessagePack (<code>.casmb</code>)</a></h2>
 <p><code>Program::serialize(Format::Binary)</code> writes the line <code>#!/usr/bin/env crush run</code>
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
@@ -283,7 +283,7 @@ Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</co
 versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
 <em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
 programs in <code>examples/cast/</code> carry <code>"0.1.0"</code> and load fine. See
-<a href="../cast/README.html#serialization">CAST</a>.</p>
+<a href="../cast/index.html#serialization">CAST</a>.</p>
 </blockquote>
 <h2 id="rust-api"><a class="header" href="#rust-api">Rust API</a></h2>
 <pre class="playground"><code class="language-rust no_run">use casm::{Format, Program};

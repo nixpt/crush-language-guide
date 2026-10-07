@@ -182,7 +182,7 @@
                     <main>
                         <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
 <h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
-<p>CAST is JSON. An agent that knows the <a href="README.html">schema</a> can emit a complete
+<p>CAST is JSON. An agent that knows the <a href="index.html">schema</a> can emit a complete
 program as one JSON document — no lexer, no parser, no walker — validate it, and
 hand it to the compiler:</p>
 <pre><code>agent output (JSON) ──▶ validate_json ──▶ compile_cast ──▶ CASM ──▶ crush-vm
@@ -219,7 +219,7 @@ hand it to the compiler:</p>
 <code>crush_frontend::compile_cast</code> are the entry points; the version-gated
 <code>crush_cast::Program::deserialize</code> currently rejects the front end’s own <code>1.0.0</code>
 stamp, so parse with <code>serde_json</code> as above or write <code>"cast_version": "0.1.0"</code>. See
-<a href="README.html#serialization">CAST serialization</a>.)</p>
+<a href="index.html#serialization">CAST serialization</a>.)</p>
 <p>Writing CAST rather than source buys an agent three things: no syntax errors (the
 schema is the grammar), a validator that answers with a path and a hint, and
 <code>meta</code> fields it can use to tag nodes with their own provenance.</p>
@@ -251,7 +251,7 @@ and <strong>six statements</strong> (coordination steps in a statement list).</p
 <tr><td><code>LearningLoop</code></td><td><code>learning_target</code>, <code>strategy</code>, <code>adaptations</code></td></tr>
 <tr><td><code>ContextAware</code></td><td><code>expression</code> (any expression), <code>requires_context</code>, <code>provides_context</code></td></tr>
 <tr><td><code>SemanticMatch</code></td><td><code>target</code> (expression), <code>concept</code>, <code>confidence_threshold</code></td></tr>
-<tr><td><code>Synthesize</code></td><td><code>output_type</code> (a <a href="README.html#types"><code>CastType</code></a>), <code>constraints</code>, <code>context_refs</code>, <code>examples?</code></td></tr>
+<tr><td><code>Synthesize</code></td><td><code>output_type</code> (a <a href="index.html#types"><code>CastType</code></a>), <code>constraints</code>, <code>context_refs</code>, <code>examples?</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -470,7 +470,7 @@ IR→CVM1 lowering does not currently emit any of them. The IR column is what
 <h2 id="see-also"><a class="header" href="#see-also">See also</a></h2>
 <ul>
 <li><a href="https://github.com/nixpt/crush-ast/tree/main/examples/cast"><code>examples/cast/</code></a> in crush-ast — the example corpus (validates; most need host capabilities or hit the AI limits above to run)</li>
-<li><a href="README.html">CAST schema</a> — the non-AI nodes</li>
+<li><a href="index.html">CAST schema</a> — the non-AI nodes</li>
 <li><a href="../casm/instructions.html#polyglot-concurrency-ai-and-dom">CASM Instruction Reference</a></li>
 </ul>
 
