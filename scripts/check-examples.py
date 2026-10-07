@@ -29,6 +29,17 @@ With --crush-ast DIR (a crush-ast checkout, with `buckets` beside it), the
 ```rust,no_run blocks are also compiled and run against that checkout's
 `crush-lang-sdk` (they are the embedding examples; each must exit 0).
 
+Other checked fences (all optional-directive blocks run the same way):
+
+    ```casm                          CVM1 text assembly: `crush-run run --cap io.print`
+    <!-- check: casm-json -->        a ```json block: JSON CASM, loaded through
+                                     casm::Program::deserialize, lowered and run
+    <!-- check: cast-json -->        a ```json block: JSON CAST, validated, compiled, run
+    <!-- check: cast-load-fails TEXT -->  JSON CAST that the version-gated loader rejects
+    <!-- check: asm-ai -->           a ```casm block run with the ai_native.* stub gates on
+    (the json forms need --crush-ast, like the rust blocks: they use a helper
+    built from scripts/casm-check/main.rs against that checkout)
+
 A ```text block introduced by `<!-- check: output -->` is the expected stdout
 of the crush block above it (compared after trimming trailing whitespace).
 
@@ -40,7 +51,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 FENCE = re.compile(r"^```(\S*)\s*$")
-DIRECTIVE = re.compile(r"^\s*<!--\s*check:\s*(\w+)\s*(.*?)\s*-->\s*$")
+DIRECTIVE = re.compile(r"^\s*<!--\s*check:\s*([\w-]+)\s*(.*?)\s*-->\s*$")
 
 
 def fence_end(lines, i):
@@ -64,8 +75,12 @@ def extract(md: Path):
         if m:
             j = fence_end(lines, i)
             body = "\n".join(lines[i + 1 : j]) + "\n"
-            if m.group(1) == "crush":
-                last = {"file": md, "line": i + 2, "code": body, "d": pending, "expect": None}
+            lang = m.group(1)
+            kind = lang if lang in ("crush", "casm") else None
+            if lang == "json":
+                kind = next((k for k in ("casm-json", "cast-json", "cast-load-fails") if k in pending), None)
+            if kind:
+                last = {"file": md, "line": i + 2, "code": body, "d": pending, "expect": None, "kind": kind}
                 yield last
             elif m.group(1) == "text" and "output" in pending and last is not None:
                 last["expect"] = body
@@ -116,6 +131,69 @@ def check_rust(block, crush_ast, tmp):
     return "green", "compiles and runs"
 
 
+HELPER_TOML = """[package]
+name = "casm-check"
+version = "0.0.0"
+edition = "2024"
+
+[[bin]]
+name = "casm-check"
+path = "main.rs"
+
+[dependencies]
+crush-lang-sdk = {{ path = "{crates}/crush-lang-sdk" }}
+casm = {{ path = "{crates}/casm" }}
+crush-cast = {{ path = "{crates}/crush-cast" }}
+crush-frontend = {{ path = "{crates}/crush-frontend" }}
+anyhow = "1"
+serde_json = "1"
+
+[workspace]
+"""
+
+
+def build_helper(crush_ast, tmp):
+    work = Path(tmp)
+    (work / "Cargo.toml").write_text(HELPER_TOML.format(crates=Path(crush_ast).resolve() / "crates"))
+    shutil.copy(ROOT / "scripts" / "casm-check" / "main.rs", work / "main.rs")
+    rc, out, err = run(["cargo", "build", "--quiet"], work, 3600)
+    if rc != 0:
+        sys.exit("could not build scripts/casm-check against " + str(crush_ast) + ":\n" + err[-2000:])
+    target = Path(os.environ.get("CARGO_TARGET_DIR") or work / "target")
+    return str(target / "debug" / "casm-check")
+
+
+def check_assembly(block, bins, work):
+    """```casm and the json CASM/CAST forms: compare output, honour check: skip."""
+    d, kind = block["d"], block["kind"]
+    if "skip" in d:
+        return "skipped", d["skip"]
+    src = work / ("block.casm" if kind == "casm" else "block.json")
+    src.write_text(block["code"])
+    if kind == "casm" and "asm-ai" not in d:
+        flags = ["--cap", "io.print"] + d.get("flags", "").split()
+        rc, out, err = run([bins["crush-run"], "run", *flags, str(src)], work, 20, d.get("stdin", ""))
+    else:
+        if "casm-check" not in bins:
+            return "skipped", "needs --crush-ast (json CASM/CAST helper)"
+        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-load-fails": "castload"}[kind]
+        rc, out, err = run([bins["casm-check"], mode, str(src)], work, 60)
+    if kind == "cast-load-fails":
+        want = d["cast-load-fails"]
+        if rc == 0:
+            return "fail", "expected the CAST loader to reject this, but it loaded"
+        return ("green", f"loader rejects it ({want})") if want in out + err else ("fail", f"rejection lacks {want!r}: {first_line(out + err)}")
+    if "runfail" in d:
+        if rc == 0:
+            return "fail", "expected a run-time failure, but it ran fine"
+        return ("green", "fails as documented") if d["runfail"] in out + err else ("fail", f"failure lacks {d['runfail']!r}: {first_line(out + err)}")
+    if rc != 0:
+        return "fail", "run: " + (first_line(out + err) or f"exit {rc}")
+    if block["expect"] is not None and out.rstrip() != block["expect"].rstrip():
+        return "fail", f"output mismatch: got {out.rstrip()!r}, page says {block['expect'].rstrip()!r}"
+    return "green", "runs" + (" + output matches" if block["expect"] is not None else "")
+
+
 def run(cmd, cwd, timeout, stdin=""):
     try:
         p = subprocess.run(cmd, cwd=cwd, input=stdin, capture_output=True, text=True, timeout=timeout)
@@ -137,6 +215,8 @@ def runs_ok(block, bins, work, src):
 
 def check(block, bins, tmp):
     d = block["d"]
+    if block["kind"] != "crush":
+        return check_assembly(block, bins, Path(tmp))
     if "skip" in d:
         return "skipped", d["skip"]
     work = Path(tmp)
@@ -180,6 +260,9 @@ def main():
             sys.exit(f"missing binary {n} (set --bin-dir / CRUSH_BIN_DIR, or put crush-ast's build on PATH)")
         bins[n] = str(p)
     files = [Path(f).resolve() for f in a.files] or sorted(SRC.rglob("*.md"))
+    if a.crush_ast:
+        helper_dir = tempfile.mkdtemp(prefix="casm-check-")
+        bins["casm-check"] = build_helper(a.crush_ast, helper_dir)
     counts, bad = {}, []
     for md in files:
         for b in list(extract(md)):
