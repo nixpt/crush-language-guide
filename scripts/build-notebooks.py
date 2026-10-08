@@ -20,9 +20,11 @@ Per crush cell, `meta.extra.guide` carries what the guide knows about the block:
 and `meta.tags` repeats the class (`runnable`, `expected-failure`, `needs-host`) so
 a notebook UI can filter on it. Outputs are left empty: running is the kernel's job.
 
-Cells share variables in the notebook kernel, which runs a cell as the body of
-`main`. Examples that declare top-level functions or structs are given an explicit
-`fn main()` at generation time (`isolate()`), without touching the guide's text.
+Cells share a session in the notebook kernel (crush-notebook >= 0.1.1): each cell
+is parsed as a script, its top-level `let`s, `fn`s and `struct`s carry over to
+later cells. Crush cells are the guide's text verbatim, except expected-failure
+examples, which are made standalone programs (`isolate()`) so that a name an
+earlier cell left in the session cannot hide the error they demonstrate.
 
 --validate checks every notebook against crush-notebook's JSON schema (vendored at
 schemas/notebook.schema.json); needs the `jsonschema` module.
@@ -73,18 +75,17 @@ ITEM = re.compile(r"^(fn|karya|struct)\s")  # `karya` is the Nepali keyword for 
 
 
 def isolate(code, kind):
-    """Make a block run in the kernel as it runs on the page (see module doc).
+    """The cell source for one guide block (see module doc).
 
-    The kernel runs a cell that has no `fn main` as the *body* of `main`, with the
-    session's variables declared first. A guide example that declares top-level
-    functions or structs next to loose statements would then nest those
-    declarations inside `main`, which does not parse. Such a cell gets an explicit
-    `fn main()` around its loose statements instead (what `crush-run` does
-    implicitly), so the kernel runs it as a standalone program. Crush functions do
-    not see top-level `let`s, so this changes nothing about what the example means.
-    Cells with only statements stay session cells and share variables.
+    The kernel shares variables between cells, so `print(x)` in an example that
+    shows "x is not defined here" would print an `x` from an earlier cell. A cell
+    that declares its own `fn main` is a standalone program that does not see the
+    session's variables, so expected-failure examples get their loose statements
+    wrapped in `fn main() { ... }` (what `crush-run` does implicitly); top-level
+    `fn` / `struct` declarations stay where they are. Every other block is used
+    as written.
     """
-    if re.search(r"^(fn|karya)\s+main\s*\(", code, re.M) or not any(ITEM.match(l) for l in code.split("\n")):
+    if kind != "fail" or re.search(r"^(fn|karya)\s+main\s*\(", code, re.M):
         return code
     items, body, depth, in_item = [], [], 0, False
     for line in code.rstrip("\n").split("\n"):
@@ -102,7 +103,8 @@ def isolate(code, kind):
     if not any(l.strip() for l in body):
         return code
     main = ["fn main() {"] + [("    " + l) if l.strip() else "" for l in body] + ["}"]
-    return "\n".join(items).rstrip("\n") + "\n\n" + "\n".join(main) + "\n"
+    head = "\n".join(items).rstrip("\n")
+    return (head + "\n\n" if head else "") + "\n".join(main) + "\n"
 
 
 def cells_for(text, rel):

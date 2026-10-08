@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the generated chapter notebooks through the real crush-notebook kernel.
 
-    scripts/run-notebooks.py --kernel PATH/crush-notebook-kernel [--dir book/notebooks] [-v]
+    scripts/run-notebooks.py --kernel PATH/crush-notebook-kernel [--dir book/notebooks] [-v] [--markdown]
 
 For each `.crush-nb` (a scratch copy: the kernel saves into the file it opened), it
 starts `crush-notebook-kernel`, speaks MCP over stdio (`initialize`, then
@@ -10,16 +10,20 @@ crush cell against what the guide says about it (`meta.extra.guide`, see
 scripts/build-notebooks.py):
 
     runnable           must finish, and print the guide's output when the page shows one
-    expected-failure   must end in an error
-    needs-host         skipped: the kernel grants no host capabilities, so these are
-                       expected to be refused (reported if one runs anyway)
+    expected-failure   must end in an error; when the page quotes the error, a
+                       different message is reported as a note (the kernel's
+                       wording can differ from crush-run's, e.g. no CLI flag hint)
+    needs-host         skipped: the kernel grants only what `crush run` grants with
+                       no flags, so these must be refused; one that runs anyway is
+                       judged failed (its label is wrong)
     markdown           skipped
 
 The cell outputs come from the kernel's saved copy (get_state only has counts).
-Exit status is non-zero if any cell is judged failed.
+Exit status is non-zero if any cell is judged failed. --markdown prints the
+per-notebook table as Markdown (for a PR body).
 
-Build the kernel from https://github.com/nixpt/crush-notebook:
-    cargo build --release -p crush-notebook-kernel
+Install the kernel (https://github.com/nixpt/crush-notebook):
+    cargo install --locked crush-notebook-kernel@0.1.1
 """
 import argparse, json, shutil, subprocess, sys, tempfile
 from pathlib import Path
@@ -69,25 +73,34 @@ def cell_output(c):
 
 
 def judge(c, status):
-    """(verdict, note) for one cell; verdict in ok / failed / skipped."""
-    if c["kind"]["type"] != "crush":
-        return "skipped", "markdown"
+    """(verdict, category, note) for one crush cell; verdict in ok / failed / skipped."""
     g = c["meta"]["extra"]["guide"]
     tag = c["meta"]["tags"][1]
     err = status.get("message", "")
     if tag == "needs-host":
-        return "skipped", ("needs the host; refused: " + err[:70]) if status["status"] == "error" else "needs the host, but ran in the kernel"
+        if status["status"] == "error":
+            return "skipped", "host", "refused: " + err[:90]
+        return "failed", "host", "labelled needs-host, but ran in the kernel"
     if tag == "expected-failure":
-        return ("ok", "failed as expected: " + err[:70]) if status["status"] == "error" else ("failed", "expected a failure, but it ran")
+        if status["status"] != "error":
+            return "failed", "fail", "expected a failure, but it ran"
+        want = g.get("expect_error")
+        if want and want not in err:
+            return "ok", "fail", f"failed, but not with the page's text {want!r}: {err[:90]}"
+        return "ok", "fail", "failed as expected: " + err[:90]
     if status["status"] != "done":
-        return "failed", err[:160]
+        return "failed", "run", err[:160]
     want = g.get("expect_output")
     if want is not None and cell_output(c).rstrip() != want.rstrip():
-        return "failed", f"output differs: got {cell_output(c).rstrip()[:80]!r}"
-    return "ok", "output matches" if want is not None else "ran"
+        return "failed", "run", f"output differs: got {cell_output(c).rstrip()[:80]!r}"
+    return "ok", "run", "output matches" if want is not None else "ran (the page shows no output)"
 
 
-def run_one(exe, nb_path, verbose):
+COLS = ("run", "match", "fail", "host", "failed")
+
+
+def run_one(exe, nb_path):
+    """Per-notebook counts and one (verdict, src, note) per crush cell."""
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp) / nb_path.name
         shutil.copy(nb_path, copy)
@@ -100,12 +113,20 @@ def run_one(exe, nb_path, verbose):
             k.close()
         saved = json.loads(copy.read_text())
     states = {c["id"]: c["state"] for c in state["cells"]}
-    counts, notes = {"ok": 0, "failed": 0, "skipped": 0}, []
+    counts, notes = dict.fromkeys(COLS + ("run_total", "fail_total", "host_total"), 0), []
     for c in saved["cells"]:
-        verdict, note = judge(c, states[c["id"]])
-        counts[verdict] += 1
-        if verdict == "failed" or (verbose and c["kind"]["type"] == "crush"):
-            notes.append(f"    {verdict:7} {c['meta']['extra']['guide']['src'] if c['kind']['type'] == 'crush' else c['id']}: {note}")
+        if c["kind"]["type"] != "crush":
+            continue
+        verdict, cat, note = judge(c, states[c["id"]])
+        counts[cat + "_total"] += 1
+        if verdict == "failed":
+            counts["failed"] += 1
+        elif cat == "host":
+            counts["host"] += 1
+        else:
+            counts[cat] += 1
+            counts["match"] += note == "output matches"
+        notes.append((verdict, c["meta"]["extra"]["guide"]["src"], note))
     return counts, notes
 
 
@@ -113,23 +134,40 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kernel", required=True, help="path to crush-notebook-kernel")
     ap.add_argument("--dir", default=str(ROOT / "book" / "notebooks"))
-    ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("-v", "--verbose", action="store_true", help="a line per crush cell, not just the failures")
+    ap.add_argument("--markdown", action="store_true", help="print the table as Markdown")
     a = ap.parse_args()
     nbs = sorted(Path(a.dir).rglob("*.crush-nb"))
     if not nbs:
         sys.exit(f"no notebooks under {a.dir}: run scripts/build-notebooks.py first")
-    total, failed_nbs = {"ok": 0, "failed": 0, "skipped": 0}, 0
-    print(f"{'notebook':38} {'ok':>4} {'failed':>6} {'skipped':>7}")
+    head = ("notebook", "runnable ok", "output = page", "expected failures", "host-only refused", "failed")
+    rows, total, failed_nbs, details = [], None, 0, []
     for nb in nbs:
-        counts, notes = run_one(a.kernel, nb, a.verbose)
-        for key in total:
-            total[key] += counts[key]
+        counts, notes = run_one(a.kernel, nb)
+        total = counts if total is None else {k: total[k] + counts[k] for k in total}
         failed_nbs += counts["failed"] > 0
-        print(f"{nb.relative_to(a.dir).as_posix():38} {counts['ok']:4} {counts['failed']:6} {counts['skipped']:7}")
-        for n in notes:
-            print(n)
-    print(f"\n{len(nbs)} notebooks: {len(nbs) - failed_nbs} clean, {failed_nbs} with failures; "
-          f"cells ok={total['ok']} failed={total['failed']} skipped={total['skipped']}")
+        rows.append((nb.relative_to(a.dir).as_posix(), counts))
+        for verdict, src, note in notes:
+            if verdict == "failed" or a.verbose or note.startswith("failed, but not"):
+                details.append(f"{verdict:7} {src}: {note}")
+
+    def cells(c):
+        return (f"{c['run']}/{c['run_total']}", f"{c['match']}", f"{c['fail']}/{c['fail_total']}",
+                f"{c['host']}/{c['host_total']}", f"{c['failed']}")
+    if a.markdown:
+        print("| " + " | ".join(head) + " |")
+        print("|" + "---|" + "---:|" * (len(head) - 1))
+        for name, c in rows + [(f"**{len(nbs)} notebooks**", total)]:
+            print("| " + " | ".join((name,) + cells(c)) + " |")
+    else:
+        print(f"{head[0]:38} {'run ok':>7} {'= page':>7} {'fail ok':>8} {'host':>7} {'failed':>7}")
+        for name, c in rows + [("total", total)]:
+            r = cells(c)
+            print(f"{name:38} {r[0]:>7} {r[1]:>7} {r[2]:>8} {r[3]:>7} {r[4]:>7}")
+    if details:
+        print()
+        print("\n".join(details))
+    print(f"\n{len(nbs)} notebooks: {len(nbs) - failed_nbs} clean, {failed_nbs} with failures")
     sys.exit(1 if failed_nbs else 0)
 
 
