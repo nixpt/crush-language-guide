@@ -3,6 +3,7 @@
 - [Introduction](README.md)
 - [Getting Started](getting-started.md)
 - [Running the Examples](running-examples.md)
+- [Chapters as Notebooks](notebooks.md)
 
 # The Crush Language
 

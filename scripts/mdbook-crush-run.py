@@ -15,6 +15,10 @@ Each ```crush block is wrapped in
 
 which is invisible without JavaScript (the code block renders exactly as before).
 
+A page with at least one ```crush block also gets an "Open as a notebook" link
+under its title, to the chapter notebook scripts/build-notebooks.py writes to
+book/notebooks/ (notebook_path(); the explainer page is notebooks.md).
+
     data-crush=run    runs in the browser; data-expect is the checker-verified output
     data-crush=fail   meant to fail (compile error, documented refusal, not yet
                       implemented); Run demonstrates the failure
@@ -121,6 +125,56 @@ def blocks_of(text, rel):
                "expect_error": b["d"].get("runfail"), "directives": b["d"]}
 
 
+def has_notebook(text, rel):
+    """Whether scripts/build-notebooks.py makes a notebook of this page."""
+    return rel != "SUMMARY.md" and any(True for _ in blocks_of(text, rel))
+
+
+def notebook_path(rel):
+    """crush/types.md -> crush/types.crush-nb (README.md -> index.crush-nb, like the book)."""
+    p = Path(rel)
+    return (p.parent / ("index" if p.stem == "README" else p.stem)).as_posix() + ".crush-nb"
+
+
+def page_title(rel):
+    """The page's title in SUMMARY.md (what the sidebar shows)."""
+    m = re.search(r"\[([^\]]+)\]\(" + re.escape(rel) + r"\)", (ROOT / "src" / "SUMMARY.md").read_text())
+    return m.group(1) if m else rel
+
+
+def notebook_link(text, rel):
+    """Insert the "Open as a notebook" line after the page's title (`# ` or `</h1>`)."""
+    if not has_notebook(text, rel):
+        return text
+    root = "../" * rel.count("/")
+    link = (f'<p class="crush-notebook-link"><a href="{root}notebooks/{notebook_path(rel)}" download>'
+            f'Open as a notebook</a> <span>(<code>.crush-nb</code>, '
+            f'<a href="{root}notebooks.html">how to run it</a>)</span></p>')
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if line.startswith("# ") or line.strip() == "</h1>":
+            lines[i + 1 : i + 1] = ["", link, ""]
+            break
+    return "\n".join(lines)
+
+
+LIST_MARK = "<!-- notebooks: list -->"
+
+
+def notebook_list(rel):
+    """Markdown list of every chapter notebook, for the LIST_MARK in notebooks.md."""
+    root = "../" * rel.count("/")
+    out = []
+    for md in sorted((ROOT / "src").rglob("*.md")):
+        r = md.relative_to(ROOT / "src").as_posix()
+        text = md.read_text()
+        if has_notebook(text, r):
+            nb = notebook_path(r)
+            out.append(f'- <a href="{root}notebooks/{nb}" download><code>{nb}</code></a>, '
+                       f'from [{html.escape(page_title(r))}]({root}{notebook_path(r)[:-len(".crush-nb")]}.md)')
+    return "\n".join(out)
+
+
 def attr(s):
     return html.escape(s, quote=True).replace("\n", "&#10;")
 
@@ -144,7 +198,9 @@ def walk(node):
     if isinstance(node, dict):
         ch = node.get("Chapter")
         if isinstance(ch, dict) and ch.get("content") and ch.get("path"):
-            ch["content"] = annotate(ch["content"], ch["path"])
+            ch["content"] = notebook_link(annotate(ch["content"], ch["path"]), ch["path"])
+            if LIST_MARK in ch["content"]:
+                ch["content"] = ch["content"].replace(LIST_MARK, notebook_list(ch["path"]))
         for v in node.values():
             walk(v)
     elif isinstance(node, list):

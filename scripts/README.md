@@ -55,3 +55,26 @@ page for an update.
 
 When crush-web is rebuilt with more capabilities, update `BROWSER_CAPS` in
 `mdbook-crush-run.py`; `check-browser.mjs` tells you which labels changed.
+
+## Chapter notebooks
+
+| File | Role |
+|---|---|
+| `build-notebooks.py` | One [crush-notebook](https://github.com/nixpt/crush-notebook) (`.crush-nb`) per chapter with ```` ```crush ```` examples, written to `book/notebooks/` after `mdbook build` (generated output, never committed). `--validate schemas/notebook.schema.json` checks each against crush-notebook's schema (needs `jsonschema`). |
+| `run-notebooks.py` | Runs every notebook through `crush-notebook-kernel` over stdio MCP and judges each cell against the guide: runnable cells must print the page's output, expected failures must fail, host-only cells must be refused. `--markdown` prints the per-notebook table. |
+
+The preprocessor (`mdbook-crush-run.py`) puts an "Open as a notebook" link under
+each such chapter's title and fills the list on `src/notebooks.md`; `notebook_path()`
+and `has_notebook()` there are shared with `build-notebooks.py`, so links and files
+cannot disagree. Under `mdbook serve` the links 404 until you generate the files.
+
+```sh
+mdbook build
+python3 scripts/build-notebooks.py --out book/notebooks --validate schemas/notebook.schema.json
+cargo install --locked --root /tmp/nbk crush-notebook-kernel@0.1.1
+python3 scripts/run-notebooks.py --kernel /tmp/nbk/bin/crush-notebook-kernel --dir book/notebooks
+```
+
+CI (`gh-pages.yml`) runs all three: generation in the deploy and interactive jobs,
+and the `notebooks` job validates and runs every notebook on the published kernel
+(the installed binary is cached by version; bump `KERNEL_VERSION` there to move).

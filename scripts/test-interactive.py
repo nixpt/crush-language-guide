@@ -14,7 +14,10 @@ Serves book/ on a local port and drives it with Playwright:
   * Edit → change the code → Run runs the edited code; Reset restores the original;
   * a documented refusal shows the refusal verdict; host-only labels name the reason;
   * with JavaScript disabled the page has plain code blocks and no controls;
-  * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders.
+  * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders;
+  * every page with a ```crush block links its chapter notebook, the link downloads
+    that chapter's `.crush-nb`, and notebooks.html lists them all (so run
+    scripts/build-notebooks.py --out book/notebooks after `mdbook build`).
 
 Needs python3 + playwright and a Chromium (Playwright's, or set CHROMIUM=/path).
 """
@@ -68,6 +71,8 @@ def main():
     a = ap.parse_args()
     if not (BOOK / "index.html").exists():
         sys.exit("book/ not built: run `mdbook build` first")
+    if not (BOOK / "notebooks").is_dir():
+        sys.exit("no book/notebooks: run `scripts/build-notebooks.py --out book/notebooks` after `mdbook build`")
     manifest = json.loads(subprocess.check_output([sys.executable, str(ROOT / "scripts" / "mdbook-crush-run.py"), "--manifest"]))
     by_page = {}
     for b in manifest:
@@ -178,6 +183,22 @@ def main():
                 if a.screenshots:
                     blk.scroll_into_view_if_needed()
                     pg.screenshot(path=f"{a.screenshots}/{theme}.png")
+
+            # 6. chapter notebooks: a link on every page with examples, to that chapter's file
+            for rel in sorted(by_page):
+                page.goto(base + rel)
+                link = page.locator(".crush-notebook-link a[download]")
+                if not link.count() == 1:
+                    check(False, f"{rel}: one 'Open as a notebook' link (found {link.count()})")
+                    continue
+                url = page.evaluate("a => a.href", link.element_handle())
+                r = page.request.get(url)
+                src = by_page[rel][0]["src"].split(":")[0]
+                ok = r.status == 200 and r.json().get("meta", {}).get("tags", {}).get("source") == src
+                check(ok, f"{rel}: notebook link {url[len(base):]} downloads the notebook of {src} (HTTP {r.status})")
+            page.goto(base + "notebooks.html")
+            listed = page.locator("main li a[download]").count()
+            check(listed == len(by_page), f"notebooks.html lists {listed} notebooks ({len(by_page)} chapters with examples)")
             browser.close()
     finally:
         httpd.shutdown()
