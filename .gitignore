@@ -10,3 +10,4 @@ book/
 .dejavue/embedder_circuit.json
 .dejavue/timeline.jsonl.bak-*
 
+__pycache__/

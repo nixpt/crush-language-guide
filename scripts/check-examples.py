@@ -63,8 +63,9 @@ def fence_end(lines, i):
     return j
 
 
-def extract(md: Path):
-    lines = md.read_text().splitlines()
+def extract(md: Path, text=None):
+    """Yield the checkable blocks of a page (``text`` overrides reading ``md``)."""
+    lines = (md.read_text() if text is None else text).splitlines()
     i, pending, last = 0, {}, None
     while i < len(lines):
         line = lines[i]

@@ -4,6 +4,13 @@ language = "en"
 src = "src"
 title = "The Crush Language Guide"
 
+# Marks every ```crush block with what the browser can do with it (run / fail /
+# host / none); interactive/crush-run.js adds the Run / Edit controls.
+[preprocessor.crush-run]
+command = "python3 scripts/mdbook-crush-run.py"
+
 [output.html]
 git-repository-url = "https://github.com/nixpt/crush-language-guide"
 edit-url-template = "https://github.com/nixpt/crush-language-guide/edit/main/src/{path}"
+additional-js = ["interactive/crush-run.js"]
+additional-css = ["interactive/crush-run.css"]
