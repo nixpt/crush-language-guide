@@ -12,3 +12,9 @@ Exosphere book buried Crush docs inside a larger book; scope is language-only, n
 Reason:
 crushed-book had ~12 categories of errors: keywords list incomplete (21 vs 28), try/catch/structs/match/lambdas falsely marked Future Feature, range() not ..., closures syntax wrong, Bash walker falsely presented as a real walker
 
+
+## 2026-10-08T16:08:34-05:00 — Chapter notebooks: crush cells verbatim; only expected-failure cells wrapped in fn main; files generated into book/notebooks after mdbook build, never committed
+
+Reason:
+crush-notebook >=0.1.1 shares lets/fns/structs across cells, so a session name can mask the error an expected-failure example demonstrates (variables.md:128 ran without the wrapper); standalone fn main programs don't see session vars. Generated files can't drift from the guide; link paths come from mdbook-crush-run.notebook_path.
+
