@@ -25,7 +25,8 @@ and VM as `crush-run`, with a different set of grants:
   processes, the standard-library modules (`math.*`, `conv.to_int`, `json.*`, …),
   and standard input (`io.read` returns `""`).
 - **Every run starts fresh.** Examples do not share variables, even on the same
-  page.
+  page. To build on one example in the next, open the chapter as a notebook (see
+  [Chapters as Notebooks](notebooks.md)).
 - **Limits.** One million VM instructions per run, a bounded call depth, and an
   8-second wall-clock limit; a runaway loop is stopped, not your tab.
   Output printed before a run-time error is not shown.

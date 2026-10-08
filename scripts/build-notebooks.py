@@ -45,10 +45,7 @@ LINK = re.compile(r"\]\((?!https?:|mailto:|#)([^)\s]+?\.md)(#[^)\s]*)?\)")
 TAG = {"run": "runnable", "fail": "expected-failure", "host": "needs-host"}
 
 
-def notebook_path(rel):
-    """crush/types.md -> crush/types.crush-nb (README.md -> index.crush-nb, like the book)."""
-    p = Path(rel)
-    return (p.parent / ("index" if p.stem == "README" else p.stem)).as_posix() + ".crush-nb"
+notebook_path = crush_run.notebook_path
 
 
 def page_url(rel):
@@ -192,10 +189,8 @@ def chapters():
     """(rel, text) of every page with at least one ```crush example."""
     for md in sorted(SRC.rglob("*.md")):
         rel = md.relative_to(SRC).as_posix()
-        if rel == "SUMMARY.md":
-            continue
         text = md.read_text()
-        if any(True for _ in crush_run.blocks_of(text, rel)):
+        if crush_run.has_notebook(text, rel):
             yield rel, text
 
 

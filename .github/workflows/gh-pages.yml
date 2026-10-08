@@ -29,6 +29,10 @@ jobs:
       - name: Build mdBook
         run: mdbook build
 
+      # One .crush-nb per chapter, linked from each page ("Open as a notebook").
+      - name: Build chapter notebooks
+        run: python3 scripts/build-notebooks.py --out book/notebooks
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -60,4 +64,41 @@ jobs:
       - name: Build and test
         run: |
           mdbook build
+          python scripts/build-notebooks.py --out book/notebooks
           python scripts/test-interactive.py
+
+  notebooks:
+    # Every chapter notebook: valid against crush-notebook's schema, and run
+    # through the published notebook kernel (each runnable cell prints what the
+    # page shows, each expected failure fails, each host-only cell is refused).
+    runs-on: ubuntu-latest
+    env:
+      KERNEL_VERSION: 0.1.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate and validate
+        run: |
+          python -m pip install jsonschema
+          python scripts/build-notebooks.py --out book/notebooks --validate schemas/notebook.schema.json
+
+      - name: Cache the notebook kernel
+        id: kernel
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/crush-notebook-kernel
+          key: crush-notebook-kernel-${{ env.KERNEL_VERSION }}-${{ runner.os }}
+
+      - name: Install the notebook kernel
+        if: steps.kernel.outputs.cache-hit != 'true'
+        run: cargo install --locked --root ~/.cache/crush-notebook-kernel "crush-notebook-kernel@${KERNEL_VERSION}"
+
+      - name: Run every notebook
+        shell: bash  # -o pipefail: the tee must not hide a failing run
+        run: |
+          python scripts/run-notebooks.py --kernel ~/.cache/crush-notebook-kernel/bin/crush-notebook-kernel \
+            --dir book/notebooks --markdown | tee -a "$GITHUB_STEP_SUMMARY"
