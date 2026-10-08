@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -222,6 +223,7 @@ processes see <a href="capabilities.html">Capability System</a>.</p>
 </table>
 </div>
 <p><code>str.concat(...)</code> and <code>str.len(s)</code> are always available, even without <code>--stdlib</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:45" data-why="uses the standard library (`str.index_of`, `str.pad_left`, `str.repeat` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(str.split("a,b,c", ","))
 print(str.join(["a", "b"], "-"))
 print("[" + str.trim("  x  ") + "]")
@@ -232,6 +234,8 @@ print(str.repeat("ab", 3))
 print(str.substring("hello", 1, 3))
 print(str.index_of("hello", "l"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[a, b, c]
 a-b
@@ -250,12 +254,15 @@ el
 <code>math.pi()</code>. Results are <code>Float</code>. <code>math.random()</code>, <code>math.random_int(lo, hi)</code>
 (requires <code>lo &lt; hi</code>) and <code>math.seed(n)</code> use a deterministic built-in generator
 (crush-ast CRUSH-116), so seeded runs are reproducible.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:80" data-why="uses the standard library (`math.floor`, `math.max`, `math.pow` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(math.sqrt(16))
 print(math.pow(2, 10))
 print(math.floor(-1.5))
 print(math.round(3.6))
 print(math.max(2.5, 1))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">4.0
 1024.0
@@ -267,6 +274,7 @@ print(math.max(2.5, 1))
 <p><code>conv.to_int</code>, <code>conv.to_float</code>, <code>conv.to_str</code>, <code>conv.to_bool</code>,
 <code>conv.parse_int(text, radix)</code>, <code>conv.parse_float</code>, <code>conv.type_of</code>, plus the
 always-on <code>conv.chr</code> / <code>conv.ord</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:103" data-why="uses the standard library (`conv.parse_int`, `conv.to_float`, `conv.to_int` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(conv.to_int("42") + 1)
 print(conv.to_int(3.9))
 print(conv.parse_int("ff", 16))
@@ -274,6 +282,8 @@ print(conv.parse_int("101", 2))
 print(conv.to_float("2"))
 print(conv.type_of(3.5))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">43
 3
@@ -286,6 +296,7 @@ float
 <p><code>collections.len</code>, <code>reverse</code>, <code>includes</code>, <code>flatten</code>, <code>chunk(array, n)</code>, <code>zip</code>,
 <code>unique</code>, <code>all</code>, <code>any</code>, <code>find</code>, <code>sort_by(array, key)</code>, <code>pluck(array, key)</code>,
 and for objects: <code>keys</code>, <code>values</code>, <code>entries</code>, <code>merge</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:128" data-why="uses the standard library (`collections.chunk`, `collections.keys`, `collections.merge` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let scores = {"ada": 3, "grace": 5}
 print(collections.keys(scores))
 print(collections.values(scores))
@@ -294,6 +305,8 @@ print(collections.reverse([1, 2, 3]))
 print(collections.chunk([1, 2, 3, 4], 2))
 print(collections.unique([1, 1, 2, 2, 3]))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[ada, grace]
 [3, 5]
@@ -305,11 +318,14 @@ print(collections.unique([1, 1, 2, 2, 3]))
 <p><code>collections.keys(obj)</code> returns the keys <strong>sorted</strong>, and is how you iterate an
 object deterministically — <code>for k in obj</code> isn’t supported, and printing an object
 directly lists its keys in an unspecified (per-run) order:</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:152" data-why="uses the standard library (`collections.keys`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let m = {"a": 1, "b": 2}
 for k in collections.keys(m) {
     print(k)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">a
 b
@@ -317,11 +333,14 @@ b
 <h2 id="json--json"><a class="header" href="#json--json">JSON — <code>json.*</code></a></h2>
 <p><code>json.parse(text)</code> → object/array/scalar; <code>json.stringify(value)</code>;
 <code>json.stringify_pretty(value)</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:170" data-why="uses the standard library (`json.parse`, `json.stringify`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let o = json.parse("{\"name\": \"Ada\", \"n\": 3}")
 print(o.name)
 print(o.n + 1)
 print(json.stringify({"x": 1}))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Ada
 4
@@ -330,12 +349,15 @@ print(json.stringify({"x": 1}))
 <h2 id="paths--path"><a class="header" href="#paths--path">Paths — <code>path.*</code></a></h2>
 <p><code>path.join(a, b)</code>, <code>dirname</code>, <code>basename</code>, <code>extension</code>, <code>stem</code>, <code>is_absolute</code>,
 <code>normalize</code> — pure string manipulation, no filesystem access.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:189" data-why="uses the standard library (`path.basename`, `path.dirname`, `path.join` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(path.join("a", "b.txt"))
 print(path.dirname("/x/y/z.txt"))
 print(path.basename("/x/y/z.txt"))
 print(path.stem("z.tar.gz"))
 print(path.normalize("a/./b/../c"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">a/b.txt
 /x/y
@@ -347,10 +369,13 @@ a/c
 <p><strong>The pattern comes first</strong>, then the text: <code>regex.test(pattern, text)</code>,
 <code>regex.find_all(pattern, text)</code>, <code>regex.replace(pattern, text, replacement)</code>,
 <code>regex.split(pattern, text)</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:212" data-why="uses the standard library (`regex.find_all`, `regex.replace`, `regex.split`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(regex.find_all("[0-9]+", "a1b22"))
 print(regex.replace("[0-9]", "a1b2", "#"))
 print(regex.split("[,;] *", "a, b;c"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[1, 22]
 a#b#
@@ -361,8 +386,11 @@ a#b#
 <code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
 </blockquote>
 <!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:230" data-why="uses the standard library (`regex.match`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 </code></pre>
+</div>
+
 <h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
 <p>Also registered under <code>--stdlib</code>: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
 <code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
@@ -370,9 +398,12 @@ a#b#
 <code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
 <code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
 helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:243" data-why="uses `env.os`; uses the standard library (`result.ok`, `result.unwrap`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(result.unwrap(result.ok(5)))
 print(env.os())
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 linux
@@ -439,6 +470,7 @@ linux
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

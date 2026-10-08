@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -205,22 +206,32 @@ today there is no way to share code between files.</p>
 <p>Each failing form is checked below, so this page will say so the day one starts
 working:</p>
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:21" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import fs as files
 print("loaded")
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:27" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
 print("loaded")
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:33" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import @http "https://example.com/data.json" as data
 print("loaded")
 </code></pre>
+</div>
+
 <h2 id="use-lang"><a class="header" href="#use-lang"><code>use @lang</code></a></h2>
 <p><code>use @lang &lt;language&gt; "&lt;module&gt;" as &lt;alias&gt;</code> declares a module for a polyglot
 block. It is accepted and runs, but the alias is not wired to the block’s
 variables — the block still has to <code>import</code> the module itself:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="examples/imports.md:45" data-why="uses `@python` blocks (polyglot); uses the standard library (`math.factorial`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">use @lang python "math" as math
 
 @python {
@@ -229,6 +240,8 @@ v = math.factorial(5)
 }
 print(v)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">120
 </code></pre>
@@ -288,6 +301,7 @@ programs and pass data through files or the host.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

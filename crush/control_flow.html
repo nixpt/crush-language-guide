@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +185,8 @@
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
 <h2 id="if"><a class="header" href="#if">If</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:8" data-expect="B
+">
 <pre><code class="language-crush">let score = 85
 
 if score &gt;= 90 {
@@ -194,24 +197,34 @@ if score &gt;= 90 {
     print("C or below")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">B
 </code></pre>
 <p><code>if</code> is a statement, not an expression: <code>let y = if c { 1 } else { 2 }</code> is a
 parse error. Use a function or <code>match</code> to select a value.</p>
 <h2 id="while"><a class="header" href="#while">While</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:30" data-expect="0
+1
+2
+">
 <pre><code class="language-crush">let i = 0
 while i &lt; 3 {
     print(i)
     i = i + 1
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 1
 2
 </code></pre>
 <h3 id="loop-with-break"><a class="header" href="#loop-with-break">Loop with <code>break</code></a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:47" data-expect="3
+">
 <pre><code class="language-crush">let counter = 0
 while true {
     if counter &gt;= 3 {
@@ -221,15 +234,23 @@ while true {
 }
 print(counter)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
 <h2 id="for"><a class="header" href="#for">For</a></h2>
 <h3 id="over-an-array"><a class="header" href="#over-an-array">Over an array</a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:67" data-expect="10
+20
+30
+">
 <pre><code class="language-crush">for n in [10, 20, 30] {
     print(n)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">10
 20
@@ -238,6 +259,12 @@ print(counter)
 <h3 id="over-a-range"><a class="header" href="#over-a-range">Over a range</a></h3>
 <p><code>a..b</code> is half-open (excludes <code>b</code>). There is no inclusive <code>..=</code> and no <code>range()</code>
 function:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:85" data-expect="0
+1
+2
+x
+y
+">
 <pre><code class="language-crush">for i in 0..3 {
     print(i)
 }
@@ -247,6 +274,8 @@ for i in 0..len(items) {
     print(items[i])
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 1
@@ -255,14 +284,20 @@ x
 y
 </code></pre>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:106" data-why="this example shows a compile error">
 <pre><code class="language-crush">for i in 1..=3 {
     print(i)
 }
 </code></pre>
+</div>
+
 <p>Iterating directly over a map (<code>for k in obj</code>) is not supported — see
 <a href="types.html#objects-maps">Types</a>.</p>
 <h2 id="break-and-continue"><a class="header" href="#break-and-continue">Break and continue</a></h2>
 <p><code>continue</code> skips to the next iteration; <code>break</code> leaves the innermost loop:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:119" data-expect="1
+3
+">
 <pre><code class="language-crush">for i in 0..5 {
     if i % 2 == 0 {
         continue
@@ -276,6 +311,8 @@ for i in 0..10 {
     }
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">1
 3
@@ -283,6 +320,8 @@ for i in 0..10 {
 <h2 id="match"><a class="header" href="#match">Match</a></h2>
 <p><code>match</code> selects among arms by comparing a value to literal patterns, with <code>_</code> as
 the wildcard. It is an <strong>expression</strong>: bind its result with <code>let</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:145" data-expect="two
+">
 <pre><code class="language-crush">let v = 2
 let word = match v {
     1 =&gt; "one",
@@ -291,12 +330,16 @@ let word = match v {
 }
 print(word)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">two
 </code></pre>
 <p>Supported patterns: integer, string and bool literals, <code>_</code>, and a bare
 identifier that binds the scrutinee (<code>n =&gt; "got " + n</code>). Arm bodies can be an
 expression or a <code>{ ... }</code> block whose last expression is the value:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:164" data-expect="got 5
+">
 <pre><code class="language-crush">let n = 5
 let msg = match n {
     0 =&gt; "zero",
@@ -304,6 +347,8 @@ let msg = match n {
 }
 print(msg)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">got 5
 </code></pre>
@@ -314,6 +359,9 @@ on its own fails at run time with <code>stack underflow</code>; the arms must pr
 values and the result must be bound with <code>let</code> (or use <code>if</code> for side effects).</li>
 <li><strong><code>return match ...</code> returns <code>null</code>.</strong> Bind first, then return:</li>
 </ul>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:185" data-expect="zero
+other
+">
 <pre><code class="language-crush">fn name(v) {
     let r = match v {
         0 =&gt; "zero",
@@ -324,6 +372,8 @@ values and the result must be bound with <code>let</code> (or use <code>if</code
 print(name(0))
 print(name(3))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">zero
 other
@@ -338,6 +388,10 @@ exhaustiveness error.</li>
 <h2 id="errors-try--catch--throw"><a class="header" href="#errors-try--catch--throw">Errors: <code>try</code> / <code>catch</code> / <code>throw</code></a></h2>
 <p><code>throw</code> raises any value; <code>catch name { ... }</code> receives it. There is no
 <code>finally</code>, and the parenthesised form <code>catch (e)</code> is not accepted.</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:215" data-expect="2
+Error: division by zero
+done
+">
 <pre><code class="language-crush">fn divide(a, b) {
     if b == 0 {
         throw "division by zero"
@@ -354,6 +408,8 @@ try {
 }
 print("done")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 Error: division by zero
@@ -361,6 +417,9 @@ done
 </code></pre>
 <p>A <code>throw</code> crosses function-call boundaries (fixed in crush-ast <strong>CRUSH-126</strong>),
 <code>catch</code> can rethrow, and thrown values can be any type:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:243" data-expect="re-inner
+7
+">
 <pre><code class="language-crush">try {
     try {
         throw "inner"
@@ -377,6 +436,8 @@ try {
     print(e.code)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">re-inner
 7
@@ -388,12 +449,15 @@ a host capability are not catchable</strong>: division by zero, an out-of-range 
 index, a failing <code>fs.read</code>, or a polyglot block that raises all abort the
 program with a <code>[runtime]</code> error instead of reaching your <code>catch</code>.</p>
 <!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:277" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
 <pre><code class="language-crush">try {
     print(1 / 0)
 } catch e {
     print("caught")
 }
 </code></pre>
+</div>
+
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
 <li><strong><a href="functions.html">Functions</a></strong></li>
@@ -451,6 +515,7 @@ program with a <code>[runtime]</code> error instead of reaching your <code>catch
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

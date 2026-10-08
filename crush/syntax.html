@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -199,44 +200,61 @@ mixed:</p>
 </ul>
 <p>When a file has both, the top-level statements run first and then <code>main</code>’s body
 runs.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:23" data-expect="top-level runs first
+then main
+">
 <pre><code class="language-crush">print("top-level runs first")
 
 fn main() {
     print("then main")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">top-level runs first
 then main
 </code></pre>
 <p>Functions can be called before they are defined:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:39" data-expect="7
+">
 <pre><code class="language-crush">print(seven())
 
 fn seven() {
     return 7
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">7
 </code></pre>
 <h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
 <p>Single-line comments start with <code>//</code> or <code>#</code>. There are no block comments —
 <code>/* ... */</code> is a parse error.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:57" data-expect="hello
+">
 <pre><code class="language-crush">// a slash comment
 # a hash comment
 print("hello") // trailing comments work too
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">hello
 </code></pre>
 <h2 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h2>
 <p>Identifiers start with a letter or underscore and continue with letters, digits
 and underscores. Hyphens are not allowed, and a name can’t be a keyword.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:73" data-expect="6
+">
 <pre><code class="language-crush">let counter1 = 1
 let _private = 2
 let my_variable = 3
 print(counter1 + _private + my_variable)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">6
 </code></pre>
@@ -254,12 +272,16 @@ yet. <code>and</code>, <code>or</code> and <code>not</code> are <strong>not</str
 <code>karya</code>/<code>manau</code>/<code>yadi</code>/<code>natra</code>/<code>farkau</code>/<code>jaba_samma</code>/<code>sahi</code>/<code>galat</code> (Nepali) plus a
 few Chinese and Japanese forms — which map to <code>fn</code>/<code>let</code>/<code>if</code>/<code>else</code>/<code>return</code>/
 <code>while</code>/<code>true</code>/<code>false</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:104" data-expect="positive
+">
 <pre><code class="language-crush">karya sign(x) {
     yadi x &gt; 0 { farkau "positive" } natra { farkau "not positive" }
 }
 manau r = sign(1)
 print(r)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">positive
 </code></pre>
@@ -282,6 +304,10 @@ print(r)
 </div>
 <p>Single-quoted and triple-quoted strings are parse errors; a string literal may
 contain a raw newline.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:132" data-expect="42
+3.14
+tab:	here
+">
 <pre><code class="language-crush">let n = 42
 let pi = 3.14
 let s = "tab:\there"
@@ -289,6 +315,8 @@ print(n)
 print(pi)
 print(s)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 3.14
@@ -297,27 +325,40 @@ tab:	here
 <h2 id="statements-and-semicolons"><a class="header" href="#statements-and-semicolons">Statements and semicolons</a></h2>
 <p>Semicolons are <strong>optional</strong>. A statement ends at a newline, or you may write <code>;</code>
 (and <code>a; b</code> on one line) if you prefer. Both of these are the same program:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:153" data-expect="3
+">
 <pre><code class="language-crush">let a = 1; let b = 2;
 print(a + b);
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:163" data-expect="3
+">
 <pre><code class="language-crush">let a = 1
 let b = 2
 print(a + b)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
 <h3 id="return-values"><a class="header" href="#return-values">Return values</a></h3>
 <p>A function returns a value only through an explicit <code>return</code>. A bare final
 expression is <strong>not</strong> an implicit return — it yields <code>null</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:179" data-expect="5
+null
+">
 <pre><code class="language-crush">fn explicit() { return 5 }
 fn implicit() { 5 }
 print(explicit())
 print(implicit())
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 null
@@ -330,6 +371,9 @@ if you need one.</p>
 loop body that reuses an existing name rebinds the same variable (see
 <a href="variables.html">Variables</a>).</p>
 <h2 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:204" data-expect="43
+Alice
+">
 <pre><code class="language-crush">let x = 42
 let name: String = "Alice"
 
@@ -340,6 +384,8 @@ fn add(a: Int, b: Int) -&gt; Int {
 print(add(x, 1))
 print(name)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">43
 Alice
@@ -362,16 +408,28 @@ compile time — see <a href="types.html">Types</a>.</p>
 <li>Logical OR: <code>||</code></li>
 <li>Pipeline: <code>|&gt;</code></li>
 </ol>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:243" data-expect="7
+9
+true
+">
 <pre><code class="language-crush">print(1 + 2 * 3)
 print((1 + 2) * 3)
 print(1 &lt; 2 &amp;&amp; 2 &lt; 3)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">7
 9
 true
 </code></pre>
 <h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:258" data-expect="big
+3
+0
+1
+2
+">
 <pre><code class="language-crush">let x = 5
 if x &gt; 3 {
     print("big")
@@ -391,6 +449,8 @@ for n in 0..3 {
     print(n)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">big
 3
@@ -401,8 +461,12 @@ for n in 0..3 {
 <p><code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>. See <a href="control_flow.html">Control Flow</a>.</p>
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability calls</a></h2>
 <p>A capability call looks like an ordinary dotted call — <strong>no <code>@</code> prefix</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:294" data-expect="Hello, Crush
+">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush
 </code></pre>
@@ -415,10 +479,13 @@ and which command-line flags grant them, is covered in
 required; it is what introduces the block. Polyglot execution is <strong>off by
 default</strong> and needs <code>--polyglot</code>:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/syntax.md:315" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 print("Hello from Python")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello from Python
 </code></pre>
@@ -430,15 +497,22 @@ yet: <code>import</code> is lowered to a <code>module.load</code> capability tha
 a program containing one fails at run time with <code>unknown capability: module.load</code> (crush-ast <strong>CRUSH-110</strong>). Every program is currently a single
 file. There is no <code>std.*</code> module tree.</p>
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:338" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
+</div>
+
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:346" data-expect="42
+">
 <pre><code class="language-crush">let result = 6 * 7
 export result
 print(result)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
@@ -541,6 +615,7 @@ call        = expression "(" args? ")" ;
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

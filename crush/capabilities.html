@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -195,10 +196,15 @@ isolation.</p>
 </blockquote>
 <h2 id="calling-a-capability"><a class="header" href="#calling-a-capability">Calling a capability</a></h2>
 <p>A capability call looks like an ordinary dotted function call — <strong>no <code>@</code> prefix</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:19" data-expect="Hello, Crush
+ab
+">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 let upper = str.concat("a", "b")
 print(upper)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush
 ab
@@ -222,10 +228,16 @@ annotations, never capability calls — see <a href="syntax.html#language-blocks
 </tbody>
 </table>
 </div>
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:47" data-expect="A
+65
+6
+">
 <pre><code class="language-crush">print(conv.chr(65))
 print(conv.ord("A"))
 print(str.len("héllo"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">A
 65
@@ -234,9 +246,12 @@ print(str.len("héllo"))
 <p><code>io.read</code> reads from standard input:</p>
 <!-- check: stdin Ada -->
 <!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:64" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
 <pre><code class="language-crush">let name = io.read()
 io.print("Hello, " + name)
 </code></pre>
+</div>
+
 <h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
 <p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
 <code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
@@ -269,20 +284,29 @@ built without one, its flag prints <code>warning: --… requires the '…' featu
 default</strong> (crush-ast CRUSH-113); build with <code>--features stdlib</code>.</p>
 <p>Without the flag, the call fails:</p>
 <!-- check: runfail unknown capability: fs.read -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:100" data-why="this example shows a refusal" data-expect-error="unknown capability: fs.read">
 <pre><code class="language-crush">print(fs.read("data.txt"))
 </code></pre>
+</div>
+
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:108" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
+</div>
+
 <p>Filesystem paths must be relative and resolve <strong>inside</strong> <code>--fs-root</code> (default <code>.</code>):
 absolute paths and <code>..</code> escapes are rejected. This is the one place the permission
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 </code></pre>
@@ -308,15 +332,21 @@ return nothing share the problem; <code>io.print</code> and <code>time.sleep</co
 </blockquote>
 <!-- check: nyi GAP-VOID-CAP-STATEMENT -->
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:143" data-why="uses `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 </code></pre>
+</div>
+
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:151" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">null
 true
@@ -448,6 +478,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

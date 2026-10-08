@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,6 +184,9 @@
                         <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
 <p>A struct is declared once, created with <code>new Name()</code>, and filled in by assigning
 fields. Structs are passed by reference.</p>
+<div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:6" data-expect="p = (1.0, 2.0)
+squared distance: 25.0
+">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
 
 fn dist2(a, b) {
@@ -201,6 +205,8 @@ q.y = 6.0
 print("p = (" + p.x + ", " + p.y + ")")
 print("squared distance: " + dist2(p, q))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">p = (1.0, 2.0)
 squared distance: 25.0
@@ -222,6 +228,7 @@ without its operand and the assembler rejects the program
 (spawn/await/yield execution) is open. A bare <code>yield</code> statement compiles and is a
 no-op.</p>
 <!-- check: nyi CRUSH-34 -->
+<div class="crush-block" data-crush="fail" data-src="examples/concurrency-structs.md:51" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
 <pre><code class="language-crush">fn worker() {
     print("worker running")
     yield
@@ -233,6 +240,8 @@ print("main")
 yield
 print("main again")
 </code></pre>
+</div>
+
 
                     </main>
 
@@ -285,6 +294,7 @@ print("main again")
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

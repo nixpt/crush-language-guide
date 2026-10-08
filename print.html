@@ -29,6 +29,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-36566637.js"></script>
+        <script src="toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -231,10 +232,14 @@ implementation are marked <em>not yet implemented</em>, with the crush-ast ticke
 </code></pre>
 <p><code>crush run prog.crush</code> runs the whole left-hand path in one step.</p>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
+<div class="crush-block" data-crush="run" data-src="README.md:53" data-expect="Hello, Crush!
+">
 <pre><code class="language-crush">fn main() {
     io.print("Hello, Crush!")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush!
 </code></pre>
@@ -242,6 +247,9 @@ implementation are marked <em>not yet implemented</em>, with the crush-ast ticke
 host, and so only works if the host grants it. Capability calls are written like
 any other dotted call — there is no <code>@</code> prefix. (The <code>@</code> sigil in Crush
 introduces polyglot blocks such as <code>@python { ... }</code>, and annotations.)</p>
+<p>Press <strong>Run</strong> under the example to run it in your browser, or <strong>Edit</strong> to change
+it first. <a href="#running-the-examples">Running the Examples</a> explains the buttons and
+labels, and what the in-browser runtime can and cannot do.</p>
 <h2 id="where-the-source-lives"><a class="header" href="#where-the-source-lives">Where the source lives</a></h2>
 <p>The language implementation is the standalone
 <a href="https://github.com/nixpt/crush-ast">crush-ast</a> repository, extracted from
@@ -316,9 +324,13 @@ without the <code>--polyglot</code> gate.</p>
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
+<div class="crush-block" data-crush="run" data-src="getting-started.md:65" data-expect="Hello, Crush!
+">
 <pre><code class="language-crush">let name = "Crush"
 print("Hello, " + name + "!")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush!
 </code></pre>
@@ -339,8 +351,11 @@ crush run --polyglot prog.crush                  # @python / @javascript / @bash
 </code></pre>
 <p>For example, this reads a file, so it needs <code>--fs</code>:</p>
 <!-- check: runfail unknown capability: fs.read -->
+<div class="crush-block" data-crush="fail" data-src="getting-started.md:103" data-why="this example shows a refusal" data-expect-error="unknown capability: fs.read">
 <pre><code class="language-crush">print(fs.read("notes.txt"))
 </code></pre>
+</div>
+
 <p>Run it without the flag and it fails with <code>unknown capability: fs.read</code>. The full
 flag list is in <a href="#capability-system">Capability System</a> (<code>crush-run run --help</code>
 prints it too).</p>
@@ -420,6 +435,46 @@ the security model — read the “what is not enforced” sections</li>
 <li><strong><a href="#cast--the-crush-ast">CAST</a></strong> and <strong><a href="#casm-overview">CASM</a></strong>: the compiler’s formats</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="running-the-examples"><a class="header" href="#running-the-examples">Running the Examples</a></h1>
+<p>Most code blocks in this guide can be run right on the page. Each Crush example
+carries one of four markings, worked out when the book is built from the same
+checks that keep the guide’s code honest (nothing is labelled by hand):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Marking</th><th>What you get</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Run</strong> · <strong>Edit</strong> · <strong>Playground ↗</strong></td><td>The example runs in your browser. Run shows its output under the block and, where the guide prints the expected output, whether yours <em>matches the guide’s output</em>. Edit turns the block into an editor (Ctrl+Enter runs it); Reset puts the original back. Playground opens it on <a href="https://crushlang.org/playground/">crushlang.org/playground</a>.</td></tr>
+<tr><td><strong>expected to fail</strong></td><td>The example is <em>meant</em> to fail: a compile error, a refused capability, or a feature that is not implemented yet. Run demonstrates the failure and says whether it <em>fails as the guide says</em>.</td></tr>
+<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, a standard-library module, standard input). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="#getting-started">Getting Started</a>.</td></tr>
+<tr><td><strong>not runnable</strong></td><td>A fragment or a program that needs special setup; the label says which.</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
+<p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
+powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
+and VM as <code>crush-run</code>, with a different set of grants:</p>
+<ul>
+<li><strong>Granted:</strong> <code>print</code> / <code>io.print</code>, and the VM’s built-in string helpers
+(<code>str.len</code>, <code>str.concat</code>, <code>str.contains</code>, <code>str.split</code>, <code>str.join</code>, <code>str.replace</code>,
+<code>conv.chr</code>, <code>conv.ord</code>).</li>
+<li><strong>Not available:</strong> polyglot blocks (<code>@python</code>, <code>@javascript</code>, <code>@bash</code>: there is no
+host process to run them in), the filesystem, network, environment, clock and
+processes, the standard-library modules (<code>math.*</code>, <code>conv.to_int</code>, <code>json.*</code>, …),
+and standard input (<code>io.read</code> returns <code>""</code>).</li>
+<li><strong>Every run starts fresh.</strong> Examples do not share variables, even on the same
+page.</li>
+<li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and an
+8-second wall-clock limit; a runaway loop is stopped, not your tab.
+Output printed before a run-time error is not shown.</li>
+</ul>
+<p>Ungranted capabilities are <em>refused</em>, not ignored: that is the
+<a href="#capability-system">capability system</a> working, and the page says so.</p>
+<p>Without JavaScript the guide is a plain book: the code blocks are all there, just
+without the buttons.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="crush-overview"><a class="header" href="#crush-overview">Crush Overview</a></h1>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -444,8 +499,12 @@ runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time 
 also in the repository.</li>
 </ul>
 <h2 id="hello-crush-1"><a class="header" href="#hello-crush-1">Hello, Crush</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/README.md:28" data-expect="Hello, Crush!
+">
 <pre><code class="language-crush">print("Hello, Crush!")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush!
 </code></pre>
@@ -454,6 +513,8 @@ also in the repository.</li>
 <pre><code class="language-sh">crush run hello.crush
 </code></pre>
 <h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/README.md:46" data-expect="25
+">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
 
 fn distance_sq(p) {
@@ -465,6 +526,8 @@ p.x = 3
 p.y = 4
 print(distance_sq(p))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">25
 </code></pre>
@@ -523,44 +586,61 @@ mixed:</p>
 </ul>
 <p>When a file has both, the top-level statements run first and then <code>main</code>’s body
 runs.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:23" data-expect="top-level runs first
+then main
+">
 <pre><code class="language-crush">print("top-level runs first")
 
 fn main() {
     print("then main")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">top-level runs first
 then main
 </code></pre>
 <p>Functions can be called before they are defined:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:39" data-expect="7
+">
 <pre><code class="language-crush">print(seven())
 
 fn seven() {
     return 7
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">7
 </code></pre>
 <h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
 <p>Single-line comments start with <code>//</code> or <code>#</code>. There are no block comments —
 <code>/* ... */</code> is a parse error.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:57" data-expect="hello
+">
 <pre><code class="language-crush">// a slash comment
 # a hash comment
 print("hello") // trailing comments work too
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">hello
 </code></pre>
 <h2 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h2>
 <p>Identifiers start with a letter or underscore and continue with letters, digits
 and underscores. Hyphens are not allowed, and a name can’t be a keyword.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:73" data-expect="6
+">
 <pre><code class="language-crush">let counter1 = 1
 let _private = 2
 let my_variable = 3
 print(counter1 + _private + my_variable)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">6
 </code></pre>
@@ -578,12 +658,16 @@ yet. <code>and</code>, <code>or</code> and <code>not</code> are <strong>not</str
 <code>karya</code>/<code>manau</code>/<code>yadi</code>/<code>natra</code>/<code>farkau</code>/<code>jaba_samma</code>/<code>sahi</code>/<code>galat</code> (Nepali) plus a
 few Chinese and Japanese forms — which map to <code>fn</code>/<code>let</code>/<code>if</code>/<code>else</code>/<code>return</code>/
 <code>while</code>/<code>true</code>/<code>false</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:104" data-expect="positive
+">
 <pre><code class="language-crush">karya sign(x) {
     yadi x &gt; 0 { farkau "positive" } natra { farkau "not positive" }
 }
 manau r = sign(1)
 print(r)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">positive
 </code></pre>
@@ -606,6 +690,10 @@ print(r)
 </div>
 <p>Single-quoted and triple-quoted strings are parse errors; a string literal may
 contain a raw newline.</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:132" data-expect="42
+3.14
+tab:	here
+">
 <pre><code class="language-crush">let n = 42
 let pi = 3.14
 let s = "tab:\there"
@@ -613,6 +701,8 @@ print(n)
 print(pi)
 print(s)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 3.14
@@ -621,27 +711,40 @@ tab:	here
 <h2 id="statements-and-semicolons"><a class="header" href="#statements-and-semicolons">Statements and semicolons</a></h2>
 <p>Semicolons are <strong>optional</strong>. A statement ends at a newline, or you may write <code>;</code>
 (and <code>a; b</code> on one line) if you prefer. Both of these are the same program:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:153" data-expect="3
+">
 <pre><code class="language-crush">let a = 1; let b = 2;
 print(a + b);
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:163" data-expect="3
+">
 <pre><code class="language-crush">let a = 1
 let b = 2
 print(a + b)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
 <h3 id="return-values"><a class="header" href="#return-values">Return values</a></h3>
 <p>A function returns a value only through an explicit <code>return</code>. A bare final
 expression is <strong>not</strong> an implicit return — it yields <code>null</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:179" data-expect="5
+null
+">
 <pre><code class="language-crush">fn explicit() { return 5 }
 fn implicit() { 5 }
 print(explicit())
 print(implicit())
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 null
@@ -654,6 +757,9 @@ if you need one.</p>
 loop body that reuses an existing name rebinds the same variable (see
 <a href="#variables-and-scoping">Variables</a>).</p>
 <h2 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:204" data-expect="43
+Alice
+">
 <pre><code class="language-crush">let x = 42
 let name: String = "Alice"
 
@@ -664,6 +770,8 @@ fn add(a: Int, b: Int) -&gt; Int {
 print(add(x, 1))
 print(name)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">43
 Alice
@@ -686,16 +794,28 @@ compile time — see <a href="#data-types">Types</a>.</p>
 <li>Logical OR: <code>||</code></li>
 <li>Pipeline: <code>|&gt;</code></li>
 </ol>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:243" data-expect="7
+9
+true
+">
 <pre><code class="language-crush">print(1 + 2 * 3)
 print((1 + 2) * 3)
 print(1 &lt; 2 &amp;&amp; 2 &lt; 3)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">7
 9
 true
 </code></pre>
 <h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:258" data-expect="big
+3
+0
+1
+2
+">
 <pre><code class="language-crush">let x = 5
 if x &gt; 3 {
     print("big")
@@ -715,6 +835,8 @@ for n in 0..3 {
     print(n)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">big
 3
@@ -725,8 +847,12 @@ for n in 0..3 {
 <p><code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>. See <a href="#control-flow-1">Control Flow</a>.</p>
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability calls</a></h2>
 <p>A capability call looks like an ordinary dotted call — <strong>no <code>@</code> prefix</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:294" data-expect="Hello, Crush
+">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush
 </code></pre>
@@ -739,10 +865,13 @@ and which command-line flags grant them, is covered in
 required; it is what introduces the block. Polyglot execution is <strong>off by
 default</strong> and needs <code>--polyglot</code>:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/syntax.md:315" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 print("Hello from Python")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello from Python
 </code></pre>
@@ -754,15 +883,22 @@ yet: <code>import</code> is lowered to a <code>module.load</code> capability tha
 a program containing one fails at run time with <code>unknown capability: module.load</code> (crush-ast <strong>CRUSH-110</strong>). Every program is currently a single
 file. There is no <code>std.*</code> module tree.</p>
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:338" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
+</div>
+
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:346" data-expect="42
+">
 <pre><code class="language-crush">let result = 6 * 7
 export result
 print(result)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
@@ -833,6 +969,12 @@ covers the values you can build today.</p>
 </tbody>
 </table>
 </div>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:17" data-expect="42
+3.14
+Alice
+true
+null
+">
 <pre><code class="language-crush">let count = 42
 let pi = 3.14
 let name = "Alice"
@@ -844,6 +986,8 @@ print(name)
 print(active)
 print(nothing)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 3.14
@@ -854,11 +998,18 @@ null
 <h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
 <p><code>+ - * / %</code> work on <code>Int</code> and <code>Float</code>. Mixing the two promotes to <code>Float</code>.
 <code>/</code> on two <code>Int</code>s is <strong>integer division</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:44" data-expect="2
+2.5
+3.5
+1
+">
 <pre><code class="language-crush">print(10 / 4)
 print(10.0 / 4)
 print(1 + 2.5)
 print(7 % 3)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 2.5
@@ -875,12 +1026,18 @@ error. Keep literals within range.</p>
 </blockquote>
 <h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
 <p>Concatenate with <code>+</code>. Adding a number to a string converts the number:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:71" data-expect="Ada Lovelace
+Count: 42
+Pi is 3.14
+">
 <pre><code class="language-crush">let first = "Ada"
 let last = "Lovelace"
 print(first + " " + last)
 print("Count: " + 42)
 print("Pi is " + 3.14)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Ada Lovelace
 Count: 42
@@ -889,11 +1046,14 @@ Pi is 3.14
 <p><code>len(s)</code> is the byte length and <code>s[i]</code> yields a one-character string. With
 <code>--stdlib</code>, the <code>str.*</code> capabilities add <code>str.split</code>, <code>str.trim</code>,
 <code>str.to_upper</code>, <code>str.substring</code> and friends — see <a href="#standard-library">Standard Library</a>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/types.md:90" data-why="uses the standard library (`str.to_upper`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let s = "hello"
 print(len(s))
 print(s[1])
 print(str.to_upper(s))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 e
@@ -902,6 +1062,11 @@ HELLO
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <h3 id="arrays"><a class="header" href="#arrays">Arrays</a></h3>
 <p>Ordered, mixed-type, zero-indexed. Index, assign by index, and <code>len</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:110" data-expect="10
+[10, 99, 30]
+3
+2
+">
 <pre><code class="language-crush">let numbers = [10, 20, 30]
 print(numbers[0])
 numbers[1] = 99
@@ -911,6 +1076,8 @@ print(len(numbers))
 let nested = [[1, 2], [3]]
 print(nested[0][1])
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">10
 [10, 99, 30]
@@ -919,33 +1086,49 @@ print(nested[0][1])
 </code></pre>
 <p>Append with <code>array.push(arr, value)</code> or the method form <code>arr.push(value)</code>; <code>+</code>
 joins two arrays:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:132" data-expect="[1, 2, 3, 4]
+[1, 2]
+">
 <pre><code class="language-crush">let a = [1, 2]
 a.push(3)
 array.push(a, 4)
 print(a)
 print([1] + [2])
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[1, 2, 3, 4]
 [1, 2]
 </code></pre>
 <p>Iterate with <code>for</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:148" data-expect="a
+b
+">
 <pre><code class="language-crush">for item in ["a", "b"] {
     print(item)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">a
 b
 </code></pre>
 <p><code>array.pop(a)</code> removes and returns the last element, <code>a.append(v)</code> is an alias for
 <code>push</code>, and slices work:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:163" data-expect="4
+[1, 2, 3]
+[1, 2]
+">
 <pre><code class="language-crush">let a = [1, 2, 3, 4]
 let last = array.pop(a)
 print(last)
 print(a)
 print(a[0:2])
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">4
 [1, 2, 3]
@@ -957,6 +1140,10 @@ method form <code>a.pop()</code> is <strong>not</strong> available (<code>unknow
 <h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
 <p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
 strings. Read and write fields with <strong>dot notation</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:187" data-expect="Alice
+31
+alice@example.com
+">
 <pre><code class="language-crush">let person = {"name": "Alice", "age": 30}
 print(person.name)
 person.age = 31
@@ -964,17 +1151,24 @@ person.email = "alice@example.com"
 print(person.age)
 print(person.email)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Alice
 31
 alice@example.com
 </code></pre>
 <p>Nested objects chain:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:205" data-expect="5432
+5433
+">
 <pre><code class="language-crush">let cfg = {"db": {"port": 5432}}
 print(cfg.db.port)
 cfg.db.port = 5433
 print(cfg.db.port)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5432
 5433
@@ -989,14 +1183,19 @@ are rejected (<code>expected array or string, got map</code>). Use dot access, a
 <code>collections.keys(obj)</code> to enumerate. (crush-ast gap <code>GAP-MAP-SUBSCRIPT</code>.)</p>
 </blockquote>
 <!-- check: nyi GAP-MAP-SUBSCRIPT -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:228" data-why="not implemented yet (GAP-MAP-SUBSCRIPT); Run shows what happens today">
 <pre><code class="language-crush">let person = {"name": "Alice"}
 print(person["name"])
 </code></pre>
+</div>
+
 <h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
 <p>Declare a struct with its field names (optionally with type hints) <strong>on one line</strong>,
 create it
 with <code>new Name()</code> — <strong>no constructor arguments</strong> — and assign fields
 individually:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:240" data-expect="4.0
+">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
 
 let p = new Point()
@@ -1004,6 +1203,8 @@ p.x = 1.5
 p.y = 2.5
 print(p.x + p.y)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">4.0
 </code></pre>
@@ -1015,14 +1216,20 @@ parser. A struct body that spans several lines is also rejected today — the pa
 doesn’t skip newlines inside <code>struct { ... }</code> (see the GUIDE-3 ticket, gap
 <code>GAP-STRUCT-MULTILINE</code>):</p>
 <!-- check: nyi GAP-STRUCT-MULTILINE -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:264" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
 <pre><code class="language-crush">struct Point {
     x: Float,
     y: Float
 }
 </code></pre>
+</div>
+
 <h2 id="type-annotations"><a class="header" href="#type-annotations">Type annotations</a></h2>
 <p>You may annotate variables, parameters and return types with <code>Int</code>, <code>Float</code>,
 <code>String</code>, <code>Bool</code>, or <code>Any</code>. The compiler checks them statically:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:276" data-expect="answer
+42
+">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
     return n * 2
 }
@@ -1030,32 +1237,43 @@ let label: String = "answer"
 print(label)
 print(double(21))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">answer
 42
 </code></pre>
 <p>Mismatches are rejected at compile time:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:294" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x: Int = "not a number"
 </code></pre>
+</div>
+
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:299" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
     return n * 2
 }
 print(double("seven"))
 </code></pre>
+</div>
+
 <p>Annotations are optional. Not available: generic forms (<code>Array&lt;Int&gt;</code>), array
 shorthand (<code>Int[]</code>), nullable <code>T?</code>, and <code>Function</code>/<code>Array</code>/<code>Map</code> as hint names —
 all fail with a parse or <code>Unknown type</code> error.</p>
 <h2 id="conversion-and-inspection"><a class="header" href="#conversion-and-inspection">Conversion and inspection</a></h2>
 <p>With <code>--stdlib</code>, the <code>conv.*</code> capabilities convert between types and report
 them:</p>
+<div class="crush-block" data-crush="host" data-src="crush/types.md:315" data-why="uses the standard library (`conv.to_float`, `conv.to_int`, `conv.to_str` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(conv.to_int("42") + 1)
 print(conv.to_str(5) + "x")
 print(conv.to_float(2))
 print(conv.type_of([1]))
 print(conv.type_of(null))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">43
 5x
@@ -1069,10 +1287,13 @@ null
 <p><code>if</code> and <code>while</code> conditions are type-checked: an <code>Int</code> or <code>String</code> is <strong>not</strong>
 silently truthy. Compare explicitly (<code>x != 0</code>, <code>s != ""</code>).</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:341" data-why="this example shows a compile error">
 <pre><code class="language-crush">if 1 {
     print("yes")
 }
 </code></pre>
+</div>
+
 <h2 id="comparison"><a class="header" href="#comparison">Comparison</a></h2>
 <p><code>==</code>/<code>!=</code> compare values of the same type; comparing a string to an int is a
 compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0</code> is <code>true</code>.</p>
@@ -1103,11 +1324,15 @@ compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0
 enforces today.</p>
 <h2 id="declaration"><a class="header" href="#declaration">Declaration</a></h2>
 <p>Every variable is introduced with <code>let</code> and <strong>must be initialised</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:10" data-expect="42
+">
 <pre><code class="language-crush">let x = 42
 let name = "Alice"
 let active = true
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
@@ -1115,18 +1340,28 @@ print(x)
 reserved word, but it is not accepted in a declaration, and there is no <code>const</code>.
 Every <code>let</code> variable is simply reassignable.</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:27" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x
 </code></pre>
+</div>
+
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:32" data-why="this example shows a compile error">
 <pre><code class="language-crush">let mut counter = 0
 </code></pre>
+</div>
+
 <h3 id="type-hints"><a class="header" href="#type-hints">Type hints</a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:38" data-expect="30
+">
 <pre><code class="language-crush">let age: Int = 30
 let score: Float = 95.5
 let message: String = "Hello"
 let flag: Bool = true
 print(age)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">30
 </code></pre>
@@ -1135,11 +1370,15 @@ print(age)
 assignment today.</p>
 <h2 id="assignment"><a class="header" href="#assignment">Assignment</a></h2>
 <p>Reassign with <code>=</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:59" data-expect="2
+">
 <pre><code class="language-crush">let counter = 0
 counter = counter + 1
 counter = counter + 1
 print(counter)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 </code></pre>
@@ -1147,14 +1386,20 @@ print(counter)
 use <code>counter = counter + 1</code>. Assigning to a name that was never declared is a
 compile error (<code>Undefined variable</code>).</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:76" data-why="this example shows a compile error">
 <pre><code class="language-crush">counter += 1
 </code></pre>
+</div>
+
 <p>Variables are dynamically typed at run time, so a <code>let</code>-declared name can later
 hold a value of a different type (unless the compiler can see the mismatch for a
 hinted parameter or initialiser).</p>
 <h2 id="scoping-rules"><a class="header" href="#scoping-rules">Scoping rules</a></h2>
 <h3 id="function-scope"><a class="header" href="#function-scope">Function scope</a></h3>
 <p>Variables declared in a function are local to it, and parameters are local copies:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:90" data-expect="2
+1
+">
 <pre><code class="language-crush">fn bump(n) {
     n = n + 1
     return n
@@ -1164,12 +1409,16 @@ let v = 1
 print(bump(v))
 print(v)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 1
 </code></pre>
 <p>Arrays and objects are passed <strong>by reference</strong>, so a function can mutate its
 argument in place:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:110" data-expect="[1, 9]
+">
 <pre><code class="language-crush">fn add_nine(items) {
     items.push(9)
 }
@@ -1178,11 +1427,14 @@ let xs = [1]
 add_nine(xs)
 print(xs)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[1, 9]
 </code></pre>
 <p>Using a function’s local outside it is a compile error:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:128" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn example() {
     let x = 10
     print(x)
@@ -1190,11 +1442,14 @@ print(xs)
 example()
 print(x)
 </code></pre>
+</div>
+
 <h3 id="module-level-variables-are-not-visible-inside-functions"><a class="header" href="#module-level-variables-are-not-visible-inside-functions">Module-level variables are not visible inside functions</a></h3>
 <p>Top-level statements form the program’s entry body, <strong>not</strong> a shared global
 scope. A function cannot read a variable declared at the top level — pass it as
 an argument:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:144" data-why="this example shows a compile error">
 <pre><code class="language-crush">let LEVEL = "production"
 
 fn get_level() {
@@ -1202,6 +1457,10 @@ fn get_level() {
 }
 print(get_level())
 </code></pre>
+</div>
+
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:153" data-expect="running in production
+">
 <pre><code class="language-crush">let level = "production"
 
 fn describe(l) {
@@ -1209,6 +1468,8 @@ fn describe(l) {
 }
 print(describe(level))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">running in production
 </code></pre>
@@ -1218,20 +1479,29 @@ or keep it in an object/array you pass around.)</p>
 <p>A name first declared inside an <code>if</code>, <code>while</code> or <code>for</code> body is not visible after
 the block ends. A <code>for</code> loop variable is likewise local to the loop:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:176" data-why="this example shows a compile error">
 <pre><code class="language-crush">if true {
     let y = 2
 }
 print(y)
 </code></pre>
+</div>
+
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:184" data-why="this example shows a compile error">
 <pre><code class="language-crush">for i in 0..3 {
     print(i)
 }
 print(i)
 </code></pre>
+</div>
+
 <h3 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h3>
 <p><strong>Across functions</strong> a local simply hides nothing — each function has its own
 variables:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:196" data-expect="20
+10
+">
 <pre><code class="language-crush">let x = 10
 
 fn show() {
@@ -1242,6 +1512,8 @@ fn show() {
 show()
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">20
 10
@@ -1249,12 +1521,16 @@ print(x)
 <p><strong>Within one function</strong>, re-declaring an outer name in an inner block does <em>not</em>
 create a new shadowing variable; it assigns to the outer one. After this program
 the outer <code>x</code> is <code>2</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:218" data-expect="2
+">
 <pre><code class="language-crush">let x = 1
 if true {
     let x = 2
 }
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 </code></pre>
@@ -1294,6 +1570,14 @@ against the current compiler.</p>
 </tbody>
 </table>
 </div>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:16" data-expect="8
+6
+42
+5
+2
+-3
+-5
+">
 <pre><code class="language-crush">print(5 + 3)
 print(10 - 4)
 print(6 * 7)
@@ -1302,6 +1586,8 @@ print(17 % 5)
 print(-7 / 2)
 print(-(3 + 2))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">8
 6
@@ -1321,6 +1607,14 @@ assignment (<code>+=</code>, <code>-=</code>, …) — use <code>math.pow(a, b)<
 <p><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> return <code>Bool</code>. Operands must be of compatible
 types; comparing a string with an int is a compile error. Strings compare
 lexicographically; arrays compare element-wise with <code>==</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:51" data-expect="false
+true
+true
+false
+true
+true
+true
+">
 <pre><code class="language-crush">let a = 10
 let b = 20
 print(a == b)
@@ -1331,6 +1625,8 @@ print("apple" &lt; "banana")
 print([1, 2] == [1, 2])
 print(1 == 1.0)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">false
 true
@@ -1343,6 +1639,10 @@ true
 <h2 id="logical"><a class="header" href="#logical">Logical</a></h2>
 <p>Logic uses <strong>symbols</strong>: <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>. The words <code>and</code>, <code>or</code> and <code>not</code> are not
 operators. <code>&amp;&amp;</code> and <code>||</code> short-circuit (crush-ast <strong>CRUSH-125</strong>):</p>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:79" data-expect="false
+true
+true
+">
 <pre><code class="language-crush">fn noisy() {
     print("evaluated")
     return true
@@ -1352,24 +1652,36 @@ print(false &amp;&amp; noisy())
 print(true || noisy())
 print(!(1 &gt; 2))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">false
 true
 true
 </code></pre>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/operators.md:98" data-why="this example shows a compile error">
 <pre><code class="language-crush">print(true and false)
 </code></pre>
+</div>
+
 <p>Conditions in <code>if</code>/<code>while</code> must be <code>Bool</code> — see <a href="#conditions-must-be-bool">Types</a>.</p>
 <h2 id="range"><a class="header" href="#range">Range</a></h2>
 <p><code>a..b</code> is a half-open range (<code>a</code> inclusive, <code>b</code> exclusive). It is used by <code>for</code>,
 and also evaluates to an array of the integers in the range:</p>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:109" data-expect="2
+3
+4
+[1, 2, 3, 4]
+">
 <pre><code class="language-crush">for i in 2..5 {
     print(i)
 }
 let r = 1..5
 print(r)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 3
@@ -1381,6 +1693,9 @@ expressions: <code>for i in 0..len(items)</code>. There is no <code>range()</cod
 <h2 id="pipeline"><a class="header" href="#pipeline">Pipeline</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right.
 The right side must be a user-defined function (or a call to one):</p>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:133" data-expect="8
+7
+">
 <pre><code class="language-crush">fn inc(x) {
     return x + 1
 }
@@ -1394,6 +1709,8 @@ fn add(a, b) {
 print(3 |&gt; inc |&gt; dbl)
 print(3 |&gt; add(4))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">8
 7
@@ -1401,8 +1718,11 @@ print(3 |&gt; add(4))
 <p>Piping into a <strong>capability</strong> such as <code>str.trim</code> or <code>conv.to_str</code> is rejected
 (<code>Pipeline right side must be function</code>); wrap it in a function first:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/operators.md:158" data-why="this example shows a compile error">
 <pre><code class="language-crush">print("  hi  " |&gt; str.trim)
 </code></pre>
+</div>
+
 <h2 id="not-available"><a class="header" href="#not-available">Not available</a></h2>
 <p>Bitwise operators (<code>&amp;</code>, <code>|</code>, <code>^</code>, <code>~</code>, <code>&lt;&lt;</code>, <code>&gt;&gt;</code>) are <strong>not</strong> part of the
 Crush language today — the lexer rejects them — even though CASM has <code>bit_*</code>
@@ -1427,10 +1747,16 @@ opcodes (<a href="#instruction-set-reference">CASM reference</a>). There is no t
 </tbody>
 </table>
 </div>
+<div class="crush-block" data-crush="run" data-src="crush/operators.md:183" data-expect="14
+20
+true
+">
 <pre><code class="language-crush">print(2 + 3 * 4)
 print((2 + 3) * 4)
 print(1 + 1 == 2 &amp;&amp; 2 * 2 == 4)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">14
 20
@@ -1446,6 +1772,8 @@ true
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
 <h2 id="if"><a class="header" href="#if">If</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:8" data-expect="B
+">
 <pre><code class="language-crush">let score = 85
 
 if score &gt;= 90 {
@@ -1456,24 +1784,34 @@ if score &gt;= 90 {
     print("C or below")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">B
 </code></pre>
 <p><code>if</code> is a statement, not an expression: <code>let y = if c { 1 } else { 2 }</code> is a
 parse error. Use a function or <code>match</code> to select a value.</p>
 <h2 id="while"><a class="header" href="#while">While</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:30" data-expect="0
+1
+2
+">
 <pre><code class="language-crush">let i = 0
 while i &lt; 3 {
     print(i)
     i = i + 1
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 1
 2
 </code></pre>
 <h3 id="loop-with-break"><a class="header" href="#loop-with-break">Loop with <code>break</code></a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:47" data-expect="3
+">
 <pre><code class="language-crush">let counter = 0
 while true {
     if counter &gt;= 3 {
@@ -1483,15 +1821,23 @@ while true {
 }
 print(counter)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
 <h2 id="for"><a class="header" href="#for">For</a></h2>
 <h3 id="over-an-array"><a class="header" href="#over-an-array">Over an array</a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:67" data-expect="10
+20
+30
+">
 <pre><code class="language-crush">for n in [10, 20, 30] {
     print(n)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">10
 20
@@ -1500,6 +1846,12 @@ print(counter)
 <h3 id="over-a-range"><a class="header" href="#over-a-range">Over a range</a></h3>
 <p><code>a..b</code> is half-open (excludes <code>b</code>). There is no inclusive <code>..=</code> and no <code>range()</code>
 function:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:85" data-expect="0
+1
+2
+x
+y
+">
 <pre><code class="language-crush">for i in 0..3 {
     print(i)
 }
@@ -1509,6 +1861,8 @@ for i in 0..len(items) {
     print(items[i])
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 1
@@ -1517,14 +1871,20 @@ x
 y
 </code></pre>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:106" data-why="this example shows a compile error">
 <pre><code class="language-crush">for i in 1..=3 {
     print(i)
 }
 </code></pre>
+</div>
+
 <p>Iterating directly over a map (<code>for k in obj</code>) is not supported — see
 <a href="#objects-maps">Types</a>.</p>
 <h2 id="break-and-continue"><a class="header" href="#break-and-continue">Break and continue</a></h2>
 <p><code>continue</code> skips to the next iteration; <code>break</code> leaves the innermost loop:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:119" data-expect="1
+3
+">
 <pre><code class="language-crush">for i in 0..5 {
     if i % 2 == 0 {
         continue
@@ -1538,6 +1898,8 @@ for i in 0..10 {
     }
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">1
 3
@@ -1545,6 +1907,8 @@ for i in 0..10 {
 <h2 id="match"><a class="header" href="#match">Match</a></h2>
 <p><code>match</code> selects among arms by comparing a value to literal patterns, with <code>_</code> as
 the wildcard. It is an <strong>expression</strong>: bind its result with <code>let</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:145" data-expect="two
+">
 <pre><code class="language-crush">let v = 2
 let word = match v {
     1 =&gt; "one",
@@ -1553,12 +1917,16 @@ let word = match v {
 }
 print(word)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">two
 </code></pre>
 <p>Supported patterns: integer, string and bool literals, <code>_</code>, and a bare
 identifier that binds the scrutinee (<code>n =&gt; "got " + n</code>). Arm bodies can be an
 expression or a <code>{ ... }</code> block whose last expression is the value:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:164" data-expect="got 5
+">
 <pre><code class="language-crush">let n = 5
 let msg = match n {
     0 =&gt; "zero",
@@ -1566,6 +1934,8 @@ let msg = match n {
 }
 print(msg)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">got 5
 </code></pre>
@@ -1576,6 +1946,9 @@ on its own fails at run time with <code>stack underflow</code>; the arms must pr
 values and the result must be bound with <code>let</code> (or use <code>if</code> for side effects).</li>
 <li><strong><code>return match ...</code> returns <code>null</code>.</strong> Bind first, then return:</li>
 </ul>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:185" data-expect="zero
+other
+">
 <pre><code class="language-crush">fn name(v) {
     let r = match v {
         0 =&gt; "zero",
@@ -1586,6 +1959,8 @@ values and the result must be bound with <code>let</code> (or use <code>if</code
 print(name(0))
 print(name(3))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">zero
 other
@@ -1600,6 +1975,10 @@ exhaustiveness error.</li>
 <h2 id="errors-try--catch--throw"><a class="header" href="#errors-try--catch--throw">Errors: <code>try</code> / <code>catch</code> / <code>throw</code></a></h2>
 <p><code>throw</code> raises any value; <code>catch name { ... }</code> receives it. There is no
 <code>finally</code>, and the parenthesised form <code>catch (e)</code> is not accepted.</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:215" data-expect="2
+Error: division by zero
+done
+">
 <pre><code class="language-crush">fn divide(a, b) {
     if b == 0 {
         throw "division by zero"
@@ -1616,6 +1995,8 @@ try {
 }
 print("done")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 Error: division by zero
@@ -1623,6 +2004,9 @@ done
 </code></pre>
 <p>A <code>throw</code> crosses function-call boundaries (fixed in crush-ast <strong>CRUSH-126</strong>),
 <code>catch</code> can rethrow, and thrown values can be any type:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:243" data-expect="re-inner
+7
+">
 <pre><code class="language-crush">try {
     try {
         throw "inner"
@@ -1639,6 +2023,8 @@ try {
     print(e.code)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">re-inner
 7
@@ -1650,12 +2036,15 @@ a host capability are not catchable</strong>: division by zero, an out-of-range 
 index, a failing <code>fs.read</code>, or a polyglot block that raises all abort the
 program with a <code>[runtime]</code> error instead of reaching your <code>catch</code>.</p>
 <!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:277" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
 <pre><code class="language-crush">try {
     print(1 / 0)
 } catch e {
     print("caught")
 }
 </code></pre>
+</div>
+
 <h2 id="next-steps-5"><a class="header" href="#next-steps-5">Next Steps</a></h2>
 <ul>
 <li><strong><a href="#functions">Functions</a></strong></li>
@@ -1668,6 +2057,9 @@ top-level declarations. <strong>Functions are not first-class values yet</strong
 call one by name, but you can’t store it in a variable or pass it as an argument
 (see <a href="#higher-order-functions-and-lambdas">Higher-order functions</a>).</p>
 <h2 id="defining-functions"><a class="header" href="#defining-functions">Defining functions</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:10" data-expect="Hello, Alice!
+8
+">
 <pre><code class="language-crush">fn greet(name: String) {
     print("Hello, " + name + "!")
 }
@@ -1679,6 +2071,8 @@ fn add(a: Int, b: Int) -&gt; Int {
 greet("Alice")
 print(add(5, 3))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Alice!
 8
@@ -1695,6 +2089,13 @@ variadic parameters.</li>
 <h2 id="returning-values"><a class="header" href="#returning-values">Returning values</a></h2>
 <p>Return with <code>return</code>. A function that falls off the end — or uses a bare
 <code>return</code> — yields <code>null</code>. A final expression is <strong>not</strong> an implicit return:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:42" data-expect="positive
+negative
+zero
+[LOG] done
+[LOG] again
+null
+">
 <pre><code class="language-crush">fn check_sign(x: Int) -&gt; String {
     if x &gt; 0 {
         return "positive"
@@ -1714,6 +2115,8 @@ print(check_sign(0))
 log_message("done")
 print(log_message("again"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">positive
 negative
@@ -1725,6 +2128,9 @@ null
 <p>The return-type hint is not checked against what the body actually returns
 today: <code>fn f() -&gt; Int { return "s" }</code> compiles.</p>
 <h2 id="recursion"><a class="header" href="#recursion">Recursion</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:78" data-expect="120
+610
+">
 <pre><code class="language-crush">fn factorial(n: Int) -&gt; Int {
     if n &lt;= 1 {
         return 1
@@ -1742,6 +2148,8 @@ fn fib(n) {
 print(factorial(5))
 print(fib(15))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">120
 610
@@ -1752,11 +2160,14 @@ it ends the program with <code>call depth quota exceeded</code>. The other defau
 1,000,000 instructions (<code>--max-steps</code>), a 4096-slot stack (<code>--max-stack</code>), 1 MiB of
 output (<code>--max-output</code>), and a 30-second wall-clock limit per polyglot block.</p>
 <!-- check: runfail call depth quota exceeded -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:110" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
 <pre><code class="language-crush">fn d(n) {
     return d(n - 1)
 }
 print(d(1))
 </code></pre>
+</div>
+
 <h2 id="higher-order-functions-and-lambdas"><a class="header" href="#higher-order-functions-and-lambdas">Higher-order functions and lambdas</a></h2>
 <blockquote>
 <p><strong>Not yet implemented.</strong> Passing a function by name (<code>apply(double, 21)</code>),
@@ -1768,16 +2179,24 @@ write ordinary named functions and call them directly, or use the
 pipeline operator (<code>x |&gt; f</code>), which does accept a function <strong>name</strong>:</p>
 </blockquote>
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:128" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
 }
 let f = double
 print(f(21))
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:137" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let double = |x| { return x * 2 }
 print(double(21))
 </code></pre>
+</div>
+
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:142" data-expect="11
+">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
 }
@@ -1786,6 +2205,8 @@ fn inc(n) {
 }
 print(5 |&gt; double |&gt; inc)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">11
 </code></pre>
@@ -1796,6 +2217,7 @@ assembler (<code>SPAWN takes 1 operand(s), got 0</code>). The AI/concurrency opc
 tracked under crush-ast <strong>CRUSH-1</strong> / <strong>CRUSH-34</strong>. A bare <code>yield</code> statement
 compiles and runs (it is a no-op without a spawned task).</p>
 <!-- check: nyi CRUSH-34 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:166" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
 <pre><code class="language-crush">fn worker() {
     print("worker")
 }
@@ -1803,6 +2225,8 @@ spawn worker()
 yield
 print("main")
 </code></pre>
+</div>
+
 <h2 id="best-practices-1"><a class="header" href="#best-practices-1">Best practices</a></h2>
 <ul>
 <li>Keep functions small and give parameters type hints — they document the
@@ -1832,10 +2256,15 @@ isolation.</p>
 </blockquote>
 <h2 id="calling-a-capability"><a class="header" href="#calling-a-capability">Calling a capability</a></h2>
 <p>A capability call looks like an ordinary dotted function call — <strong>no <code>@</code> prefix</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:19" data-expect="Hello, Crush
+ab
+">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 let upper = str.concat("a", "b")
 print(upper)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush
 ab
@@ -1859,10 +2288,16 @@ annotations, never capability calls — see <a href="#language-blocks">Syntax</a
 </tbody>
 </table>
 </div>
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:47" data-expect="A
+65
+6
+">
 <pre><code class="language-crush">print(conv.chr(65))
 print(conv.ord("A"))
 print(str.len("héllo"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">A
 65
@@ -1871,9 +2306,12 @@ print(str.len("héllo"))
 <p><code>io.read</code> reads from standard input:</p>
 <!-- check: stdin Ada -->
 <!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:64" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
 <pre><code class="language-crush">let name = io.read()
 io.print("Hello, " + name)
 </code></pre>
+</div>
+
 <h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
 <p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
 <code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
@@ -1906,20 +2344,29 @@ built without one, its flag prints <code>warning: --… requires the '…' featu
 default</strong> (crush-ast CRUSH-113); build with <code>--features stdlib</code>.</p>
 <p>Without the flag, the call fails:</p>
 <!-- check: runfail unknown capability: fs.read -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:100" data-why="this example shows a refusal" data-expect-error="unknown capability: fs.read">
 <pre><code class="language-crush">print(fs.read("data.txt"))
 </code></pre>
+</div>
+
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:108" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
+</div>
+
 <p>Filesystem paths must be relative and resolve <strong>inside</strong> <code>--fs-root</code> (default <code>.</code>):
 absolute paths and <code>..</code> escapes are rejected. This is the one place the permission
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">0
 </code></pre>
@@ -1945,15 +2392,21 @@ return nothing share the problem; <code>io.print</code> and <code>time.sleep</co
 </blockquote>
 <!-- check: nyi GAP-VOID-CAP-STATEMENT -->
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:143" data-why="uses `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 </code></pre>
+</div>
+
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:151" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">null
 true
@@ -2068,10 +2521,13 @@ WASI capability bridge, and no in-process interpreter.</p>
 at run time with <code>unknown capability: no executor registered for language 'rust'</code>.</p>
 <!-- check: runfail no executor registered for language 'rust' -->
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:35" data-why="uses `@rust` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@rust {
     fn main() {}
 }
 </code></pre>
+</div>
+
 <p>(crush-ast also ships <strong>walkers</strong> for Rust, Go, C, Zig, Wasm and others. A walker
 translates a <em>source file</em> into CAST for compilation — it is a separate
 mechanism, driven by the <code>crush-walker</code> tool, and is not what an <code>@lang { }</code>
@@ -2083,10 +2539,13 @@ ambient authority. Turn it on per run:</p>
 </code></pre>
 <p>Without it the block is refused:</p>
 <!-- check: runfail requires the 'polyglot.python' capability -->
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:58" data-why="this example shows a refusal" data-expect-error="requires the &#39;polyglot.python&#39; capability">
 <pre><code class="language-crush">@python {
 print("hi")
 }
 </code></pre>
+</div>
+
 <p>An embedding host enables it explicitly with
 <code>HostCapsBuilder::polyglot(&amp;["python", "javascript", "bash"])</code>; each language is
 gated by its own capability name (<code>polyglot.python</code>, <code>polyglot.javascript</code>,
@@ -2097,12 +2556,15 @@ order. Two details to know: the block’s output is <strong>trimmed</strong> (so
 trailing newline), and anything written to standard error is discarded when the
 block succeeds.</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:77" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print("one")
 @python {
 print("two")
 }
 print("three")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">one
 twothree
@@ -2121,6 +2583,7 @@ back and becomes a Crush variable of that name. Earlier assignments in the same
 block do not escape.</li>
 </ul>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:108" data-why="uses `@python` blocks (polyglot); uses the standard library (`math.pow`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let base = 5
 @python {
 import math
@@ -2129,6 +2592,8 @@ result = math.pow(base, 3)
 }
 print(result)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">125.0
 </code></pre>
@@ -2152,6 +2617,7 @@ print(result)
 </table>
 </div>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:139" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let n = 5
 let tags = ["a", "b"]
 let cfg = {"k": 1}
@@ -2160,6 +2626,8 @@ out = [n * 2, len(tags), cfg["k"], None, True]
 }
 print(out)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[10, 2, 1, null, true]
 </code></pre>
@@ -2167,6 +2635,7 @@ print(out)
 file, a function) fails the block with a clear error rather than being dropped:</p>
 <!-- check: runfail cannot marshal output variable 'obj' -->
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:159" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 class C:
     pass
@@ -2174,8 +2643,11 @@ obj = C()
 }
 print(1)
 </code></pre>
+</div>
+
 <p>Blocks compose through Crush variables, across languages:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:171" data-why="uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let x = 1
 @python {
 y = x + 1
@@ -2188,11 +2660,14 @@ w = z + 1
 }
 print(w)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">21
 </code></pre>
 <p>Blocks inside functions and loops see the enclosing scope:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:193" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let total = 0
 for i in 0..3 {
     @python {
@@ -2202,6 +2677,8 @@ sq = i * i
 }
 print(total)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 </code></pre>
@@ -2215,11 +2692,14 @@ declared <strong>earlier at the top level of the same function body</strong> as 
 variables (stringified — an array arrives as <code>[1, 2]</code>), and nothing comes back
 except the printed output:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:222" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let name = "crush"
 @bash {
 echo "hello $name"
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">hello crush
 </code></pre>
@@ -2227,6 +2707,7 @@ echo "hello $name"
 neither is the result of an earlier <code>@python</code>/<code>@javascript</code> block — copy it into
 a <code>let</code> first:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:239" data-why="uses `@bash`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 m = 7
 }
@@ -2235,6 +2716,8 @@ let n = m
 echo "n=$n"
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">n=7
 </code></pre>
@@ -2248,12 +2731,15 @@ you don’t control.</p>
 right place in your <code>.crush</code> file:</p>
 <!-- check: runfail at .crush line 3 -->
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:267" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print("a")
 print("b")
 @python {
 raise ValueError("x")
 }
 </code></pre>
+</div>
+
 <pre><code class="language-text">[runtime] @python block raised a runtime error: (at .crush line 3) Traceback (most recent call last):
   File "&lt;string&gt;", line 2, in &lt;module&gt;
     raise ValueError("x")
@@ -2284,11 +2770,14 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:315" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
 print(len(host) &gt; 0)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">true
 </code></pre>
@@ -2321,12 +2810,15 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:354" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
 <pre><code class="language-crush">@python[pypi:six] {
 import six
 v = six.__version__
 }
 print(v)
 </code></pre>
+</div>
+
 <pre><code class="language-text">1.17.0
 </code></pre>
 <p>The first run prints buckets’ progress lines (<code>resolved python.org@^3.11 → …</code>) to
@@ -2393,6 +2885,7 @@ processes see <a href="#capability-system">Capability System</a>.</p>
 </table>
 </div>
 <p><code>str.concat(...)</code> and <code>str.len(s)</code> are always available, even without <code>--stdlib</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:45" data-why="uses the standard library (`str.index_of`, `str.pad_left`, `str.repeat` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(str.split("a,b,c", ","))
 print(str.join(["a", "b"], "-"))
 print("[" + str.trim("  x  ") + "]")
@@ -2403,6 +2896,8 @@ print(str.repeat("ab", 3))
 print(str.substring("hello", 1, 3))
 print(str.index_of("hello", "l"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[a, b, c]
 a-b
@@ -2421,12 +2916,15 @@ el
 <code>math.pi()</code>. Results are <code>Float</code>. <code>math.random()</code>, <code>math.random_int(lo, hi)</code>
 (requires <code>lo &lt; hi</code>) and <code>math.seed(n)</code> use a deterministic built-in generator
 (crush-ast CRUSH-116), so seeded runs are reproducible.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:80" data-why="uses the standard library (`math.floor`, `math.max`, `math.pow` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(math.sqrt(16))
 print(math.pow(2, 10))
 print(math.floor(-1.5))
 print(math.round(3.6))
 print(math.max(2.5, 1))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">4.0
 1024.0
@@ -2438,6 +2936,7 @@ print(math.max(2.5, 1))
 <p><code>conv.to_int</code>, <code>conv.to_float</code>, <code>conv.to_str</code>, <code>conv.to_bool</code>,
 <code>conv.parse_int(text, radix)</code>, <code>conv.parse_float</code>, <code>conv.type_of</code>, plus the
 always-on <code>conv.chr</code> / <code>conv.ord</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:103" data-why="uses the standard library (`conv.parse_int`, `conv.to_float`, `conv.to_int` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(conv.to_int("42") + 1)
 print(conv.to_int(3.9))
 print(conv.parse_int("ff", 16))
@@ -2445,6 +2944,8 @@ print(conv.parse_int("101", 2))
 print(conv.to_float("2"))
 print(conv.type_of(3.5))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">43
 3
@@ -2457,6 +2958,7 @@ float
 <p><code>collections.len</code>, <code>reverse</code>, <code>includes</code>, <code>flatten</code>, <code>chunk(array, n)</code>, <code>zip</code>,
 <code>unique</code>, <code>all</code>, <code>any</code>, <code>find</code>, <code>sort_by(array, key)</code>, <code>pluck(array, key)</code>,
 and for objects: <code>keys</code>, <code>values</code>, <code>entries</code>, <code>merge</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:128" data-why="uses the standard library (`collections.chunk`, `collections.keys`, `collections.merge` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let scores = {"ada": 3, "grace": 5}
 print(collections.keys(scores))
 print(collections.values(scores))
@@ -2465,6 +2967,8 @@ print(collections.reverse([1, 2, 3]))
 print(collections.chunk([1, 2, 3, 4], 2))
 print(collections.unique([1, 1, 2, 2, 3]))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[ada, grace]
 [3, 5]
@@ -2476,11 +2980,14 @@ print(collections.unique([1, 1, 2, 2, 3]))
 <p><code>collections.keys(obj)</code> returns the keys <strong>sorted</strong>, and is how you iterate an
 object deterministically — <code>for k in obj</code> isn’t supported, and printing an object
 directly lists its keys in an unspecified (per-run) order:</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:152" data-why="uses the standard library (`collections.keys`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let m = {"a": 1, "b": 2}
 for k in collections.keys(m) {
     print(k)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">a
 b
@@ -2488,11 +2995,14 @@ b
 <h2 id="json--json"><a class="header" href="#json--json">JSON — <code>json.*</code></a></h2>
 <p><code>json.parse(text)</code> → object/array/scalar; <code>json.stringify(value)</code>;
 <code>json.stringify_pretty(value)</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:170" data-why="uses the standard library (`json.parse`, `json.stringify`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let o = json.parse("{\"name\": \"Ada\", \"n\": 3}")
 print(o.name)
 print(o.n + 1)
 print(json.stringify({"x": 1}))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Ada
 4
@@ -2501,12 +3011,15 @@ print(json.stringify({"x": 1}))
 <h2 id="paths--path"><a class="header" href="#paths--path">Paths — <code>path.*</code></a></h2>
 <p><code>path.join(a, b)</code>, <code>dirname</code>, <code>basename</code>, <code>extension</code>, <code>stem</code>, <code>is_absolute</code>,
 <code>normalize</code> — pure string manipulation, no filesystem access.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:189" data-why="uses the standard library (`path.basename`, `path.dirname`, `path.join` …), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(path.join("a", "b.txt"))
 print(path.dirname("/x/y/z.txt"))
 print(path.basename("/x/y/z.txt"))
 print(path.stem("z.tar.gz"))
 print(path.normalize("a/./b/../c"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">a/b.txt
 /x/y
@@ -2518,10 +3031,13 @@ a/c
 <p><strong>The pattern comes first</strong>, then the text: <code>regex.test(pattern, text)</code>,
 <code>regex.find_all(pattern, text)</code>, <code>regex.replace(pattern, text, replacement)</code>,
 <code>regex.split(pattern, text)</code>.</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:212" data-why="uses the standard library (`regex.find_all`, `regex.replace`, `regex.split`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(regex.find_all("[0-9]+", "a1b22"))
 print(regex.replace("[0-9]", "a1b2", "#"))
 print(regex.split("[,;] *", "a, b;c"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[1, 22]
 a#b#
@@ -2532,8 +3048,11 @@ a#b#
 <code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
 </blockquote>
 <!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:230" data-why="uses the standard library (`regex.match`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 </code></pre>
+</div>
+
 <h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
 <p>Also registered under <code>--stdlib</code>: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
 <code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
@@ -2541,9 +3060,12 @@ a#b#
 <code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
 <code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
 helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
+<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:243" data-why="uses `env.os`; uses the standard library (`result.ok`, `result.unwrap`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(result.unwrap(result.ok(5)))
 print(env.os())
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">5
 linux
@@ -2588,6 +3110,18 @@ language feature is <em>not yet implemented</em>, with the crush-ast ticket.</p>
 <h1 id="fibonacci--functions"><a class="header" href="#fibonacci--functions">Fibonacci &amp; Functions</a></h1>
 <p>The canonical recursion example, with typed function signatures. Run it with
 <code>crush run fib.crush</code>.</p>
+<div class="crush-block" data-crush="run" data-src="examples/fibonacci.md:6" data-expect="fib(0) = 0
+fib(1) = 1
+fib(2) = 1
+fib(3) = 2
+fib(4) = 3
+fib(5) = 5
+fib(6) = 8
+fib(7) = 13
+fib(8) = 21
+fib(9) = 34
+10! = 3628800
+">
 <pre><code class="language-crush">fn fib(n: Int) -&gt; Int {
     if n &lt;= 1 {
         return n
@@ -2609,6 +3143,8 @@ fn main() {
     print("10! = " + factorial(10))
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">fib(0) = 0
 fib(1) = 1
@@ -2637,6 +3173,33 @@ statements run first, then <code>main</code></li>
 <h1 id="arrays--loops"><a class="header" href="#arrays--loops">Arrays &amp; Loops</a></h1>
 <p>Array creation, indexing, <code>for</code> iteration, <code>break</code>/<code>continue</code>, and a classic
 loop exercise.</p>
+<div class="crush-block" data-crush="run" data-src="examples/arrays-loops.md:6" data-expect="length: 5
+first: 10, third: 30
+sum: 150
+before 30: 10
+before 30: 20
+not 30: 10
+not 30: 20
+not 30: 40
+not 30: 50
+[1, 4, 9, 16, 25]
+ho
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+">
 <pre><code class="language-crush">let arr = [10, 20, 30, 40, 50]
 print("length: " + len(arr))
 print("first: " + arr[0] + ", third: " + arr[2])
@@ -2688,6 +3251,8 @@ for n in 1..16 {
     }
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">length: 5
 first: 10, third: 30
@@ -2728,6 +3293,15 @@ FizzBuzz
 <h1 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h1>
 <p><code>try</code> / <code>catch</code> / <code>throw</code> work, including across function calls. Any value can
 be thrown.</p>
+<div class="crush-block" data-crush="run" data-src="examples/exceptions.md:6" data-expect="Starting
+Inside try block
+Caught exception: Oops
+After catch block
+5
+Error: division by zero
+404
+not found
+">
 <pre><code class="language-crush">print("Starting")
 
 try {
@@ -2762,6 +3336,8 @@ try {
     print(err.msg)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Starting
 Inside try block
@@ -2786,6 +3362,9 @@ instead — see <a href="#what-catch-does-not-catch">Control Flow</a></li>
 <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
 <p>A struct is declared once, created with <code>new Name()</code>, and filled in by assigning
 fields. Structs are passed by reference.</p>
+<div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:6" data-expect="p = (1.0, 2.0)
+squared distance: 25.0
+">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
 
 fn dist2(a, b) {
@@ -2804,6 +3383,8 @@ q.y = 6.0
 print("p = (" + p.x + ", " + p.y + ")")
 print("squared distance: " + dist2(p, q))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">p = (1.0, 2.0)
 squared distance: 25.0
@@ -2825,6 +3406,7 @@ without its operand and the assembler rejects the program
 (spawn/await/yield execution) is open. A bare <code>yield</code> statement compiles and is a
 no-op.</p>
 <!-- check: nyi CRUSH-34 -->
+<div class="crush-block" data-crush="fail" data-src="examples/concurrency-structs.md:51" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
 <pre><code class="language-crush">fn worker() {
     print("worker running")
     yield
@@ -2836,12 +3418,18 @@ print("main")
 yield
 print("main again")
 </code></pre>
+</div>
+
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="lambdas--the-pipeline-operator"><a class="header" href="#lambdas--the-pipeline-operator">Lambdas &amp; the Pipeline Operator</a></h1>
 <h2 id="the-pipeline-operator"><a class="header" href="#the-pipeline-operator">The pipeline operator</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
 bind more loosely than any other operator. The right-hand side must be a
 user-defined function (or a call to one).</p>
+<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:9" data-expect="9
+16
+70
+">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b
 }
@@ -2857,6 +3445,8 @@ print(2 |&gt; square |&gt; square)
 let result = 3 |&gt; add(4) |&gt; mul(10)
 print(result)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">9
 16
@@ -2872,15 +3462,21 @@ bug is GitHub issue #78). The forms below are what the design intends; they are
 kept here, marked, so they can be switched on when CRUSH-75 lands.</p>
 </blockquote>
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:44" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let add = |a, b| {
     return a + b
 }
 print(add(1, 2))
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:52" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let mul = |x, y| =&gt; x * y
 print(mul(4, 5))
 </code></pre>
+</div>
+
 <p>Passing a function by name (<code>apply(double, 21)</code>) fails for the same reason: a
 function name is not a value. Until then, use named functions and <code>|&gt;</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -2909,22 +3505,32 @@ today there is no way to share code between files.</p>
 <p>Each failing form is checked below, so this page will say so the day one starts
 working:</p>
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:21" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import fs as files
 print("loaded")
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:27" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
 print("loaded")
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-110 -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:33" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import @http "https://example.com/data.json" as data
 print("loaded")
 </code></pre>
+</div>
+
 <h2 id="use-lang"><a class="header" href="#use-lang"><code>use @lang</code></a></h2>
 <p><code>use @lang &lt;language&gt; "&lt;module&gt;" as &lt;alias&gt;</code> declares a module for a polyglot
 block. It is accepted and runs, but the alias is not wired to the block’s
 variables — the block still has to <code>import</code> the module itself:</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="examples/imports.md:45" data-why="uses `@python` blocks (polyglot); uses the standard library (`math.factorial`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">use @lang python "math" as math
 
 @python {
@@ -2933,6 +3539,8 @@ v = math.factorial(5)
 }
 print(v)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">120
 </code></pre>
@@ -2947,6 +3555,7 @@ assemble them. The program needs three capability groups, so it is run with
 <code>crush run --stdlib --env --time sysinfo.crush</code>; with any flag missing, the
 corresponding call fails with <code>unknown capability</code>.</p>
 <!-- check: flags --env --time -->
+<div class="crush-block" data-crush="host" data-src="examples/sysinfo.md:9" data-why="uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Gather host facts through capabilities and render a small report.
 let os = env.os()
 let arch = env.arch()
@@ -2958,6 +3567,8 @@ if home != null {
 }
 print("clock ok: " + (time.now() &gt; 0))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">System report
 -------------
@@ -2988,6 +3599,7 @@ step is a real process started through <code>process.exec</code>, and the pipeli
 the first failure.</p>
 <p>Run it with <code>crush run --stdlib --process build.crush</code>.</p>
 <!-- check: flags --process -->
+<div class="crush-block" data-crush="host" data-src="examples/build-pipeline.md:11" data-why="uses `process.exec`; uses the standard library (`json.parse`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// A tiny build pipeline: run each step as a process, stop at the first failure.
 fn run_tool(cmd: String, arg: String) -&gt; Int {
     let raw = process.exec(cmd, arg)
@@ -3017,6 +3629,8 @@ fn main() {
     }
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[start] configure
 [ok] configure
@@ -3049,6 +3663,7 @@ toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
 on <code>PATH</code>).</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:12" data-why="uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Three languages, one program. Values flow through Crush variables.
 let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
@@ -3069,6 +3684,8 @@ echo "mean=$m spread=$s"
 print("")
 print("done")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">mean=3.875 spread=8
 done
@@ -3729,12 +4346,16 @@ debuggers only).</li>
 </ul>
 <h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
 <p>Compile a small program to text assembly:</p>
+<div class="crush-block" data-crush="run" data-src="casm/README.md:54" data-expect="x = 5
+">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b
 }
 let x = add(2, 3)
 io.print("x = ", x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">x = 5
 </code></pre>
@@ -4714,6 +5335,8 @@ registered it).</p>
 <p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
 Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
 <p><strong><code>if</code> / <code>else</code>:</strong></p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:285" data-expect="big
+">
 <pre><code class="language-crush">let n = 3
 if n &gt; 2 {
     io.print("big")
@@ -4721,6 +5344,8 @@ if n &gt; 2 {
     io.print("small")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">big
 </code></pre>
@@ -4742,12 +5367,16 @@ L49:
     RET
 </code></pre>
 <p><strong><code>try</code> / <code>catch</code>:</strong></p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:320" data-expect="caught bad
+">
 <pre><code class="language-crush">try {
     throw "bad"
 } catch e {
     io.print("caught ", e)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">caught bad
 </code></pre>
@@ -4768,10 +5397,14 @@ L28:
 </code></pre>
 <p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
 slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:353" data-expect="6
+">
 <pre><code class="language-crush">let t = 0
 for x in [1, 2, 3] { t = t + x }
 io.print(t)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">6
 </code></pre>
@@ -4924,6 +5557,9 @@ the chapters linked from each heading.</p>
 <code>--max-call-depth</code> (256).</p>
 <h2 id="language-syntax"><a class="header" href="#language-syntax">Language (<a href="#syntax-and-grammar">Syntax</a>)</a></h2>
 <h3 id="variables-and-functions-1"><a class="header" href="#variables-and-functions-1">Variables and functions</a></h3>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:29" data-expect="Hello, Alice
+43
+">
 <pre><code class="language-crush">let x = 42
 let name: String = "Alice"
 
@@ -4938,6 +5574,8 @@ fn greet(who) {
 greet(name)
 print(add(x, 1))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Alice
 43
@@ -4949,6 +5587,13 @@ print(add(x, 1))
 <li>No <code>let mut</code>, no <code>T?</code> types, no lambdas (CRUSH-75), no working <code>import</code> (CRUSH-110).</li>
 </ul>
 <h3 id="control-flow-control-flow"><a class="header" href="#control-flow-control-flow">Control flow (<a href="#control-flow-1">Control Flow</a>)</a></h3>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:58" data-expect="medium
+0
+1
+2
+a
+b
+">
 <pre><code class="language-crush">let n = 3
 if n &gt; 5 {
     print("big")
@@ -4971,6 +5616,8 @@ for item in ["a", "b"] {
     print(item)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">medium
 0
@@ -4984,16 +5631,23 @@ b
 <p><code>+ - * / %</code> · <code>== != &lt; &gt; &lt;= &gt;=</code> · <code>&amp;&amp; || !</code> (short-circuit) · unary <code>-</code> · pipeline <code>|&gt;</code>.
 There is no <code>and</code>/<code>or</code>/<code>not</code>, <code>**</code>, <code>//</code>, <code>+=</code> or ternary.</p>
 <h3 id="errors-1"><a class="header" href="#errors-1">Errors</a></h3>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:101" data-expect="caught: disk full
+">
 <pre><code class="language-crush">try {
     throw "disk full"
 } catch e {
     print("caught: " + e)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">caught: disk full
 </code></pre>
 <h3 id="structs-and-objects-types"><a class="header" href="#structs-and-objects-types">Structs and objects (<a href="#data-types">Types</a>)</a></h3>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:116" data-expect="7
+crush
+">
 <pre><code class="language-crush">struct Point { x, y }
 let p = new Point()
 p.x = 3
@@ -5002,6 +5656,8 @@ let o = {"name": "crush"}
 print(p.x + p.y)
 print(o.name)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">7
 crush
@@ -5010,18 +5666,26 @@ crush
 <p>Capability calls are dotted and have <strong>no <code>@</code></strong>. They exist only if you enabled
 them:</p>
 <!-- check: flags --fs -->
+<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:138" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">if fs.exists("notes.txt") {
     print(fs.read("notes.txt"))
 } else {
     print("no notes")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">no notes
 </code></pre>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:151" data-expect="ab3
+6
+">
 <pre><code class="language-crush">io.print("a", "b", 3)
 print(str.len("héllo"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">ab3
 6
@@ -5031,10 +5695,13 @@ print(str.len("héllo"))
 <code>--polyglot</code>, and with the host’s full authority (no sandbox by default). Without the
 flag they are refused:</p>
 <!-- check: runfail --polyglot -->
+<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:169" data-why="this example shows a refusal" data-expect-error="--polyglot">
 <pre><code class="language-crush">@python {
     print("hello from python")
 }
 </code></pre>
+</div>
+
 <h2 id="types-types"><a class="header" href="#types-types">Types (<a href="#data-types">Types</a>)</a></h2>
 <div class="table-wrapper">
 <table>
@@ -5141,12 +5808,15 @@ package ecosystem, no lambdas, no working <code>import</code>, and a small stand
 </table>
 </div>
 <!-- check: output -->
+<div class="crush-block" data-crush="run" data-src="appendix/comparison.md:34">
 <pre><code class="language-crush">fn greet(name) {
     print("Hello, " + name + "!")
 }
 
 greet("Alice")
 </code></pre>
+</div>
+
 <pre><code class="language-text">Hello, Alice!
 </code></pre>
 <p>In Python that is <code>def greet(name): print(f"Hello, {name}!")</code> — no string
@@ -5293,6 +5963,7 @@ capability flag.</li>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="interactive/crush-run-b160d67d.js"></script>
 
         <script>
         window.addEventListener('load', function() {

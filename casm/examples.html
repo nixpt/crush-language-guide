@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -403,6 +404,8 @@ registered it).</p>
 <p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
 Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
 <p><strong><code>if</code> / <code>else</code>:</strong></p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:285" data-expect="big
+">
 <pre><code class="language-crush">let n = 3
 if n &gt; 2 {
     io.print("big")
@@ -410,6 +413,8 @@ if n &gt; 2 {
     io.print("small")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">big
 </code></pre>
@@ -431,12 +436,16 @@ L49:
     RET
 </code></pre>
 <p><strong><code>try</code> / <code>catch</code>:</strong></p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:320" data-expect="caught bad
+">
 <pre><code class="language-crush">try {
     throw "bad"
 } catch e {
     io.print("caught ", e)
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">caught bad
 </code></pre>
@@ -457,10 +466,14 @@ L28:
 </code></pre>
 <p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
 slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:353" data-expect="6
+">
 <pre><code class="language-crush">let t = 0
 for x in [1, 2, 3] { t = t + x }
 io.print(t)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">6
 </code></pre>
@@ -567,6 +580,7 @@ a stray one at <code>HALT</code> shows up as <code>stack=1</code> in the <code>[
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

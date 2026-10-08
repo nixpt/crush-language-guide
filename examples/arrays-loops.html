@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,6 +184,33 @@
                         <h1 id="arrays--loops"><a class="header" href="#arrays--loops">Arrays &amp; Loops</a></h1>
 <p>Array creation, indexing, <code>for</code> iteration, <code>break</code>/<code>continue</code>, and a classic
 loop exercise.</p>
+<div class="crush-block" data-crush="run" data-src="examples/arrays-loops.md:6" data-expect="length: 5
+first: 10, third: 30
+sum: 150
+before 30: 10
+before 30: 20
+not 30: 10
+not 30: 20
+not 30: 40
+not 30: 50
+[1, 4, 9, 16, 25]
+ho
+1
+2
+Fizz
+4
+Buzz
+Fizz
+7
+8
+Fizz
+Buzz
+11
+Fizz
+13
+14
+FizzBuzz
+">
 <pre><code class="language-crush">let arr = [10, 20, 30, 40, 50]
 print("length: " + len(arr))
 print("first: " + arr[0] + ", third: " + arr[2])
@@ -234,6 +262,8 @@ for n in 1..16 {
     }
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">length: 5
 first: 10, third: 30
@@ -322,6 +352,7 @@ FizzBuzz
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

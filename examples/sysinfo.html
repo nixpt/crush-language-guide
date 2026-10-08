@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,6 +187,7 @@ assemble them. The program needs three capability groups, so it is run with
 <code>crush run --stdlib --env --time sysinfo.crush</code>; with any flag missing, the
 corresponding call fails with <code>unknown capability</code>.</p>
 <!-- check: flags --env --time -->
+<div class="crush-block" data-crush="host" data-src="examples/sysinfo.md:9" data-why="uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Gather host facts through capabilities and render a small report.
 let os = env.os()
 let arch = env.arch()
@@ -197,6 +199,8 @@ if home != null {
 }
 print("clock ok: " + (time.now() &gt; 0))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">System report
 -------------
@@ -271,6 +275,7 @@ declaration. None of those exist in the runtime today; host metrics beyond
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

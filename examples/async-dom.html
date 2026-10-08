@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,6 +189,7 @@ toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
 on <code>PATH</code>).</p>
 <!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:12" data-why="uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Three languages, one program. Values flow through Crush variables.
 let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
@@ -208,6 +210,8 @@ echo "mean=$m spread=$s"
 print("")
 print("done")
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">mean=3.875 spread=8
 done
@@ -277,6 +281,7 @@ is used to finish the line</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

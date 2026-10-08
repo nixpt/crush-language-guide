@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-36566637.js"></script>
+        <script src="toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -232,10 +233,14 @@ implementation are marked <em>not yet implemented</em>, with the crush-ast ticke
 </code></pre>
 <p><code>crush run prog.crush</code> runs the whole left-hand path in one step.</p>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
+<div class="crush-block" data-crush="run" data-src="README.md:53" data-expect="Hello, Crush!
+">
 <pre><code class="language-crush">fn main() {
     io.print("Hello, Crush!")
 }
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Crush!
 </code></pre>
@@ -243,6 +248,9 @@ implementation are marked <em>not yet implemented</em>, with the crush-ast ticke
 host, and so only works if the host grants it. Capability calls are written like
 any other dotted call — there is no <code>@</code> prefix. (The <code>@</code> sigil in Crush
 introduces polyglot blocks such as <code>@python { ... }</code>, and annotations.)</p>
+<p>Press <strong>Run</strong> under the example to run it in your browser, or <strong>Edit</strong> to change
+it first. <a href="running-examples.html">Running the Examples</a> explains the buttons and
+labels, and what the in-browser runtime can and cannot do.</p>
 <h2 id="where-the-source-lives"><a class="header" href="#where-the-source-lives">Where the source lives</a></h2>
 <p>The language implementation is the standalone
 <a href="https://github.com/nixpt/crush-ast">crush-ast</a> repository, extracted from
@@ -302,6 +310,7 @@ compiler running inside the agent-native OS.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="interactive/crush-run-b160d67d.js"></script>
 
 
 

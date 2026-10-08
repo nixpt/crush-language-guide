@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,6 +187,9 @@ top-level declarations. <strong>Functions are not first-class values yet</strong
 call one by name, but you can’t store it in a variable or pass it as an argument
 (see <a href="#higher-order-functions-and-lambdas">Higher-order functions</a>).</p>
 <h2 id="defining-functions"><a class="header" href="#defining-functions">Defining functions</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:10" data-expect="Hello, Alice!
+8
+">
 <pre><code class="language-crush">fn greet(name: String) {
     print("Hello, " + name + "!")
 }
@@ -197,6 +201,8 @@ fn add(a: Int, b: Int) -&gt; Int {
 greet("Alice")
 print(add(5, 3))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">Hello, Alice!
 8
@@ -213,6 +219,13 @@ variadic parameters.</li>
 <h2 id="returning-values"><a class="header" href="#returning-values">Returning values</a></h2>
 <p>Return with <code>return</code>. A function that falls off the end — or uses a bare
 <code>return</code> — yields <code>null</code>. A final expression is <strong>not</strong> an implicit return:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:42" data-expect="positive
+negative
+zero
+[LOG] done
+[LOG] again
+null
+">
 <pre><code class="language-crush">fn check_sign(x: Int) -&gt; String {
     if x &gt; 0 {
         return "positive"
@@ -232,6 +245,8 @@ print(check_sign(0))
 log_message("done")
 print(log_message("again"))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">positive
 negative
@@ -243,6 +258,9 @@ null
 <p>The return-type hint is not checked against what the body actually returns
 today: <code>fn f() -&gt; Int { return "s" }</code> compiles.</p>
 <h2 id="recursion"><a class="header" href="#recursion">Recursion</a></h2>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:78" data-expect="120
+610
+">
 <pre><code class="language-crush">fn factorial(n: Int) -&gt; Int {
     if n &lt;= 1 {
         return 1
@@ -260,6 +278,8 @@ fn fib(n) {
 print(factorial(5))
 print(fib(15))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">120
 610
@@ -270,11 +290,14 @@ it ends the program with <code>call depth quota exceeded</code>. The other defau
 1,000,000 instructions (<code>--max-steps</code>), a 4096-slot stack (<code>--max-stack</code>), 1 MiB of
 output (<code>--max-output</code>), and a 30-second wall-clock limit per polyglot block.</p>
 <!-- check: runfail call depth quota exceeded -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:110" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
 <pre><code class="language-crush">fn d(n) {
     return d(n - 1)
 }
 print(d(1))
 </code></pre>
+</div>
+
 <h2 id="higher-order-functions-and-lambdas"><a class="header" href="#higher-order-functions-and-lambdas">Higher-order functions and lambdas</a></h2>
 <blockquote>
 <p><strong>Not yet implemented.</strong> Passing a function by name (<code>apply(double, 21)</code>),
@@ -286,16 +309,24 @@ write ordinary named functions and call them directly, or use the
 pipeline operator (<code>x |&gt; f</code>), which does accept a function <strong>name</strong>:</p>
 </blockquote>
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:128" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
 }
 let f = double
 print(f(21))
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:137" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let double = |x| { return x * 2 }
 print(double(21))
 </code></pre>
+</div>
+
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:142" data-expect="11
+">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
 }
@@ -304,6 +335,8 @@ fn inc(n) {
 }
 print(5 |&gt; double |&gt; inc)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">11
 </code></pre>
@@ -314,6 +347,7 @@ assembler (<code>SPAWN takes 1 operand(s), got 0</code>). The AI/concurrency opc
 tracked under crush-ast <strong>CRUSH-1</strong> / <strong>CRUSH-34</strong>. A bare <code>yield</code> statement
 compiles and runs (it is a no-op without a spawned task).</p>
 <!-- check: nyi CRUSH-34 -->
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:166" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
 <pre><code class="language-crush">fn worker() {
     print("worker")
 }
@@ -321,6 +355,8 @@ spawn worker()
 yield
 print("main")
 </code></pre>
+</div>
+
 <h2 id="best-practices"><a class="header" href="#best-practices">Best practices</a></h2>
 <ul>
 <li>Keep functions small and give parameters type hints — they document the
@@ -386,6 +422,7 @@ interface and catch mistakes at compile time.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

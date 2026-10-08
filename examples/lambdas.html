@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,6 +186,10 @@
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
 bind more loosely than any other operator. The right-hand side must be a
 user-defined function (or a call to one).</p>
+<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:9" data-expect="9
+16
+70
+">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b
 }
@@ -200,6 +205,8 @@ print(2 |&gt; square |&gt; square)
 let result = 3 |&gt; add(4) |&gt; mul(10)
 print(result)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">9
 16
@@ -215,15 +222,21 @@ bug is GitHub issue #78). The forms below are what the design intends; they are
 kept here, marked, so they can be switched on when CRUSH-75 lands.</p>
 </blockquote>
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:44" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let add = |a, b| {
     return a + b
 }
 print(add(1, 2))
 </code></pre>
+</div>
+
 <!-- check: nyi CRUSH-75 -->
+<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:52" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
 <pre><code class="language-crush">let mul = |x, y| =&gt; x * y
 print(mul(4, 5))
 </code></pre>
+</div>
+
 <p>Passing a function by name (<code>apply(double, 21)</code>) fails for the same reason: a
 function name is not a value. Until then, use named functions and <code>|&gt;</code>.</p>
 
@@ -278,6 +291,7 @@ function name is not a value. Until then, use named functions and <code>|&gt;</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

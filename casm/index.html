@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -230,12 +231,16 @@ debuggers only).</li>
 </ul>
 <h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
 <p>Compile a small program to text assembly:</p>
+<div class="crush-block" data-crush="run" data-src="casm/README.md:54" data-expect="x = 5
+">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b
 }
 let x = add(2, 3)
 io.print("x = ", x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">x = 5
 </code></pre>
@@ -324,6 +329,7 @@ function called <code>main</code>.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 

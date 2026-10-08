@@ -28,6 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../interactive/crush-run-85c35f1e.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ce6f2ab4.js";
+            window.path_to_searchindex_js = "../searchindex-d6359a53.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-36566637.js"></script>
+        <script src="../toc-35aeca35.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,11 +186,15 @@
 enforces today.</p>
 <h2 id="declaration"><a class="header" href="#declaration">Declaration</a></h2>
 <p>Every variable is introduced with <code>let</code> and <strong>must be initialised</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:10" data-expect="42
+">
 <pre><code class="language-crush">let x = 42
 let name = "Alice"
 let active = true
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
@@ -197,18 +202,28 @@ print(x)
 reserved word, but it is not accepted in a declaration, and there is no <code>const</code>.
 Every <code>let</code> variable is simply reassignable.</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:27" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x
 </code></pre>
+</div>
+
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:32" data-why="this example shows a compile error">
 <pre><code class="language-crush">let mut counter = 0
 </code></pre>
+</div>
+
 <h3 id="type-hints"><a class="header" href="#type-hints">Type hints</a></h3>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:38" data-expect="30
+">
 <pre><code class="language-crush">let age: Int = 30
 let score: Float = 95.5
 let message: String = "Hello"
 let flag: Bool = true
 print(age)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">30
 </code></pre>
@@ -217,11 +232,15 @@ print(age)
 assignment today.</p>
 <h2 id="assignment"><a class="header" href="#assignment">Assignment</a></h2>
 <p>Reassign with <code>=</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:59" data-expect="2
+">
 <pre><code class="language-crush">let counter = 0
 counter = counter + 1
 counter = counter + 1
 print(counter)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 </code></pre>
@@ -229,14 +248,20 @@ print(counter)
 use <code>counter = counter + 1</code>. Assigning to a name that was never declared is a
 compile error (<code>Undefined variable</code>).</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:76" data-why="this example shows a compile error">
 <pre><code class="language-crush">counter += 1
 </code></pre>
+</div>
+
 <p>Variables are dynamically typed at run time, so a <code>let</code>-declared name can later
 hold a value of a different type (unless the compiler can see the mismatch for a
 hinted parameter or initialiser).</p>
 <h2 id="scoping-rules"><a class="header" href="#scoping-rules">Scoping rules</a></h2>
 <h3 id="function-scope"><a class="header" href="#function-scope">Function scope</a></h3>
 <p>Variables declared in a function are local to it, and parameters are local copies:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:90" data-expect="2
+1
+">
 <pre><code class="language-crush">fn bump(n) {
     n = n + 1
     return n
@@ -246,12 +271,16 @@ let v = 1
 print(bump(v))
 print(v)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 1
 </code></pre>
 <p>Arrays and objects are passed <strong>by reference</strong>, so a function can mutate its
 argument in place:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:110" data-expect="[1, 9]
+">
 <pre><code class="language-crush">fn add_nine(items) {
     items.push(9)
 }
@@ -260,11 +289,14 @@ let xs = [1]
 add_nine(xs)
 print(xs)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">[1, 9]
 </code></pre>
 <p>Using a function’s local outside it is a compile error:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:128" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn example() {
     let x = 10
     print(x)
@@ -272,11 +304,14 @@ print(xs)
 example()
 print(x)
 </code></pre>
+</div>
+
 <h3 id="module-level-variables-are-not-visible-inside-functions"><a class="header" href="#module-level-variables-are-not-visible-inside-functions">Module-level variables are not visible inside functions</a></h3>
 <p>Top-level statements form the program’s entry body, <strong>not</strong> a shared global
 scope. A function cannot read a variable declared at the top level — pass it as
 an argument:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:144" data-why="this example shows a compile error">
 <pre><code class="language-crush">let LEVEL = "production"
 
 fn get_level() {
@@ -284,6 +319,10 @@ fn get_level() {
 }
 print(get_level())
 </code></pre>
+</div>
+
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:153" data-expect="running in production
+">
 <pre><code class="language-crush">let level = "production"
 
 fn describe(l) {
@@ -291,6 +330,8 @@ fn describe(l) {
 }
 print(describe(level))
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">running in production
 </code></pre>
@@ -300,20 +341,29 @@ or keep it in an object/array you pass around.)</p>
 <p>A name first declared inside an <code>if</code>, <code>while</code> or <code>for</code> body is not visible after
 the block ends. A <code>for</code> loop variable is likewise local to the loop:</p>
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:176" data-why="this example shows a compile error">
 <pre><code class="language-crush">if true {
     let y = 2
 }
 print(y)
 </code></pre>
+</div>
+
 <!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/variables.md:184" data-why="this example shows a compile error">
 <pre><code class="language-crush">for i in 0..3 {
     print(i)
 }
 print(i)
 </code></pre>
+</div>
+
 <h3 id="shadowing"><a class="header" href="#shadowing">Shadowing</a></h3>
 <p><strong>Across functions</strong> a local simply hides nothing — each function has its own
 variables:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:196" data-expect="20
+10
+">
 <pre><code class="language-crush">let x = 10
 
 fn show() {
@@ -324,6 +374,8 @@ fn show() {
 show()
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">20
 10
@@ -331,12 +383,16 @@ print(x)
 <p><strong>Within one function</strong>, re-declaring an outer name in an inner block does <em>not</em>
 create a new shadowing variable; it assigns to the outer one. After this program
 the outer <code>x</code> is <code>2</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/variables.md:218" data-expect="2
+">
 <pre><code class="language-crush">let x = 1
 if true {
     let x = 2
 }
 print(x)
 </code></pre>
+</div>
+
 <!-- check: output -->
 <pre><code class="language-text">2
 </code></pre>
@@ -409,6 +465,7 @@ possible yet (crush-ast <strong>CRUSH-110</strong>).</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../interactive/crush-run-b160d67d.js"></script>
 
 
 
