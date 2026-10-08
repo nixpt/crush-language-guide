@@ -1,0 +1,102 @@
+{
+ "meta": {
+  "title": "Getting Started — The Crush Language Guide",
+  "description": "Generated from getting-started.md of The Crush Language Guide (https://docs.crushlang.org/getting-started.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "getting-started.md",
+   "guide_url": "https://docs.crushlang.org/getting-started.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "getting-started-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Getting Started\n\nCrush is alpha software. This page gets you from a clean machine to a running\nprogram, and then shows how to embed the VM in a Rust application. Everything here\nwas run against crush-ast `v0.3.9` (the release on crates.io).\n\n## 1. Build the toolchain\n\nThe language is implemented in [crush-ast](https://github.com/nixpt/crush-ast).\nBuild it from source — this is the path this guide's examples are validated\nagainst:\n\n```sh\ngit clone https://github.com/nixpt/crush-ast\ngit clone https://github.com/nixpt/buckets      # must sit NEXT TO crush-ast\ncd crush-ast\ncargo build --release -p crush-lang-sdk --features stdlib,net,db,graphics\n```\n\nTwo things to know:\n\n- **`buckets` must be a sibling directory.** `crush-vm` has an optional\n  path-dependency on `../buckets` (the sandbox provisioner), and Cargo resolves it\n  even when the feature is off, so a lone `crush-ast` checkout fails with\n  `failed to read .../buckets/Cargo.toml`.\n- **`--features stdlib` is not optional for this guide.** The standard library is\n  off by default (crush-ast CRUSH-113); without it `--stdlib` only prints a\n  warning and `str.*`, `math.*`, `conv.*` and friends don't exist.\n\nYou need Rust 1.85 or newer. The build produces these binaries in\n`target/release/`:\n\n| Binary | What it does |\n|---|---|\n| `crush` | The front door: `crush run FILE`, `crush build FILE`, `crush repl` |\n| `crush-run` | Run a `.crush`, `.casm` or `.cvm1` file (all the capability flags live here) |\n| `crushc` | Compile `.crush` to bytecode (`.cvm1`), or `--emit casm\\|ast\\|types`; `-C` only checks |\n| `crush-compile` | Assemble CASM text into a `.cvm1` binary |\n| `crush-repl` | Interactive REPL |\n\nPut them on your `PATH`, or install them with the bundled installer\n(`cargo run -p crush-installer -- install --bin-dir target/release` copies them\ninto `~/.crush/bin`; it does not currently include the `crush` wrapper).\n\n> **Crates.io.** The `0.3.9` release is published: `crush-lang-sdk` (which installs\n> `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and `crush-diff`),\n> `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-errors`,\n> `crush-diagnostics`, `crush-ffi`, `crush-cson`, `crush-index`, `crush-walker-core`,\n> `crush-lang-python` and `crush-lang-js`. So `cargo install crush-lang-sdk` works and\n> gives the toolchain this guide describes, and an embedding project can depend on\n> `crush-lang-sdk = \"0.3.9\"`. Four crates lag: `crush-lint`, `crush-installer` and\n> `tree-sitter-crush` are at `0.3.7`, `crush-jit` and `crush-python` at `0.3.0`;\n> `crush-pkg`, `crush-aot` and `crush-aotc` are not published. **Never depend on\n> `crush-lang-sdk` `0.2`**: that line has been yanked, and it runs `@lang` blocks\n> without the `--polyglot` gate.\n>\n> The `cargo install` route does not enable the optional SDK features\n> (`stdlib`, `net`, `db`, `graphics`): add them with\n> `cargo install crush-lang-sdk --features stdlib,net,db,graphics`.\n\n## 2. Hello, Crush\n\nSave this as `hello.crush`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "getting-started-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let name = \"Crush\"\nprint(\"Hello, \" + name + \"!\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "getting-started.md:65",
+      "browser": "run",
+      "expect_output": "Hello, Crush!\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "getting-started-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Run it:\n\n```sh\ncrush run hello.crush\n```\n\n```text\nHello, Crush!\n[steps=6, stack=0]\n```\n\nThe `[steps=…]` line is a run summary on standard error. Compile-only checking is\n`crushc -C hello.crush`; to see the bytecode, `crushc --emit casm hello.crush`.\n\n### Capabilities need flags\n\nA program can only reach the outside world through capabilities, and each group is\noff until you switch it on:\n\n```sh\ncrush run --stdlib prog.crush                    # str.* math.* conv.* json.* ...\ncrush run --fs --fs-root ./data prog.crush       # fs.read / fs.write / fs.exists / fs.list\ncrush run --polyglot prog.crush                  # @python / @javascript / @bash blocks\n```\n\nFor example, this reads a file, so it needs `--fs`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "getting-started-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    print(fs.read(\"notes.txt\"))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "getting-started.md:103",
+      "browser": "fail",
+      "why": "this example shows a refusal",
+      "expect_error": "unknown capability: fs.read"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "getting-started-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Run it without the flag and it fails with `unknown capability: fs.read`. The full\nflag list is in [Capability System](https://docs.crushlang.org/crush/capabilities.html) (`crush-run run --help`\nprints it too).\n\n### Limits worth knowing on day one\n\n- Output is buffered: if a program fails at run time, what it printed before the\n  failure is not shown.\n- Defaults: 1,000,000 instructions, 256 call frames, 1 MiB of output, 30 s per\n  polyglot block (all in [Capability System](https://docs.crushlang.org/crush/capabilities.html#resource-limits)).\n- Functions can't see top-level variables, and `import` doesn't load code yet — see\n  [Variables](https://docs.crushlang.org/crush/variables.html) and [Syntax](https://docs.crushlang.org/crush/syntax.html#imports-and-exports).\n\n## 3. The crates\n\nEmbedding Crush in a Rust program means depending on the SDK; the lower-level\ncrates give direct access to the IR, bytecode, or VM.\n\n| Crate | What it gives you |\n|---|---|\n| [`crush-lang-sdk`](https://crates.io/crates/crush-lang-sdk) | **Start here.** `Runtime`, `ProgramBuilder`, host-capability registration, and the `compile` module that turns Crush source into a runnable program. |\n| [`crush-frontend`](https://crates.io/crates/crush-frontend) | Parser, semantic analyzer, optimizer, and CASM compiler (`parse_source`). |\n| [`crush-vm`](https://crates.io/crates/crush-vm) | The CVM1 runtime: assembler/disassembler and the sandboxed interpreter with quotas + capability gates; also the FastVM. |\n| [`crush-cast`](https://crates.io/crates/crush-cast) | The CAST intermediate representation. |\n| [`casm`](https://crates.io/crates/casm) | The CASM IR (`casm::Program`, JSON and MessagePack) — see [CASM](https://docs.crushlang.org/casm/index.html). |\n| [`crush-errors`](https://crates.io/crates/crush-errors) | Shared error types. |\n| [`tree-sitter-crush`](https://crates.io/crates/tree-sitter-crush) | Tree-sitter grammar (editor tooling, syntax highlighting). |\n\nSDK Cargo features: `stdlib` (the standard library), `net`, `db`, `graphics`,\n`repl-helper`, plus the default `native-plugins`, `polyglot-python` and\n`polyglot-javascript` (the free-variable analysis that marshals values into and out\nof `@python`/`@javascript` blocks).\n\n## 4. Embedding\n\nCompile Crush source and run it on the VM — the same thing `crush run` does:\n\n```rust,no_run\nuse crush_lang_sdk::compile::compile_crush_source;\nuse crush_lang_sdk::Runtime;\n\nfn main() -> anyhow::Result<()> {\n    let program = compile_crush_source(r#\"print(\"hello from crush\")\"#)?;\n    let result = Runtime::new().run(&program)?;\n    assert_eq!(result.output, \"hello from crush\\n\");\n    Ok(())\n}\n```\n\nOr hand-write CVM1 assembly (what `crushc --emit casm` prints) with\n`ProgramBuilder`:\n\n```rust,no_run\nuse crush_lang_sdk::{ProgramBuilder, Runtime};\n\nfn main() -> anyhow::Result<()> {\n    let program = ProgramBuilder::new()\n        .permission(\"io.print\")\n        .line(r#\".func main\"#)\n        .line(r#\"PUSH_STR \"hello, cvm1\"\"#)\n        .line(r#\"CAP_CALL \"io.print\" 1\"#)\n        .line(r#\"HALT\"#)\n        .build()?;\n\n    let result = Runtime::new().run(&program)?;\n    assert_eq!(result.output, \"hello, cvm1\\n\");\n    Ok(())\n}\n```\n\nBoth snippets are compiled and run against crush-ast `main` as part of this\nguide's checks (`scripts/embed-check`). `Runtime::new()` registers only the\nbuilt-in primitives (`io.print`, `io.read`, …); to expose more — the standard\nlibrary, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass\nit with `Runtime::with_quotas(..).with_host_caps(..)`, which is exactly what\n`crush-run` does for its flags. The permission names a program may call are part of\nits manifest ([CASM structure](https://docs.crushlang.org/casm/structure.html)).\n\n## 5. Where next\n\n- **[The language](https://docs.crushlang.org/crush/index.html)**: syntax, types, control flow, functions\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)** and **[Polyglot](https://docs.crushlang.org/crush/polyglot.html)**:\n  the security model — read the \"what is not enforced\" sections\n- **[Examples](https://docs.crushlang.org/examples/index.html)**: runnable programs\n- **[CAST](https://docs.crushlang.org/cast/index.html)** and **[CASM](https://docs.crushlang.org/casm/index.html)**: the compiler's formats\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

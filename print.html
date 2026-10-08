@@ -29,7 +29,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="interactive/crush-run-85c35f1e.css">
+        <link rel="stylesheet" href="interactive/crush-run-3299f861.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d6359a53.js";
+            window.path_to_searchindex_js = "searchindex-f8c67f28.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-35aeca35.js"></script>
+        <script src="toc-7647b030.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,6 +189,8 @@
   The Crush Language Guide
 </h1>
 
+<p class="crush-notebook-link"><a href="notebooks/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p><strong>Crush</strong> is a capability-based scripting language with polyglot blocks, plus the
 toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
 intermediate representation (CAST) that other languages can be translated into.</p>
@@ -265,6 +267,8 @@ compiler running inside the agent-native OS.</p>
 <a href="https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-APACHE">Apache License 2.0</a> at your option.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/getting-started.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application. Everything here
 was run against crush-ast <code>v0.3.9</code> (the release on crates.io).</p>
@@ -465,7 +469,8 @@ host process to run them in), the filesystem, network, environment, clock and
 processes, the standard-library modules (<code>math.*</code>, <code>conv.to_int</code>, <code>json.*</code>, …),
 and standard input (<code>io.read</code> returns <code>""</code>).</li>
 <li><strong>Every run starts fresh.</strong> Examples do not share variables, even on the same
-page.</li>
+page. To build on one example in the next, open the chapter as a notebook (see
+<a href="#chapters-as-notebooks">Chapters as Notebooks</a>).</li>
 <li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and an
 8-second wall-clock limit; a runaway loop is stopped, not your tab.
 Output printed before a run-time error is not shown.</li>
@@ -475,7 +480,107 @@ Output printed before a run-time error is not shown.</li>
 <p>Without JavaScript the guide is a plain book: the code blocks are all there, just
 without the buttons.</p>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="chapters-as-notebooks"><a class="header" href="#chapters-as-notebooks">Chapters as Notebooks</a></h1>
+<p>Every chapter with Crush examples is also published as a
+<a href="https://github.com/nixpt/crush-notebook">crush-notebook</a> (a <code>.crush-nb</code> file):
+the chapter’s prose becomes Markdown cells, each Crush example a cell you can
+run, edit and extend. Use the <strong>Open as a notebook</strong> link under a chapter’s
+title, or pick one from the list below.</p>
+<p>The notebooks are generated from the guide each time the book is built, so they
+always match the pages. Each example cell keeps what the guide knows about it in
+its metadata: the page and line it came from, its marking (<code>runnable</code>,
+<code>expected-failure</code>, <code>needs-host</code>) as a tag, and the output or error the page
+shows (<code>meta.extra.guide</code>). The notebooks ship without outputs: running them is
+up to you.</p>
+<h2 id="open-a-notebook-on-your-machine"><a class="header" href="#open-a-notebook-on-your-machine">Open a notebook on your machine</a></h2>
+<p>A <code>.crush-nb</code> file is plain JSON. To run one you need the notebook kernel; to
+read one as a page, the renderer. Both are on crates.io:</p>
+<pre><code class="language-sh">cargo install --locked crush-notebook-kernel crush-notebook-render
+</code></pre>
+<p><strong>Run it with the kernel.</strong> <code>crush-notebook-kernel</code> is an
+<a href="https://modelcontextprotocol.io">MCP</a> server over stdio, so any MCP client (an
+editor, an agent harness) can open a notebook, run its cells, read the session’s
+variables and add cells of its own. Register it with your client:</p>
+<pre><code class="language-json">{
+  "mcpServers": {
+    "crush-notebook": { "command": "crush-notebook-kernel" }
+  }
+}
+</code></pre>
+<p>and call <code>notebook_open</code> with the file’s path, then <code>notebook_eval_all</code> (or
+<code>notebook_eval_cell</code> for one cell) and <code>notebook_list_vars</code>. Or drive it by hand:</p>
+<pre><code class="language-sh">printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"notebook_open","arguments":{"path":"types.crush-nb"}}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"notebook_eval_all","arguments":{}}}' \
+  | crush-notebook-kernel
+</code></pre>
+<p>The kernel saves each cell’s result back into the file, so work on a copy if you
+want to keep the original.</p>
+<p><strong>Read it as a page.</strong> <code>crush-notebook-render types.crush-nb</code> writes
+<code>types.html</code> next to it: one self-contained page (no external assets) with the
+cells and, if you have run the notebook, their outputs.</p>
+<p>The kernel’s other tools, the agent workflow (<code>@wip</code> cell claims, delegation)
+and the cell kinds it does not run yet are described in the
+<a href="https://github.com/nixpt/crush-notebook#readme">crush-notebook README</a>.</p>
+<h2 id="what-runs-where"><a class="header" href="#what-runs-where">What runs where</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th>Run button on the page</th><th>Notebook kernel</th><th><code>crush-run</code></th></tr>
+</thead>
+<tbody>
+<tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
+<tr><td>Granted</td><td><code>print</code> and the VM’s built-in string helpers</td><td>the same, plus <code>cson.parse</code></td><td>whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, <code>--stdlib</code>, …)</td></tr>
+<tr><td>Polyglot, filesystem, network, stdlib modules</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
+</tbody>
+</table>
+</div>
+<p>So the examples marked <strong>needs the host</strong> are refused in the notebook too: the
+kernel grants what <code>crush run</code> grants with no flags. Run those with <code>crush-run</code>
+and the flags their page shows (see <a href="#getting-started">Getting Started</a>).</p>
+<p>In a notebook, cells share a session: a cell’s top-level <code>let</code>s, functions and
+structs are visible to the cells after it, which makes a notebook a good place to
+build on an example. The examples that are <em>meant</em> to fail (<code>expected-failure</code>)
+are the one exception: each is wrapped in its own <code>fn main() { … }</code>, so a
+variable an earlier cell left behind cannot hide the error the example is there
+to show. Because of that wrapper, the line and column numbers in their compile
+errors differ from the page’s.</p>
+<p>Every notebook is run through the kernel in the guide’s CI: each runnable cell
+has to finish and print what the page shows, each expected failure has to fail,
+and each host-only cell has to be refused.</p>
+<h2 id="the-notebooks"><a class="header" href="#the-notebooks">The notebooks</a></h2>
+<ul>
+<li><a href="notebooks/index.crush-nb" download=""><code>index.crush-nb</code></a>, from <a href="#introduction">Introduction</a></li>
+<li><a href="notebooks/appendix/comparison.crush-nb" download=""><code>appendix/comparison.crush-nb</code></a>, from <a href="#language-comparisons">Language Comparisons</a></li>
+<li><a href="notebooks/appendix/quick_reference.crush-nb" download=""><code>appendix/quick_reference.crush-nb</code></a>, from <a href="#quick-reference">Quick Reference</a></li>
+<li><a href="notebooks/casm/index.crush-nb" download=""><code>casm/index.crush-nb</code></a>, from <a href="#casm-overview">Overview</a></li>
+<li><a href="notebooks/casm/examples.crush-nb" download=""><code>casm/examples.crush-nb</code></a>, from <a href="#casm-examples">Examples</a></li>
+<li><a href="notebooks/crush/index.crush-nb" download=""><code>crush/index.crush-nb</code></a>, from <a href="#crush-overview">Overview</a></li>
+<li><a href="notebooks/crush/capabilities.crush-nb" download=""><code>crush/capabilities.crush-nb</code></a>, from <a href="#capability-system">Capability System</a></li>
+<li><a href="notebooks/crush/control_flow.crush-nb" download=""><code>crush/control_flow.crush-nb</code></a>, from <a href="#control-flow-1">Control Flow</a></li>
+<li><a href="notebooks/crush/functions.crush-nb" download=""><code>crush/functions.crush-nb</code></a>, from <a href="#functions">Functions</a></li>
+<li><a href="notebooks/crush/operators.crush-nb" download=""><code>crush/operators.crush-nb</code></a>, from <a href="#operators-1">Operators</a></li>
+<li><a href="notebooks/crush/polyglot.crush-nb" download=""><code>crush/polyglot.crush-nb</code></a>, from <a href="#polyglot-programming">Polyglot Programming</a></li>
+<li><a href="notebooks/crush/stdlib.crush-nb" download=""><code>crush/stdlib.crush-nb</code></a>, from <a href="#standard-library">Standard Library</a></li>
+<li><a href="notebooks/crush/syntax.crush-nb" download=""><code>crush/syntax.crush-nb</code></a>, from <a href="#syntax-and-grammar">Syntax &amp; Grammar</a></li>
+<li><a href="notebooks/crush/types.crush-nb" download=""><code>crush/types.crush-nb</code></a>, from <a href="#data-types">Types</a></li>
+<li><a href="notebooks/crush/variables.crush-nb" download=""><code>crush/variables.crush-nb</code></a>, from <a href="#variables-and-scoping">Variables &amp; Scoping</a></li>
+<li><a href="notebooks/examples/arrays-loops.crush-nb" download=""><code>examples/arrays-loops.crush-nb</code></a>, from <a href="#arrays--loops">Arrays &amp; Loops</a></li>
+<li><a href="notebooks/examples/async-dom.crush-nb" download=""><code>examples/async-dom.crush-nb</code></a>, from <a href="#polyglot-pipeline">Polyglot Pipeline</a></li>
+<li><a href="notebooks/examples/build-pipeline.crush-nb" download=""><code>examples/build-pipeline.crush-nb</code></a>, from <a href="#build-pipeline">Build Pipeline</a></li>
+<li><a href="notebooks/examples/concurrency-structs.crush-nb" download=""><code>examples/concurrency-structs.crush-nb</code></a>, from <a href="#structs-and-concurrency">Structs (and Concurrency)</a></li>
+<li><a href="notebooks/examples/exceptions.crush-nb" download=""><code>examples/exceptions.crush-nb</code></a>, from <a href="#exception-handling">Exception Handling</a></li>
+<li><a href="notebooks/examples/fibonacci.crush-nb" download=""><code>examples/fibonacci.crush-nb</code></a>, from <a href="#fibonacci--functions">Fibonacci &amp; Functions</a></li>
+<li><a href="notebooks/examples/imports.crush-nb" download=""><code>examples/imports.crush-nb</code></a>, from <a href="#import-styles">Import Styles</a></li>
+<li><a href="notebooks/examples/lambdas.crush-nb" download=""><code>examples/lambdas.crush-nb</code></a>, from <a href="#lambdas--the-pipeline-operator">Lambdas &amp; Pipes</a></li>
+<li><a href="notebooks/examples/sysinfo.crush-nb" download=""><code>examples/sysinfo.crush-nb</code></a>, from <a href="#system-info-report">System Info Report</a></li>
+<li><a href="notebooks/getting-started.crush-nb" download=""><code>getting-started.crush-nb</code></a>, from <a href="#getting-started">Getting Started</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="crush-overview"><a class="header" href="#crush-overview">Crush Overview</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
 and an intermediate representation (CAST) that other languages can be translated
@@ -568,6 +673,8 @@ enforced.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="syntax-and-grammar"><a class="header" href="#syntax-and-grammar">Syntax and Grammar</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>This chapter covers the lexical structure and grammar that the Crush parser
 (<code>crush-frontend</code>) accepts today. Every <code>crush</code> example in this guide is run
 through the real toolchain by <code>scripts/check-examples.py</code>; where something is
@@ -951,6 +1058,8 @@ call        = expression "(" args? ")" ;
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="data-types"><a class="header" href="#data-types">Data Types</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
 covers the values you can build today.</p>
@@ -1320,6 +1429,8 @@ compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="variables-and-scoping"><a class="header" href="#variables-and-scoping">Variables and Scoping</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/variables.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>This chapter covers declaration, assignment, and the scoping rules the compiler
 enforces today.</p>
 <h2 id="declaration"><a class="header" href="#declaration">Declaration</a></h2>
@@ -1553,6 +1664,8 @@ possible yet (crush-ast <strong>CRUSH-110</strong>).</p>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="operators-1"><a class="header" href="#operators-1">Operators</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/operators.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush’s operators are deliberately few. Everything in this chapter is verified
 against the current compiler.</p>
 <h2 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h2>
@@ -1769,6 +1882,8 @@ true
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="control-flow-1"><a class="header" href="#control-flow-1">Control Flow</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/control_flow.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
 <h2 id="if"><a class="header" href="#if">If</a></h2>
@@ -2052,6 +2167,8 @@ program with a <code>[runtime]</code> error instead of reaching your <code>catch
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="functions"><a class="header" href="#functions">Functions</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/functions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>This chapter covers defining and calling functions. Crush functions are named,
 top-level declarations. <strong>Functions are not first-class values yet</strong> — you can
 call one by name, but you can’t store it in a variable or pass it as an argument
@@ -2242,6 +2359,8 @@ interface and catch mistakes at compile time.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="capability-system"><a class="header" href="#capability-system">Capability System</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
 running another language — is a <strong>capability call</strong>, and a capability only exists
@@ -2488,6 +2607,8 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="polyglot-programming"><a class="header" href="#polyglot-programming">Polyglot Programming</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
 blocks. This chapter describes what actually happens when you run one today —
 which languages work, how values cross the boundary, how errors and timeouts
@@ -2844,6 +2965,8 @@ is not limited, and only <code>python</code>, <code>javascript</code> and <code>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="standard-library"><a class="header" href="#standard-library">Standard Library</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/stdlib.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
 as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
 system: there is no <code>import std.io</code>, and <code>import</code> does not load anything yet
@@ -3108,6 +3231,8 @@ language feature is <em>not yet implemented</em>, with the crush-ast ticket.</p>
 <a href="#getting-started">Getting Started</a>).</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="fibonacci--functions"><a class="header" href="#fibonacci--functions">Fibonacci &amp; Functions</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/fibonacci.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>The canonical recursion example, with typed function signatures. Run it with
 <code>crush run fib.crush</code>.</p>
 <div class="crush-block" data-crush="run" data-src="examples/fibonacci.md:6" data-expect="fib(0) = 0
@@ -3171,6 +3296,8 @@ statements run first, then <code>main</code></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="arrays--loops"><a class="header" href="#arrays--loops">Arrays &amp; Loops</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/arrays-loops.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Array creation, indexing, <code>for</code> iteration, <code>break</code>/<code>continue</code>, and a classic
 loop exercise.</p>
 <div class="crush-block" data-crush="run" data-src="examples/arrays-loops.md:6" data-expect="length: 5
@@ -3291,6 +3418,8 @@ FizzBuzz
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/exceptions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p><code>try</code> / <code>catch</code> / <code>throw</code> work, including across function calls. Any value can
 be thrown.</p>
 <div class="crush-block" data-crush="run" data-src="examples/exceptions.md:6" data-expect="Starting
@@ -3360,6 +3489,8 @@ instead — see <a href="#what-catch-does-not-catch">Control Flow</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/concurrency-structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>A struct is declared once, created with <code>new Name()</code>, and filled in by assigning
 fields. Structs are passed by reference.</p>
 <div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:6" data-expect="p = (1.0, 2.0)
@@ -3422,6 +3553,8 @@ print("main again")
 
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="lambdas--the-pipeline-operator"><a class="header" href="#lambdas--the-pipeline-operator">Lambdas &amp; the Pipeline Operator</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/lambdas.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <h2 id="the-pipeline-operator"><a class="header" href="#the-pipeline-operator">The pipeline operator</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
 bind more loosely than any other operator. The right-hand side must be a
@@ -3481,6 +3614,8 @@ print(mul(4, 5))
 function name is not a value. Until then, use named functions and <code>|&gt;</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="import-styles"><a class="header" href="#import-styles">Import Styles</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/imports.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <blockquote>
 <p><strong>Not yet implemented.</strong> Every form of <code>import</code> parses, but <strong>none of them load
 anything</strong> — the compiler lowers each to a capability that the runtime does not
@@ -3550,6 +3685,8 @@ only cross-file mechanism that exists is outside the language: run several
 programs and pass data through files or the host.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="system-info-report"><a class="header" href="#system-info-report">System Info Report</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/sysinfo.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush as a <em>conductor</em>: gather facts from the host through capability calls, then
 assemble them. The program needs three capability groups, so it is run with
 <code>crush run --stdlib --env --time sysinfo.crush</code>; with any flag missing, the
@@ -3593,6 +3730,8 @@ declaration. None of those exist in the runtime today; host metrics beyond
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="build-pipeline"><a class="header" href="#build-pipeline">Build Pipeline</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/build-pipeline.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Crush’s intended role is a small, auditable <em>conductor</em> for other tools: it
 decides what runs and in what order, while capability calls do the work. Here each
 step is a real process started through <code>process.exec</code>, and the pipeline stops at
@@ -3656,6 +3795,8 @@ string — so multi-argument commands need to be wrapped (<code>process.exec("sh
 <code>--process</code> only for programs you trust.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="polyglot-pipeline"><a class="header" href="#polyglot-pipeline">Polyglot Pipeline</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/examples/async-dom.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>The same data, handled by the language best suited to each step, with Crush
 variables as the glue. This replaces an earlier “Async LLM Dashboard” page whose
 <code>dom.*</code>, <code>seahorse</code> and <code>async</code>/<code>await</code> calls do not run in the current
@@ -4297,6 +4438,8 @@ IR→CVM1 lowering does not currently emit any of them. The IR column is what
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="casm-overview"><a class="header" href="#casm-overview">CASM Overview</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/casm/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p><strong>CASM</strong> (Crush Assembly) is the stack-machine instruction set that Crush programs
 compile to. The name covers three closely related things, and most confusion about
 it comes from mixing them up:</p>
@@ -5113,6 +5256,8 @@ and let the compiler produce CASM — see the doctrine there.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="casm-examples"><a class="header" href="#casm-examples">CASM Examples</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/casm/examples.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
 with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
 guide’s checker against crush-ast <code>v0.3.9</code>, with the output shown. The JSON IR is
@@ -5530,6 +5675,8 @@ not the same thing as <code>@lang</code> execution — only Python, JavaScript a
 actually run.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="quick-reference"><a class="header" href="#quick-reference">Quick Reference</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/appendix/quick_reference.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
 can run is run by the guide’s checker against crush-ast <code>v0.3.9</code>. Details live in
 the chapters linked from each heading.</p>
@@ -5774,6 +5921,8 @@ flag they are refused:</p>
 <strong>last first</strong>, and a <code>.casm</code> file needs <code>--cap</code> for every capability it calls.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="language-comparisons"><a class="header" href="#language-comparisons">Language Comparisons</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/appendix/comparison.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
 <p>How Crush relates to the languages people usually compare it with. Crush is <strong>alpha</strong>:
 the language is small, the standard library is a set of host capabilities, and several
 features in its design (lambdas, imports, an executing AI layer) are not implemented

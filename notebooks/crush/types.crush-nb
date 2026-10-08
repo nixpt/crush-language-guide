@@ -1,0 +1,667 @@
+{
+ "meta": {
+  "title": "Data Types — The Crush Language Guide",
+  "description": "Generated from crush/types.md of The Crush Language Guide (https://docs.crushlang.org/crush/types.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/types.md",
+   "guide_url": "https://docs.crushlang.org/crush/types.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-types-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Data Types\n\nCrush is dynamically typed at run time, with a **static checker** that catches\nobvious mismatches at compile time when you add type annotations. This chapter\ncovers the values you can build today.\n\n## Primitive types\n\n| Type | Literal | Notes |\n|------|---------|-------|\n| Int | `42`, `-7` | 64-bit signed. Decimal literals only |\n| Float | `3.14` | 64-bit IEEE 754. No exponent literals (`1.5e3` is a parse error) |\n| String | `\"hello\"` | double quotes only; `len` counts **bytes** |\n| Bool | `true`, `false` | |\n| Null | `null` | absence of a value |\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let count = 42\nlet pi = 3.14\nlet name = \"Alice\"\nlet active = true\nlet nothing = null\nprint(count)\nprint(pi)\nprint(name)\nprint(active)\nprint(nothing)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:17",
+      "browser": "run",
+      "expect_output": "42\n3.14\nAlice\ntrue\nnull\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Numbers\n\n`+ - * / %` work on `Int` and `Float`. Mixing the two promotes to `Float`.\n`/` on two `Int`s is **integer division**:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(10 / 4)\nprint(10.0 / 4)\nprint(1 + 2.5)\nprint(7 % 3)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:44",
+      "browser": "run",
+      "expect_output": "2\n2.5\n3.5\n1\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Dividing by zero is a **runtime error** (`[runtime] division by zero`). It is\nraised by the VM rather than thrown as a Crush value, so `try`/`catch` does not\nintercept it.\n\n> **Alpha caveat.** Integer arithmetic that overflows `i64` in a *constant\n> expression* currently panics the compiler's optimizer instead of reporting an\n> error. Keep literals within range.\n\n### Strings\n\nConcatenate with `+`. Adding a number to a string converts the number:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let first = \"Ada\"\nlet last = \"Lovelace\"\nprint(first + \" \" + last)\nprint(\"Count: \" + 42)\nprint(\"Pi is \" + 3.14)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:71",
+      "browser": "run",
+      "expect_output": "Ada Lovelace\nCount: 42\nPi is 3.14\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`len(s)` is the byte length and `s[i]` yields a one-character string. With\n`--stdlib`, the `str.*` capabilities add `str.split`, `str.trim`,\n`str.to_upper`, `str.substring` and friends — see [Standard Library](https://docs.crushlang.org/crush/stdlib.html).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let s = \"hello\"\nprint(len(s))\nprint(s[1])\nprint(str.to_upper(s))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:90",
+      "browser": "host",
+      "why": "uses the standard library (`str.to_upper`), which the in-browser runtime does not provide",
+      "expect_output": "5\ne\nHELLO\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Collections\n\n### Arrays\n\nOrdered, mixed-type, zero-indexed. Index, assign by index, and `len`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let numbers = [10, 20, 30]\nprint(numbers[0])\nnumbers[1] = 99\nprint(numbers)\nprint(len(numbers))\n\nlet nested = [[1, 2], [3]]\nprint(nested[0][1])\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:110",
+      "browser": "run",
+      "expect_output": "10\n[10, 99, 30]\n3\n2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Append with `array.push(arr, value)` or the method form `arr.push(value)`; `+`\njoins two arrays:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let a = [1, 2]\na.push(3)\narray.push(a, 4)\nprint(a)\nprint([1] + [2])\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:132",
+      "browser": "run",
+      "expect_output": "[1, 2, 3, 4]\n[1, 2]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Iterate with `for`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "for item in [\"a\", \"b\"] {\n    print(item)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:148",
+      "browser": "run",
+      "expect_output": "a\nb\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`array.pop(a)` removes and returns the last element, `a.append(v)` is an alias for\n`push`, and slices work:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let a = [1, 2, 3, 4]\nlet last = array.pop(a)\nprint(last)\nprint(a)\nprint(a[0:2])\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:163",
+      "browser": "run",
+      "expect_output": "4\n[1, 2, 3]\n[1, 2]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-17",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Reading past the end is a runtime error (`array index out of range`). The\nmethod form `a.pop()` is **not** available (`unknown capability: pop`); call\n`array.pop(a)`. Array mutation still has open gaps — see crush-ast **CRUSH-7**.\n\n### Objects (maps)\n\nKey–value pairs written `{\"key\": value}`. Keys may be bare identifiers or\nstrings. Read and write fields with **dot notation**:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let person = {\"name\": \"Alice\", \"age\": 30}\nprint(person.name)\nperson.age = 31\nperson.email = \"alice@example.com\"\nprint(person.age)\nprint(person.email)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:187",
+      "browser": "run",
+      "expect_output": "Alice\n31\nalice@example.com\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-19",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Nested objects chain:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let cfg = {\"db\": {\"port\": 5432}}\nprint(cfg.db.port)\ncfg.db.port = 5433\nprint(cfg.db.port)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:205",
+      "browser": "run",
+      "expect_output": "5432\n5433\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Printing an object lists its keys in an **unspecified order that can differ\nbetween runs**; to walk an object deterministically use `collections.keys(obj)`\n(sorted) with `--stdlib` — see [Standard Library](https://docs.crushlang.org/crush/stdlib.html#collections--collections).\n\n> **Not yet implemented.** String-key subscripts (`person[\"name\"]`) fail at run\n> time with `array index must be int, got str`, and `len(obj)` and `for k in obj`\n> are rejected (`expected array or string, got map`). Use dot access, and\n> `collections.keys(obj)` to enumerate. (crush-ast gap `GAP-MAP-SUBSCRIPT`.)\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let person = {\"name\": \"Alice\"}\n    print(person[\"name\"])\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:228",
+      "browser": "fail",
+      "why": "not implemented yet (GAP-MAP-SUBSCRIPT); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-23",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Structs\n\nDeclare a struct with its field names (optionally with type hints) **on one line**,\ncreate it\nwith `new Name()` — **no constructor arguments** — and assign fields\nindividually:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Float, y: Float }\n\nlet p = new Point()\np.x = 1.5\np.y = 2.5\nprint(p.x + p.y)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:240",
+      "browser": "run",
+      "expect_output": "4.0\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-25",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Assigning to a field the struct doesn't declare is a compile error\n(`Struct 'Point' has no field 'z'`). Field type hints are **not enforced** at\nrun time today, and an unassigned field reads as `null`.\n\n`Point { x: 1.0, y: 2.0 }` literals and `new Point(1.0, 2.0)` are rejected by the\nparser. A struct body that spans several lines is also rejected today — the parser\ndoesn't skip newlines inside `struct { ... }` (see the GUIDE-3 ticket, gap\n`GAP-STRUCT-MULTILINE`):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point {\n    x: Float,\n    y: Float\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:264",
+      "browser": "fail",
+      "why": "not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-27",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Type annotations\n\nYou may annotate variables, parameters and return types with `Int`, `Float`,\n`String`, `Bool`, or `Any`. The compiler checks them statically:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-14",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn double(n: Int) -> Int {\n    return n * 2\n}\nlet label: String = \"answer\"\nprint(label)\nprint(double(21))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:276",
+      "browser": "run",
+      "expect_output": "answer\n42\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-29",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Mismatches are rejected at compile time:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-15",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let x: Int = \"not a number\"\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:294",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-16",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn double(n: Int) -> Int {\n    return n * 2\n}\n\nfn main() {\n    print(double(\"seven\"))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:299",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-32",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Annotations are optional. Not available: generic forms (`Array<Int>`), array\nshorthand (`Int[]`), nullable `T?`, and `Function`/`Array`/`Map` as hint names —\nall fail with a parse or `Unknown type` error.\n\n## Conversion and inspection\n\nWith `--stdlib`, the `conv.*` capabilities convert between types and report\nthem:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-17",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(conv.to_int(\"42\") + 1)\nprint(conv.to_str(5) + \"x\")\nprint(conv.to_float(2))\nprint(conv.type_of([1]))\nprint(conv.type_of(null))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:315",
+      "browser": "host",
+      "why": "uses the standard library (`conv.to_float`, `conv.to_int`, `conv.to_str` …), which the in-browser runtime does not provide",
+      "expect_output": "43\n5x\n2.0\narray\nnull\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-34",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`conv.type_of` returns `int`, `float`, `string`, `bool`, `null`, `array` or\n`map`. There is no `type.of`.\n\n## Conditions must be Bool\n\n`if` and `while` conditions are type-checked: an `Int` or `String` is **not**\nsilently truthy. Compare explicitly (`x != 0`, `s != \"\"`).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-types-18",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    if 1 {\n        print(\"yes\")\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/types.md:341",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-types-md-36",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Comparison\n\n`==`/`!=` compare values of the same type; comparing a string to an int is a\ncompile error (`Cannot compare types string and int`). `1 == 1.0` is `true`.\n\n## Not available yet\n\n| Feature | Status |\n|---|---|\n| `Bytes` literals (`b\"...\"`), `Error(...)` values | not parsed / undefined |\n| Optional types `T?`, `??` | not parsed |\n| Enums, type aliases, generics | not in the grammar |\n| Lambdas / `Function` values | crush-ast **CRUSH-75** (open) — see [Functions](https://docs.crushlang.org/crush/functions.html) |\n\n## Next Steps\n\n- **[Variables](https://docs.crushlang.org/crush/variables.html)**: scope and mutation\n- **[Operators](https://docs.crushlang.org/crush/operators.html)**: the operator reference\n- **[Functions](https://docs.crushlang.org/crush/functions.html)**: calls, recursion, hints\n- **[Control Flow](https://docs.crushlang.org/crush/control_flow.html)**: loops, `match`, `try`/`catch`\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

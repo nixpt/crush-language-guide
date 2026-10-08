@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "Fibonacci & Functions — The Crush Language Guide",
+  "description": "Generated from examples/fibonacci.md of The Crush Language Guide (https://docs.crushlang.org/examples/fibonacci.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/fibonacci.md",
+   "guide_url": "https://docs.crushlang.org/examples/fibonacci.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-fibonacci-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Fibonacci & Functions\n\nThe canonical recursion example, with typed function signatures. Run it with\n`crush run fib.crush`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-fibonacci-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn fib(n: Int) -> Int {\n    if n <= 1 {\n        return n\n    }\n    return fib(n - 1) + fib(n - 2)\n}\n\nfn factorial(n: Int) -> Int {\n    if n <= 1 {\n        return 1\n    }\n    return n * factorial(n - 1)\n}\n\nfn main() {\n    for i in 0..10 {\n        print(\"fib(\" + i + \") = \" + fib(i))\n    }\n    print(\"10! = \" + factorial(10))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/fibonacci.md:6",
+      "browser": "run",
+      "expect_output": "fib(0) = 0\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34\n10! = 3628800\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-fibonacci-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- `fn name(param: Type) -> ReturnType` — a typed signature (hints are checked at\n  call sites)\n- Recursion needs no special annotation; the default call-depth limit is 256\n  frames, which is far more than this needs\n- `return` is explicit — there is no implicit last-expression return\n- `\"text\" + number` converts the number, so `print` can build a line\n- A program may have both top-level statements and `fn main()`; the top-level\n  statements run first, then `main`\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

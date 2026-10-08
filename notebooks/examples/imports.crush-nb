@@ -1,0 +1,150 @@
+{
+ "meta": {
+  "title": "Import Styles — The Crush Language Guide",
+  "description": "Generated from examples/imports.md of The Crush Language Guide (https://docs.crushlang.org/examples/imports.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/imports.md",
+   "guide_url": "https://docs.crushlang.org/examples/imports.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-imports-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Import Styles\n\n> **Not yet implemented.** Every form of `import` parses, but **none of them load\n> anything** — the compiler lowers each to a capability that the runtime does not\n> provide. The only import form that runs is `use @lang`, which only declares\n> that a polyglot block will use a module. This is crush-ast **CRUSH-110** (open):\n> today there is no way to share code between files.\n\n| Form | Parses | Runs |\n|------|:------:|------|\n| `import io` / `import fs as files` / `import net { a, b }` | yes | fails: `unknown capability: module.load` |\n| `use @mcp \"url\" { tools } as alias` | yes | fails: `unknown capability: mcp.connect` |\n| `use @cap \"cap.path\" { names } as alias` | yes | fails: `unknown capability: cap.acquire` |\n| `import @git \"url\" as alias`, `import @http \"url\" as alias` | yes | fails: `unknown capability: external.load` |\n| `use @lang python \"math\" as math` | yes | runs; see below |\n\nEach failing form is checked below, so this page will say so the day one starts\nworking:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    import fs as files\n    print(\"loaded\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/imports.md:21",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-110); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    use @mcp \"https://api.github.com\" { \"issues.list\", \"repos.get\" } as github\n    print(\"loaded\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/imports.md:27",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-110); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    import @http \"https://example.com/data.json\" as data\n    print(\"loaded\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/imports.md:33",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-110); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## `use @lang`\n\n`use @lang <language> \"<module>\" as <alias>` declares a module for a polyglot\nblock. It is accepted and runs, but the alias is not wired to the block's\nvariables — the block still has to `import` the module itself:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "use @lang python \"math\" as math\n\n@python {\nimport math\nv = math.factorial(5)\n}\nprint(v)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/imports.md:45",
+      "browser": "host",
+      "why": "uses `@python` blocks (polyglot); uses the standard library (`math.factorial`), which the in-browser runtime does not provide",
+      "expect_output": "120\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-imports-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Sharing code today\n\nPut helper functions in the same file, or do the work in a polyglot block. The\nonly cross-file mechanism that exists is outside the language: run several\nprograms and pass data through files or the host.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

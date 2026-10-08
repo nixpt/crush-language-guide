@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "CASM Overview — The Crush Language Guide",
+  "description": "Generated from casm/README.md of The Crush Language Guide (https://docs.crushlang.org/casm/index.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "casm/README.md",
+   "guide_url": "https://docs.crushlang.org/casm/index.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "casm-readme-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# CASM Overview\n\n**CASM** (Crush Assembly) is the stack-machine instruction set that Crush programs\ncompile to. The name covers three closely related things, and most confusion about\nit comes from mixing them up:\n\n| Form | What it is | Extension | Defined in | Who produces / runs it |\n|---|---|---|---|---|\n| **CASM IR** (JSON) | The compiler's structured output: functions of JSON instructions, `{\"op\": \"push_int\", \"value\": 42}` | `.casm` JSON, or `.casmb` (MessagePack) | the `casm` crate (`casm::Program`) | `compile_crush_to_casm` produces it; embedders load it with `casm::Program::load` |\n| **CASM text** | A line-oriented assembly you can write by hand: `.func main` / `PUSH 42` / `CAP_CALL \"io.print\" 1` | `.casm` | `crush-vm`'s assembler | `crushc --emit casm` prints it; `crush-run run x.casm` and `crush-compile` consume it |\n| **CVM1** (binary) | The bytecode the VM actually executes: magic `CVM1`, constant pool, flat code | `.cvm1` | `crush-vm` (`bytecode.rs`) | `crushc` writes it; `crush-run run x.cvm1` runs it |\n\n(The extension `.casm` is shared by the JSON IR and the text assembly; the tools\nthat read a file expect one of them — `crush-run` expects text.)\n\nThey fit together like this:\n\n```\n Crush source ──parse──▶ CAST (JSON AST) ──compile──▶ CASM IR (JSON) ──lower──▶ CASM text ──assemble──▶ CVM1 bytes ──▶ VM\n                                                                      (crush_lang_sdk::compile::casm_to_vm)\n```\n\n`crushc` runs the whole chain; `crush-run run FILE.crush` compiles in memory and\nruns. The CASM IR is the **interchange point**: every front-end (the Crush parser,\nthe polyglot walkers, an agent writing [CAST](https://docs.crushlang.org/cast/index.html) directly) ends up\nthere, and every back-end (the VM, the AOT compilers `crush-aot` / `crush-aotc`,\nthe FastVM lowering) starts there.\n\n## What is real and what is not\n\n- **The VM is stack-based**, with a flat operand stack, per-frame local slots, a\n  call stack, and a `try`/`throw` handler stack.\n- **Host access is capability-only.** There is no syscall instruction. A program\n  talks to the outside world with `CAP_CALL \"name\" argc`, and the VM refuses a\n  capability that the host did not register *or* that the program's manifest does\n  not list.\n- **The IR has more instructions than the VM bytecode.** The `casm` crate's\n  `OpCode` enum is a superset; `casm_to_vm` lowers only part of it (see the\n  [Instruction Reference](https://docs.crushlang.org/casm/instructions.html#what-lowers-to-cvm1)). Some IR\n  instructions lower to a `NOP`; some are rejected with `Unsupported CVM1 opcode`.\n- **The `ai_*`, `dom_*`, `spawn`/`yield`/`await` instructions are stubs.** In the\n  IR→CVM1 lowering the `ai_*` and `dom_*` instructions become `NOP`s; a hand-written\n  CVM1 `AI_QUERY` reaches an `ai_native.query` capability that returns\n  `{ok: true, kind: \"query\", echo: []}` and does nothing else. See\n  [AI-Native CAST](https://docs.crushlang.org/cast/ai-native.html#what-actually-runs).\n- **Source mapping** is carried in each IR instruction's `meta` (`line`, `col`);\n  the CVM1 binary does not store it (the text assembler keeps a line→offset map for\n  debuggers only).\n\n## Seeing it for yourself\n\nCompile a small program to text assembly:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "casm-readme-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn add(a, b) {\n    return a + b\n}\nlet x = add(2, 3)\nio.print(\"x = \", x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "casm/README.md:54",
+      "browser": "run",
+      "expect_output": "x = 5\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "casm-readme-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```bash\ncrushc add.crush --emit casm\n```\n\n```casm\n.func main\n    PUSH 3\n    PUSH 2\n    CALL add\n    STORE 0\n    PUSH_STR \"x = \"\n    LOAD 0\n    CAP_CALL \"io.print\" 2\n    PUSH_NULL\n    RET\n.func add\n    STORE 0\n    STORE 1\n    LOAD 0\n    LOAD 1\n    ADD\n    RET\n```\n\nTwo things to notice, both explained in [Program Structure](https://docs.crushlang.org/casm/structure.html): arguments\nare pushed in **reverse** order (`3` then `2`), so the callee's first `STORE` pops the\nfirst argument into slot 0, the second `STORE` the next one, and so on; and all top-level statements live in a\nfunction called `main`.\n\n## Next steps\n\n- **[Program Structure](https://docs.crushlang.org/casm/structure.html)** — the JSON IR, the text assembly and the CVM1 binary layout.\n- **[Instruction Reference](https://docs.crushlang.org/casm/instructions.html)** — every opcode, with stack effects.\n- **[Examples](https://docs.crushlang.org/casm/examples.html)** — hand-written programs, all run by the guide's checker.\n- **[Serialization](https://docs.crushlang.org/casm/serialization.html)** — `.casm`, `.casmb`, `.cvm1` and the version gates.\n- **[Crush Language Guide](https://docs.crushlang.org/crush/index.html)** — the source language that compiles to it.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

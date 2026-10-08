@@ -99,3 +99,7 @@ a.crush-btn, a.crush-btn:visited { color: var(--fg); }
     .crush-bar, .crush-out, .crush-editor { display: none !important; }
     .crush-block > pre[hidden] { display: block !important; }
 }
+
+/* "Open as a notebook" under a chapter title (scripts/mdbook-crush-run.py) */
+.crush-notebook-link { margin-top: -0.5em; font-size: 0.9em; }
+.crush-notebook-link span { color: var(--fg); opacity: 0.7; }

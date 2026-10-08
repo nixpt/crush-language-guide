@@ -1,0 +1,594 @@
+{
+ "meta": {
+  "title": "Syntax and Grammar — The Crush Language Guide",
+  "description": "Generated from crush/syntax.md of The Crush Language Guide (https://docs.crushlang.org/crush/syntax.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/syntax.md",
+   "guide_url": "https://docs.crushlang.org/crush/syntax.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-syntax-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Syntax and Grammar\n\nThis chapter covers the lexical structure and grammar that the Crush parser\n(`crush-frontend`) accepts today. Every `crush` example in this guide is run\nthrough the real toolchain by `scripts/check-examples.py`; where something is\ndescribed in the design but the parser does not accept it yet, the page says so\nand links the crush-ast ticket.\n\n> **Status: alpha.** The language is small and still moving. If a feature isn't\n> in this chapter, assume it doesn't exist yet.\n\n## A program\n\nA Crush file is a sequence of statements. There are two styles, and they can be\nmixed:\n\n- **Script style** — bare top-level statements run top to bottom.\n- **`fn main()`** — an explicit entry function.\n\nWhen a file has both, the top-level statements run first and then `main`'s body\nruns.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(\"top-level runs first\")\n\nfn main() {\n    print(\"then main\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:23",
+      "browser": "run",
+      "expect_output": "top-level runs first\nthen main\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Functions can be called before they are defined:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(seven())\n\nfn seven() {\n    return 7\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:39",
+      "browser": "run",
+      "expect_output": "7\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Comments\n\nSingle-line comments start with `//` or `#`. There are no block comments —\n`/* ... */` is a parse error.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "// a slash comment\n# a hash comment\nprint(\"hello\") // trailing comments work too\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:57",
+      "browser": "run",
+      "expect_output": "hello\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Identifiers\n\nIdentifiers start with a letter or underscore and continue with letters, digits\nand underscores. Hyphens are not allowed, and a name can't be a keyword.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let counter1 = 1\nlet _private = 2\nlet my_variable = 3\nprint(counter1 + _private + my_variable)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:73",
+      "browser": "run",
+      "expect_output": "6\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Keywords\n\n```text\nlet   fn      if       else    while   for     in\nreturn break  continue struct  new     try     catch\nthrow  match  use      import  export  capability\nasync  await  spawn    yield   lang    mut\ntrue   false  null\n```\n\n`mut` and `capability` are reserved, but `let mut x = ...` is **not** accepted\n(see [Variables](https://docs.crushlang.org/crush/variables.html)), and `capability` has no usable statement form\nyet. `and`, `or` and `not` are **not** keywords — logic uses `&&`, `||` and `!`.\n\nThe lexer also recognises a handful of localised keyword aliases —\n`karya`/`manau`/`yadi`/`natra`/`farkau`/`jaba_samma`/`sahi`/`galat` (Nepali) plus a\nfew Chinese and Japanese forms — which map to `fn`/`let`/`if`/`else`/`return`/\n`while`/`true`/`false`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "karya sign(x) {\n    yadi x > 0 { farkau \"positive\" } natra { farkau \"not positive\" }\n}\nmanau r = sign(1)\nprint(r)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:104",
+      "browser": "run",
+      "expect_output": "positive\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Literals\n\n| Kind | Examples | Notes |\n|---|---|---|\n| Integer | `42`, `-7` | decimal only — `0x2A`, `0b101` and `1_000` are not lexed |\n| Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |\n| String | `\"hello\"` | **double quotes only**; escapes `\\n \\t \\\" \\\\` |\n| Boolean | `true`, `false` | |\n| Null | `null` | |\n| Array | `[1, 2, 3]` | see [Types](https://docs.crushlang.org/crush/types.html) |\n| Object | `{\"a\": 1, b: 2}` | see [Types](https://docs.crushlang.org/crush/types.html) |\n\nSingle-quoted and triple-quoted strings are parse errors; a string literal may\ncontain a raw newline.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let n = 42\nlet pi = 3.14\nlet s = \"tab:\\there\"\nprint(n)\nprint(pi)\nprint(s)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:132",
+      "browser": "run",
+      "expect_output": "42\n3.14\ntab:\there\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Statements and semicolons\n\nSemicolons are **optional**. A statement ends at a newline, or you may write `;`\n(and `a; b` on one line) if you prefer. Both of these are the same program:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let a = 1; let b = 2;\nprint(a + b);\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:153",
+      "browser": "run",
+      "expect_output": "3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let a = 1\nlet b = 2\nprint(a + b)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:163",
+      "browser": "run",
+      "expect_output": "3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-16",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Return values\n\nA function returns a value only through an explicit `return`. A bare final\nexpression is **not** an implicit return — it yields `null`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn explicit() { return 5 }\nfn implicit() { 5 }\nprint(explicit())\nprint(implicit())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:179",
+      "browser": "run",
+      "expect_output": "5\nnull\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-18",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Blocks\n\nBlocks are delimited by `{ }` and are used by functions, `if`, loops and\n`try`/`catch`. A bare block as a statement is not supported; use `if true { ... }`\nif you need one.\n\nCrush has **function-level scope**, not block scope: a `let` inside an `if` or\nloop body that reuses an existing name rebinds the same variable (see\n[Variables](https://docs.crushlang.org/crush/variables.html)).\n\n## Variables and functions\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 42\nlet name: String = \"Alice\"\n\nfn add(a: Int, b: Int) -> Int {\n    return a + b\n}\n\nprint(add(x, 1))\nprint(name)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:204",
+      "browser": "run",
+      "expect_output": "43\nAlice\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-20",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Type annotations on variables, parameters and return values are checked at\ncompile time — see [Types](https://docs.crushlang.org/crush/types.html).\n\n## Operators\n\nFull tables are in [Operators](https://docs.crushlang.org/crush/operators.html). In short: `+ - * / %`,\n`== != < > <= >=`, `&& || !`, unary `-`, and the pipeline `|>`. There is no `**`,\n`//`, `+=`/`-=`, `and`/`or`/`not`, or ternary `? :`.\n\n### Precedence (high → low)\n\n1. Calls, field access, indexing: `f()`, `obj.field`, `a[i]`\n2. Unary: `-`, `!`\n3. Multiplicative: `*`, `/`, `%`\n4. Additive: `+`, `-`\n5. Comparison: `<`, `>`, `<=`, `>=`\n6. Equality: `==`, `!=`\n7. Logical AND: `&&`\n8. Logical OR: `||`\n9. Pipeline: `|>`\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(1 + 2 * 3)\nprint((1 + 2) * 3)\nprint(1 < 2 && 2 < 3)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:243",
+      "browser": "run",
+      "expect_output": "7\n9\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-22",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Control flow\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 5\nif x > 3 {\n    print(\"big\")\n} else if x > 1 {\n    print(\"medium\")\n} else {\n    print(\"small\")\n}\n\nlet i = 0\nwhile i < 3 {\n    i = i + 1\n}\nprint(i)\n\nfor n in 0..3 {\n    print(n)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:258",
+      "browser": "run",
+      "expect_output": "big\n3\n0\n1\n2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-24",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`break` and `continue` work in `while` and `for`. See [Control Flow](https://docs.crushlang.org/crush/control_flow.html).\n\n## Capability calls\n\nA capability call looks like an ordinary dotted call — **no `@` prefix**:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "io.print(\"Hello, \", \"Crush\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:294",
+      "browser": "run",
+      "expect_output": "Hello, Crush\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-26",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(`io.print` accepts any number of arguments and concatenates them with no\nseparator; the built-in `print(x)` takes exactly one.) Which capabilities exist,\nand which command-line flags grant them, is covered in\n[Capability System](https://docs.crushlang.org/crush/capabilities.html).\n\n## Language blocks\n\nAnother language's code is embedded with `@language { ... }`. The `@` here is\nrequired; it is what introduces the block. Polyglot execution is **off by\ndefault** and needs `--polyglot`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-14",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@python {\nprint(\"Hello from Python\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:315",
+      "browser": "host",
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "Hello from Python\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-28",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "See [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html) for the supported languages, how\nvariables cross the boundary, and the (important) security caveats.\n\n## Imports and exports\n\n`import a.b` and `use @lang ...` **parse**, but importing does not load anything\nyet: `import` is lowered to a `module.load` capability that nothing registers, so\na program containing one fails at run time with `unknown capability:\nmodule.load` (crush-ast **CRUSH-110**). Every program is currently a single\nfile. There is no `std.*` module tree.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-15",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    import std.io\n    print(\"never reached\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:338",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-110); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-30",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`export name` parses and marks an existing variable or function for export. It\nis not an expression-level declaration:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-16",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let result = 6 * 7\nexport result\nprint(result)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:346",
+      "browser": "run",
+      "expect_output": "42\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-32",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`export let x = ...` and `export fn f() {...}` are parse errors.\n\n## Annotations\n\n`@name` also introduces compiler/AI annotations such as `@invariant` and\n`@decision`, attached to the next declaration. These are metadata for tooling,\nnot runtime behaviour; see the note at the end of the\n[Capability System](https://docs.crushlang.org/crush/capabilities.html) chapter and the [AI-Native CAST](https://docs.crushlang.org/cast/ai-native.html)\nchapter.\n\n## Style\n\n- `snake_case` for functions and variables, `PascalCase` for structs.\n- Four-space indentation; keep lines under ~100 characters.\n- Omit semicolons unless you are putting two statements on one line.\n\n## Grammar summary\n\nThis is the grammar the parser implements, simplified (from\n`crates/crush-frontend/src/parser/mod.rs`):\n\n```ebnf\nprogram     = statement* ;\n\nstatement   = let_stmt | fn_def | struct_def | if_stmt | while_stmt\n            | for_stmt | return_stmt | break | continue\n            | try_stmt | throw_stmt | export_stmt | import_stmt\n            | lang_block | expr_stmt ;\n\nlet_stmt    = \"let\" IDENT ( \":\" type )? \"=\" expression \";\"? ;\nfn_def      = \"async\"? \"fn\" IDENT \"(\" params? \")\" ( \"->\" type )? block ;\nstruct_def  = \"struct\" IDENT \"{\" ( IDENT ( \":\" type )? \",\"? )* \"}\" ;\nif_stmt     = \"if\" expression block ( \"else\" ( if_stmt | block ) )? ;\nwhile_stmt  = \"while\" expression block ;\nfor_stmt    = \"for\" IDENT \"in\" expression block ;\ntry_stmt    = \"try\" block \"catch\" IDENT block ;\nthrow_stmt  = \"throw\" expression ;\nexport_stmt = \"export\" IDENT ;\nlang_block  = \"@\" IDENT ( \"[\" deps \"]\" )? \"{\" raw source \"}\" ;\nblock       = \"{\" statement* \"}\" ;\n\nexpression  = literal | IDENT | expression binop expression\n            | unop expression | call | field | index\n            | \"new\" IDENT \"(\" \")\" | \"match\" expression \"{\" arms \"}\" ;\ncall        = expression \"(\" args? \")\" ;\n```\n\n## Next Steps\n\n- **[Data Types](https://docs.crushlang.org/crush/types.html)**: the type system and collections\n- **[Variables](https://docs.crushlang.org/crush/variables.html)**: declaration and scope\n- **[Control Flow](https://docs.crushlang.org/crush/control_flow.html)**: loops, `match`, errors\n- **[Functions](https://docs.crushlang.org/crush/functions.html)**: parameters, returns, recursion\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

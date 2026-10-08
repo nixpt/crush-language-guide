@@ -1,0 +1,89 @@
+{
+ "meta": {
+  "title": "Structs (and Concurrency) — The Crush Language Guide",
+  "description": "Generated from examples/concurrency-structs.md of The Crush Language Guide (https://docs.crushlang.org/examples/concurrency-structs.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/concurrency-structs.md",
+   "guide_url": "https://docs.crushlang.org/examples/concurrency-structs.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-concurrency-structs-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Structs (and Concurrency)\n\nA struct is declared once, created with `new Name()`, and filled in by assigning\nfields. Structs are passed by reference.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-concurrency-structs-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Float, y: Float }\n\nfn dist2(a, b) {\n    let dx = a.x - b.x\n    let dy = a.y - b.y\n    return dx * dx + dy * dy\n}\n\nlet p = new Point()\np.x = 1.0\np.y = 2.0\nlet q = new Point()\nq.x = 4.0\nq.y = 6.0\n\nprint(\"p = (\" + p.x + \", \" + p.y + \")\")\nprint(\"squared distance: \" + dist2(p, q))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/concurrency-structs.md:6",
+      "browser": "run",
+      "expect_output": "p = (1.0, 2.0)\nsquared distance: 25.0\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-concurrency-structs-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- `struct Point { x: Float, y: Float }` — declare it on **one line**; the parser\n  does not yet accept a struct body that spans lines\n- `new Point()` takes no arguments; set each field with `p.x = ...`\n- Field access works inside functions, including on parameters (`a.x`)\n- `Float` arithmetic: `3.0 * 3.0 + 4.0 * 4.0` is `25.0`\n\n## Concurrency\n\nEarlier revisions of this guide demonstrated `spawn worker()` with cooperative\n`yield`. That does **not** run today: the compiler emits a `SPAWN` instruction\nwithout its operand and the assembler rejects the program\n(`SPAWN takes 1 operand(s), got 0`). The scheduler for green threads exists in\n`crush-vm`, but the source-level path is unfinished — crush-ast **CRUSH-34**\n(spawn/await/yield execution) is open. A bare `yield` statement compiles and is a\nno-op.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-concurrency-structs-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn worker() {\n    print(\"worker running\")\n    yield\n    print(\"worker finishing\")\n}\n\nfn main() {\n    spawn worker()\n    print(\"main\")\n    yield\n    print(\"main again\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/concurrency-structs.md:51",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-34); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  }
+ ]
+}

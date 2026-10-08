@@ -1,0 +1,305 @@
+{
+ "meta": {
+  "title": "Operators — The Crush Language Guide",
+  "description": "Generated from crush/operators.md of The Crush Language Guide (https://docs.crushlang.org/crush/operators.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/operators.md",
+   "guide_url": "https://docs.crushlang.org/crush/operators.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-operators-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Operators\n\nCrush's operators are deliberately few. Everything in this chapter is verified\nagainst the current compiler.\n\n## Arithmetic\n\n| Operator | Meaning | Example |\n|---|---|---|\n| `+` | add / string concatenation | `5 + 3`, `\"a\" + \"b\"` |\n| `-` | subtract / unary negate | `10 - 4`, `-x` |\n| `*` | multiply | `6 * 7` |\n| `/` | divide (`Int / Int` truncates toward zero) | `20 / 4`, `-7 / 2` |\n| `%` | remainder | `17 % 5` |\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(5 + 3)\nprint(10 - 4)\nprint(6 * 7)\nprint(20 / 4)\nprint(17 % 5)\nprint(-7 / 2)\nprint(-(3 + 2))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:16",
+      "browser": "run",
+      "expect_output": "8\n6\n42\n5\n2\n-3\n-5\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Mixing `Int` and `Float` promotes to `Float` (`1 + 2.5` is `3.5`). `+` between a\nstring and a number concatenates (`\"n=\" + 5` is `\"n=5\"`); `*` on a string does\n**not** repeat it.\n\nThere is no exponent operator (`**`), floor-division (`//`), or compound\nassignment (`+=`, `-=`, …) — use `math.pow(a, b)` (with `--stdlib`) and\n`x = x + 1`. See [Variables](https://docs.crushlang.org/crush/variables.html).\n\n## Comparison\n\n`==`, `!=`, `<`, `>`, `<=`, `>=` return `Bool`. Operands must be of compatible\ntypes; comparing a string with an int is a compile error. Strings compare\nlexicographically; arrays compare element-wise with `==`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let a = 10\nlet b = 20\nprint(a == b)\nprint(a != b)\nprint(a < b)\nprint(a >= b)\nprint(\"apple\" < \"banana\")\nprint([1, 2] == [1, 2])\nprint(1 == 1.0)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:51",
+      "browser": "run",
+      "expect_output": "false\ntrue\ntrue\nfalse\ntrue\ntrue\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Logical\n\nLogic uses **symbols**: `&&`, `||`, `!`. The words `and`, `or` and `not` are not\noperators. `&&` and `||` short-circuit (crush-ast **CRUSH-125**):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn noisy() {\n    print(\"evaluated\")\n    return true\n}\n\nprint(false && noisy())\nprint(true || noisy())\nprint(!(1 > 2))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:79",
+      "browser": "run",
+      "expect_output": "false\ntrue\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    print(true and false)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:98",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-8",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Conditions in `if`/`while` must be `Bool` — see [Types](https://docs.crushlang.org/crush/types.html#conditions-must-be-bool).\n\n## Range\n\n`a..b` is a half-open range (`a` inclusive, `b` exclusive). It is used by `for`,\nand also evaluates to an array of the integers in the range:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "for i in 2..5 {\n    print(i)\n}\nlet r = 1..5\nprint(r)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:109",
+      "browser": "run",
+      "expect_output": "2\n3\n4\n[1, 2, 3, 4]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-10",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "An empty or reversed range (`5..2`) produces no iterations. Both bounds may be\nexpressions: `for i in 0..len(items)`. There is no `range()` function.\n\n## Pipeline\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right.\nThe right side must be a user-defined function (or a call to one):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn inc(x) {\n    return x + 1\n}\nfn dbl(x) {\n    return x * 2\n}\nfn add(a, b) {\n    return a + b\n}\n\nprint(3 |> inc |> dbl)\nprint(3 |> add(4))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:133",
+      "browser": "run",
+      "expect_output": "8\n7\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-12",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Piping into a **capability** such as `str.trim` or `conv.to_str` is rejected\n(`Pipeline right side must be function`); wrap it in a function first:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    print(\"  hi  \" |> str.trim)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:158",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-14",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Not available\n\nBitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`) are **not** part of the\nCrush language today — the lexer rejects them — even though CASM has `bit_*`\nopcodes ([CASM reference](https://docs.crushlang.org/casm/instructions.html)). There is no ternary\n`a ? b : c`, no null-coalescing `??`, and no `**`.\n\n## Precedence (high → low)\n\n| Level | Operators |\n|---|---|\n| 1 | `()`, `.`, `[]` — call, field access, indexing |\n| 2 | unary `-`, `!` |\n| 3 | `*` `/` `%` |\n| 4 | `+` `-` |\n| 5 | `<` `>` `<=` `>=` |\n| 6 | `==` `!=` |\n| 7 | `&&` |\n| 8 | `\\|\\|` |\n| 9 | `\\|>` |\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(2 + 3 * 4)\nprint((2 + 3) * 4)\nprint(1 + 1 == 2 && 2 * 2 == 4)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/operators.md:183",
+      "browser": "run",
+      "expect_output": "14\n20\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-operators-md-16",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Next Steps\n\n- **[Control Flow](https://docs.crushlang.org/crush/control_flow.html)**\n- **[Functions](https://docs.crushlang.org/crush/functions.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

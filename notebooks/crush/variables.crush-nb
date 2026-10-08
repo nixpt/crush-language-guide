@@ -1,0 +1,533 @@
+{
+ "meta": {
+  "title": "Variables and Scoping — The Crush Language Guide",
+  "description": "Generated from crush/variables.md of The Crush Language Guide (https://docs.crushlang.org/crush/variables.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/variables.md",
+   "guide_url": "https://docs.crushlang.org/crush/variables.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-variables-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Variables and Scoping\n\nThis chapter covers declaration, assignment, and the scoping rules the compiler\nenforces today.\n\n## Declaration\n\nEvery variable is introduced with `let` and **must be initialised**:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 42\nlet name = \"Alice\"\nlet active = true\nprint(x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:10",
+      "browser": "run",
+      "expect_output": "42\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "A bare `let x` (no value) is a parse error. So is `let mut x = 0` — `mut` is a\nreserved word, but it is not accepted in a declaration, and there is no `const`.\nEvery `let` variable is simply reassignable.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let x\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:27",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let mut counter = 0\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:32",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-6",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Type hints\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let age: Int = 30\nlet score: Float = 95.5\nlet message: String = \"Hello\"\nlet flag: Bool = true\nprint(age)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:38",
+      "browser": "run",
+      "expect_output": "30\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-8",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "The initial value is checked against the hint at compile time\n(`let x: Int = \"s\"` is rejected). The hint is **not** re-checked on later\nassignment today.\n\n## Assignment\n\nReassign with `=`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let counter = 0\ncounter = counter + 1\ncounter = counter + 1\nprint(counter)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:59",
+      "browser": "run",
+      "expect_output": "2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-10",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Compound assignment (`+=`, `-=`, `*=`, `/=`) and `++`/`--` are **not implemented**:\nuse `counter = counter + 1`. Assigning to a name that was never declared is a\ncompile error (`Undefined variable`).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    counter += 1\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:76",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-12",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Variables are dynamically typed at run time, so a `let`-declared name can later\nhold a value of a different type (unless the compiler can see the mismatch for a\nhinted parameter or initialiser).\n\n## Scoping rules\n\n### Function scope\n\nVariables declared in a function are local to it, and parameters are local copies:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn bump(n) {\n    n = n + 1\n    return n\n}\n\nlet v = 1\nprint(bump(v))\nprint(v)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:90",
+      "browser": "run",
+      "expect_output": "2\n1\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-14",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Arrays and objects are passed **by reference**, so a function can mutate its\nargument in place:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn add_nine(items) {\n    items.push(9)\n}\n\nlet xs = [1]\nadd_nine(xs)\nprint(xs)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:110",
+      "browser": "run",
+      "expect_output": "[1, 9]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-16",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Using a function's local outside it is a compile error:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn example() {\n    let x = 10\n    print(x)\n}\n\nfn main() {\n    example()\n    print(x)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:128",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-18",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Module-level variables are not visible inside functions\n\nTop-level statements form the program's entry body, **not** a shared global\nscope. A function cannot read a variable declared at the top level — pass it as\nan argument:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn get_level() {\n    return LEVEL\n}\n\nfn main() {\n    let LEVEL = \"production\"\n\n    print(get_level())\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:144",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let level = \"production\"\n\nfn describe(l) {\n    return \"running in \" + l\n}\nprint(describe(level))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:153",
+      "browser": "run",
+      "expect_output": "running in production\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(If you need shared state across functions today, thread it through parameters,\nor keep it in an object/array you pass around.)\n\n### Block scope\n\nA name first declared inside an `if`, `while` or `for` body is not visible after\nthe block ends. A `for` loop variable is likewise local to the loop:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    if true {\n        let y = 2\n    }\n    print(y)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:176",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    for i in 0..3 {\n        print(i)\n    }\n    print(i)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:184",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-24",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Shadowing\n\n**Across functions** a local simply hides nothing — each function has its own\nvariables:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-14",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 10\n\nfn show() {\n    let x = 20\n    print(x)\n}\n\nshow()\nprint(x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:196",
+      "browser": "run",
+      "expect_output": "20\n10\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-26",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**Within one function**, re-declaring an outer name in an inner block does *not*\ncreate a new shadowing variable; it assigns to the outer one. After this program\nthe outer `x` is `2`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-15",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 1\nif true {\n    let x = 2\n}\nprint(x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:218",
+      "browser": "run",
+      "expect_output": "2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-28",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Choose distinct names for inner variables rather than relying on shadowing.\n\n## Exporting a variable\n\n`export name` marks an already-declared variable or function for export. See\n[Syntax](https://docs.crushlang.org/crush/syntax.html#imports-and-exports); importing it from another file is not\npossible yet (crush-ast **CRUSH-110**).\n\n## Best practices\n\n- Initialise at declaration and keep scopes narrow.\n- Pass state explicitly: functions can't see top-level variables.\n- Prefer new names over shadowing.\n\n## Next Steps\n\n- **[Operators](https://docs.crushlang.org/crush/operators.html)**\n- **[Control Flow](https://docs.crushlang.org/crush/control_flow.html)**\n- **[Functions](https://docs.crushlang.org/crush/functions.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

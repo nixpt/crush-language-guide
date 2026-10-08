@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "README.md — The Crush Language Guide",
+  "description": "Generated from README.md of The Crush Language Guide (https://docs.crushlang.org/index.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "README.md",
+   "guide_url": "https://docs.crushlang.org/index.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "readme-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "<p align=\"center\">\n  <img src=\"assets/hero.png\" alt=\"Crush Banner\" width=\"100%\" />\n</p>\n\n<h1 align=\"center\">\n  <img src=\"assets/logo.png\" alt=\"Crush Logo\" width=\"40\" height=\"40\" style=\"vertical-align: middle;\" />\n  The Crush Language Guide\n</h1>\n\n**Crush** is a capability-based scripting language with polyglot blocks, plus the\ntoolchain that runs it: a compiler to bytecode, a sandboxed VM, and an\nintermediate representation (CAST) that other languages can be translated into.\n\n> **Alpha.** This guide documents what the toolchain does today, verified against\n> crush-ast `main` — every `crush` example on these pages is executed by\n> `scripts/check-examples.py`. Features that exist in the design but not in the\n> implementation are marked *not yet implemented*, with the crush-ast ticket.\n\n## What this guide covers\n\n| Section | What you'll learn |\n|---------|-------------------|\n| [Getting Started](https://docs.crushlang.org/getting-started.html) | Build the toolchain, run a program, embed the VM from Rust |\n| [Crush Language](https://docs.crushlang.org/crush/index.html) | Syntax, types, control flow, functions, capabilities, polyglot blocks |\n| [Examples](https://docs.crushlang.org/examples/index.html) | Runnable programs |\n| [CAST](https://docs.crushlang.org/cast/index.html) | The AST format that walkers and the compiler share |\n| [CASM](https://docs.crushlang.org/casm/index.html) | The bytecode formats the VM executes |\n| [Appendix](https://docs.crushlang.org/appendix/glossary.html) | Glossary, quick reference, language comparisons |\n\n## The compilation pipeline\n\n```\n Crush source (.crush)                     Other languages (.py / .rs / .go / ...)\n        │                                              │\n  crush-frontend                                walker (language-specific)\n  parse · check · optimize                              │\n        │                                               │\n        └───────────────►  CAST  (JSON AST)  ◄──────────┘\n                              │\n                        compiler\n                              │\n                  CASM  (bytecode: JSON IR or CVM1 text)\n                              │\n             assembler → CVM1 binary (.cvm1)\n                              │\n        crush-vm  (portable VM · FastVM · JIT · AOT backends)\n```\n\n`crush run prog.crush` runs the whole left-hand path in one step.\n\n## Hello, Crush\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "readme-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    io.print(\"Hello, Crush!\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "README.md:53",
+      "browser": "run",
+      "expect_output": "Hello, Crush!\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "readme-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`io.print` is a **capability call**: a call that crosses the VM boundary to the\nhost, and so only works if the host grants it. Capability calls are written like\nany other dotted call — there is no `@` prefix. (The `@` sigil in Crush\nintroduces polyglot blocks such as `@python { ... }`, and annotations.)\n\nPress **Run** under the example to run it in your browser, or **Edit** to change\nit first. [Running the Examples](https://docs.crushlang.org/running-examples.html) explains the buttons and\nlabels, and what the in-browser runtime can and cannot do.\n\n## Where the source lives\n\nThe language implementation is the standalone\n[crush-ast](https://github.com/nixpt/crush-ast) repository, extracted from\nthe exosphere agent-native OS monorepo on 2026-06-12. It contains the CAST\nintermediate representation, tree-sitter grammar, polyglot walkers, compiler\nfrontend, VM runtime, package manager, and installer.\n\nThe upstream [exosphere](https://github.com/nixpt/exosphere) project retains\na subprocess-based walker registry that invokes the crush-ast walker binaries,\nand its own `crush-cast`/`casm`/`nanovm` crates for the Crush language\ncompiler running inside the agent-native OS.\n\n## License\n\nLicensed under either of [MIT](https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-MIT) or\n[Apache License 2.0](https://github.com/nixpt/crush-language-guide/blob/main/LICENSE-APACHE) at your option.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

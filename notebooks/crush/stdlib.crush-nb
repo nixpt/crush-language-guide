@@ -1,0 +1,398 @@
+{
+ "meta": {
+  "title": "Standard Library — The Crush Language Guide",
+  "description": "Generated from crush/stdlib.md of The Crush Language Guide (https://docs.crushlang.org/crush/stdlib.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/stdlib.md",
+   "guide_url": "https://docs.crushlang.org/crush/stdlib.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-stdlib-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Standard Library\n\nCrush's \"standard library\" is a set of **capabilities** — dotted functions such\nas `str.split` and `math.sqrt` — that the host registers. It is *not* a module\nsystem: there is no `import std.io`, and `import` does not load anything yet\n(crush-ast **CRUSH-110**). You call these functions by their full dotted name.\n\n## Turning it on\n\nAlmost all of the library lives behind a Cargo feature **and** a CLI flag:\n\n1. Build the toolchain with the `stdlib` feature of `crush-lang-sdk`\n   (`cargo build -p crush-lang-sdk --features stdlib`). It is **off by default**\n   (crush-ast **CRUSH-113**); on a build without it, `--stdlib` only prints\n   `warning: --stdlib requires the 'stdlib' feature`.\n2. Run with `--stdlib`: `crush run --stdlib prog.crush`.\n\nThe examples in this chapter are all executed with `--stdlib`. These are\npure-computation capabilities — they do no I/O. For files, network, time and\nprocesses see [Capability System](https://docs.crushlang.org/crush/capabilities.html).\n\nArguments are positional and the arity is checked (`[runtime] str.replace takes 3\narg(s), got 2`). Note that some predicates return `1`/`0` rather than\n`true`/`false` (for example `str.starts_with`, `regex.test`,\n`collections.includes`), so compare with `== 1` rather than assuming a `Bool`.\n\n## Strings — `str.*`\n\n| Function | Result |\n|---|---|\n| `str.split(s, delim)` | array of parts |\n| `str.join(array, delim)` | string |\n| `str.trim(s)`, `str.trim_start(s)`, `str.trim_end(s)` | string |\n| `str.replace(s, old, new)` | string |\n| `str.contains(s, sub)`, `str.starts_with(s, p)`, `str.ends_with(s, p)` | truthy |\n| `str.to_upper(s)`, `str.to_lower(s)` | string |\n| `str.pad_left(s, width, fill)`, `str.pad_right(s, width, fill)` | string |\n| `str.repeat(s, n)` | string |\n| `str.substring(s, start, end)` | string (`end` exclusive) |\n| `str.char_at(s, i)`, `str.index_of(s, sub)` | one-char string / index |\n| `str.format(template, args)` | `{}` placeholders filled from `args` |\n\n`str.concat(...)` and `str.len(s)` are always available, even without `--stdlib`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(str.split(\"a,b,c\", \",\"))\nprint(str.join([\"a\", \"b\"], \"-\"))\nprint(\"[\" + str.trim(\"  x  \") + \"]\")\nprint(str.replace(\"hello world\", \"world\", \"crush\"))\nprint(str.to_upper(\"abc\"))\nprint(str.pad_left(\"7\", 3, \"0\"))\nprint(str.repeat(\"ab\", 3))\nprint(str.substring(\"hello\", 1, 3))\nprint(str.index_of(\"hello\", \"l\"))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:45",
+      "browser": "host",
+      "why": "uses the standard library (`str.index_of`, `str.pad_left`, `str.repeat` …), which the in-browser runtime does not provide",
+      "expect_output": "[a, b, c]\na-b\n[x]\nhello crush\nABC\n007\nababab\nel\n2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(Arrays print as `[a, b, c]` — strings inside an array are shown unquoted.)\n\n## Math — `math.*`\n\n`math.sqrt`, `math.abs`, `math.floor`, `math.ceil`, `math.round`, `math.sin`,\n`math.cos`, `math.tan`, `math.pow(base, exp)`, `math.min(a, b)`, `math.max(a, b)`,\n`math.pi()`. Results are `Float`. `math.random()`, `math.random_int(lo, hi)`\n(requires `lo < hi`) and `math.seed(n)` use a deterministic built-in generator\n(crush-ast CRUSH-116), so seeded runs are reproducible.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(math.sqrt(16))\nprint(math.pow(2, 10))\nprint(math.floor(-1.5))\nprint(math.round(3.6))\nprint(math.max(2.5, 1))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:80",
+      "browser": "host",
+      "why": "uses the standard library (`math.floor`, `math.max`, `math.pow` …), which the in-browser runtime does not provide",
+      "expect_output": "4.0\n1024.0\n-2.0\n4.0\n2.5\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Conversion — `conv.*`\n\n`conv.to_int`, `conv.to_float`, `conv.to_str`, `conv.to_bool`,\n`conv.parse_int(text, radix)`, `conv.parse_float`, `conv.type_of`, plus the\nalways-on `conv.chr` / `conv.ord`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(conv.to_int(\"42\") + 1)\nprint(conv.to_int(3.9))\nprint(conv.parse_int(\"ff\", 16))\nprint(conv.parse_int(\"101\", 2))\nprint(conv.to_float(\"2\"))\nprint(conv.type_of(3.5))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:103",
+      "browser": "host",
+      "why": "uses the standard library (`conv.parse_int`, `conv.to_float`, `conv.to_int` …), which the in-browser runtime does not provide",
+      "expect_output": "43\n3\n255\n5\n2.0\nfloat\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Collections — `collections.*`\n\n`collections.len`, `reverse`, `includes`, `flatten`, `chunk(array, n)`, `zip`,\n`unique`, `all`, `any`, `find`, `sort_by(array, key)`, `pluck(array, key)`,\nand for objects: `keys`, `values`, `entries`, `merge`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let scores = {\"ada\": 3, \"grace\": 5}\nprint(collections.keys(scores))\nprint(collections.values(scores))\nprint(collections.keys(collections.merge(scores, {\"linus\": 1})))\nprint(collections.reverse([1, 2, 3]))\nprint(collections.chunk([1, 2, 3, 4], 2))\nprint(collections.unique([1, 1, 2, 2, 3]))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:128",
+      "browser": "host",
+      "why": "uses the standard library (`collections.chunk`, `collections.keys`, `collections.merge` …), which the in-browser runtime does not provide",
+      "expect_output": "[ada, grace]\n[3, 5]\n[ada, grace, linus]\n[3, 2, 1]\n[[1, 2], [3, 4]]\n[1, 2, 3]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`collections.keys(obj)` returns the keys **sorted**, and is how you iterate an\nobject deterministically — `for k in obj` isn't supported, and printing an object\ndirectly lists its keys in an unspecified (per-run) order:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let m = {\"a\": 1, \"b\": 2}\nfor k in collections.keys(m) {\n    print(k)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:152",
+      "browser": "host",
+      "why": "uses the standard library (`collections.keys`), which the in-browser runtime does not provide",
+      "expect_output": "a\nb\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## JSON — `json.*`\n\n`json.parse(text)` → object/array/scalar; `json.stringify(value)`;\n`json.stringify_pretty(value)`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let o = json.parse(\"{\\\"name\\\": \\\"Ada\\\", \\\"n\\\": 3}\")\nprint(o.name)\nprint(o.n + 1)\nprint(json.stringify({\"x\": 1}))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:170",
+      "browser": "host",
+      "why": "uses the standard library (`json.parse`, `json.stringify`), which the in-browser runtime does not provide",
+      "expect_output": "Ada\n4\n{\"x\":1}\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Paths — `path.*`\n\n`path.join(a, b)`, `dirname`, `basename`, `extension`, `stem`, `is_absolute`,\n`normalize` — pure string manipulation, no filesystem access.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(path.join(\"a\", \"b.txt\"))\nprint(path.dirname(\"/x/y/z.txt\"))\nprint(path.basename(\"/x/y/z.txt\"))\nprint(path.stem(\"z.tar.gz\"))\nprint(path.normalize(\"a/./b/../c\"))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:189",
+      "browser": "host",
+      "why": "uses the standard library (`path.basename`, `path.dirname`, `path.join` …), which the in-browser runtime does not provide",
+      "expect_output": "a/b.txt\n/x/y\nz.txt\nz.tar\na/c\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Regular expressions — `regex.*`\n\n**The pattern comes first**, then the text: `regex.test(pattern, text)`,\n`regex.find_all(pattern, text)`, `regex.replace(pattern, text, replacement)`,\n`regex.split(pattern, text)`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(regex.find_all(\"[0-9]+\", \"a1b22\"))\nprint(regex.replace(\"[0-9]\", \"a1b2\", \"#\"))\nprint(regex.split(\"[,;] *\", \"a, b;c\"))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:212",
+      "browser": "host",
+      "why": "uses the standard library (`regex.find_all`, `regex.replace`, `regex.split`), which the in-browser runtime does not provide",
+      "expect_output": "[1, 22]\na#b#\n[a, b, c]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-17",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "> **Known bug.** `regex.match` is registered but can't be called from source:\n> `match` is a keyword, so `regex.match(...)` is a parse error (`Expected field\n> name but found match`).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(regex.match(\"([a-z]+)([0-9]+)\", \"abc123\"))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:230",
+      "browser": "host",
+      "why": "uses the standard library (`regex.match`), which the in-browser runtime does not provide"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-19",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Other families\n\nAlso registered under `--stdlib`: `bytes.*` (`from_string`, `to_string`, `len`,\n`slice`), `buffer.*` (`alloc`, `read`, `write`, `freeze`), `binary.read_*` /\n`binary.write_*` (u16/u32/u64, big/little endian), `result.*` (`ok`, `err`,\n`is_ok`, `unwrap` — results are plain `{ok, value}` objects), `text.sort`,\n`text.uniq`, `time.format`, `time.parse`, `env.os`, `env.arch`, and the `system.*`\nhelpers implemented in Crush itself (`crates/crush-lang-sdk/sbl/`).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(result.unwrap(result.ok(5)))\nprint(env.os())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/stdlib.md:243",
+      "browser": "host",
+      "why": "uses `env.os`; uses the standard library (`result.ok`, `result.unwrap`), which the in-browser runtime does not provide",
+      "expect_output": "5\nlinux\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-stdlib-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(The second line depends on the machine running the example.)\n\n## Not in the library\n\nThere is no `std.*` module tree, `io.eprint`, `sys.*`, `array.length` or\n`map.*`. For output use `print`/`io.print`; for the process environment use\n`env.get` (`--env`); for arguments, there is currently no accessor.\n\n## Next Steps\n\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

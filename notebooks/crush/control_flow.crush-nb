@@ -1,0 +1,485 @@
+{
+ "meta": {
+  "title": "Control Flow — The Crush Language Guide",
+  "description": "Generated from crush/control_flow.md of The Crush Language Guide (https://docs.crushlang.org/crush/control_flow.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/control_flow.md",
+   "guide_url": "https://docs.crushlang.org/crush/control_flow.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-control-flow-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Control Flow\n\nCrush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,\nand `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.\n\n## If\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let score = 85\n\nif score >= 90 {\n    print(\"A\")\n} else if score >= 80 {\n    print(\"B\")\n} else {\n    print(\"C or below\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:8",
+      "browser": "run",
+      "expect_output": "B\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`if` is a statement, not an expression: `let y = if c { 1 } else { 2 }` is a\nparse error. Use a function or `match` to select a value.\n\n## While\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let i = 0\nwhile i < 3 {\n    print(i)\n    i = i + 1\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:30",
+      "browser": "run",
+      "expect_output": "0\n1\n2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Loop with `break`\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let counter = 0\nwhile true {\n    if counter >= 3 {\n        break\n    }\n    counter = counter + 1\n}\nprint(counter)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:47",
+      "browser": "run",
+      "expect_output": "3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## For\n\n### Over an array\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "for n in [10, 20, 30] {\n    print(n)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:67",
+      "browser": "run",
+      "expect_output": "10\n20\n30\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Over a range\n\n`a..b` is half-open (excludes `b`). There is no inclusive `..=` and no `range()`\nfunction:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "for i in 0..3 {\n    print(i)\n}\n\nlet items = [\"x\", \"y\"]\nfor i in 0..len(items) {\n    print(items[i])\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:85",
+      "browser": "run",
+      "expect_output": "0\n1\n2\nx\ny\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    for i in 1..=3 {\n        print(i)\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:106",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-12",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Iterating directly over a map (`for k in obj`) is not supported — see\n[Types](https://docs.crushlang.org/crush/types.html#objects-maps).\n\n## Break and continue\n\n`continue` skips to the next iteration; `break` leaves the innermost loop:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "for i in 0..5 {\n    if i % 2 == 0 {\n        continue\n    }\n    print(i)\n}\n\nfor i in 0..10 {\n    if i == 3 {\n        break\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:119",
+      "browser": "run",
+      "expect_output": "1\n3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-14",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Match\n\n`match` selects among arms by comparing a value to literal patterns, with `_` as\nthe wildcard. It is an **expression**: bind its result with `let`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let v = 2\nlet word = match v {\n    1 => \"one\",\n    2 => \"two\",\n    _ => \"many\"\n}\nprint(word)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:145",
+      "browser": "run",
+      "expect_output": "two\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-16",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Supported patterns: integer, string and bool literals, `_`, and a bare\nidentifier that binds the scrutinee (`n => \"got \" + n`). Arm bodies can be an\nexpression or a `{ ... }` block whose last expression is the value:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let n = 5\nlet msg = match n {\n    0 => \"zero\",\n    other => \"got \" + other\n}\nprint(msg)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:164",
+      "browser": "run",
+      "expect_output": "got 5\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-18",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Current limitations (alpha):\n\n- **Not used as a statement.** `match v { 1 => print(\"one\"), _ => print(\"other\") }`\n  on its own fails at run time with `stack underflow`; the arms must produce\n  values and the result must be bound with `let` (or use `if` for side effects).\n- **`return match ...` returns `null`.** Bind first, then return:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn name(v) {\n    let r = match v {\n        0 => \"zero\",\n        _ => \"other\"\n    }\n    return r\n}\nprint(name(0))\nprint(name(3))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:185",
+      "browser": "run",
+      "expect_output": "zero\nother\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-20",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "- A `match` with no matching arm evaluates to `null` — there is no\n  exhaustiveness error.\n- No guards (`x if x > 3 => ...`) and no range patterns (`0..3 => ...`).\n\n(These are crush-ast gaps without a ticket yet; see `GAP-MATCH-STATEMENT` and\n`GAP-MATCH-RETURN` in the GUIDE-3 notes.)\n\n## Errors: `try` / `catch` / `throw`\n\n`throw` raises any value; `catch name { ... }` receives it. There is no\n`finally`, and the parenthesised form `catch (e)` is not accepted.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn divide(a, b) {\n    if b == 0 {\n        throw \"division by zero\"\n    }\n    return a / b\n}\n\ntry {\n    print(divide(4, 2))\n    print(divide(1, 0))\n    print(\"not reached\")\n} catch err {\n    print(\"Error: \" + err)\n}\nprint(\"done\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:215",
+      "browser": "run",
+      "expect_output": "2\nError: division by zero\ndone\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-22",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "A `throw` crosses function-call boundaries (fixed in crush-ast **CRUSH-126**),\n`catch` can rethrow, and thrown values can be any type:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "try {\n    try {\n        throw \"inner\"\n    } catch e {\n        throw \"re-\" + e\n    }\n} catch outer {\n    print(outer)\n}\n\ntry {\n    throw {\"code\": 7}\n} catch e {\n    print(e.code)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:243",
+      "browser": "run",
+      "expect_output": "re-inner\n7\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-24",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "An uncaught `throw` ends the program with `[runtime] uncaught error: <value>`.\n\n### What `catch` does *not* catch\n\n`try`/`catch` handles values raised with `throw`. **Runtime faults from the VM or\na host capability are not catchable**: division by zero, an out-of-range array\nindex, a failing `fs.read`, or a polyglot block that raises all abort the\nprogram with a `[runtime]` error instead of reaching your `catch`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    try {\n        print(1 / 0)\n    } catch e {\n        print(\"caught\")\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:277",
+      "browser": "fail",
+      "why": "not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-26",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Next Steps\n\n- **[Functions](https://docs.crushlang.org/crush/functions.html)**\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

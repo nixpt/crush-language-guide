@@ -1,0 +1,66 @@
+{
+ "meta": {
+  "title": "Polyglot Pipeline — The Crush Language Guide",
+  "description": "Generated from examples/async-dom.md of The Crush Language Guide (https://docs.crushlang.org/examples/async-dom.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/async-dom.md",
+   "guide_url": "https://docs.crushlang.org/examples/async-dom.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-async-dom-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-async-dom-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "// Three languages, one program. Values flow through Crush variables.\nlet numbers = [3, 1, 4, 1, 5, 9, 2, 6]\n\n@python {\nimport statistics\nmean = statistics.mean(numbers)\n}\n\n@javascript {\nconst spread = Math.max(...numbers) - Math.min(...numbers)\n}\n\nlet m = mean\nlet s = spread\n@bash {\necho \"mean=$m spread=$s\"\n}\nprint(\"\")\nprint(\"done\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/async-dom.md:12",
+      "browser": "host",
+      "why": "uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "mean=3.875 spread=8\ndone\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-async-dom-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- `@python`: reads the Crush variable `numbers`, and its last top-level binding,\n  `mean`, becomes a Crush variable\n- `@javascript`: the same protocol; `spread` comes back as a number\n- `@bash`: receives the `let` variables declared before it as environment\n  variables. Results of earlier blocks are not passed automatically, so they are\n  copied into `let m = mean` / `let s = spread` first\n- Block output is trimmed and has no trailing newline, which is why `print(\"\")`\n  is used to finish the line\n- All three run as ordinary subprocesses with your user's authority — see\n  [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority)\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

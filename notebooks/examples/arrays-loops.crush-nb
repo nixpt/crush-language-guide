@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "Arrays & Loops — The Crush Language Guide",
+  "description": "Generated from examples/arrays-loops.md of The Crush Language Guide (https://docs.crushlang.org/examples/arrays-loops.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/arrays-loops.md",
+   "guide_url": "https://docs.crushlang.org/examples/arrays-loops.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-arrays-loops-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Arrays & Loops\n\nArray creation, indexing, `for` iteration, `break`/`continue`, and a classic\nloop exercise.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-arrays-loops-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let arr = [10, 20, 30, 40, 50]\nprint(\"length: \" + len(arr))\nprint(\"first: \" + arr[0] + \", third: \" + arr[2])\n\n// iterate\nlet sum = 0\nfor x in arr {\n    sum = sum + x\n}\nprint(\"sum: \" + sum)\n\n// break — stop at 30\nfor x in arr {\n    if x == 30 {\n        break\n    }\n    print(\"before 30: \" + x)\n}\n\n// continue — skip 30\nfor x in arr {\n    if x == 30 {\n        continue\n    }\n    print(\"not 30: \" + x)\n}\n\n// build an array, index by position\nlet squares = []\nfor i in 1..6 {\n    squares.push(i * i)\n}\nprint(squares)\n\n// strings index too\nlet s = \"hello\"\nprint(s[0] + s[4])\n\n// fizzbuzz\nfor n in 1..16 {\n    if n % 15 == 0 {\n        print(\"FizzBuzz\")\n    } else if n % 3 == 0 {\n        print(\"Fizz\")\n    } else if n % 5 == 0 {\n        print(\"Buzz\")\n    } else {\n        print(n)\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/arrays-loops.md:6",
+      "browser": "run",
+      "expect_output": "length: 5\nfirst: 10, third: 30\nsum: 150\nbefore 30: 10\nbefore 30: 20\nnot 30: 10\nnot 30: 20\nnot 30: 40\nnot 30: 50\n[1, 4, 9, 16, 25]\nho\n1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-arrays-loops-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- `[v1, v2, ...]` literals, `len(arr)`, zero-based `arr[i]`, and `arr.push(v)`\n- `for x in arr` and half-open ranges `for i in 1..6` (1 through 5)\n- `break` leaves the loop; `continue` skips to the next iteration\n- Strings index like arrays, yielding one-character strings\n- `if / else if / else` chains and `%`\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

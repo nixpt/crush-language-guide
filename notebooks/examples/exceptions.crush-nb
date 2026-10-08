@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "Exception Handling — The Crush Language Guide",
+  "description": "Generated from examples/exceptions.md of The Crush Language Guide (https://docs.crushlang.org/examples/exceptions.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/exceptions.md",
+   "guide_url": "https://docs.crushlang.org/examples/exceptions.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-exceptions-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Exception Handling\n\n`try` / `catch` / `throw` work, including across function calls. Any value can\nbe thrown.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-exceptions-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(\"Starting\")\n\ntry {\n    print(\"Inside try block\")\n    throw \"Oops\"\n    print(\"This should not print\")\n} catch e {\n    print(\"Caught exception: \" + e)\n}\n\nprint(\"After catch block\")\n\nfn safe_divide(a: Int, b: Int) -> Int {\n    if b == 0 {\n        throw \"division by zero\"\n    }\n    return a / b\n}\n\ntry {\n    print(safe_divide(10, 2))\n    print(safe_divide(10, 0))\n} catch e {\n    print(\"Error: \" + e)\n}\n\n// any value can be thrown\ntry {\n    throw {\"code\": 404, \"msg\": \"not found\"}\n} catch err {\n    print(err.code)\n    print(err.msg)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/exceptions.md:6",
+      "browser": "run",
+      "expect_output": "Starting\nInside try block\nCaught exception: Oops\nAfter catch block\n5\nError: division by zero\n404\nnot found\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-exceptions-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- `try { ... } catch e { ... }` — the thrown value binds to `e`\n- `throw expr` — the rest of the `try` body is skipped\n- Output printed before the `throw` is kept (`5` above)\n- Thrown values may be strings, numbers, or objects (`err.code`)\n- `catch` handles only values raised with `throw`. A VM fault such as\n  `1 / 0`, a failed capability call, or a crashing polyglot block ends the program\n  instead — see [Control Flow](https://docs.crushlang.org/crush/control_flow.html#what-catch-does-not-catch)\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

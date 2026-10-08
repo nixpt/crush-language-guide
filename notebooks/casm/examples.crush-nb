@@ -1,0 +1,137 @@
+{
+ "meta": {
+  "title": "CASM Examples — The Crush Language Guide",
+  "description": "Generated from casm/examples.md of The Crush Language Guide (https://docs.crushlang.org/casm/examples.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "casm/examples.md",
+   "guide_url": "https://docs.crushlang.org/casm/examples.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "casm-examples-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# CASM Examples\n\nEvery program here is CASM **text assembly** — the form you can write by hand and run\nwith `crush-run run FILE.casm --cap io.print` — and every one is executed by this\nguide's checker against crush-ast `v0.3.9`, with the output shown. The JSON IR is\ncovered in [Program Structure](https://docs.crushlang.org/casm/structure.html) and\n[Serialization](https://docs.crushlang.org/casm/serialization.html). Opcode details are in the\n[Instruction Reference](https://docs.crushlang.org/casm/instructions.html).\n\nAll programs print with `CAP_CALL \"io.print\" N`, so run them with `--cap io.print`\n(a `.casm` file carries no permissions of its own).\n\n## 1. Hello, world\n\n```casm\n.func main\n    PUSH_STR \"Hello, CASM!\"\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n```text\nHello, CASM!\n```\n\n`io.print` takes any number of arguments (here `1`), prints them back to back and\nadds a newline.\n\n## 2. Variables and arithmetic\n\n`STORE n` pops into slot `n`; `LOAD n` pushes it back.\n\n```casm\n.func main\n    PUSH 6\n    STORE 0             ; a = 6\n    PUSH 7\n    STORE 1             ; b = 7\n    LOAD 0\n    LOAD 1\n    MUL\n    STORE 2             ; product = a * b\n    PUSH_STR \"6 * 7 = \"\n    LOAD 2\n    CAP_CALL \"io.print\" 2\n    HALT\n```\n\n```text\n6 * 7 = 42\n```\n\n## 3. Conditionals\n\n`JZ` jumps when the popped value is falsy, so an `if` compiles to a `JZ` over the\n\"then\" branch plus a `JMP` over the \"else\" branch.\n\n```casm\n.func main\n    PUSH 3\n    STORE 0             ; n = 3\n    LOAD 0\n    PUSH 2\n    GT                  ; n > 2\n    JZ else\n    PUSH_STR \"big\"\n    CAP_CALL \"io.print\" 1\n    JMP end\nelse:\n    PUSH_STR \"small\"\n    CAP_CALL \"io.print\" 1\nend:\n    HALT\n```\n\n```text\nbig\n```\n\n## 4. Loops\n\n```casm\n.func main\n    PUSH 1\n    STORE 0             ; i = 1\n    PUSH 0\n    STORE 1             ; sum = 0\nloop:\n    LOAD 0\n    PUSH 5\n    GT                  ; i > 5 ?\n    JNZ done\n    LOAD 1\n    LOAD 0\n    ADD\n    STORE 1             ; sum = sum + i\n    LOAD 0\n    PUSH 1\n    ADD\n    STORE 0             ; i = i + 1\n    JMP loop\ndone:\n    PUSH_STR \"sum 1..5 = \"\n    LOAD 1\n    CAP_CALL \"io.print\" 2\n    HALT\n```\n\n```text\nsum 1..5 = 15\n```\n\n## 5. Functions\n\nArguments are pushed **last first**; the callee's first instructions `STORE` its\nparameters in order, so the first `STORE` receives the *first* argument. `RET`\nreturns whatever the callee left on top of the stack.\n\n```casm\n.func main\n    PUSH 3              ; second argument (b)\n    PUSH 10             ; first argument  (a)\n    CALL sub\n    CAP_CALL \"io.print\" 1\n    HALT\n.func sub\n    STORE 0             ; a\n    STORE 1             ; b\n    LOAD 0\n    LOAD 1\n    SUB                 ; a - b\n    RET\n```\n\n```text\n7\n```\n\nRecursion works the same way (each call gets fresh slots). The default call-depth\nquota is 256:\n\n```casm\n.func main\n    PUSH 10\n    CALL fact\n    CAP_CALL \"io.print\" 1\n    HALT\n.func fact\n    STORE 0             ; n\n    LOAD 0\n    PUSH 1\n    LE\n    JNZ base\n    LOAD 0\n    LOAD 0\n    PUSH 1\n    SUB\n    CALL fact           ; fact(n - 1)\n    MUL                 ; n * fact(n - 1)\n    RET\nbase:\n    PUSH 1\n    RET\n```\n\n```text\n3628800\n```\n\n## 6. Arrays and objects\n\n```casm\n.func main\n    PUSH 10\n    PUSH 20\n    PUSH 30\n    NEW_ARRAY 3         ; [10, 20, 30]\n    STORE 0\n    LOAD 0\n    PUSH 40\n    ARR_PUSH            ; array v -> array\n    STORE 0\n    PUSH_STR \"length: \"\n    LOAD 0\n    ARR_LEN\n    CAP_CALL \"io.print\" 2\n    PUSH_STR \"second: \"\n    LOAD 0\n    PUSH 1\n    ARR_GET\n    CAP_CALL \"io.print\" 2\n\n    NEW_OBJ\n    PUSH_STR \"Ada\"\n    SET_FIELD \"name\"    ; obj v -> obj\n    STORE 1\n    LOAD 1\n    GET_FIELD \"name\"\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n```text\nlength: 4\nsecond: 20\nAda\n```\n\n## 7. Errors\n\n`ENTER_TRY handler` … `THROW` jumps to the handler with the thrown value on the\nstack; `EXIT_TRY` retires the handler when the body finishes normally.\n\n```casm\n.func main\n    ENTER_TRY handler\n    PUSH_STR \"disk full\"\n    THROW\n    EXIT_TRY\n    JMP end\nhandler:\n    STORE 0\n    PUSH_STR \"recovered from: \"\n    LOAD 0\n    CAP_CALL \"io.print\" 2\nend:\n    HALT\n```\n\n```text\nrecovered from: disk full\n```\n\nA capability that is not registered, or a type error, is **not** catchable this way:\nit ends the program with a `[runtime]` error.\n\n## 8. Host capabilities\n\nFile access needs the `--fs` flag **and** the capability in the manifest, so run\nthis one as `crush-run run prog.casm --cap io.print --cap fs.exists --fs`:\n\n```casm\n.func main\n    PUSH_STR \"no-such-file.txt\"\n    CAP_CALL \"fs.exists\" 1\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n```text\n0\n```\n\nThe manifest is checked first. Leave out `--cap fs.exists` and the VM stops with\n`capability not declared in manifest: fs.exists`; pass `--cap fs.exists` but leave out\n`--fs` and it stops with `unknown capability: fs.exists` (declared, but the host never\nregistered it).\n\n```casm\n.func main\n    PUSH_STR \"no-such-file.txt\"\n    CAP_CALL \"fs.exists\" 1\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n## 9. What the compiler writes\n\nThe text assembly is also what `crushc --emit casm` prints, so you can read how\nCrush constructs lower. Labels there are byte offsets (`L42`).\n\n**`if` / `else`:**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let n = 3\nif n > 2 {\n    io.print(\"big\")\n} else {\n    io.print(\"small\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "casm/examples.md:285",
+      "browser": "run",
+      "expect_output": "big\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```casm\n.func main\n    PUSH 3\n    STORE 0\n    LOAD 0\n    PUSH 2\n    GT\n    JZ L42\n    PUSH_STR \"big\"\n    CAP_CALL \"io.print\" 1\n    JMP L49\nL42:\n    PUSH_STR \"small\"\n    CAP_CALL \"io.print\" 1\nL49:\n    PUSH_NULL\n    RET\n```\n\n**`try` / `catch`:**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "try {\n    throw \"bad\"\n} catch e {\n    io.print(\"caught \", e)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "casm/examples.md:320",
+      "browser": "run",
+      "expect_output": "caught bad\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```casm\n.func main\n    ENTER_TRY L15\n    PUSH_STR \"bad\"\n    THROW\n    EXIT_TRY\n    JMP L28\nL15:\n    STORE 0\n    PUSH_STR \"caught \"\n    LOAD 0\n    CAP_CALL \"io.print\" 2\nL28:\n    PUSH_NULL\n    RET\n```\n\n**`for x in array`** expands into an index loop: the array in slot 1, the index in\nslot 2, and `ARR_LEN … GT … JZ` as the loop test:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let t = 0\nfor x in [1, 2, 3] { t = t + x }\nio.print(t)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "casm/examples.md:353",
+      "browser": "run",
+      "expect_output": "6\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "casm-examples-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```casm\n.func main\n    PUSH 0\n    STORE 0\n    NEW_ARRAY 0\n    PUSH 1\n    ARR_PUSH\n    PUSH 2\n    ARR_PUSH\n    PUSH 3\n    ARR_PUSH\n    STORE 1\n    PUSH 0\n    STORE 2\nL60:\n    LOAD 1\n    ARR_LEN\n    LOAD 2\n    GT\n    JZ L114\n    LOAD 1\n    LOAD 2\n    ARR_GET\n    STORE 3\n    LOAD 0\n    LOAD 3\n    ADD\n    STORE 0\n    LOAD 2\n    PUSH 1\n    ADD\n    STORE 2\n    JMP L60\nL114:\n    LOAD 0\n    CAP_CALL \"io.print\" 1\n    PUSH_NULL\n    RET\n```\n\nNotice the array literal: `NEW_ARRAY 0` followed by one `ARR_PUSH` per element —\nwhich is why the [IR's `new_array`](https://docs.crushlang.org/casm/instructions.html#collections-and-objects) never\nneeds its `size`.\n\n## Tips\n\n1. **Comment freely.** `;` and `#` start a comment in the text assembly (JSON has no comments).\n2. **Name your labels.** The assembler resolves them; you never count bytes.\n3. **Keep the entry function called `main`** and put it first.\n4. **Mind the stack.** Each `CAP_CALL` to a value-returning capability leaves a value;\n   a stray one at `HALT` shows up as `stack=1` in the `[steps=…, stack=…]` line that\n   `crush-run` prints. Compare it to `0` when debugging.\n5. **To see what a Crush construct costs, compile it:** `crushc FILE.crush --emit casm`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

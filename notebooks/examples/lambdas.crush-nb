@@ -1,0 +1,125 @@
+{
+ "meta": {
+  "title": "Lambdas & the Pipeline Operator — The Crush Language Guide",
+  "description": "Generated from examples/lambdas.md of The Crush Language Guide (https://docs.crushlang.org/examples/lambdas.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/lambdas.md",
+   "guide_url": "https://docs.crushlang.org/examples/lambdas.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-lambdas-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Lambdas & the Pipeline Operator\n\n## The pipeline operator\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and\nbind more loosely than any other operator. The right-hand side must be a\nuser-defined function (or a call to one).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn add(a, b) {\n    return a + b\n}\nfn mul(a, b) {\n    return a * b\n}\nfn square(x) {\n    return x * x\n}\n\nprint(add(1, 2) |> mul(3))\nprint(2 |> square |> square)\nlet result = 3 |> add(4) |> mul(10)\nprint(result)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/lambdas.md:9",
+      "browser": "run",
+      "expect_output": "9\n16\n70\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`add(1, 2) |> mul(3)` is `mul(add(1, 2), 3)`, i.e. `mul(3, 3)` = 9.\n\n## Lambdas\n\n> **Not yet implemented.** Anonymous functions, functions as values, and closures\n> all fail to compile today. The lexer reads a bare `|` as an identifier, so the\n> `|params| body` parser is unreachable — crush-ast **CRUSH-75**, open (the same\n> bug is GitHub issue #78). The forms below are what the design intends; they are\n> kept here, marked, so they can be switched on when CRUSH-75 lands.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let add = |a, b| {\n        return a + b\n    }\n    print(add(1, 2))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/lambdas.md:44",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let mul = |x, y| => x * y\n    print(mul(4, 5))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/lambdas.md:52",
+      "browser": "fail",
+      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-md-6",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Passing a function by name (`apply(double, 21)`) fails for the same reason: a\nfunction name is not a value. Until then, use named functions and `|>`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

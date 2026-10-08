@@ -1,0 +1,66 @@
+{
+ "meta": {
+  "title": "System Info Report — The Crush Language Guide",
+  "description": "Generated from examples/sysinfo.md of The Crush Language Guide (https://docs.crushlang.org/examples/sysinfo.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/sysinfo.md",
+   "guide_url": "https://docs.crushlang.org/examples/sysinfo.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-sysinfo-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# System Info Report\n\nCrush as a *conductor*: gather facts from the host through capability calls, then\nassemble them. The program needs three capability groups, so it is run with\n`crush run --stdlib --env --time sysinfo.crush`; with any flag missing, the\ncorresponding call fails with `unknown capability`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-sysinfo-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "// Gather host facts through capabilities and render a small report.\nlet os = env.os()\nlet arch = env.arch()\nlet home = env.get(\"HOME\")\nlet lines = [\"System report\", \"-------------\", \"os:   \" + os, \"arch: \" + arch]\nprint(str.join(lines, \"\\n\"))\nif home != null {\n    print(\"home is set\")\n}\nprint(\"clock ok: \" + (time.now() > 0))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/sysinfo.md:9",
+      "browser": "host",
+      "why": "uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide",
+      "expect_output": "System report\n-------------\nos:   linux\narch: x86_64\nhome is set\nclock ok: true\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-sysinfo-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(The `os` and `arch` lines depend on the machine that runs the example.)\n\n**What this shows:**\n\n- `env.os()` / `env.arch()` (`--stdlib`), `env.get(name)` (`--env`, returns `null`\n  when the variable is unset), `time.now()` (`--time`) — each group is\n  deny-by-default\n- `str.join(array, delimiter)` to assemble text\n- `\"label\" + (expression)` concatenation with a `Bool` result\n- Calls that don't exist yet: this page used to show `sys.hostname()`,\n  `sys.cpu_usage()`, `sys.memory_info()` and a `capability system readonly`\n  declaration. None of those exist in the runtime today; host metrics beyond\n  `env.*` and `time.*` have to come from `process.exec` (see\n  [Build Pipeline](https://docs.crushlang.org/examples/build-pipeline.html)) or a polyglot block.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

@@ -1,0 +1,64 @@
+{
+ "meta": {
+  "title": "Language Comparisons — The Crush Language Guide",
+  "description": "Generated from appendix/comparison.md of The Crush Language Guide (https://docs.crushlang.org/appendix/comparison.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "appendix/comparison.md",
+   "guide_url": "https://docs.crushlang.org/appendix/comparison.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "appendix-comparison-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Language Comparisons\n\nHow Crush relates to the languages people usually compare it with. Crush is **alpha**:\nthe language is small, the standard library is a set of host capabilities, and several\nfeatures in its design (lambdas, imports, an executing AI layer) are not implemented\nyet. The comparisons below are about what is real today.\n\n## What Crush is for\n\n- **Running untrusted or semi-trusted scripts with explicit authority.** A program can\n  only do what the host switched on (`--fs`, `--net`, `--process`, …); everything else\n  is simply not registered. See [Capabilities](https://docs.crushlang.org/crush/capabilities.html).\n- **Embedding.** The VM is a Rust library (`crush-lang-sdk`) with quotas for steps,\n  stack, output and call depth, so a host can bound what a script costs.\n- **One front door for several languages.** `@python`, `@javascript` and `@bash`\n  blocks run inside a Crush program, with values marshalled in and out. They are host\n  subprocesses, so they are gated by `--polyglot` and carry the host's full authority\n  unless you use the opt-in sandbox lane. See [Polyglot](https://docs.crushlang.org/crush/polyglot.html).\n\nIt is **not** a general-purpose replacement for Python or JavaScript: there is no\npackage ecosystem, no lambdas, no working `import`, and a small standard library.\n\n## Crush vs Python\n\n| | Crush | Python |\n|---|---|---|\n| Typing | dynamic; annotations (`x: Int`) are optional and checked at compile time | dynamic; hints are not enforced |\n| Ambient authority | none — files, network, processes need a capability flag | everything the OS user can do |\n| Execution | compiled to CVM1 bytecode, run by a Rust VM with quotas | compiled to bytecode, run by CPython |\n| Functions | `fn`, named only (no lambdas yet) | `def`, `lambda` |\n| Ecosystem | tiny; reach Python through `@python { }` | huge |\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "appendix-comparison-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn greet(name) {\n    print(\"Hello, \" + name + \"!\")\n}\n\ngreet(\"Alice\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "appendix/comparison.md:34",
+      "browser": "run"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "appendix-comparison-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\nHello, Alice!\n```\n\nIn Python that is `def greet(name): print(f\"Hello, {name}!\")` — no string\ninterpolation in Crush, so concatenate with `+`.\n\n## Crush vs JavaScript\n\n| | Crush | JavaScript |\n|---|---|---|\n| Authority | capability-gated | Node has full OS access; browsers are sandboxed by the platform |\n| Functions | `fn`, no closures or lambdas yet | first-class, closures |\n| Async | `async`/`await`/`spawn` are parsed but not scheduled — treat them as unimplemented | native promises and an event loop |\n| Syntax | braces, optional semicolons, `let`, double-quoted strings only | similar, single quotes allowed |\n\n## Crush vs Rust\n\nCrush's VM is written in Rust and Crush embeds into Rust programs, but the languages\nare opposites in philosophy: Rust is statically typed with ownership; Crush is a\ndynamic scripting language whose safety comes from the host (capabilities and quotas)\nrather than the type system.\n\n## Crush vs Bash\n\n| | Crush | Bash |\n|---|---|---|\n| Values | typed (ints, floats, strings, arrays, objects) | strings |\n| Running programs | `process.exec` with `--process`, or an `@bash { }` block | native |\n| Errors | `try` / `catch`, `throw` | exit codes |\n| Authority | capability-gated | everything the user can do |\n\n## Performance\n\nCrush has an interpreter (CVM1), a second interpreter (FastVM, aimed at hot loops),\nand — in the repository, not on crates.io — ahead-of-time backends (`crush-aot`,\n`crush-aotc`) that translate CASM to Rust or C. The repository's own benchmark\n(`docs/benchmarks/BENCHMARKS.md`, one process per iteration) gives these figures\nrelative to the CVM1 interpreter:\n\n| Tier | `simple` (return 42) | `compute` (14-op arithmetic chain) |\n|---|---|---|\n| CVM1 interpreter | 1.0× | 1.0× |\n| FastVM | 0.09× | 0.5× |\n| AOT via rustc | 42× | 130× |\n| AOT via gcc | 54× | 317× |\n| AOT via clang | 55× | 378× |\n\nRead these with care. The programs are tiny, the AOT compilers constant-fold the\nwhole `compute` chain into a single value, FastVM loses on tiny programs and is meant\nfor loops with thousands of iterations, and the scripting-language rows in that\ndocument measure interpreter start-up, not throughput. They show that the AOT path\n*can* remove the stack machine's overhead; they are not a claim about how fast real\nCrush programs run. The AOT backends also reject programs that use instructions they\ndo not support.\n\n## When to use Crush\n\n✅ **A good fit:**\n\n- You embed a scripting layer in a Rust application and need to bound and gate what\n  scripts can do.\n- You want agents or tools to emit programs as validated data ([CAST](https://docs.crushlang.org/cast/index.html))\n  rather than as source text.\n- You are experimenting with a capability-first language.\n\n❌ **Look elsewhere when:**\n\n- You need a mature ecosystem, libraries or tooling — use Python or JavaScript.\n- You need closures, modules or imports today.\n- You need hardened isolation of *foreign-language* code: polyglot blocks run as host\n  processes unless you build the optional bubblewrap sandbox lane, which is Linux-only.\n\n## Migrating to Crush\n\n### From Python\n\n1. `def` → `fn`; indentation → braces.\n2. `print(a, b)` → `print(x)` takes one argument; use `io.print(a, b)` for several\n   (they are joined with no separator).\n3. `f\"…{x}\"` → `\"…\" + x`.\n4. `and`/`or`/`not` → `&&`/`||`/`!`; `range(n)` → `0..n`.\n5. Anything that touches files, the network or processes needs the matching\n   capability flag.\n6. Keep code you cannot port in an `@python { }` block while you migrate.\n\n### From JavaScript\n\n1. `function` → `fn`; `const`/`let` → `let` (there is no `const`).\n2. Strings use double quotes only.\n3. `console.log(x)` → `print(x)`.\n4. No arrow functions yet — name the function.\n5. Keep code you cannot port in an `@javascript { }` block.\n\n### From Bash\n\n1. Wrap shell commands in `@bash { }` (needs `--polyglot`) or call\n   `process.exec(\"cmd\", \"arg\")` (needs `--process`).\n2. Use Crush for the control flow and data handling around them.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

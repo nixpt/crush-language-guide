@@ -1,0 +1,66 @@
+{
+ "meta": {
+  "title": "Build Pipeline — The Crush Language Guide",
+  "description": "Generated from examples/build-pipeline.md of The Crush Language Guide (https://docs.crushlang.org/examples/build-pipeline.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "examples/build-pipeline.md",
+   "guide_url": "https://docs.crushlang.org/examples/build-pipeline.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "examples-build-pipeline-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Build Pipeline\n\nCrush's intended role is a small, auditable *conductor* for other tools: it\ndecides what runs and in what order, while capability calls do the work. Here each\nstep is a real process started through `process.exec`, and the pipeline stops at\nthe first failure.\n\nRun it with `crush run --stdlib --process build.crush`.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-build-pipeline-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "// A tiny build pipeline: run each step as a process, stop at the first failure.\nfn run_tool(cmd: String, arg: String) -> Int {\n    let raw = process.exec(cmd, arg)\n    let res = json.parse(raw)\n    return res.exit_code\n}\n\nfn step(name: String, cmd: String, arg: String) -> Int {\n    print(\"[start] \" + name)\n    let code = run_tool(cmd, arg)\n    if code != 0 {\n        print(\"[failed] \" + name + \" (exit \" + code + \")\")\n        return code\n    }\n    print(\"[ok] \" + name)\n    return 0\n}\n\nfn main() {\n    let steps = [[\"configure\", \"echo\", \"config\"], [\"compile\", \"echo\", \"cc\"], [\"test\", \"false\", \"x\"], [\"package\", \"echo\", \"tar\"]]\n    for s in steps {\n        let code = step(s[0], s[1], s[2])\n        if code != 0 {\n            print(\"pipeline stopped\")\n            break\n        }\n    }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/build-pipeline.md:11",
+      "browser": "host",
+      "why": "uses `process.exec`; uses the standard library (`json.parse`), which the in-browser runtime does not provide",
+      "expect_output": "[start] configure\n[ok] configure\n[start] compile\n[ok] compile\n[start] test\n[failed] test (exit 1)\npipeline stopped\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-build-pipeline-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "**What this shows:**\n\n- **Capability-gated side effects.** `process.exec` only exists because of the\n  `--process` flag; without it the program fails with `unknown capability:\n  process.exec`.\n- **Structured results.** `process.exec(cmd, arg)` returns a JSON string with\n  `exit_code`, `stdout` and `stderr`; `json.parse` turns it into an object.\n- **Fail-fast.** `step` returns the exit code, `main` breaks out of the loop on\n  the first non-zero one.\n- **Data-driven steps.** The pipeline is an array of `[name, command, argument]`\n  triples, indexed with `s[0]`, `s[1]`, `s[2]`.\n\n`process.exec` takes exactly two arguments — the command and a single argument\nstring — so multi-argument commands need to be wrapped (`process.exec(\"sh\", \"make\n-j8\")` or similar). It runs with the full authority of the user, so enable\n`--process` only for programs you trust.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

@@ -1,0 +1,101 @@
+{
+ "meta": {
+  "title": "Crush Overview — The Crush Language Guide",
+  "description": "Generated from crush/README.md of The Crush Language Guide (https://docs.crushlang.org/crush/index.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/README.md",
+   "guide_url": "https://docs.crushlang.org/crush/index.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-readme-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Crush Overview\n\n**Crush** is a small, capability-based scripting language with polyglot blocks,\nand the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,\nand an intermediate representation (CAST) that other languages can be translated\ninto. It is **alpha software** — this guide documents what runs today and says so\nwhen something doesn't.\n\n## What Crush is\n\n- **A language.** `let`, `fn`, `if`/`while`/`for`, structs, `match`, `try`/`catch`,\n  arrays and objects, a pipeline operator. Dynamically typed at run time with\n  optional compile-time type hints. See [Syntax](https://docs.crushlang.org/crush/syntax.html).\n- **Capability-gated.** A program can't print files, open sockets or start\n  processes unless the host turns the matching capability on. Capability calls\n  are ordinary dotted calls — `fs.read(\"x\")`, `io.print(\"y\")`. See\n  [Capability System](https://docs.crushlang.org/crush/capabilities.html).\n- **Polyglot.** `@python { }`, `@javascript { }` and `@bash { }` blocks run\n  other languages and exchange variables with Crush. They currently run as\n  ordinary subprocesses **outside** the capability model unless you build the\n  optional sandbox. See [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html).\n- **A pipeline.** Source becomes CAST (an AST in JSON), then CASM (bytecode), then\n  runs on a VM (`crush-vm`), with a faster VM, a JIT and ahead-of-time backends\n  also in the repository.\n\n## Hello, Crush\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-readme-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(\"Hello, Crush!\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/README.md:28",
+      "browser": "run",
+      "expect_output": "Hello, Crush!\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-readme-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Run it with the toolchain built from [crush-ast](https://github.com/nixpt/crush-ast)\n(see [Getting Started](https://docs.crushlang.org/getting-started.html)):\n\n```sh\ncrush run hello.crush\n```\n\n## A taste\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-readme-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Int, y: Int }\n\nfn distance_sq(p) {\n    return p.x * p.x + p.y * p.y\n}\n\nlet p = new Point()\np.x = 3\np.y = 4\nprint(distance_sq(p))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/README.md:46",
+      "browser": "run",
+      "expect_output": "25\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-readme-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Security model, in short\n\n1. **Deny by default.** Every capability group (`--fs`, `--net`, `--process`,\n   `--polyglot`, …) is off until you enable it on the command line (or register\n   it, when embedding).\n2. **Quotas.** Instruction count, stack depth, output size, call depth and\n   wall-clock time for polyglot blocks are bounded.\n3. **Honest limits.** Polyglot blocks run with the host's authority in the default\n   build; the bubblewrap sandbox is opt-in at build time. The\n   [capability chapter](https://docs.crushlang.org/crush/capabilities.html#what-is-not-enforced) lists what is *not*\n   enforced.\n\n## Where things stand\n\n| Area | Status |\n|---|---|\n| Core language (functions, loops, structs, `try`/`catch`, `match` expressions) | works |\n| Lambdas and closures, `import`, `spawn`/`async`/`await` | not yet — see the chapters for ticket links |\n| Capabilities and `--stdlib` | works; small |\n| Polyglot: Python, JavaScript, Bash | works (host authority by default) |\n| Polyglot sandbox | opt-in build, verified on Linux with `bwrap` |\n| CAST / CASM formats | documented in their own sections |\n\n## Next Steps\n\n- **[Syntax & Grammar](https://docs.crushlang.org/crush/syntax.html)**\n- **[Types](https://docs.crushlang.org/crush/types.html)**\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}
