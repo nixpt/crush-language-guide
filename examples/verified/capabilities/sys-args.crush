@@ -1,0 +1,2 @@
+// sys.args() returns the arguments given after the file name (none here).
+print(sys.args())

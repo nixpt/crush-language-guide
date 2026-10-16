@@ -1,0 +1,4 @@
+// Ints and strings are not truthy: compare explicitly (x != 0).
+if 1 {
+    print("yes")
+}

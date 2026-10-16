@@ -1,0 +1,5 @@
+// @capabilities declares everything the program may use beyond the ambient
+// built-ins. crush-run caps FILE shows it without running anything.
+@capabilities [time.now_ms]
+let t = time.now_ms()
+print(t > 0)

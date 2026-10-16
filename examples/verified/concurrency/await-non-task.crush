@@ -1,0 +1,6 @@
+// PITFALL (crush-ast issue #251, open): await on a value that is not a task
+// handle silently gives null instead of an error.
+fn main() {
+    let v = await 5
+    print(v)
+}

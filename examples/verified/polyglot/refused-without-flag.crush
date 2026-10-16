@@ -1,0 +1,5 @@
+// Polyglot is off by default: without --polyglot the program is refused before it runs.
+@python -> x {
+x = 1
+}
+print(x)

@@ -1,0 +1,5 @@
+// io.read() reads one line from stdin; at EOF it returns "".
+let name = io.read()
+io.print("Hello, ", name, "!")
+let more = io.read()
+print(more == "")

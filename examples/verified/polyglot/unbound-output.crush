@@ -1,0 +1,5 @@
+// Listing a name the block never binds is a compile error.
+@python -> missing {
+x = 1
+}
+print(missing)

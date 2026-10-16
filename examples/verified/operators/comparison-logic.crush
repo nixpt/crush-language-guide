@@ -1,0 +1,11 @@
+// Comparisons and both spellings of the logical operators.
+print(1 < 2 && 2 < 3)
+print(1 < 2 and 2 > 3)
+print(!true)
+print(not false)
+print(false || true)
+print(false or false)
+print(1 == 1.0)
+print("abc" < "abd")
+print([1, 2] == [1, 2])
+print({"a": 1} == {"a": 1})

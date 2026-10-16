@@ -1,0 +1,19 @@
+// A loop variable is one variable: closures made in the loop all see its final
+// value. A `let` inside the body is a fresh binding per iteration, so capture that.
+fn main() {
+    let late = []
+    let fresh = []
+    let i = 0
+    while i < 3 {
+        late.push(|| i)
+        let j = i
+        fresh.push(|| j)
+        i = i + 1
+    }
+    let l0 = late[0]
+    let f0 = fresh[0]
+    let f2 = fresh[2]
+    print(l0())
+    print(f0())
+    print(f2())
+}

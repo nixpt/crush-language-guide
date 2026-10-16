@@ -1,0 +1,7 @@
+// Optional annotations are checked at compile time.
+fn double(n: Int) -> Int {
+    return n * 2
+}
+let label: String = "answer"
+print(label)
+print(double(21))

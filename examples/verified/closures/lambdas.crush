@@ -1,0 +1,14 @@
+// Lambdas: |params| expr, or |params| { block with return }.
+let sq = |x| x * x
+let add = |a, b| a + b
+let clamp = |v| {
+    if v > 10 {
+        return 10
+    }
+    return v
+}
+print(sq(4))
+print(add(2, 3))
+print(clamp(42))
+let hello = || "no params"
+print(hello())

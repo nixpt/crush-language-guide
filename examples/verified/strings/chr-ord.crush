@@ -1,0 +1,4 @@
+// conv.chr / conv.ord convert between a Unicode scalar and its code point.
+print(conv.chr(65))
+print(conv.ord("a"))
+print(conv.chr(conv.ord("a") + 1))

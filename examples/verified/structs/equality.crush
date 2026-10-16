@@ -1,0 +1,9 @@
+// == compares fields. It does not compare the Kind: two different struct
+// types with equal fields are ==, and so is a plain map with the same entries.
+struct A { x: Int }
+struct B { x: Int }
+let a = A { x: 1 }
+print(a == A { x: 1 })
+print(a == A { x: 2 })
+print(a == B { x: 1 })
+print(a == {"x": 1})

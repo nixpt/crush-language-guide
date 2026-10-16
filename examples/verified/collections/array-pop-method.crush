@@ -1,0 +1,3 @@
+// The method form a.pop() is not a registered capability: refused before running.
+let a = [1, 2, 3]
+print(a.pop())

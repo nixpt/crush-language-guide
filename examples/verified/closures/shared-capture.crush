@@ -1,0 +1,14 @@
+// Two closures over the same variable see each other's writes, and so does
+// the enclosing function.
+fn main() {
+    let x = 1
+    let get = || x
+    let set = |v| {
+        x = v
+    }
+    x = 5
+    print(get())
+    set(9)
+    print(x)
+    print(get())
+}

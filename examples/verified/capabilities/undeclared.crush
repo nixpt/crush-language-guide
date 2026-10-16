@@ -1,0 +1,3 @@
+// Using a capability the @capabilities line does not list is a compile error.
+@capabilities [time.now_ms]
+print(env.get("HOME"))

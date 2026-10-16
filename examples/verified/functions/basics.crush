@@ -1,0 +1,15 @@
+// Named functions, optional type hints, recursion, call-before-definition.
+print(fact(10))
+
+fn fact(n: Int) -> Int {
+    if n <= 1 {
+        return 1
+    }
+    return n * fact(n - 1)
+}
+
+fn greet(name) {
+    print("hello " + name)
+}
+greet("crush")
+print(greet("again"))

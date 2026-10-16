@@ -67,11 +67,60 @@ jobs:
           python scripts/build-notebooks.py --out book/notebooks
           python scripts/test-interactive.py
 
+  verify:
+    # The examples against the real toolchain: build crush-ast at the commit in
+    # CRUSH_AST_COMMIT (with buckets beside it, as crush-ast's own CI does), then
+    # run the verified corpus (examples/verified/) and every block on the pages.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: guide
+
+      - name: Pinned crush-ast commit
+        id: pin
+        run: echo "sha=$(tr -d '[:space:]' < guide/CRUSH_AST_COMMIT)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nixpt/crush-ast
+          ref: ${{ steps.pin.outputs.sha }}
+          path: crush-ast
+
+      - uses: actions/checkout@v4
+        with:
+          repository: nixpt/buckets
+          path: buckets
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crush-ast
+          key: ${{ steps.pin.outputs.sha }}
+
+      - name: Build the toolchain
+        working-directory: crush-ast
+        run: cargo build -p crush-lang-sdk
+
+      - name: Verified corpus
+        run: python3 guide/scripts/verify-examples --bin-dir crush-ast/target/debug
+
+      - name: Every block on the pages
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/crush-ast/target
+        run: python3 guide/scripts/check-examples.py --bin-dir crush-ast/target/debug --crush-ast crush-ast
+
   notebooks:
     # Every chapter notebook: valid against crush-notebook's schema, and run
     # through the published notebook kernel (each runnable cell prints what the
     # page shows, each expected failure fails, each host-only cell is refused).
+    # Non-blocking: crush-notebook-kernel 0.1.1 is built on crush-ast 0.3.x, so
+    # cells using closures, struct methods, green tasks or `-> outputs` (verified
+    # against the pinned crush-ast by the `verify` job) fail in it. Make this
+    # blocking again once a kernel on the pinned crush-ast is published.
     runs-on: ubuntu-latest
+    continue-on-error: true
     env:
       KERNEL_VERSION: 0.1.1
     steps:

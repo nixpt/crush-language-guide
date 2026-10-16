@@ -1,0 +1,6 @@
+// Localised keyword aliases: karya=fn, yadi=if, natra=else, farkau=return, manau=let.
+karya sign(x) {
+    yadi x > 0 { farkau "positive" } natra { farkau "not positive" }
+}
+manau r = sign(1)
+print(r)

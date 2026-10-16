@@ -1,0 +1,21 @@
+// With @kind(receiver: bound_self), reading c.inc gives a function value
+// bound to c. With the default receiver it is the plain function, which then
+// takes the instance as its first argument.
+@kind(receiver: bound_self)
+struct Counter { n: Int }
+impl Counter {
+    fn inc(self) {
+        self.n = self.n + 1
+        return self.n
+    }
+}
+struct P { x: Int }
+impl P { fn get(self) { return self.x } }
+let c = Counter { n: 0 }
+let f = c.inc
+print(f())
+print(f())
+print(c.n)
+let p = P { x: 7 }
+let g = p.get
+print(g(p))

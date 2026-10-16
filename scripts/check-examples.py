@@ -24,6 +24,8 @@ opening fence (invisible in the rendered book):
     <!-- check: skip <reason> -->  not a standalone program (pseudo-code, ...)
     <!-- check: flags --time --net -->   extra crush-run flags
     <!-- check: stdin <text> -->   feed this text to stdin
+    <!-- check: nocrushc <why> --> skip the `crushc -C` step (for a program crush-run
+                                   accepts but crushc wrongly rejects; cite the issue)
 
 With --crush-ast DIR (a crush-ast checkout, with `buckets` beside it), the
 ```rust,no_run blocks are also compiled and run against that checkout's
@@ -229,7 +231,10 @@ def check(block, bins, tmp):
     work = Path(tmp)
     src = work / "block.crush"
     src.write_text(block["code"])
-    rc, out, err = run([bins["crushc"], "-C", str(src)], work, 30)
+    if "nocrushc" in d:
+        rc, out, err = 0, "", ""
+    else:
+        rc, out, err = run([bins["crushc"], "-C", str(src)], work, 30)
     if "error" in d:
         return ("green", "fails to compile, as documented") if rc != 0 else ("fail", "expected a compile error, but it compiled")
     if "nyi" in d:

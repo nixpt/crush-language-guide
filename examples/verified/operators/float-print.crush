@@ -1,0 +1,6 @@
+// Floats print with at least one decimal digit. Float division by zero is the
+// same runtime error as for Int (no inf/NaN).
+print(0.1 + 0.2)
+print(2.0)
+print(10.0 / 4)
+print(1.0 / 0)

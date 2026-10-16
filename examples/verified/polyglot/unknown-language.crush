@@ -1,0 +1,4 @@
+// Only python, javascript and bash blocks execute.
+@rust {
+    fn main() {}
+}

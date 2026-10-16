@@ -143,14 +143,14 @@ def main():
 
             # 4. a refusal is shown as one, host labels name the reason
             page.goto(base + "crush/capabilities.html")
-            refusal = page.locator('div.crush-block[data-src="crush/capabilities.md:100"]')
+            refusal = page.locator('div.crush-block[data-src="crush/capabilities.md:102"]')
             run_block(page, refusal)
             check("Refused: capability fs.read was not granted" in refusal.locator(".crush-verdict").inner_text(), "fs.read refusal shows the refusal verdict")
-            host = page.locator('div.crush-block[data-src="crush/capabilities.md:151"]')
+            host = page.locator('div.crush-block[data-src="crush/capabilities.md:165"]')
             check("env.get" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
                   "host-only block names its capabilities and has no Run")
             page.goto(base + "crush/polyglot.html")
-            check("@python" in page.locator('div.crush-block[data-src="crush/polyglot.md:77"] .crush-why').inner_text(), "polyglot block says it uses @python")
+            check("@python" in page.locator('div.crush-block[data-src="crush/polyglot.md:81"] .crush-why').inner_text(), "polyglot block says it uses @python")
             check(not errors, f"no page errors ({errors[:2]})")
 
             # 5. no JavaScript: plain code blocks
@@ -174,7 +174,7 @@ def main():
                 pg = browser.new_page(viewport={"width": 1200, "height": 900})
                 pg.add_init_script(f"localStorage.setItem('mdbook-theme', '{theme}')")
                 pg.goto(base + "crush/capabilities.html")
-                blk = pg.locator('div.crush-block[data-src="crush/capabilities.md:100"]')
+                blk = pg.locator('div.crush-block[data-src="crush/capabilities.md:102"]')
                 run_block(pg, blk)
                 fg = pg.evaluate("getComputedStyle(document.querySelector('.crush-run')).color")
                 bg = pg.evaluate("getComputedStyle(document.body).backgroundColor")

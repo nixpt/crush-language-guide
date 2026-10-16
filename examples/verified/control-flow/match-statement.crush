@@ -1,0 +1,7 @@
+// match also works as a statement when the arms only have side effects.
+let v = 2
+match v {
+    1 => print("one")
+    2 => { print("two"); print("still two") }
+    _ => print("other")
+}

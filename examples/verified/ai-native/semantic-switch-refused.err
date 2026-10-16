@@ -1,0 +1,1 @@
+[compile] `semantic_switch` isn't supported yet (CRUSH-265): it would compile to a no-op

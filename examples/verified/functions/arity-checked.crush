@@ -1,0 +1,3 @@
+// The argument count is checked at compile time.
+fn add(a, b) { return a + b }
+print(add(1))

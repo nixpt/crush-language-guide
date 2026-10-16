@@ -1,0 +1,12 @@
+// Literal forms the lexer accepts.
+print(42)
+print(-7)
+print(0x2A)          // hex integers lex
+print(3.14)
+print("double")
+print('single')      // single-quoted strings are accepted too
+print("tab:\there")
+print(true)
+print(null)
+print([1, 2.5, "three", false, null])
+print({"a": 1, b: 2})   // keys may be strings or bare identifiers

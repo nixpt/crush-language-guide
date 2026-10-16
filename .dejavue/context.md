@@ -12,10 +12,21 @@ dcp: DCP/1.0
 
 ## Operating Rules
 
-- This is a **documentation-only repo** — no Rust code, no build artifacts. The source of truth for all technical claims is the exosphere codebase at `~/WORKSPACE/projects/exosphere/`.
-- All docs must be accurate vs. the actual implementation. Before adding or changing any language feature, verify it in `crates/core/crush-lang/src/parser/lexer.rs` (keywords), `compiler.rs` (CASM ops), or `crates/core/crush-cast/src/lib.rs` (AST types).
-- Never mark a feature "Future Feature" without checking the lexer and AST first — the crushed-book had a dozen false negatives (try/catch, structs, match, lambdas all implemented but mismarked).
-- The exosphere skill at `projects/exosphere/.jagent/skills/crush-lang/SKILL.md` is the ground-truth agent reference. Keep this guide consistent with it.
+- This is a **documentation-only repo**. The source of truth for every technical claim is
+  **crush-ast** (`nixpt/crush-ast`) at the commit in `CRUSH_AST_COMMIT`; the guide is
+  verified against that build, not against exosphere (which no longer hosts Crush).
+- **Never document behaviour you haven't observed.** Write a program, run it with the
+  built `crush-run`, and keep it: add it to `examples/verified/<area>/` with its `.out`
+  (or `.err`) so `scripts/verify-examples` re-checks it. Page blocks are checked by
+  `scripts/check-examples.py` (directives in HTML comments; see its docstring).
+- If crush-ast behaves wrongly (silently wrong output, crash, contradicts its design
+  docs), file a crush-ast issue with a minimal repro, link it from the page, and add a
+  PITFALL program to the corpus. Don't document around it.
+- Moving to a newer crush-ast: bump `CRUSH_AST_COMMIT`, run both scripts and
+  `node scripts/check-browser.mjs`, fix what they report, rebuild `src/play/pkg` at the
+  same commit (`src/play/pkg/PROVENANCE.md`), and update the "Verified against" lines.
+- The fleet skill `jokersquad/skills/language/crush-language/SKILL.md` (nixpt/squadron)
+  summarises this guide for agents; keep the two consistent.
 
 ## Build / Test
 
@@ -41,16 +52,16 @@ src/
   crush/                  # Language chapter (syntax, types, operators, control flow, …)
   cast/                   # CAST AST chapter (spec + AI-native doctrine)
   casm/                   # CASM bytecode chapter (instructions, structure, serialization)
-  examples/               # Real scripts extracted from exosphere repos
+  examples/               # Worked example programs (+ awesome-crush showcase)
   appendix/               # Glossary, quick reference, language comparisons
 .dejavue/                 # Repo-local agent memory (this file)
 book.toml                 # mdBook config
 ```
 
-Source material locations in exosphere:
-- Crushed-book (origin): `docs/crushed-book/src/`
-- Real scripts: `tests/language/`, `examples/`, `exosphere-apps/`, `walkers/tree-sitter-crush/`
-- AI CAST examples: `examples/cast/`
+Verification:
+- `CRUSH_AST_COMMIT` — the crush-ast commit everything is verified against
+- `examples/verified/` — the corpus (`scripts/verify-examples`)
+- `scripts/check-examples.py` — every block on the pages; `scripts/check-browser.mjs` — browser labels
 
 ## Memory
 

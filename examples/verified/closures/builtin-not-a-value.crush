@@ -1,0 +1,4 @@
+// PITFALL (crush-ast issue #257): built-ins such as len are not function values.
+// This compiles, then fails at run time; wrap it instead: let g = |x| len(x)
+let g = len
+print(g([1]))

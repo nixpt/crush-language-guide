@@ -1,0 +1,18 @@
+// parallel_map(items, f) runs f on each item in its own share-nothing VM
+// (threads on the native VM). Results and printed output come back in input order.
+fn fib(n) {
+    if n < 2 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}
+fn main() {
+    print(parallel_map([1, 2, 3, 4], |n| n * n))
+    print(parallel_map([10, 15, 20], fib))
+    let k = 10
+    let r = parallel_map([3, 1, 2], |x| {
+        print("item " + x)
+        return x * k
+    })
+    print(r)
+}

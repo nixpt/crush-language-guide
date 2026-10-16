@@ -1,0 +1,8 @@
+// An async fn is awaited at the call site.
+async fn sub(a, b) {
+    return a - b
+}
+fn main() {
+    let r = await sub(10, 3)
+    print(r)
+}

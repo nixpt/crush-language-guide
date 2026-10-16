@@ -1,0 +1,4 @@
+// s.to_upper() is a method call; strings have no methods, so the program is
+// refused before it runs. Use the capability: str.to_upper(s).
+let s = "abc"
+print(s.to_upper())

@@ -1,0 +1,1 @@
+[compile] @python block declares output `missing` but never binds it

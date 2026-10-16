@@ -1,0 +1,4 @@
+// A program that uses a host capability nobody granted is refused before it
+// runs: nothing prints, not even the first line.
+print("first line")
+print(fs.read("data.txt"))

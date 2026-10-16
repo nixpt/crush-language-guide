@@ -1,0 +1,6 @@
+// A block's stdout is interleaved in order, trimmed of its trailing newline.
+print("one")
+@python {
+print("two")
+}
+print("three")

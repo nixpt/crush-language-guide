@@ -1,0 +1,8 @@
+// -> (a, b) returns several names at once.
+let xs = [2, 4, 4, 4, 5, 5, 7, 9]
+@python -> (mean, spread) {
+mean = sum(xs) / len(xs)
+spread = max(xs) - min(xs)
+}
+print(mean)
+print(spread)

@@ -1,0 +1,5 @@
+// + with a string on either side converts the other operand.
+print("Count: " + 42)
+print("Pi is " + 3.14)
+print(1 + "x")
+print("flag " + true)

@@ -1,0 +1,14 @@
+// The str.* capabilities are standard library: on by default, no flag needed.
+// Predicates disagree on their result type: str.contains returns a Bool,
+// str.starts_with / str.ends_with return 1 or 0.
+print(str.split("a,b,c", ","))
+print(str.join(["a", "b"], "-"))
+print("[" + str.trim("  x  ") + "]")
+print(str.replace("hello world", "world", "crush"))
+print(str.to_upper("abc"))
+print(str.pad_left("7", 3, "0"))
+print(str.repeat("ab", 3))
+print(str.substring("hello", 1, 3))
+print(str.index_of("hello", "l"))
+print(str.contains("crush", "ru"))
+print(str.starts_with("crush", "cr"))

@@ -1,0 +1,4 @@
+// The [a:b] slice works on arrays; on a string it is a runtime type error.
+print([1, 2, 3][1:])
+let s = "hello"
+print(s[1:3])

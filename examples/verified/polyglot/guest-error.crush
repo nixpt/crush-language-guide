@@ -1,0 +1,6 @@
+// A guest exception aborts the program, attributed to the block's .crush line.
+// It is not catchable by Crush try/catch.
+print("a")
+@python {
+raise ValueError("x")
+}

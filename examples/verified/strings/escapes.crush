@@ -1,0 +1,4 @@
+// Escapes inside string literals.
+print("line1\nline2")
+print("a\tb")
+print("quote: \" backslash: \\")

@@ -1,0 +1,15 @@
+// Named functions are values: store them, pass them, return them.
+fn double(n) { return n * 2 }
+fn apply(f, x) { return f(x) }
+fn twice(f) {
+    return |x| f(f(x))
+}
+let g = double
+print(g(5))
+print(apply(double, 21))
+print(apply(|n| n + 1, 41))
+let quad = twice(double)
+print(quad(3))
+let fs = [double, |n| n - 1]
+let first = fs[0]
+print(first(10))

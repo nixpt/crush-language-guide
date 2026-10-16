@@ -1,0 +1,8 @@
+// @bash runs the block under bash; only its printed (trimmed) output comes back.
+// PITFALL (crush-ast issue #255): Crush variables are NOT visible in
+// the block today: $name expands to the empty string.
+let name = "crush"
+@bash {
+echo "hello [$name]"
+}
+print("")

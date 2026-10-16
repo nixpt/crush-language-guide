@@ -40,21 +40,25 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast 4e9c388, src/play/pkg) handles itself: crush_vm::run's
-# built-in capabilities (crates/crush-vm/src/scheduler.rs). `io.read` is there but
-# always returns "" (no stdin in a browser), so it is treated as a host need below.
+# What crush-web (crush-ast 3ae0b4a, src/play/pkg) handles itself: crush_vm::run's
+# built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
+# collections.*, json.*, ...: on by default since CRUSH-113), and sys.args/sys.exit.
+# `io.read` is there but always returns "" (no stdin in a browser), so it is
+# treated as a host need below.
 BROWSER_CAPS = {"io.print", "str.concat", "str.contains", "str.join", "str.len",
                 "str.replace", "str.split", "conv.chr", "conv.ord"}
-# Capability namespaces that need a host grant (`crush-run` flags, or `--stdlib`
-# for the standard-library modules). scripts/check-browser.mjs proves each such
-# block really fails in crush-web, so a stale list shows up as a failure.
+# Capability namespaces that need a host grant (`crush-run` flags). The
+# file-reading text.* helpers need --fs. scripts/check-browser.mjs proves each
+# such block really fails in crush-web, so a stale list shows up as a failure.
 HOST_CAPS = {
     "fs": "the filesystem", "file": "the filesystem", "net": "the network",
     "env": "the environment", "time": "the clock", "process": "processes",
-    "db": "a database", "graphics": "graphics", "system": "the host system",
+    "db": "a database", "graphics": "graphics", "crypto": "cryptography",
+    "text": "the filesystem",
 }
-STDLIB = ("str", "text", "math", "conv", "collections", "json", "path", "regex",
-          "result", "bytes", "binary", "buffer", "crypto")
+# Standard-library namespaces the browser build lacks (none since crush-web
+# registers the stdlib); kept so a future slimmer build can list them again.
+STDLIB = ()
 CALL = re.compile(r"(?<![\w.])([a-z_]+)\.([a-z_][a-z_0-9]*)\s*\(")
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",

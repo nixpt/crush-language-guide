@@ -1,20 +1,29 @@
 # scripts/
 
-`check-examples.py` runs the guide's code blocks through the real crush-ast
-toolchain, so the book cannot show code that does not work. It is a **local check**,
-not a CI job: building crush-ast needs a checkout of `crush-ast` with its private
-`buckets` sibling beside it (`crush-vm` has a path dependency on `../buckets`), which
-GitHub-hosted CI for this repo cannot fetch.
+Two scripts run the guide's code through the real crush-ast toolchain, so the book
+cannot show code that does not work:
+
+- `verify-examples` runs the **verified corpus** in `examples/verified/`: 120+
+  standalone programs, each beside its exact expected output (`.out`) or expected
+  failure (`.err`). See `src/verified-corpus.md` for the file conventions.
+- `check-examples.py` runs every code block **on the pages** (below).
+
+Both run in CI (`gh-pages.yml`, job `verify`) against the crush-ast commit pinned
+in `../CRUSH_AST_COMMIT`. To move the guide to a newer crush-ast: change that
+file, run both scripts, fix what they report, and rebuild `src/play/pkg` at the
+same commit (see its `PROVENANCE.md`).
 
 ## Run it
 
 ```sh
-# 1. Build the toolchain from a crush-ast checkout (tag v0.3.9 or newer), with buckets next to it
-cd ../crush-ast
-cargo build -p crush-lang-sdk --features stdlib,net,db,graphics   # -> target/debug/{crushc,crush-run}
+# 1. Build the toolchain from a crush-ast checkout (the commit in CRUSH_AST_COMMIT), with buckets next to it
+git clone https://github.com/nixpt/crush-ast ../crush-ast
+git -C ../crush-ast checkout "$(cat CRUSH_AST_COMMIT)"
+git clone https://github.com/nixpt/buckets ../buckets
+(cd ../crush-ast && cargo build -p crush-lang-sdk)          # -> target/debug/{crushc,crush-run}
 
-# 2. Check every block in src/
-cd ../crush-language-guide
+# 2. The corpus, then every block in src/
+scripts/verify-examples --bin-dir ../crush-ast/target/debug
 scripts/check-examples.py --bin-dir ../crush-ast/target/debug --crush-ast ../crush-ast -v
 ```
 
@@ -27,7 +36,7 @@ Exit status is non-zero if any block misbehaves.
 
 | Fence | Check |
 |---|---|
-| ```` ```crush ```` | `crushc -C` (parse, type-check, compile), then `crush-run run` |
+| ```` ```crush ```` | `crushc -C` (parse, type-check, compile; `<!-- check: nocrushc ISSUE -->` skips it), then `crush-run run` |
 | ```` ```casm ```` | `crush-run run --cap io.print` (CASM text assembly) |
 | ```` ```json ```` after `<!-- check: casm-json -->` / `cast-json` / `cast-validate` | `casm-check` helper (below) |
 | ```` ```rust,no_run ```` | `cargo run` against the checkout's `crush-lang-sdk` |
