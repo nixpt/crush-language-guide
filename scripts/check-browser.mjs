@@ -21,16 +21,27 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = path.join(root, 'src', 'play', 'pkg');
 const verbose = process.argv.includes('-v');
-const { initSync, execute } = await import(path.join(pkg, 'crush_web.js'));
+const { initSync, Session } = await import(path.join(pkg, 'crush_web.js'));
 initSync({ module: fs.readFileSync(path.join(pkg, 'crush_web_bg.wasm')) });
+
+// What the page's Run does (interactive/crush-run.js): a Session, with end of
+// input for io.read; a non-zero sys.exit status is a failure.
+function run(code) {
+    const s = new Session(code, {});
+    let r = s.run(), out = r.output;
+    while (r.status === 'need_input') { r = s.close(); out += r.output; }
+    s.free();
+    const exited = r.exit_code != null && r.exit_code !== 0;
+    if (r.status === 'done' && !exited) return { ok: true, out };
+    return { ok: false, out, err: r.error || `exited with status ${r.exit_code}` };
+}
 
 const blocks = JSON.parse(execFileSync('python3', [path.join(root, 'scripts', 'mdbook-crush-run.py'), '--manifest'], { maxBuffer: 1 << 26 }));
 const counts = {}, bad = [];
 for (const b of blocks) {
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'none') continue;
-    let r;
-    try { r = { ok: true, out: execute(b.code).output }; } catch (e) { r = { ok: false, err: String(e) }; }
+    const r = run(b.code);
     let problem = null;
     if (b.kind === 'run') {
         if (!r.ok) problem = 'labelled runnable, but fails in the browser: ' + r.err.split('\n')[0];

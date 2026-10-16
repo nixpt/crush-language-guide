@@ -25,26 +25,50 @@
         });
     }
 
+    // One step of a run: send `msg`, wait for the worker's report. The wall clock
+    // covers only the time the VM is running, so it is handed the time left.
+    function step(msg, budget) {
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                worker.removeEventListener('message', onMessage);
+                worker.terminate();
+                worker = null;
+                resolve({ status: 'timeout' });
+            }, budget);
+            const onMessage = ({ data }) => {
+                if (data.id !== msg.id) return;
+                clearTimeout(timer);
+                worker.removeEventListener('message', onMessage);
+                if (data.fatal) { worker.terminate(); worker = null; }
+                resolve(data);
+            };
+            worker.addEventListener('message', onMessage);
+            worker.postMessage(msg);
+        });
+    }
+
+    // Run `source` to completion. The browser has no standard input yet, so a
+    // program that calls io.read gets end of input (`""`).
+    // Resolves to { ok, output, error?, exit_code?, steps, ms, timeout? }.
     function execute(source) {
         const job = queue.then(async () => {
             if (!worker) startWorker();
             await workerReady;
             const id = nextId++;
-            return new Promise((resolve) => {
-                const timer = setTimeout(() => {
-                    worker.terminate();
-                    worker = null;
-                    resolve({ ok: false, timeout: true, error: `Stopped after ${TIMEOUT_MS / 1000} s of wall-clock time.` });
-                }, TIMEOUT_MS);
-                const onMessage = ({ data }) => {
-                    if (data.id !== id) return;
-                    clearTimeout(timer);
-                    worker.removeEventListener('message', onMessage);
-                    resolve(data);
-                };
-                worker.addEventListener('message', onMessage);
-                worker.postMessage({ id, source });
-            });
+            let output = '', ms = 0, r = await step({ id, op: 'start', source }, TIMEOUT_MS);
+            for (;;) {
+                if (r.status === 'timeout') {
+                    return { ok: false, timeout: true, output, ms: TIMEOUT_MS,
+                        error: `Stopped after ${TIMEOUT_MS / 1000} s of wall-clock time.` };
+                }
+                output += r.output;
+                ms += r.ms;
+                if (r.status !== 'need_input') break;
+                r = await step({ id, op: 'eof' }, TIMEOUT_MS - ms);
+            }
+            const exited = r.exit_code != null && r.exit_code !== 0;
+            return { ok: r.status === 'done' && !exited, output, steps: r.steps, ms, exit_code: r.exit_code,
+                error: r.error || (exited ? `exited with status ${r.exit_code}` : undefined) };
         });
         queue = job.catch(() => { worker = null; });
         return job;
@@ -228,6 +252,7 @@
                     box.append(el('strong', null, c.title), el('p', null, c.body));
                     parts.push(box);
                 }
+                if (r.output) parts.push(el('pre', 'crush-output', r.output));
                 parts.push(el('pre', 'crush-output crush-error', r.error));
                 status = (r.timeout ? 'timed out' : r.loadError ? 'runtime unavailable' : 'failed') + ms;
                 if (!wasEdited && kind === 'fail' && !r.loadError && !r.timeout) {

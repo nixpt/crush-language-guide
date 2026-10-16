@@ -29,7 +29,8 @@ this guide is verified against), with a different set of grants:
   [Chapters as Notebooks](notebooks.md)).
 - **Limits.** One million VM instructions per run, a bounded call depth, and an
   8-second wall-clock limit; a runaway loop is stopped, not your tab.
-  Output printed before a run-time error is not shown.
+- **Errors keep earlier output.** When a run fails, what the program printed
+  before the error is shown above it, as `crush-run` prints it.
 
 Ungranted capabilities are *refused*, not ignored: that is the
 [capability system](crush/capabilities.md) working, and the page says so.

@@ -12,6 +12,7 @@ Serves book/ on a local port and drives it with Playwright:
     report "matches the guide's output" when the page shows output, expected
     failures "fails as the guide says";
   * Edit → change the code → Run runs the edited code; Reset restores the original;
+  * output printed before a run-time error is shown above the error;
   * a documented refusal shows the refusal verdict; host-only labels name the reason;
   * with JavaScript disabled the page has plain code blocks and no controls;
   * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders;
@@ -132,6 +133,11 @@ def main():
             status = run_block(page, blk)
             out = blk.locator(".crush-out pre.crush-output").inner_text()
             check(out.strip() == "edited 42" and "edited" in status and "matches" not in status, f"Run runs the edited code (output {out.strip()!r}, status {status!r})")
+            ed.fill('print("before")\nlet xs = [1]\nprint(xs[5])\n')
+            status = run_block(page, blk)
+            outs = [o.inner_text().strip() for o in blk.locator(".crush-out pre.crush-output").all()]
+            check("failed" in status and outs[:1] == ["before"] and "out of range" in outs[-1],
+                  f"output printed before a run-time error is shown with the error ({outs!r})")
             ed.fill("print(\n")
             status = run_block(page, blk)
             check("failed" in status and blk.locator(".crush-verdict-error").count() == 1, f"an edited compile error is explained ({status!r})")
