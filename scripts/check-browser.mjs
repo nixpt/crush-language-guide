@@ -24,12 +24,14 @@ const verbose = process.argv.includes('-v');
 const { initSync, Session } = await import(path.join(pkg, 'crush_web.js'));
 initSync({ module: fs.readFileSync(path.join(pkg, 'crush_web_bg.wasm')) });
 
-// What the page's Run does (interactive/crush-run.js): a Session, with end of
-// input for io.read; a non-zero sys.exit status is a failure.
-function run(code) {
+// What the page's Run does (interactive/crush-run.js): a Session; each io.read gets
+// the next line of the block's `check: stdin` text (what a reader following the
+// guide types), then end of input. A non-zero sys.exit status is a failure.
+function run(code, stdin) {
     const s = new Session(code, {});
+    const lines = stdin == null ? [] : stdin.replace(/\n$/, '').split('\n');
     let r = s.run(), out = r.output;
-    while (r.status === 'need_input') { r = s.close(); out += r.output; }
+    while (r.status === 'need_input') { r = lines.length ? s.provide(lines.shift()) : s.close(); out += r.output; }
     s.free();
     const exited = r.exit_code != null && r.exit_code !== 0;
     if (r.status === 'done' && !exited) return { ok: true, out };
@@ -41,7 +43,7 @@ const counts = {}, bad = [];
 for (const b of blocks) {
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'none') continue;
-    const r = run(b.code);
+    const r = run(b.code, b.stdin);
     let problem = null;
     if (b.kind === 'run') {
         if (!r.ok) problem = 'labelled runnable, but fails in the browser: ' + r.err.split('\n')[0];

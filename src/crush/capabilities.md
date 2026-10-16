@@ -59,13 +59,18 @@ A
 6
 ```
 
-`io.read` reads from standard input:
+`io.read` reads a line from standard input. On this page, Run asks you for each
+line; type `Ada` to get the output below:
 
 <!-- check: stdin Ada -->
-<!-- check: compile -->
 ```crush
 let name = io.read()
 io.print("Hello, " + name)
+```
+
+<!-- check: output -->
+```text
+Hello, Ada
 ```
 
 ## Enabling more capabilities

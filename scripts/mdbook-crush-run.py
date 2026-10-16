@@ -2,16 +2,16 @@
 """mdBook preprocessor: mark every ```crush block with what the browser can do with it.
 
 The book's Run / Edit buttons (interactive/crush-run.js) need to know, per block,
-whether it can run in the browser (crush-web: a fresh VM per run, only `print`
-granted, no stdlib modules, no stdin), whether it is *meant* to fail, or whether
-it needs the host. That is derived here, at build time, from the same directives
+whether it can run in the browser (crush-web: a fresh VM per run with what
+`crush-run` grants without flags; `io.read` asks the reader for a line), whether
+it is *meant* to fail, or whether it needs the host. That is derived here, at build time, from the same directives
 and block contents scripts/check-examples.py uses — nothing is hand-labelled, and
 the Markdown stays the only source.
 
 Each ```crush block is wrapped in
 
     <div class="crush-block" data-crush="run|fail|host|none" data-why="..."
-         data-expect="..." data-expect-error="..." data-src="crush/types.md:91">
+         data-expect="..." data-expect-error="..." data-stdin="..." data-src="crush/types.md:91">
 
 which is invisible without JavaScript (the code block renders exactly as before).
 
@@ -19,11 +19,12 @@ A page with at least one ```crush block also gets an "Open as a notebook" link
 under its title, to the chapter notebook scripts/build-notebooks.py writes to
 book/notebooks/ (notebook_path(); the explainer page is notebooks.md).
 
-    data-crush=run    runs in the browser; data-expect is the checker-verified output
+    data-crush=run    runs in the browser; data-expect is the checker-verified output,
+                      data-stdin the input it was verified with (`check: stdin`)
     data-crush=fail   meant to fail (compile error, documented refusal, not yet
                       implemented); Run demonstrates the failure
     data-crush=host   needs something the browser does not grant (polyglot, fs, net,
-                      env, time, process, stdlib modules, stdin); labelled, no Run
+                      env, time, process); labelled, no Run
     data-crush=none   not a standalone program (fragment, needs special setup)
 
 Usage:
@@ -42,9 +43,8 @@ _spec.loader.exec_module(checker)
 
 # What crush-web (crush-ast cb655f3, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
-# collections.*, json.*, ...: on by default since CRUSH-113), and sys.args/sys.exit.
-# `io.read` is there but always returns "" (no stdin in a browser), so it is
-# treated as a host need below.
+# collections.*, json.*, ...: on by default since CRUSH-113), sys.args/sys.exit,
+# and io.read (the page asks the reader for each line).
 BROWSER_CAPS = {"io.print", "str.concat", "str.contains", "str.join", "str.len",
                 "str.replace", "str.split", "conv.chr", "conv.ord"}
 # Capability namespaces that need a host grant (`crush-run` flags). The
@@ -73,12 +73,8 @@ def host_needs(d, code):
         needs.append("uses " + ", ".join(f"`@{l}`" for l in langs) + " blocks (polyglot)")
     calls = {}
     for ns, fn in CALL.findall(code):
-        if ns == "io" and fn == "read":
-            calls.setdefault("stdin", []).append("io.read")
-        elif (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
+        if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
             calls.setdefault(ns, []).append(f"{ns}.{fn}")
-    if "stdin" in d and "stdin" not in calls:
-        calls["stdin"] = ["io.read"]
     host_ns = [ns for ns in calls if ns in HOST_CAPS]
     granted = {f for f in flags if f in FLAG_WHY} | {"--fs" for f in flags if f.startswith("fs.")}
     if host_ns:
@@ -89,8 +85,6 @@ def host_needs(d, code):
     lib = sorted({c for ns in calls if ns in STDLIB for c in calls[ns]})
     if lib:
         needs.append("uses the standard library (" + ", ".join(f"`{c}`" for c in lib[:3]) + (" …" if len(lib) > 3 else "") + ")")
-    if "stdin" in calls:
-        needs.append("reads standard input (`io.read`)")
     return needs
 
 
@@ -126,7 +120,7 @@ def blocks_of(text, rel):
         kind, why = classify(b)
         yield {"src": f"{rel}:{b['line'] - 1}", "fence": b["line"] - 2, "end": b["line"] - 1 + b["code"].count("\n"),
                "kind": kind, "why": why, "code": b["code"], "expect": b["expect"],
-               "expect_error": b["d"].get("runfail"), "directives": b["d"]}
+               "expect_error": b["d"].get("runfail"), "stdin": b["d"].get("stdin"), "directives": b["d"]}
 
 
 def has_notebook(text, rel):
@@ -191,6 +185,8 @@ def annotate(text, rel):
             a.append(f'data-why="{attr(b["why"])}"')
         if b["expect"] is not None and b["kind"] == "run":
             a.append(f'data-expect="{attr(b["expect"])}"')
+        if b["stdin"] is not None and b["kind"] in ("run", "fail"):
+            a.append(f'data-stdin="{attr(b["stdin"])}"')
         if b["expect_error"] and b["kind"] == "fail":
             a.append(f'data-expect-error="{attr(b["expect_error"])}"')
         lines[b["end"] + 1 : b["end"] + 1] = ["", "</div>", ""]
