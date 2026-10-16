@@ -414,6 +414,10 @@ function __wbg_get_imports() {
             const ret = arg0.node;
             return ret;
         },
+        __wbg_now_86c0d4ba3fa605b8: function() {
+            const ret = Date.now();
+            return ret;
+        },
         __wbg_process_44c7a14e11e9f69e: function(arg0) {
             const ret = arg0.process;
             return ret;

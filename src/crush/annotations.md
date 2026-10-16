@@ -1,6 +1,6 @@
 # Annotations
 
-> Verified against crush-ast `cb655f3` (2026-10-16).
+> Verified against crush-ast `aa07413` (2026-10-16).
 
 An annotation is an `@name` form written before a declaration (or at the top of
 a file). Three kinds exist:

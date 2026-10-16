@@ -1,6 +1,6 @@
 # Variables and Scoping
 
-> Verified against crush-ast `cb655f3` (2026-10-16).
+> Verified against crush-ast `aa07413` (2026-10-16).
 
 This chapter covers declaration, assignment, and the scoping rules the compiler
 enforces today.
