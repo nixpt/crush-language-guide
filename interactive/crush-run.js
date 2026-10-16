@@ -2,9 +2,9 @@
 //
 // scripts/mdbook-crush-run.py wraps every block in <div class="crush-block"
 // data-crush="run|fail|host|none" ...> at build time; this script turns that into
-// controls. Runs happen in a module Web Worker (src/play/worker.js) on the
-// crush-web build in src/play/pkg, loaded on the first Run. Without JavaScript
-// the blocks are plain code blocks.
+// controls. Runs happen in a Web Worker (src/play/worker.js) on the crush-web
+// build in src/play/pkg, inside a sandboxed iframe, loaded on the first Run.
+// Without JavaScript the blocks are plain code blocks.
 (function () {
     'use strict';
 
@@ -18,15 +18,60 @@
     // up the others.
     let worker = null, workerReady = null, generation = 0, queue = Promise.resolve(), nextId = 1;
 
+    // The worker runs inside a sandboxed iframe: an opaque origin (no cookies,
+    // storage or same-origin requests) whose CSP allows no network at all, so a
+    // granted @javascript block, which runs in the worker, can reach none of
+    // them, nor this page. The page fetches what the worker needs and hands it
+    // over; the iframe only starts the worker and passes it a MessagePort.
+    const FRAME_CSP = "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src blob:";
+    const FRAME = `<!doctype html><meta http-equiv="Content-Security-Policy" content="${FRAME_CSP}"><script>
+onmessage = (e) => {
+    onmessage = null;
+    const w = new Worker(URL.createObjectURL(new Blob([e.data.worker], { type: 'text/javascript' })));
+    w.onerror = (err) => e.data.port.postMessage({ loadError: err.message || 'the worker failed to start' });
+    w.postMessage({ glue: e.data.glue, wasm: e.data.wasm, port: e.data.port }, [e.data.port, e.data.wasm]);
+};
+<\/script>`;
+    let assets = null;
+
+    function fetchAssets() {
+        const get = (rel, how) => fetch(new URL(root + rel, document.baseURI)).then((r) => {
+            if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`);
+            return r[how]();
+        });
+        return Promise.all([get('play/guest-js.js', 'text'), get('play/worker.js', 'text'),
+            get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
+            .then(([guest, work, glue, wasm]) => ({ worker: guest + '\n' + work, glue, wasm }));
+    }
+
     function startWorker() {
         generation++;
-        worker = new Worker(new URL(root + 'play/worker.js', document.baseURI), { type: 'module' });
-        workerReady = new Promise((resolve, reject) => {
-            worker.addEventListener('message', function onReady({ data }) {
-                if (data.ready) { worker.removeEventListener('message', onReady); resolve(); }
+        const frame = document.createElement('iframe');
+        frame.setAttribute('sandbox', 'allow-scripts');
+        frame.setAttribute('aria-hidden', 'true');
+        frame.tabIndex = -1;
+        frame.hidden = true;
+        frame.srcdoc = FRAME;
+        const channel = new MessageChannel();
+        const port = channel.port1;
+        worker = {
+            addEventListener: (t, f) => port.addEventListener(t, f),
+            removeEventListener: (t, f) => port.removeEventListener(t, f),
+            postMessage: (m) => port.postMessage(m),
+            terminate: () => { port.close(); frame.remove(); },
+        };
+        port.start();
+        if (!assets) assets = fetchAssets().catch((e) => { assets = null; throw e; });
+        const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+        document.body.append(frame);
+        workerReady = Promise.all([assets, loaded]).then(([a]) => new Promise((resolve, reject) => {
+            port.addEventListener('message', function onReady({ data }) {
+                if (data.ready) { port.removeEventListener('message', onReady); resolve(); }
+                if (data.loadError) reject(new Error(data.loadError));
             });
-            worker.addEventListener('error', (e) => reject(new Error(e.message || 'the runtime failed to load')));
-        });
+            const wasm = a.wasm.slice(0);
+            frame.contentWindow.postMessage({ worker: a.worker, glue: a.glue, wasm, port: channel.port2 }, '*', [channel.port2, wasm]);
+        }));
     }
 
     function stopWorker() {
@@ -74,15 +119,17 @@
     // limit counts only time the VM spends running, not time waiting for the reader;
     // the instruction quota covers the whole run.
     // Resolves to { ok, output, error?, exit_code?, steps, ms, timeout?, lost?, inputs }.
-    async function execute(source, readLine) {
+    async function execute(source, readLine, grants) {
         const id = nextId++;
         const inputs = [];
         let output = '', ms = 0, gen = null;
-        let r = await step({ id, op: 'start', source }, TIMEOUT_MS, null);
+        let r = await step({ id, op: 'start', source, grants: grants || [] }, TIMEOUT_MS, null);
         for (;;) {
             if (r.status === 'timeout') {
                 return { ok: false, timeout: true, output, inputs, ms: TIMEOUT_MS,
-                    error: `Stopped after ${TIMEOUT_MS / 1000} s of running time.` };
+                    // The worker is stopped mid-step, so what it printed in that step is gone.
+                    error: `Stopped after ${TIMEOUT_MS / 1000} s of running time. Output printed ` +
+                        (inputs.length ? 'since the last input' : 'before the stop') + ' is lost with the stopped runtime.' };
             }
             if (r.status === 'lost') {
                 return { ok: false, lost: true, output, inputs, ms,
@@ -107,14 +154,20 @@
         if (m) {
             return { kind: 'refused', title: `Refused: the @${m[1]} block was not granted`,
                 body: 'Crush never runs a polyglot block unless whoever runs the program grants it ' +
-                    '(natively, the --polyglot flag). This page grants nothing, and a browser has no ' +
-                    'host process to run Python, JavaScript or Bash in.' };
+                    '(natively, the --polyglot flag). This page grants @javascript only to the examples ' +
+                    'marked "grants @javascript", and never @python or @bash: a browser has no interpreter for them.' };
+        }
+        if (/not supported by the in-browser JavaScript runtime/.test(error)) {
+            return { kind: 'refused', title: 'Refused: this @javascript block needs node',
+                body: 'The browser runs a granted @javascript block only where it can reproduce node exactly, ' +
+                    'and refuses the rest rather than approximate it. Run the program with crush-run --polyglot.' };
         }
         m = error.match(/unknown capability: ([\w.]+)/);
         if (m) {
             return { kind: 'refused', title: `Refused: capability ${m[1]} was not granted`,
                 body: 'Capabilities are granted by whoever runs the program, not by the program. ' +
-                    'The in-browser runtime grants print and a few string builtins, so this call is refused before it does anything.' };
+                    'The in-browser runtime grants what crush-run grants without flags (io and the standard library), ' +
+                    'so this call is refused.' };
         }
         if (/quota exceeded/.test(error)) {
             return { kind: 'stopped', title: 'Stopped: a VM quota was reached',
@@ -165,6 +218,7 @@
         const code = pre && pre.querySelector('code');
         if (!code) return;
         const original = code.textContent.replace(/\n$/, '') + '\n';
+        const grants = (block.dataset.grants || '').split(' ').filter(Boolean);
         const bar = el('div', 'crush-bar');
         block.append(bar);
 
@@ -184,6 +238,13 @@
         play.title = 'Open this example on crushlang.org/playground';
         reset.hidden = true;
         bar.prepend(run, edit, reset, play);
+        if (grants.length) {
+            const langs = grants.map((g) => '@' + g.replace(/^polyglot\./, '')).join(', ');
+            const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + langs);
+            chip.title = `Runs of this example are granted ${grants.join(', ')} (natively: --polyglot). ` +
+                'The block runs in an isolated worker: no network, no storage, no access to this page.';
+            play.after(chip);
+        }
 
         const editor = el('textarea', 'crush-editor');
         editor.spellcheck = false;
@@ -287,10 +348,10 @@
             const wasEdited = edited();
             let r;
             try {
-                r = await execute(source(), readLine);
+                r = await execute(source(), readLine, grants);
             } catch (err) {
                 r = { ok: false, loadError: true, inputs: [], error: 'Could not start the Crush runtime: ' + err.message +
-                    '. Running examples needs WebAssembly and module workers (a recent Chrome, Firefox, Safari or Edge).' };
+                    '. Running examples needs WebAssembly and Web Workers (a recent Chrome, Firefox, Safari or Edge).' };
             }
             run.disabled = false;
             run.textContent = 'Run';

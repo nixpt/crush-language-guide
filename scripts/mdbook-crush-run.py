@@ -21,9 +21,10 @@ book/notebooks/ (notebook_path(); the explainer page is notebooks.md).
 
     data-crush=run    runs in the browser; data-expect is the checker-verified output,
                       data-stdin the input it was verified with (`check: stdin`)
+    data-grants       capabilities the page grants the block's runs (polyglot.javascript)
     data-crush=fail   meant to fail (compile error, documented refusal, not yet
                       implemented); Run demonstrates the failure
-    data-crush=host   needs something the browser does not grant (polyglot, fs, net,
+    data-crush=host   needs something the browser does not grant (@python/@bash, fs, net,
                       env, time, process); labelled, no Run
     data-crush=none   not a standalone program (fragment, needs special setup)
 
@@ -61,6 +62,10 @@ HOST_CAPS = {
 STDLIB = ()
 CALL = re.compile(r"(?<![\w.])([a-z_]+)\.([a-z_][a-z_0-9]*)\s*\(")
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
+# Polyglot languages the browser runs when the block is granted (`--polyglot` on
+# the host): the page grants the matching capability for that run only, and
+# crush-web hands the block to src/play/guest-js.js inside the sandboxed worker.
+BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript"}
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",
             "--env": "the environment", "--time": "the clock", "--process": "processes"}
 
@@ -69,8 +74,9 @@ def host_needs(d, code):
     """What this block needs from the host that the browser cannot give, as short phrases."""
     needs, flags = [], d.get("flags", "").split()
     langs = sorted(set(POLYGLOT.findall(code)))
-    if "--polyglot" in flags and langs:
-        needs.append("uses " + ", ".join(f"`@{l}`" for l in langs) + " blocks (polyglot)")
+    host_langs = [l for l in langs if l not in BROWSER_LANGS]
+    if "--polyglot" in flags and host_langs:
+        needs.append("uses " + ", ".join(f"`@{l}`" for l in host_langs) + " blocks (polyglot)")
     calls = {}
     for ns, fn in CALL.findall(code):
         if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
@@ -86,6 +92,14 @@ def host_needs(d, code):
     if lib:
         needs.append("uses the standard library (" + ", ".join(f"`{c}`" for c in lib[:3]) + (" …" if len(lib) > 3 else "") + ")")
     return needs
+
+
+def grants(d, code):
+    """The capabilities the page grants this block's runs: what its host flags grant
+    that the browser can provide (today, @javascript under --polyglot)."""
+    if "--polyglot" not in d.get("flags", "").split():
+        return []
+    return sorted({BROWSER_LANGS[l] for l in POLYGLOT.findall(code) if l in BROWSER_LANGS})
 
 
 def classify(block):
@@ -106,6 +120,8 @@ def classify(block):
     needs = host_needs(d, code)
     if needs:
         return "host", "; ".join(needs) + ", which the in-browser runtime does not provide"
+    if "runfail" in d:
+        return "fail", "this example shows a run-time error"
     if "nyi" in d:
         return "fail", f"not implemented yet ({d['nyi']}); Run shows what happens today"
     return "run", ""
@@ -120,7 +136,8 @@ def blocks_of(text, rel):
         kind, why = classify(b)
         yield {"src": f"{rel}:{b['line'] - 1}", "fence": b["line"] - 2, "end": b["line"] - 1 + b["code"].count("\n"),
                "kind": kind, "why": why, "code": b["code"], "expect": b["expect"],
-               "expect_error": b["d"].get("runfail"), "stdin": b["d"].get("stdin"), "directives": b["d"]}
+               "expect_error": b["d"].get("runfail"), "stdin": b["d"].get("stdin"),
+               "grants": grants(b["d"], b["code"]) if kind in ("run", "fail") else [], "directives": b["d"]}
 
 
 def has_notebook(text, rel):
@@ -185,6 +202,8 @@ def annotate(text, rel):
             a.append(f'data-why="{attr(b["why"])}"')
         if b["expect"] is not None and b["kind"] == "run":
             a.append(f'data-expect="{attr(b["expect"])}"')
+        if b["grants"]:
+            a.append(f'data-grants="{attr(" ".join(b["grants"]))}"')
         if b["stdin"] is not None and b["kind"] in ("run", "fail"):
             a.append(f'data-stdin="{attr(b["stdin"])}"')
         if b["expect_error"] and b["kind"] == "fail":

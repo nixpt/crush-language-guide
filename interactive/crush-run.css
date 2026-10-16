@@ -42,6 +42,7 @@ a.crush-btn, a.crush-btn:visited { color: var(--fg); }
 .crush-badge-fail { color: var(--blockquote-warning-color); }
 .crush-badge-host { color: var(--blockquote-note-color); }
 .crush-badge-none { color: var(--icons); }
+.crush-badge-grant { color: var(--blockquote-important-color); }
 .crush-why { color: var(--icons); flex: 1 1 18em; }
 .crush-why code { font-size: 0.95em; }
 

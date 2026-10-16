@@ -16,6 +16,8 @@ Serves book/ on a local port and drives it with Playwright:
   * io.read asks for a line under the block: the guide's input matches its output,
     End input gives "", time spent waiting is not running time, and the instruction
     quota covers the whole run;
+  * a granted @javascript block matches its page output, has no page DOM, storage or
+    network, is refused when the browser can't reproduce node, and times out;
   * a documented refusal shows the refusal verdict; host-only labels name the reason;
   * with JavaScript disabled the page has plain code blocks and no controls;
   * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders;
@@ -223,7 +225,42 @@ def main():
                   f"the instruction quota covers the whole interactive run ({status!r}, {outs[-1]!r})")
             blk.locator("button.crush-reset").click()
 
-            # 6. no JavaScript: plain code blocks
+            # 6. granted @javascript runs isolated: no page, storage or network
+            page.goto(base + "crush/polyglot.html")
+            js = page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "tags.join")}"]')
+            check("grants @javascript" in js.locator(".crush-badge-grant").inner_text(), "a granted block shows its grant")
+            check("matches the guide's output" in run_block(page, js), "the @javascript example matches the guide's output")
+
+            def edited_run(blk, code, timeout=30000):
+                if blk.locator("button.crush-reset").is_visible():
+                    blk.locator("button.crush-reset").click()
+                blk.locator("button.crush-edit").click()
+                blk.locator("textarea.crush-editor").fill(code)
+                status = run_block(page, blk)
+                return status, [o.inner_text().strip() for o in blk.locator(".crush-out pre.crush-output").all()]
+
+            probe = (
+                '@javascript -> r {\n'
+                'var idb = (() => { try { indexedDB.open("x"); return "opened" } catch (e) { return e.name } })()\n'
+                'var xhr = (() => { try { var x = new self["XMLHttp" + "Request"](); x.open("GET", "' + base + 'index.html", false); x.send(); return "sent " + x.status } catch (e) { return e.name } })()\n'
+                'var r = [typeof document, typeof window, typeof parent, typeof localStorage, self.origin, idb, xhr]\n'
+                '}\nprint(r)\n')
+            status, outs = edited_run(js, probe)
+            check(status.startswith("ok") and outs[0] == "[undefined, undefined, undefined, undefined, null, SecurityError, NetworkError]",
+                  f"a @javascript block sees no page, storage or network ({outs!r})")
+            status, outs = edited_run(js, '@javascript {\nconsole.log(new Map())\n}\n')
+            check("failed" in status and "not supported by the in-browser JavaScript runtime" in outs[-1],
+                  f"what the browser cannot reproduce exactly is refused ({outs[-1][:90]!r})")
+            status, outs = edited_run(js, 'print("start")\n@javascript {\nwhile (true) {}\n}\n')
+            # The worker is stopped mid-step, so output from that step ("start") is lost; the page says so.
+            check(status.startswith("timed out") and outs == ["Stopped after 8 s of running time. Output printed before the stop is lost with the stopped runtime."],
+                  f"a runaway @javascript block is stopped at the time limit ({status!r}, {outs!r})")
+            status, outs = edited_run(js, '@javascript -> v {\nconst v = 6 * 7\n}\nprint(v)\n')
+            check(status.startswith("ok") and outs[0] == "42", f"the runtime restarts after a timeout ({status!r}, {outs!r})")
+            js.locator("button.crush-reset").click()
+            check(not errors, f"no page errors ({errors[:2]})")
+
+            # 7. no JavaScript: plain code blocks
             ctx = browser.new_context(java_script_enabled=False)
             nojs = ctx.new_page()
             nojs.goto(base + "crush/types.html")
