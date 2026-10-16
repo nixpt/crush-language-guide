@@ -61,8 +61,8 @@ and the cell kinds it does not run yet are described in the
 |  | Run button on the page | Notebook kernel | `crush-run` |
 |---|---|---|---|
 | Where it runs | your browser (crush-web, WebAssembly) | your machine | your machine |
-| Granted | `print` and the standard library | `print`, the VM's built-in string helpers, `cson.parse` | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
-| Polyglot, filesystem, network | refused | refused | with the matching flag |
+| Granted | `print`, the standard library and `io.read` (you type each line), plus what an example's **grants** label says: `@javascript`, the clock, the (empty) environment | `print`, the VM's built-in string helpers, `cson.parse` | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
+| `@python`/`@bash`, filesystem, network | refused | refused | with the matching flag |
 | Between examples | every run starts fresh | cells share a session | one program per file |
 
 > **Kernel lag.** The published `crush-notebook-kernel` (0.1.1) is built on
