@@ -270,7 +270,7 @@ def main():
         p = (Path(a.bin_dir) / n) if a.bin_dir else shutil.which(n)
         if not p or not Path(p).exists():
             sys.exit(f"missing binary {n} (set --bin-dir / CRUSH_BIN_DIR, or put crush-ast's build on PATH)")
-        bins[n] = str(p)
+        bins[n] = str(Path(p).resolve())  # blocks run in a temporary cwd
     files = [Path(f).resolve() for f in a.files] or sorted(SRC.rglob("*.md"))
     if a.crush_ast:
         helper_dir = tempfile.mkdtemp(prefix="casm-check-")

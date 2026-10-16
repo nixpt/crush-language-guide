@@ -99,6 +99,7 @@ def main():
     crush_run = str(Path(a.bin_dir) / "crush-run") if a.bin_dir else shutil.which("crush-run")
     if not crush_run or not Path(crush_run).exists():
         sys.exit("missing crush-run (set --bin-dir / CRUSH_BIN_DIR, or put crush-ast's build on PATH)")
+    crush_run = str(Path(crush_run).resolve())  # programs run in a temporary cwd
     counts, failed = {}, 0
     for prog in programs(a.paths):
         status, msg = check(prog, crush_run, a.bless)
