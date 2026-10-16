@@ -32,8 +32,8 @@ Two things to know:
 - **The standard library is built in by default** (crush-ast CRUSH-113): `str.*`,
   `math.*`, `conv.*`, `collections.*`, `json.*` and friends need no flag.
 
-You need a recent stable Rust (the repository pins its toolchain in
-`rust-toolchain.toml`; this guide was verified with rustc 1.96). The build produces these binaries in
+You need Rust 1.95 or newer (crush-ast's CI checks that MSRV, and its
+`rust-toolchain.toml` selects `stable`; this guide was verified with rustc 1.96). The build produces these binaries in
 `target/release/`:
 
 | Binary | What it does |
