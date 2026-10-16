@@ -1,9 +1,11 @@
 # Functions
 
-This chapter covers defining and calling functions. Crush functions are named,
-top-level declarations. **Functions are not first-class values yet** — you can
-call one by name, but you can't store it in a variable or pass it as an argument
-(see [Higher-order functions](#higher-order-functions-and-lambdas)).
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
+This chapter covers defining and calling functions. Named functions are
+top-level declarations, and they are also **values**: you can store one in a
+variable, pass it as an argument and return it. Lambdas and closures have their
+own chapter, [Closures and Function Values](closures.md).
 
 ## Defining functions
 
@@ -116,28 +118,48 @@ print(d(1))
 
 ## Higher-order functions and lambdas
 
-> **Not yet implemented.** Passing a function by name (`apply(double, 21)`),
-> storing one in a variable (`let f = double`), and anonymous functions
-> (`|x| { ... }`, `|x| => x * 2`) all fail to compile. The lexer reads a bare `|`
-> as an identifier, so the lambda parser is unreachable (crush-ast **CRUSH-75**,
-> open); closures that capture variables are a separate, larger gap. Until then,
-> write ordinary named functions and call them directly, or use the
-> pipeline operator (`x |> f`), which does accept a function **name**:
+A function name is a value. Store it, pass it, call it through the variable:
 
-<!-- check: nyi CRUSH-75 -->
 ```crush
 fn double(n) {
     return n * 2
 }
+fn apply(f, x) {
+    return f(x)
+}
 let f = double
 print(f(21))
+print(apply(double, 4))
 ```
 
-<!-- check: nyi CRUSH-75 -->
+<!-- check: output -->
+```text
+42
+8
+```
+
+Anonymous functions are written `|params| expression` or `|params| { block }`:
+
 ```crush
 let double = |x| { return x * 2 }
+let add = |a, b| a + b
 print(double(21))
+print(add(2, 3))
 ```
+
+<!-- check: output -->
+```text
+42
+5
+```
+
+They capture variables from where they are written; that, and the rules for
+calling function values, is in [Closures and Function Values](closures.md). The
+built-ins `print` and `len` are not values (`let g = len` compiles but fails at run
+time, crush-ast [#257](https://github.com/nixpt/crush-ast/issues/257)); wrap them:
+`|x| len(x)`.
+
+The pipeline operator (`x |> f`) takes a function name or a variable holding one:
 
 ```crush
 fn double(n) {
@@ -156,13 +178,10 @@ print(5 |> double |> inc)
 
 ## Concurrency: `spawn`, `yield`, `async`, `await`
 
-These keywords are in the grammar, but the end-to-end path is incomplete: a
-program that contains `spawn f()`, `async fn`, or `await` is rejected by the
-assembler (`SPAWN takes 1 operand(s), got 0`). The AI/concurrency opcodes are
-tracked under crush-ast **CRUSH-1** / **CRUSH-34**. A bare `yield` statement
-compiles and runs (it is a no-op without a spawned task).
+`spawn f(args)` starts a green task, `yield` lets other tasks run, and `await h`
+waits for a task and returns its result. They are covered in
+[Concurrency](concurrency.md). In short:
 
-<!-- check: nyi CRUSH-34 -->
 ```crush
 fn worker() {
     print("worker")
@@ -172,15 +191,23 @@ yield
 print("main")
 ```
 
+<!-- check: output -->
+```text
+worker
+main
+```
+
 ## Best practices
 
 - Keep functions small and give parameters type hints — they document the
   interface and catch mistakes at compile time.
-- Pass data in as parameters: functions cannot see top-level variables
-  ([Variables](variables.md#module-level-variables-are-not-visible-inside-functions)).
+- Pass data in as parameters: named functions cannot see top-level variables
+  ([Variables](variables.md#module-level-variables-are-not-visible-inside-functions));
+  a top-level lambda can.
 - Prefer descriptive names (`calculate_total_price`, not `calc`).
 
 ## Next Steps
 
+- **[Closures and Function Values](closures.md)**
 - **[Capability System](capabilities.md)**
 - **[Polyglot Programming](polyglot.md)**

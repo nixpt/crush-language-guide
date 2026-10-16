@@ -1,5 +1,7 @@
 # AI-Native CAST
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
 ## The doctrine
 
 CAST is JSON. An agent that knows the [schema](index.md) can emit a complete
@@ -116,8 +118,10 @@ tagged objects* (`{"type": …}`), while `delegation_strategy` and the others ar
 plain strings. Mixing them up is the commonest validation failure; the validator's
 hint for the delegation case says so.
 
-Here is every node in one program. It is the schema's complete AI surface, checked
-by `validate_json`, the compiler and the lowering:
+Here is every node that compiles, in one program: the schema's AI surface, checked
+by `validate_json`, the compiler and the lowering. (`CapabilityDiscovery`,
+`AdaptationRequest` and `SemanticSwitch` validate but are refused by the compiler;
+see [What actually runs](#what-actually-runs).)
 
 <!-- check: cast-validate -->
 ```json
@@ -138,10 +142,6 @@ by `validate_json`, the compiler and the lowering:
         { "type": "AI", "ai_type": "KnowledgeSharing", "knowledge_type": "Insight",
           "content": { "finding": "x" }, "recipients": ["agent://reviewers/*"],
           "retention_policy": "Session" },
-        { "type": "AI", "ai_type": "CapabilityDiscovery", "domain": "code-review",
-          "requirements": ["rust"], "discovery_strategy": "Broadcast" },
-        { "type": "AI", "ai_type": "AdaptationRequest", "adaptation_type": "Performance",
-          "reason": "review latency above target", "parameters": { "workers": 4 } },
         { "type": "VarDecl", "name": "answer", "type_hint": "String",
           "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
                      "result_type": "string", "context": {} } },
@@ -197,13 +197,37 @@ by `validate_json`, the compiler and the lowering:
 
 ## What actually runs
 
-**The AI nodes compile, but nothing executes them yet.** This is the single most
-important thing to know before building on this chapter. The CAST compiler turns each
-AI node into the matching `ai_*` CASM instruction, but the step that lowers CASM to
-runnable CVM1 (`casm_to_vm`) turns every `ai_*` instruction into a `NOP`. Concretely
-(crush-ast `v0.3.9`, tickets CRUSH-1 / CRUSH-32 / CRUSH-34):
+**The AI nodes compile to real opcodes, but nothing behind them thinks yet.** The
+CAST compiler turns each AI node into its `ai_*` CASM instruction, and the lowering
+to CVM1 (`casm_to_vm`) turns ten of them into the matching AI opcode
+(`AI_QUERY`, …, crush-ast CRUSH-156). At run time each opcode calls a host
+capability named `ai_native.<kind>`. What happens then depends on the host:
 
-- **AI statements are no-ops.** A program made of them runs and does nothing:
+- **`crush run` / `crush-run`:** the CLI provides no `ai_native.*` capability and
+  has no flag for one, so a program containing an AI opcode is refused before it
+  runs (`not available in this host: ai_native.query`).
+- **An embedder** can register stub gates with `HostCapsBuilder::new().ai_native(true)`.
+  Each stub returns a map `{kind: "<name>", echo: [...], ok: true}` and does nothing
+  else (no model call, no delegation, no learning). This is the wiring a real
+  backend will replace, so the gate names are the stable part:
+
+<!-- check: asm-ai -->
+<!-- check: output -->
+```casm
+.func main
+    AI_QUERY "{\"q\": \"capital of France\"}"
+    CAP_CALL "io.print" 1
+    HALT
+```
+
+```text
+{kind: query, echo: [{q: capital of France}], ok: true}
+```
+
+- **An embedder that registers nothing** (`Runtime::new()`) gets `null` from every
+  AI opcode, silently (crush-ast
+  [#261](https://github.com/nixpt/crush-ast/issues/261)). So a statement such as
+  `GoalDeclaration` runs and does nothing:
 
 <!-- check: cast-json -->
 ```json
@@ -223,62 +247,54 @@ runnable CVM1 (`casm_to_vm`) turns every `ai_*` instruction into a `NOP`. Concre
 after the goal
 ```
 
-- **AI expressions produce no value.** Because the `NOP` pushes nothing, any program
-  that *uses* the result (`VarDecl`, an argument, a `Return`) pops an empty stack and
-  fails:
+  and an expression such as `Query` evaluates to `null`:
 
 <!-- check: cast-json -->
-<!-- check: runfail stack underflow -->
 ```json
 {
   "cast_version": "0.1.0", "entry": "main", "lang": null,
   "functions": { "main": { "params": [], "meta": {}, "body": [
     { "type": "VarDecl", "name": "answer", "type_hint": "String",
       "value": { "type": "AI", "ai_type": "Query", "query": "Capital of France?",
-                 "result_type": "string", "context": {} } }
+                 "result_type": "string", "context": {} } },
+    { "type": "ExprStmt", "expr": { "type": "CapabilityCall", "name": "io.print", "meta": {},
+      "args": [ { "type": "Var", "name": "answer" } ] } }
   ] } }
 }
 ```
 
-  This is why the shipped `examples/cast/ai-query.cast.json` and
-  `ai-orchestration.cast.json` validate but fail with `stack underflow` when run.
-
-- **Three IR nodes have no bytecode at all.** `ai_capability_discovery`,
-  `ai_adaptation_request` and `ai_semantic_switch` exist in the IR but not in CVM1.
-  CVM1 has ten AI opcodes (`AI_QUERY`, `AI_SYNTHESIZE`, `AI_AGENT_DELEGATION`,
-  `AI_SEMANTIC_MATCH`, `AI_LEARNING_LOOP`, `AI_CONTEXT_AWARE`, `AI_TOOLCHAIN`,
-  `AI_GOAL_DECLARATION`, `AI_PROGRESS_UPDATE`, `AI_KNOWLEDGE_SHARING`).
-- **The opcodes exist and are gated by capabilities, as stubs.** A hand-written CVM1
-  `AI_QUERY` calls the host capability `ai_native.query` — and an embedder can
-  register the ten `ai_native.*` stubs with
-  `HostCapsBuilder::new().ai_native(true)`. Each stub returns the same thing, a map
-  `{ok: true, kind: "<name>", echo: [...]}`, and does nothing else (no model call, no
-  delegation, no learning). The CLI has no flag for it. This is the wiring a real
-  backend will replace, so the gate names are the stable part:
-
-<!-- check: asm-ai -->
 <!-- check: output -->
-```casm
-.func main
-    AI_QUERY "{\"q\": \"capital of France\"}"
-    CAP_CALL "io.print" 1
-    HALT
-```
-
 ```text
-{ok: true, kind: query, echo: []}
+null
 ```
 
-  The gates are `ai_native.query`, `.synthesize`, `.agent_delegation`,
-  `.semantic_match`, `.learning_loop`, `.context_aware`, `.toolchain`,
-  `.goal_declaration`, `.progress_update` and `.knowledge_sharing`. The same pattern
-  holds for the DOM opcodes (`dom_native.*`) and `SPAWN`/`YIELD`/`AWAIT`
-  (`concurrency_native.*`).
+- **Three statements are refused.** `CapabilityDiscovery`, `AdaptationRequest` and
+  `SemanticSwitch` have no CVM1 opcode. They used to compile to a silent no-op; now
+  the compiler refuses them by name (crush-ast CRUSH-265), and hand-written CASM
+  containing their `ai_*` instruction fails with `Unsupported CVM1 opcode`:
+
+<!-- check: cast-json -->
+<!-- check: runfail `capability_discovery` isn't supported yet (CRUSH-265) -->
+```json
+{
+  "cast_version": "0.1.0", "entry": "main", "lang": null,
+  "functions": { "main": { "params": [], "meta": {}, "body": [
+    { "type": "AI", "ai_type": "CapabilityDiscovery", "domain": "code-review",
+      "requirements": ["rust"], "discovery_strategy": "Broadcast" }
+  ] } }
+}
+```
+
+The gates are `ai_native.query`, `.synthesize`, `.agent_delegation`,
+`.semantic_match`, `.learning_loop`, `.context_aware`, `.toolchain`,
+`.goal_declaration`, `.progress_update` and `.knowledge_sharing`. The DOM opcodes
+follow the same pattern (`dom_native.*`), but the IR→CVM1 lowering still turns the
+`dom_*` instructions into `NOP`.
 
 So today the AI-native surface is best understood as a **typed, validated schema for
-agent intent** — a program an agent can emit, a tool can lint and an index can read —
-not an executing orchestration runtime. Plan for the schema to be stable and the
-execution to arrive later.
+agent intent** with a capability-gated runtime hook: a program an agent can emit, a
+tool can lint and an index can read, and a host can plug a backend into. Plan for
+the schema and gate names to be stable and the intelligence to arrive later.
 
 ## Instruction mapping
 
@@ -294,13 +310,12 @@ execution to arrive later.
 | `GoalDeclaration` | `ai_goal_decl` | `AI_GOAL_DECLARATION` |
 | `ProgressUpdate` | `ai_progress_update` | `AI_PROGRESS_UPDATE` |
 | `KnowledgeSharing` | `ai_knowledge_share` | `AI_KNOWLEDGE_SHARING` |
-| `CapabilityDiscovery` | `ai_capability_discovery` | — |
-| `AdaptationRequest` | `ai_adaptation_request` | — |
-| `SemanticSwitch` | `ai_semantic_switch` | — |
+| `CapabilityDiscovery` | refused by the compiler (CRUSH-265) | — |
+| `AdaptationRequest` | refused by the compiler (CRUSH-265) | — |
+| `SemanticSwitch` | refused by the compiler (CRUSH-265) | — |
 
-("CVM1 opcode" is what the text assembler and the VM have; as explained above the
-IR→CVM1 lowering does not currently emit any of them. The IR column is what
-`crush_frontend::compile_cast` emits for each node.)
+(The IR column is what `crush_frontend::compile_cast` emits for each node, and
+`casm_to_vm` lowers each of the first ten to the opcode in the last column.)
 
 ## See also
 

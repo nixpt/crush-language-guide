@@ -4,6 +4,7 @@
 - [Getting Started](getting-started.md)
 - [Running the Examples](running-examples.md)
 - [Chapters as Notebooks](notebooks.md)
+- [The Verified Corpus](verified-corpus.md)
 
 # The Crush Language
 
@@ -14,9 +15,14 @@
 - [Operators](crush/operators.md)
 - [Control Flow](crush/control_flow.md)
 - [Functions](crush/functions.md)
+- [Closures and Function Values](crush/closures.md)
+- [Structs, Methods and Kinds](crush/structs.md)
+- [Concurrency](crush/concurrency.md)
 - [Capability System](crush/capabilities.md)
 - [Polyglot Programming](crush/polyglot.md)
 - [Standard Library](crush/stdlib.md)
+- [Annotations](crush/annotations.md)
+- [Engines, AOT and Walkers](crush/engines.md)
 
 # Examples
 
@@ -30,6 +36,7 @@
 - [System Info Report](examples/sysinfo.md)
 - [Build Pipeline](examples/build-pipeline.md)
 - [Polyglot Pipeline](examples/async-dom.md)
+- [Showcase: awesome-crush](examples/awesome-crush.md)
 
 # CAST — Crush Abstract Syntax Tree
 

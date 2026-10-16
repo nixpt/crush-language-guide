@@ -5,7 +5,7 @@ decides what runs and in what order, while capability calls do the work. Here ea
 step is a real process started through `process.exec`, and the pipeline stops at
 the first failure.
 
-Run it with `crush run --stdlib --process build.crush`.
+Run it with `crush run --process build.crush`.
 
 <!-- check: flags --process -->
 ```crush

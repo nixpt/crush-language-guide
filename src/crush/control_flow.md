@@ -1,5 +1,7 @@
 # Control Flow
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
 Crush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,
 and `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.
 
@@ -79,7 +81,7 @@ for n in [10, 20, 30] {
 
 ### Over a range
 
-`a..b` is half-open (excludes `b`). There is no inclusive `..=` and no `range()`
+`a..b` is half-open (excludes `b`); `a..=b` includes `b`. There is no `range()`
 function:
 
 ```crush
@@ -102,15 +104,47 @@ x
 y
 ```
 
-<!-- check: error -->
 ```crush
 for i in 1..=3 {
     print(i)
 }
 ```
 
-Iterating directly over a map (`for k in obj`) is not supported — see
-[Types](types.md#objects-maps).
+<!-- check: output -->
+```text
+1
+2
+3
+```
+
+### Over a string or a map
+
+A string yields its characters; a map yields its keys, in insertion order:
+
+```crush
+for c in "abc" {
+    print(c)
+}
+let ages = {"ada": 36, "alan": 41}
+for name in ages {
+    print(name + " is " + ages[name])
+}
+```
+
+<!-- check: output -->
+```text
+a
+b
+c
+ada is 36
+alan is 41
+```
+
+> **Known bug ([crush-ast #256](https://github.com/nixpt/crush-ast/issues/256)).**
+> Calling a method on the loop variable (`for s in shapes { s.area() }`, or
+> `a.push(x)` on an array element) is compiled as a capability named `s.area`, and
+> the program is refused. Bind the element with `let` first (iterate an index and
+> write `let s = shapes[i]`).
 
 ## Break and continue
 
@@ -157,9 +191,11 @@ print(word)
 two
 ```
 
-Supported patterns: integer, string and bool literals, `_`, and a bare
-identifier that binds the scrutinee (`n => "got " + n`). Arm bodies can be an
-expression or a `{ ... }` block whose last expression is the value:
+Supported patterns: integer, string and bool literals, `_`, a bare identifier
+that binds the scrutinee (`n => "got " + n`), and **struct patterns** that test a
+value's struct type and bind or compare its fields (`Point { x: 0, y: y } => ...`,
+see [Structs, Methods and Kinds](structs.md#struct-patterns-in-match)). Arm bodies
+can be an expression or a `{ ... }` block whose last expression is the value:
 
 ```crush
 let n = 5
@@ -175,12 +211,28 @@ print(msg)
 got 5
 ```
 
+`match` also works as a statement, with arms that only have side effects:
+
+```crush
+let v = 2
+match v {
+    1 => print("one")
+    2 => { print("two"); print("still two") }
+    _ => print("other")
+}
+```
+
+<!-- check: output -->
+```text
+two
+still two
+```
+
 Current limitations (alpha):
 
-- **Not used as a statement.** `match v { 1 => print("one"), _ => print("other") }`
-  on its own fails at run time with `stack underflow`; the arms must produce
-  values and the result must be bound with `let` (or use `if` for side effects).
-- **`return match ...` returns `null`.** Bind first, then return:
+- **`return match ...` returns `null`** (silently: crush-ast
+  [#253](https://github.com/nixpt/crush-ast/issues/253)). The parser takes the
+  `return` as a bare return. Bind first, then return:
 
 ```crush
 fn name(v) {
@@ -200,12 +252,12 @@ zero
 other
 ```
 
-- A `match` with no matching arm evaluates to `null` — there is no
+- A `match` with no matching arm evaluates to `null`; there is no
   exhaustiveness error.
-- No guards (`x if x > 3 => ...`) and no range patterns (`0..3 => ...`).
-
-(These are crush-ast gaps without a ticket yet; see `GAP-MATCH-STATEMENT` and
-`GAP-MATCH-RETURN` in the GUIDE-3 notes.)
+- No guards (`x if x > 3 => ...`), no range patterns (`0..3 => ...`), no
+  alternatives (`1 | 2 => ...`), no negative or float literal patterns, and no
+  comma after a `{ ... }` arm body (`2 => { 7 }, _ => 0` is a parse error; the
+  last three are listed in crush-ast's CRUSH-192 ticket).
 
 ## Errors: `try` / `catch` / `throw`
 

@@ -1,26 +1,27 @@
 # Structs (and Concurrency)
 
-A struct is declared once, created with `new Name()`, and filled in by assigning
-fields. Structs are passed by reference.
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
+A struct is declared once (on one line), built with a literal, and given methods
+in an `impl` block. Structs are passed by reference.
 
 ```crush
 struct Point { x: Float, y: Float }
-
-fn dist2(a, b) {
-    let dx = a.x - b.x
-    let dy = a.y - b.y
-    return dx * dx + dy * dy
+impl Point {
+    fn new(x, y) { return Point { x: x, y: y } }
+    fn dist2(self, other) {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        return dx * dx + dy * dy
+    }
+    fn label(self) { return "(" + self.x + ", " + self.y + ")" }
 }
 
-let p = new Point()
-p.x = 1.0
-p.y = 2.0
-let q = new Point()
-q.x = 4.0
-q.y = 6.0
+let p = Point::new(1.0, 2.0)
+let q = Point { x: 4.0, y: 6.0 }
 
-print("p = (" + p.x + ", " + p.y + ")")
-print("squared distance: " + dist2(p, q))
+print("p = " + p.label())
+print("squared distance: " + p.dist2(q))
 ```
 
 <!-- check: output -->
@@ -31,32 +32,49 @@ squared distance: 25.0
 
 **What this shows:**
 
-- `struct Point { x: Float, y: Float }` — declare it on **one line**; the parser
+- `struct Point { x: Float, y: Float }`: declare it on **one line**; the parser
   does not yet accept a struct body that spans lines
-- `new Point()` takes no arguments; set each field with `p.x = ...`
-- Field access works inside functions, including on parameters (`a.x`)
+- `Point { x: 4.0, y: 6.0 }` names every field; `Point::new(...)` is a method
+  without `self`, called through the type
+- `p.dist2(q)` resolves `dist2` on `p`'s struct; `self` is `p`
 - `Float` arithmetic: `3.0 * 3.0 + 4.0 * 4.0` is `25.0`
+
+More in [Structs, Methods and Kinds](../crush/structs.md).
 
 ## Concurrency
 
-Earlier revisions of this guide demonstrated `spawn worker()` with cooperative
-`yield`. That does **not** run today: the compiler emits a `SPAWN` instruction
-without its operand and the assembler rejects the program
-(`SPAWN takes 1 operand(s), got 0`). The scheduler for green threads exists in
-`crush-vm`, but the source-level path is unfinished — crush-ast **CRUSH-34**
-(spawn/await/yield execution) is open. A bare `yield` statement compiles and is a
-no-op.
+`spawn` starts a green task; tasks take turns at `yield`, and `await` collects a
+task's result. The workers below share one captured counter:
 
-<!-- check: nyi CRUSH-34 -->
 ```crush
-fn worker() {
-    print("worker running")
-    yield
-    print("worker finishing")
+fn main() {
+    let done = 0
+    let worker = |name| {
+        print(name + " running")
+        yield
+        print(name + " finishing")
+        done = done + 1
+        return name
+    }
+    let a = spawn worker("a")
+    let b = spawn worker("b")
+    print("main")
+    print(await a)
+    print(await b)
+    print("finished: " + done)
 }
-
-spawn worker()
-print("main")
-yield
-print("main again")
 ```
+
+<!-- check: output -->
+```text
+main
+a running
+b running
+a finishing
+b finishing
+a
+b
+finished: 2
+```
+
+More in [Concurrency](../crush/concurrency.md).

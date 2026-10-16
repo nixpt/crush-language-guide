@@ -15,15 +15,15 @@ checks that keep the guide's code honest (nothing is labelled by hand):
 
 The Run button uses **crush-web**, the WebAssembly build of the Crush VM that also
 powers the [playground](https://crushlang.org/playground/). It is the same compiler
-and VM as `crush-run`, with a different set of grants:
+and VM as `crush-run` (the book's copy is built from crush-ast `3ae0b4a`, the commit
+this guide is verified against), with a different set of grants:
 
-- **Granted:** `print` / `io.print`, and the VM's built-in string helpers
-  (`str.len`, `str.concat`, `str.contains`, `str.split`, `str.join`, `str.replace`,
-  `conv.chr`, `conv.ord`).
+- **Granted:** what `crush run` grants with no flags: `print` / `io.print`, the
+  whole standard library (`str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`,
+  `regex.*`, …), and `sys.args()` (empty).
 - **Not available:** polyglot blocks (`@python`, `@javascript`, `@bash`: there is no
-  host process to run them in), the filesystem, network, environment, clock and
-  processes, the standard-library modules (`math.*`, `conv.to_int`, `json.*`, …),
-  and standard input (`io.read` returns `""`).
+  host process to run them in), the filesystem, network, environment, clock,
+  processes and cryptography, and standard input (`io.read` returns `""`).
 - **Every run starts fresh.** Examples do not share variables, even on the same
   page. To build on one example in the next, open the chapter as a notebook (see
   [Chapters as Notebooks](notebooks.md)).

@@ -1,8 +1,10 @@
 # Getting Started
 
 Crush is alpha software. This page gets you from a clean machine to a running
-program, and then shows how to embed the VM in a Rust application. Everything here
-was run against crush-ast `v0.3.9` (the release on crates.io).
+program, and then shows how to embed the VM in a Rust application.
+
+> Verified against crush-ast `3ae0b4a` (main, 2026-10-16), a debug build. That is
+> newer than the `0.6.0` release on crates.io: see the note below.
 
 ## 1. Build the toolchain
 
@@ -14,8 +16,12 @@ against:
 git clone https://github.com/nixpt/crush-ast
 git clone https://github.com/nixpt/buckets      # must sit NEXT TO crush-ast
 cd crush-ast
-cargo build --release -p crush-lang-sdk --features stdlib,net,db,graphics
+cargo build --release -p crush-lang-sdk                       # crush, crush-run, crushc, ...
+cargo build --release -p crush-aot                            # optional: crush-aotc (native AOT)
 ```
+
+Add `--features net,db,graphics` to the first build for the `--net`, `--db` and
+`--graphics` capability groups.
 
 Two things to know:
 
@@ -23,11 +29,11 @@ Two things to know:
   path-dependency on `../buckets` (the sandbox provisioner), and Cargo resolves it
   even when the feature is off, so a lone `crush-ast` checkout fails with
   `failed to read .../buckets/Cargo.toml`.
-- **`--features stdlib` is not optional for this guide.** The standard library is
-  off by default (crush-ast CRUSH-113); without it `--stdlib` only prints a
-  warning and `str.*`, `math.*`, `conv.*` and friends don't exist.
+- **The standard library is built in by default** (crush-ast CRUSH-113): `str.*`,
+  `math.*`, `conv.*`, `collections.*`, `json.*` and friends need no flag.
 
-You need Rust 1.85 or newer. The build produces these binaries in
+You need a recent stable Rust (the repository pins its toolchain in
+`rust-toolchain.toml`; this guide was verified with rustc 1.96). The build produces these binaries in
 `target/release/`:
 
 | Binary | What it does |
@@ -36,27 +42,26 @@ You need Rust 1.85 or newer. The build produces these binaries in
 | `crush-run` | Run a `.crush`, `.casm` or `.cvm1` file (all the capability flags live here) |
 | `crushc` | Compile `.crush` to bytecode (`.cvm1`), or `--emit casm\|ast\|types`; `-C` only checks |
 | `crush-compile` | Assemble CASM text into a `.cvm1` binary |
-| `crush-repl` | Interactive REPL |
+| `crush-repl` | Interactive REPL (`crush repl`; commands are `.help`, `.quit`) |
+| `crush-diff` | Run programs on several engines and report where they disagree |
+| `crush-aotc` | (from `-p crush-aot`) compile `.crush` to a native library via Rust or C, or `crush-aotc run FILE` |
 
 Put them on your `PATH`, or install them with the bundled installer
 (`cargo run -p crush-installer -- install --bin-dir target/release` copies them
 into `~/.crush/bin`; it does not currently include the `crush` wrapper).
 
-> **Crates.io.** The `0.3.9` release is published: `crush-lang-sdk` (which installs
-> `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and `crush-diff`),
-> `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-errors`,
-> `crush-diagnostics`, `crush-ffi`, `crush-cson`, `crush-index`, `crush-walker-core`,
-> `crush-lang-python` and `crush-lang-js`. So `cargo install crush-lang-sdk` works and
-> gives the toolchain this guide describes, and an embedding project can depend on
-> `crush-lang-sdk = "0.3.9"`. Four crates lag: `crush-lint`, `crush-installer` and
-> `tree-sitter-crush` are at `0.3.7`, `crush-jit` and `crush-python` at `0.3.0`;
-> `crush-pkg`, `crush-aot` and `crush-aotc` are not published. **Never depend on
-> `crush-lang-sdk` `0.2`**: that line has been yanked, and it runs `@lang` blocks
-> without the `--polyglot` gate.
->
-> The `cargo install` route does not enable the optional SDK features
-> (`stdlib`, `net`, `db`, `graphics`): add them with
-> `cargo install crush-lang-sdk --features stdlib,net,db,graphics`.
+> **Crates.io.** Release `0.6.0` (2026-10-15) is published for `crush-lang-sdk`
+> (which installs `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and
+> `crush-diff`), `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-cosm`,
+> `crush-errors`, `crush-diagnostics`, `crush-ffi`, `crush-caison` (and its old name
+> `crush-cson`), `crush-index`, `crush-walker-core`, `crush-lang-python`,
+> `crush-lang-js`, `crush-lint`, `crush-installer`, `tree-sitter-crush`, `crush-jit`,
+> `crush-python` and `crush-pkg`; `crush-aot`, `crush-aotc` and `crush-lang-rust` are
+> not published. `0.6.0` predates parts of this guide: struct methods resolving on
+> their Kind (Records, `@kind` semantics), explicit polyglot outputs (`-> name`) and
+> the AOT refusals landed on `main` after it. Build from source for everything
+> here. **Never depend on `crush-lang-sdk` `0.2`**: that line has been yanked, and
+> it runs `@lang` blocks without the `--polyglot` gate.
 
 ## 2. Hello, Crush
 
@@ -86,36 +91,55 @@ Hello, Crush!
 The `[steps=…]` line is a run summary on standard error. Compile-only checking is
 `crushc -C hello.crush`; to see the bytecode, `crushc --emit casm hello.crush`.
 
+### Three file types
+
+`crush run` (and `crush-run run`) takes source, assembly or bytecode:
+
+```sh
+crushc hello.crush -o hello.cvm1         # compile to CVM1 bytecode
+crush run hello.cvm1                     # run the bytecode
+crushc --emit casm hello.crush -o hello.casm
+crush run --cap io.print hello.casm      # CASM text: grant each capability it calls
+```
+
+A `.casm` text file has no manifest, so every capability it calls must be named
+with `--cap` (without it: `capability not declared in manifest: io.print`).
+Arguments after the file name reach the program as `sys.args()`:
+`crush run prog.crush a b` → `[a, b]`.
+
 ### Capabilities need flags
 
 A program can only reach the outside world through capabilities, and each group is
 off until you switch it on:
 
 ```sh
-crush run --stdlib prog.crush                    # str.* math.* conv.* json.* ...
+crush run prog.crush                             # str.* math.* conv.* json.* ... need nothing
 crush run --fs --fs-root ./data prog.crush       # fs.read / fs.write / fs.exists / fs.list
 crush run --polyglot prog.crush                  # @python / @javascript / @bash blocks
+crush-run caps prog.crush                        # what does it need? (runs nothing)
 ```
 
 For example, this reads a file, so it needs `--fs`:
 
-<!-- check: runfail unknown capability: fs.read -->
+<!-- check: runfail fs.read -->
 ```crush
 print(fs.read("notes.txt"))
 ```
 
-Run it without the flag and it fails with `unknown capability: fs.read`. The full
-flag list is in [Capability System](crush/capabilities.md) (`crush-run run --help`
-prints it too).
+Run it without the flag and nothing runs: `needs capabilities this run does not
+grant; nothing was run: --fs: fs.read`. The full flag list is in
+[Capability System](crush/capabilities.md) (`crush-run run --help` prints it
+too).
 
 ### Limits worth knowing on day one
 
-- Output is buffered: if a program fails at run time, what it printed before the
-  failure is not shown.
+- `crush doctor` reports which polyglot interpreters (`python3`, `node`, `bash`)
+  it can find.
 - Defaults: 1,000,000 instructions, 256 call frames, 1 MiB of output, 30 s per
   polyglot block (all in [Capability System](crush/capabilities.md#resource-limits)).
-- Functions can't see top-level variables, and `import` doesn't load code yet — see
-  [Variables](crush/variables.md) and [Syntax](crush/syntax.md#imports-and-exports).
+- Named functions can't see top-level variables (lambdas can), and `import`
+  doesn't load code yet — see [Variables](crush/variables.md) and
+  [Syntax](crush/syntax.md#imports-and-exports).
 
 ## 3. The crates
 
@@ -132,10 +156,10 @@ crates give direct access to the IR, bytecode, or VM.
 | [`crush-errors`](https://crates.io/crates/crush-errors) | Shared error types. |
 | [`tree-sitter-crush`](https://crates.io/crates/tree-sitter-crush) | Tree-sitter grammar (editor tooling, syntax highlighting). |
 
-SDK Cargo features: `stdlib` (the standard library), `net`, `db`, `graphics`,
-`repl-helper`, plus the default `native-plugins`, `polyglot-python` and
-`polyglot-javascript` (the free-variable analysis that marshals values into and out
-of `@python`/`@javascript` blocks).
+SDK Cargo features: the defaults `stdlib` (the standard library),
+`native-plugins`, `polyglot-python`, `polyglot-javascript` and `polyglot-rust` (the
+analyses that marshal values into and out of `@lang` blocks), plus the optional
+`net`, `db`, `graphics`, `gpu`, `repl-helper` and `polyglot-typescript`.
 
 ## 4. Embedding
 
@@ -174,8 +198,8 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Both snippets are compiled and run against crush-ast `main` as part of this
-guide's checks (`scripts/embed-check`). `Runtime::new()` registers only the
+Both snippets are compiled and run against crush-ast `3ae0b4a` by
+`scripts/check-examples.py --crush-ast`. `Runtime::new()` registers only the
 built-in primitives (`io.print`, `io.read`, …); to expose more — the standard
 library, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass
 it with `Runtime::with_quotas(..).with_host_caps(..)`, which is exactly what

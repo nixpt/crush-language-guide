@@ -2,7 +2,7 @@
 
 Every program here is CASM **text assembly** — the form you can write by hand and run
 with `crush-run run FILE.casm --cap io.print` — and every one is executed by this
-guide's checker against crush-ast `v0.3.9`, with the output shown. The JSON IR is
+guide's checker against crush-ast `3ae0b4a`, with the output shown. The JSON IR is
 covered in [Program Structure](structure.md) and
 [Serialization](serialization.md). Opcode details are in the
 [Instruction Reference](instructions.md).
@@ -261,11 +261,13 @@ this one as `crush-run run prog.casm --cap io.print --cap fs.exists --fs`:
 0
 ```
 
-The manifest is checked first. Leave out `--cap fs.exists` and the VM stops with
-`capability not declared in manifest: fs.exists`; pass `--cap fs.exists` but leave out
-`--fs` and it stops with `unknown capability: fs.exists` (declared, but the host never
-registered it).
+Two separate checks apply. The host's grants come first: leave out `--fs` and
+nothing runs (`needs capabilities this run does not grant; nothing was run: --fs:
+fs.exists`). With `--fs` but without `--cap fs.exists`, the program starts, and
+the VM stops at the call with `capability not declared in manifest: fs.exists`
+(the host registered it, but the program's manifest doesn't list it):
 
+<!-- check: flags --fs -->
 <!-- check: runfail capability not declared in manifest: fs.exists -->
 ```casm
 .func main

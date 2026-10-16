@@ -6,46 +6,52 @@ variables as the glue. This replaces an earlier "Async LLM Dashboard" page whose
 toolchain.
 
 Run it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`
-on `PATH`).
+on `PATH`; `crush doctor` checks).
+
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
 
 <!-- check: flags --polyglot -->
 ```crush
 // Three languages, one program. Values flow through Crush variables.
 let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
-@python {
+@python -> mean {
 import statistics
 mean = statistics.mean(numbers)
 }
 
-@javascript {
+@javascript -> spread {
 const spread = Math.max(...numbers) - Math.min(...numbers)
 }
 
-let m = mean
-let s = spread
+@python -> line {
+line = f"mean={mean} spread={spread}"
+}
+print(line)
+
 @bash {
-echo "mean=$m spread=$s"
+echo "bash: $(echo done)"
 }
 print("")
-print("done")
 ```
 
 <!-- check: output -->
 ```text
 mean=3.875 spread=8
-done
+bash: done
 ```
 
 **What this shows:**
 
-- `@python`: reads the Crush variable `numbers`, and its last top-level binding,
-  `mean`, becomes a Crush variable
-- `@javascript`: the same protocol; `spread` comes back as a number
-- `@bash`: receives the `let` variables declared before it as environment
-  variables. Results of earlier blocks are not passed automatically, so they are
-  copied into `let m = mean` / `let s = spread` first
-- Block output is trimmed and has no trailing newline, which is why `print("")`
+- `@python -> mean`: the block reads the Crush variable `numbers` (inputs are
+  automatic) and declares `mean` as its output, which becomes a Crush variable
+- `@javascript -> spread`: the same protocol; `spread` comes back as a number
+- the second `@python` block reads both earlier outputs, because they are Crush
+  variables now
+- `@bash`: only its printed output comes back. It does **not** see Crush
+  variables today (crush-ast [#255](https://github.com/nixpt/crush-ast/issues/255)),
+  which is why the formatting is done in Python
+- block output is trimmed and has no trailing newline, which is why `print("")`
   is used to finish the line
-- All three run as ordinary subprocesses with your user's authority — see
+- all three run as ordinary subprocesses with your user's authority — see
   [Polyglot Programming](../crush/polyglot.md#sandbox-and-authority)

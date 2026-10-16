@@ -1,5 +1,7 @@
 # Capability System
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
 Crush programs can't touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
 running another language — is a **capability call**, and a capability only exists
@@ -70,15 +72,17 @@ io.print("Hello, " + name)
 
 With the CLI, each *group* of capabilities is switched on by a flag on
 `crush-run run` (or `crush run`). Anything not switched on is simply **not
-registered**, and calling it fails at run time with `unknown capability`:
+registered**. Before running anything, `crush-run` works out every capability the
+compiled program can reach and refuses the whole run if one isn't granted, listing
+the flag that would grant each:
 
 | Flag | Capabilities enabled |
 |---|---|
-| `--stdlib` | `str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`, `path.*`, `regex.*`, `bytes.*`, `buffer.*`, `binary.*`, `result.*`, `time.format/parse`, `env.os/arch`, `system.*` — pure computation, see [Standard Library](stdlib.md) |
-| `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `text.head/tail/wc/cut/grep` |
-| `--env` | `env.get` |
-| `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep` |
-| `--net` | `net.http_get`, `net.http_post` |
+| (none: on by default) | the standard library: `str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`, `path.*`, `regex.*`, `bytes.*`, `buffer.*`, `binary.*`, `result.*`, `time.format/parse`, `env.os/arch`, `system.*`, plus `sys.args()` / `sys.exit(code)`; pure computation, see [Standard Library](stdlib.md). `--no-stdlib` removes it |
+| `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find`, `text.head/tail/wc/cut/grep` |
+| `--env` | `env.get`, `env.all`, `env.home_dir` |
+| `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep`, `async.sleep` |
+| `--net` | `net.http_get`, `net.http_post`, `net.http_put`, `net.http_delete`, `net.http_request` |
 | `--process` | `process.exec` |
 | `--crypto` | `crypto.sha256`, `crypto.random` |
 | `--db PATH` | `db.query`, `db.execute` on that SQLite file |
@@ -88,18 +92,25 @@ registered**, and calling it fails at run time with `unknown capability`:
 | `--akg` | `akg.write/read/search` |
 | `--polyglot` | `@python { }`, `@javascript { }`, `@bash { }` blocks — see [Polyglot](polyglot.md) |
 
-`crush-run caps` prints the list for your build. Some groups (`--stdlib`,
-`--net`, `--db`, `--graphics`) are Cargo features of `crush-lang-sdk`; if your binary was
-built without one, its flag prints `warning: --… requires the '…' feature (not
-enabled in this build)` and the group stays absent. Note that **`stdlib` is off by
-default** (crush-ast CRUSH-113); build with `--features stdlib`.
+`crush-run caps` prints the list for your build. Some groups (`--net`, `--db`,
+`--graphics`, `--gpu`) are Cargo features of `crush-lang-sdk` that a default build
+leaves out; the standard library is a default feature.
 
-Without the flag, the call fails:
+Without the flag, nothing runs, not even the first line:
 
-<!-- check: runfail unknown capability: fs.read -->
+<!-- check: runfail fs.read -->
 ```crush
+print("first line")
 print(fs.read("data.txt"))
 ```
+
+```text
+[capabilities] block.crush needs capabilities this run does not grant; nothing was run:
+  --fs: fs.read
+```
+
+`crush-run caps FILE` answers the same question without running: what the
+program can use, and which flag grants each.
 
 With it, and with the filesystem confined to a directory:
 
@@ -130,19 +141,22 @@ print(fs.exists("missing.txt"))
 | `fs.read` | `path` | file contents (string) |
 | `fs.exists` | `path` | `1` / `0` |
 | `fs.list` | `dir` | array of names |
-| `fs.write` | `path, data` | nothing — **see the note below** |
+| `fs.write` | `path, data` | nothing |
+| `fs.mkdir` | `path` | nothing |
 
-> **Known bug — `fs.write`.** It declares no return value, and the compiler emits
-> a `pop` after a call used as a statement, so any program that calls it ends with
-> `[runtime] stack underflow` (the write itself may still happen). Treat `fs.write`
-> as not usable from `.crush` source until this is fixed. Capabilities that
-> return nothing share the problem; `io.print` and `time.sleep` are unaffected.
-
-<!-- check: nyi GAP-VOID-CAP-STATEMENT -->
 <!-- check: flags --fs -->
 ```crush
 fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
+fs.mkdir("sub")
+fs.write("sub/a.txt", "a")
+print(fs.list("sub"))
+```
+
+<!-- check: output -->
+```text
+hello
+[a.txt]
 ```
 
 ### Environment, time, processes, network
@@ -175,6 +189,58 @@ aborts the program with `[runtime] unknown capability: <name>: <reason>` — the
 "unknown capability" wording is misleading there, and the error is not
 catchable by [`try`/`catch`](control_flow.md#what-catch-does-not-catch).
 
+## Declaring what a program uses: `@capabilities`
+
+A program can say up front which capabilities it may use beyond the ambient,
+effect-free built-ins (`io.print`, `str.*`, arrays, the standard library):
+
+<!-- check: flags --time -->
+```crush
+@capabilities [time.now_ms]
+let t = time.now_ms()
+print(t > 0)
+```
+
+<!-- check: output -->
+```text
+true
+```
+
+Entries can be exact names (`fs.cat`), families (`fs`, `fs.*`) or scoped names
+(`fs.read:/var/log`). Using anything else is a compile error, so a reviewer only
+has to read that one line to know what the program can touch:
+
+<!-- check: runfail not declared in @capabilities: env.get -->
+```crush
+@capabilities [time.now_ms]
+print(env.get("HOME"))
+```
+
+```text
+[compile] the program uses a capability not declared in @capabilities: env.get
+  add it to @capabilities, or stop using it
+```
+
+The declaration limits what the program *may* use; the run's flags still decide
+what it *gets*. `crush-run caps prog.crush` prints both:
+
+```text
+prog.crush
+  declares: time.now_ms
+  needs these grants to run:
+    --time: time.now_ms
+  also uses (ambient): io.print
+```
+
+A program without `@capabilities` compiles as before.
+
+> **Known bug ([crush-ast #258](https://github.com/nixpt/crush-ast/issues/258)).**
+> The check runs when `crush-run run` / `crush run` compiles a `.crush` file. `crushc`
+> and `crush build` don't apply it yet, and the `.cvm1` they write drops the
+> declaration, so review the source, not just the bytecode. (The
+[awesome-crush](https://github.com/nixpt/awesome-crush) `agents/log-triage`
+entry walks through this with an agent-written tool.)
+
 ## Resource limits
 
 Separately from capabilities, the VM enforces **quotas**; exceeding one ends the
@@ -188,8 +254,8 @@ program with a `[runtime]` error:
 | call depth | 256 | `--max-call-depth` |
 | wall-clock per polyglot subprocess | 30,000 ms | (set via `Quotas::max_wall_time_ms` when embedding) |
 
-Output is buffered: if a program fails at run time, anything it printed before
-the failure is **not** shown.
+Output printed before a run-time failure is kept: the program's earlier lines
+appear, then the `[runtime]` error on standard error.
 
 ## Embedding: declaring permissions
 
@@ -230,11 +296,12 @@ Be honest with yourself about the isolation you actually get:
 ## Not implemented
 
 The following capabilities appeared in earlier revisions of this guide but do not
-exist in the runtime: `io.eprint`, `fs.delete`, `sys.exec`, `sys.env`, `sys.args`,
-`sys.exit`, `net.get`, `net.post`, `net.http`, `type.of`, `console.print`,
+exist in the runtime: `io.eprint`, `fs.delete`, `sys.exec`, `sys.env`,
+`net.get`, `net.post`, `net.http`, `type.of`, `console.print`,
 `array.length`, `map.keys`, `map.has_key`, and `module.load` (what `import`
 lowers to — crush-ast **CRUSH-110**). Use the replacements above
-(`env.get`, `net.http_get`, `conv.type_of`, `len`, …).
+(`fs.rm`, `env.get`, `net.http_get`, `conv.type_of`, `len`, …). `sys.args()` and
+`sys.exit(code)` do exist now (ambient).
 
 ## Next Steps
 

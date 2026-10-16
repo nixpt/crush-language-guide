@@ -12,16 +12,19 @@ toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
 intermediate representation (CAST) that other languages can be translated into.
 
 > **Alpha.** This guide documents what the toolchain does today, verified against
-> crush-ast `main` — every `crush` example on these pages is executed by
-> `scripts/check-examples.py`. Features that exist in the design but not in the
-> implementation are marked *not yet implemented*, with the crush-ast ticket.
+> crush-ast `3ae0b4a` (main, 2026-10-16): every `crush` example on these pages is
+> compiled and run by `scripts/check-examples.py`, and a corpus of 120+ standalone
+> programs with their exact output lives in `examples/verified/`
+> ([The Verified Corpus](verified-corpus.md)). Features that exist in the design but
+> not in the implementation are marked *not yet implemented*, with the crush-ast
+> ticket; behaviour that is wrong today links the crush-ast issue.
 
 ## What this guide covers
 
 | Section | What you'll learn |
 |---------|-------------------|
 | [Getting Started](getting-started.md) | Build the toolchain, run a program, embed the VM from Rust |
-| [Crush Language](crush/index.md) | Syntax, types, control flow, functions, capabilities, polyglot blocks |
+| [Crush Language](crush/index.md) | Syntax, types, control flow, functions, closures, structs and methods, concurrency, capabilities, polyglot blocks, engines |
 | [Examples](examples/index.md) | Runnable programs |
 | [CAST](cast/index.md) | The AST format that walkers and the compiler share |
 | [CASM](casm/index.md) | The bytecode formats the VM executes |

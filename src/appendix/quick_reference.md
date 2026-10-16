@@ -1,7 +1,7 @@
 # Quick Reference
 
 Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide's checker against crush-ast `v0.3.9`. Details live in
+can run is run by the guide's checker against crush-ast `3ae0b4a`. Details live in
 the chapters linked from each heading.
 
 ## Command line ([Getting Started](../getting-started.md))
@@ -11,14 +11,19 @@ the chapters linked from each heading.
 | `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |
 | `crush build FILE.crush` | compile to `.cvm1` |
 | `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |
-| `crush-run caps` | list the capabilities of your build |
+| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |
 | `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\|ast\|types` prints a layer; `-C` only checks |
 | `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |
-| `crush-repl` | interactive REPL |
+| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |
+| `crush doctor` | which polyglot interpreters are on `PATH` |
+| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |
+| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |
 
-Capability flags (everything is **off** unless you pass it): `--stdlib` `--fs`
-`--fs-root DIR` `--env` `--time` `--net` `--process` `--crypto` `--db PATH`
-`--graphics` `--bus` `--task` `--akg` `--polyglot` `--cap NAME`. Quotas:
+Capability flags (everything is **off** unless you pass it, except the standard
+library, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`
+`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`
+`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused
+before it runs. Quotas:
 `--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),
 `--max-call-depth` (256).
 
@@ -48,10 +53,33 @@ Hello, Alice
 43
 ```
 
-- Semicolons are optional. Comments are `//` and `#`. Strings use double quotes only.
+- Semicolons are optional. Comments are `//` and `#`. Strings use `"…"` or `'…'`.
 - A function returns a value only with `return`; falling off the end yields `null`.
 - `print(x)` takes exactly one argument; `io.print(a, b, …)` takes any number.
-- No `let mut`, no `T?` types, no lambdas (CRUSH-75), no working `import` (CRUSH-110).
+- No `let mut`, no `T?` types, no working `import` (CRUSH-110).
+
+### Closures ([Closures](../crush/closures.md))
+
+```crush
+fn make_counter() {
+    let c = 0
+    return || {
+        c = c + 1
+        return c
+    }
+}
+let next = make_counter()
+next()
+print(next())
+let sq = |x| x * x
+print(5 |> sq)
+```
+
+<!-- check: output -->
+```text
+2
+25
+```
 
 ### Control flow ([Control Flow](../crush/control_flow.md))
 
@@ -89,12 +117,17 @@ a
 b
 ```
 
-`0..3` excludes the end. `break` and `continue` work in `while` and `for`.
+`0..3` excludes the end, `0..=3` includes it. `for` also walks a string's
+characters and a map's keys. `break` and `continue` work in `while` and `for`.
+`match v { 1 => "one", P { x: a } => a, _ => "other" }` matches literals,
+bindings and struct patterns (bind it with `let`; `return match …` returns `null`
+today, #253).
 
 ### Operators ([Operators](../crush/operators.md))
 
-`+ - * / %` · `== != < > <= >=` · `&& || !` (short-circuit) · unary `-` · pipeline `|>`.
-There is no `and`/`or`/`not`, `**`, `//`, `+=` or ternary.
+`+ - * / %` · `== != < > <= >=` · `&& || !` or `and or not` (short-circuit) · unary
+`-` · pipeline `|>` · ranges `a..b`, `a..=b`. There is no `**`, `//`, `+=`, bitwise
+operator or ternary. `Int` overflow and division by zero are run-time errors.
 
 ### Errors
 
@@ -114,20 +147,26 @@ caught: disk full
 ### Structs and objects ([Types](../crush/types.md))
 
 ```crush
-struct Point { x, y }
-let p = new Point()
-p.x = 3
-p.y = 4
+struct Point { x: Int, y: Int }
+impl Point {
+    fn sum(self) { return self.x + self.y }
+}
+let p = Point { x: 3, y: 4 }
 let o = {"name": "crush"}
-print(p.x + p.y)
-print(o.name)
+o["lang"] = "en"
+print(p.sum())
+print(o.name + "/" + o["lang"])
 ```
 
 <!-- check: output -->
 ```text
 7
-crush
+crush/en
 ```
+
+Structs are sealed (no undeclared fields), references by default
+(`@kind(semantics: value(copy))` for values), and `==` compares fields. See
+[Structs, Methods and Kinds](../crush/structs.md).
 
 ### Capabilities ([Capabilities](../crush/capabilities.md))
 
@@ -161,9 +200,10 @@ ab3
 
 ### Polyglot blocks ([Polyglot](../crush/polyglot.md))
 
-`@python { }`, `@javascript { }` and `@bash { }` run as host subprocesses, only with
-`--polyglot`, and with the host's full authority (no sandbox by default). Without the
-flag they are refused:
+`@python -> out { }`, `@javascript -> out { }` and `@bash { }` run as host
+subprocesses, only with `--polyglot`, and with the host's full authority (no sandbox
+by default). Names a block reads are passed in; the names after `->` come back.
+Without the flag the program is refused:
 
 <!-- check: runfail --polyglot -->
 ```crush
@@ -176,14 +216,15 @@ flag they are refused:
 
 | Type | Example | Notes |
 |---|---|---|
-| `Int` | `42` | 64-bit, decimal only |
+| `Int` | `42`, `0x2A`, `0b101` | 64-bit, checked overflow |
 | `Float` | `3.14` | no exponent form |
-| `String` | `"hello"` | UTF-8, double quotes |
+| `String` | `"hello"`, `'hello'` | UTF-8; `len` counts bytes |
 | `Bool` | `true` | |
 | `Null` | `null` | |
 | array | `[1, 2, 3]` | |
-| object | `{"key": "value"}` | |
-| struct | `struct P { x, y }` | |
+| object | `{"key": "value"}` | insertion-ordered |
+| struct | `struct P { x, y }` | one line; `P { x: 1, y: 2 }` |
+| function | `\|x\| x + 1`, `fn` names | values; closures capture by reference |
 
 Annotations (`: Int`, `-> Int`) are checked at compile time and are optional.
 
@@ -191,9 +232,9 @@ Annotations (`: Int`, `-> Int`) are checked at compile time and are optional.
 
 | Always on | `io.print` `io.read` `str.concat` `str.len` `conv.chr` `conv.ord` |
 |---|---|
-| `--stdlib` | `str.*` `math.*` `conv.*` `collections.*` `json.*` `path.*` `regex.*` … |
-| `--fs` | `fs.read` `fs.write` `fs.exists` `fs.list` |
-| `--env` | `env.get` |
+| Standard library (default) | `str.*` `math.*` `conv.*` `collections.*` `json.*` `path.*` `regex.*` `sys.args` … |
+| `--fs` | `fs.read` `fs.write` `fs.exists` `fs.list` `fs.mkdir` … |
+| `--env` | `env.get` `env.all` `env.home_dir` |
 | `--time` | `time.now` `time.now_ms` `time.now_iso` `time.elapsed` `time.sleep` |
 | `--net` | `net.http_get` `net.http_post` |
 | `--process` | `process.exec` |
@@ -231,4 +272,5 @@ Annotations (`: Int`, `-> Int`) are checked at compile time and are optional.
 
 Stack effects and the JSON-IR names are in the
 [Instruction Reference](../casm/instructions.md). Remember: arguments are pushed
-**last first**, and a `.casm` file needs `--cap` for every capability it calls.
+**first argument first** (`PUSH_STR "a"`, `PUSH_STR "b"`, `CAP_CALL "io.print" 2`
+prints `ab`), and a `.casm` file needs `--cap` for every capability it calls.

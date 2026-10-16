@@ -1,5 +1,7 @@
 # Variables and Scoping
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
 This chapter covers declaration, assignment, and the scoping rules the compiler
 enforces today.
 
@@ -167,6 +169,20 @@ running in production
 (If you need shared state across functions today, thread it through parameters,
 or keep it in an object/array you pass around.)
 
+This applies to **named** functions. A lambda written at the top level does see
+top-level variables: it captures them (see [Closures](closures.md)).
+
+```crush
+let level = "production"
+let describe = || "running in " + level
+print(describe())
+```
+
+<!-- check: output -->
+```text
+running in production
+```
+
 ### Block scope
 
 A name first declared inside an `if`, `while` or `for` body is not visible after
@@ -211,9 +227,9 @@ print(x)
 10
 ```
 
-**Within one function**, re-declaring an outer name in an inner block does *not*
-create a new shadowing variable; it assigns to the outer one. After this program
-the outer `x` is `2`:
+**Within one function**, re-declaring an *outer* name inside a block is not a
+shadow limited to that block: after the block, the name `x` means the new
+binding for the rest of the function. So this program prints `2`:
 
 ```crush
 let x = 1
@@ -226,6 +242,25 @@ print(x)
 <!-- check: output -->
 ```text
 2
+```
+
+Each `let` still creates a *fresh* binding, which only shows when a closure
+captured the earlier one: it keeps seeing the old variable.
+
+```crush
+let x = 1
+let get = || x
+if true {
+    let x = 2
+}
+print(x)
+print(get())
+```
+
+<!-- check: output -->
+```text
+2
+1
 ```
 
 Choose distinct names for inner variables rather than relying on shadowing.

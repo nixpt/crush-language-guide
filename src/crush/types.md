@@ -1,5 +1,7 @@
 # Data Types
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16).
+
 Crush is dynamically typed at run time, with a **static checker** that catches
 obvious mismatches at compile time when you add type annotations. This chapter
 covers the values you can build today.
@@ -8,9 +10,9 @@ covers the values you can build today.
 
 | Type | Literal | Notes |
 |------|---------|-------|
-| Int | `42`, `-7` | 64-bit signed. Decimal literals only |
+| Int | `42`, `-7`, `0x2A`, `0b101` | 64-bit signed; overflow is a runtime error |
 | Float | `3.14` | 64-bit IEEE 754. No exponent literals (`1.5e3` is a parse error) |
-| String | `"hello"` | double quotes only; `len` counts **bytes** |
+| String | `"hello"`, `'hello'` | `len` counts **bytes** |
 | Bool | `true`, `false` | |
 | Null | `null` | absence of a value |
 
@@ -56,13 +58,18 @@ print(7 % 3)
 1
 ```
 
-Dividing by zero is a **runtime error** (`[runtime] division by zero`). It is
-raised by the VM rather than thrown as a Crush value, so `try`/`catch` does not
-intercept it.
+Dividing by zero is a **runtime error** (`[runtime] division by zero`), for
+`Float` too (there is no `inf` or `NaN`). It is raised by the VM rather than thrown
+as a Crush value, so `try`/`catch` does not intercept it.
 
-> **Alpha caveat.** Integer arithmetic that overflows `i64` in a *constant
-> expression* currently panics the compiler's optimizer instead of reporting an
-> error. Keep literals within range.
+`Int` arithmetic is checked: a result outside `i64` stops the program with
+`[runtime] arithmetic overflow`. It never wraps.
+
+<!-- check: runfail arithmetic overflow -->
+```crush
+let big = 9223372036854775807
+print(big + 1)
+```
 
 ### Strings
 
@@ -83,23 +90,32 @@ Count: 42
 Pi is 3.14
 ```
 
-`len(s)` is the byte length and `s[i]` yields a one-character string. With
-`--stdlib`, the `str.*` capabilities add `str.split`, `str.trim`,
-`str.to_upper`, `str.substring` and friends — see [Standard Library](stdlib.md).
+`len(s)` is the byte length and `s[i]` yields a one-character string (a negative
+index counts from the end). The standard library's `str.*` capabilities add
+`str.split`, `str.trim`, `str.to_upper`, `str.substring` and friends — see
+[Standard Library](stdlib.md). Strings have no methods: `s.to_upper()` is refused
+(`not available in this host: to_upper`); call `str.to_upper(s)`.
 
 ```crush
 let s = "hello"
 print(len(s))
 print(s[1])
+print(s[-1])
 print(str.to_upper(s))
+print(str.substring(s, 1, 3))
 ```
 
 <!-- check: output -->
 ```text
 5
 e
+o
 HELLO
+el
 ```
+
+The slice syntax `s[1:3]` is for arrays only; on a string it compiles but fails
+at run time (`expected array, got str`). Use `str.substring`.
 
 ## Collections
 
@@ -158,7 +174,7 @@ b
 ```
 
 `array.pop(a)` removes and returns the last element, `a.append(v)` is an alias for
-`push`, and slices work:
+`push`, and slices `a[start:end]` work (end exclusive):
 
 ```crush
 let a = [1, 2, 3, 4]
@@ -175,14 +191,20 @@ print(a[0:2])
 [1, 2]
 ```
 
-Reading past the end is a runtime error (`array index out of range`). The
-method form `a.pop()` is **not** available (`unknown capability: pop`); call
-`array.pop(a)`. Array mutation still has open gaps — see crush-ast **CRUSH-7**.
+Reading past the end is a runtime error (`array index out of range`), and so is
+`a[-1]` on an empty array; `a[-1]` on a non-empty one is the last element. The
+method form `a.pop()` is **not** available (the program is refused with `not
+available in this host: pop`); call `array.pop(a)`.
+
+> **Known bug ([crush-ast #254](https://github.com/nixpt/crush-ast/issues/254)).**
+> Negative slice bounds are silently wrong: `[1, 2, 3, 4][1:-1]` gives `[]` and
+> `[1, 2, 3, 4][-3:]` gives the whole array. Compute positive bounds
+> (`a[1:len(a) - 1]`) until it is fixed.
 
 ### Objects (maps)
 
 Key–value pairs written `{"key": value}`. Keys may be bare identifiers or
-strings. Read and write fields with **dot notation**:
+strings. Read and write fields with **dot notation** or a **string subscript**:
 
 ```crush
 let person = {"name": "Alice", "age": 30}
@@ -215,50 +237,65 @@ print(cfg.db.port)
 5433
 ```
 
-Printing an object lists its keys in an **unspecified order that can differ
-between runs**; to walk an object deterministically use `collections.keys(obj)`
-(sorted) with `--stdlib` — see [Standard Library](stdlib.md#collections--collections).
+Objects keep **insertion order**: printing, `for k in obj` and
+`collections.keys(obj)` all list keys in the order they were first set.
 
-> **Not yet implemented.** String-key subscripts (`person["name"]`) fail at run
-> time with `array index must be int, got str`, and `len(obj)` and `for k in obj`
-> are rejected (`expected array or string, got map`). Use dot access, and
-> `collections.keys(obj)` to enumerate. (crush-ast gap `GAP-MAP-SUBSCRIPT`.)
-
-<!-- check: nyi GAP-MAP-SUBSCRIPT -->
 ```crush
 let person = {"name": "Alice"}
-print(person["name"])
+person["age"] = 30
+let field = "name"
+print(person[field])
+print(person)
+for k in person {
+    print(k)
+}
 ```
+
+<!-- check: output -->
+```text
+Alice
+{name: Alice, age: 30}
+name
+age
+```
+
+Reading a key that isn't there is a runtime error (`expected present map key, got
+absent key`), not `null`. `len(obj)` is rejected (`expected array or string, got
+map`); count `collections.keys(obj)` instead.
 
 ## Structs
 
-Declare a struct with its field names (optionally with type hints) **on one line**,
-create it
-with `new Name()` — **no constructor arguments** — and assign fields
-individually:
+Declare a struct with its field names (optionally with type hints) **on one
+line**, then build one with a literal that names every field, or with
+`new Name()` and assign fields individually:
 
 ```crush
 struct Point { x: Float, y: Float }
 
+let a = Point { x: 1.0, y: 2.0 }
 let p = new Point()
 p.x = 1.5
 p.y = 2.5
+print(a)
 print(p.x + p.y)
 ```
 
 <!-- check: output -->
 ```text
+{x: 1.0, y: 2.0}
 4.0
 ```
 
-Assigning to a field the struct doesn't declare is a compile error
-(`Struct 'Point' has no field 'z'`). Field type hints are **not enforced** at
-run time today, and an unassigned field reads as `null`.
+Structs are **sealed**: writing a field the struct doesn't declare stops the
+program (`` `Point` is sealed: it has no field `z` (fields: x, y) ``), and a
+literal with a missing or unknown field is a compile error. Field type hints are
+**not enforced** at run time today, and an unassigned field reads as `null`.
+Methods, traits, value semantics and `@kind` are in
+[Structs, Methods and Kinds](structs.md).
 
-`Point { x: 1.0, y: 2.0 }` literals and `new Point(1.0, 2.0)` are rejected by the
-parser. A struct body that spans several lines is also rejected today — the parser
-doesn't skip newlines inside `struct { ... }` (see the GUIDE-3 ticket, gap
-`GAP-STRUCT-MULTILINE`):
+A struct body that spans several lines is still rejected: the parser doesn't skip
+newlines inside `struct { ... }` (gap `GAP-STRUCT-MULTILINE`, listed in crush-ast's
+CRUSH-192 ticket):
 
 <!-- check: nyi GAP-STRUCT-MULTILINE -->
 ```crush
@@ -309,7 +346,7 @@ all fail with a parse or `Unknown type` error.
 
 ## Conversion and inspection
 
-With `--stdlib`, the `conv.*` capabilities convert between types and report
+The standard library's `conv.*` capabilities convert between types and report
 them:
 
 ```crush
@@ -353,10 +390,11 @@ compile error (`Cannot compare types string and int`). `1 == 1.0` is `true`.
 
 | Feature | Status |
 |---|---|
-| `Bytes` literals (`b"..."`), `Error(...)` values | not parsed / undefined |
+| `Bytes` literals (`b"..."`) | refused: `bytes literals (b"...") are not supported yet` |
+| `Error(...)` values | undefined |
 | Optional types `T?`, `??` | not parsed |
 | Enums, type aliases, generics | not in the grammar |
-| Lambdas / `Function` values | crush-ast **CRUSH-75** (open) — see [Functions](functions.md) |
+| `Function` as a type hint | `Unknown type` (function values themselves work: [Closures](closures.md)) |
 
 ## Next Steps
 

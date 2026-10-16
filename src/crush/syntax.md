@@ -1,5 +1,8 @@
 # Syntax and Grammar
 
+> Verified against crush-ast `3ae0b4a` (2026-10-16): every runnable block on this
+> page was compiled and run with that build.
+
 This chapter covers the lexical structure and grammar that the Crush parser
 (`crush-frontend`) accepts today. Every `crush` example in this guide is run
 through the real toolchain by `scripts/check-examples.py`; where something is
@@ -89,12 +92,16 @@ let   fn      if       else    while   for     in
 return break  continue struct  new     try     catch
 throw  match  use      import  export  capability
 async  await  spawn    yield   lang    mut
-true   false  null
+and    or     not      true    false   null
 ```
 
-`mut` and `capability` are reserved, but `let mut x = ...` is **not** accepted
-(see [Variables](variables.md)), and `capability` has no usable statement form
-yet. `and`, `or` and `not` are **not** keywords — logic uses `&&`, `||` and `!`.
+`and`, `or` and `not` are keyword spellings of `&&`, `||` and `!`. `mut` and
+`capability` are reserved, but `let mut x = ...` is **not** accepted (see
+[Variables](variables.md)), and `capability` has no usable statement form yet.
+
+`impl` and `trait` are **contextual** keywords: they start a declaration only at
+the top level of a file (see [Structs, Methods and Kinds](structs.md)), so a
+variable may still be called `impl`.
 
 The lexer also recognises a handful of localised keyword aliases —
 `karya`/`manau`/`yadi`/`natra`/`farkau`/`jaba_samma`/`sahi`/`galat` (Nepali) plus a
@@ -118,15 +125,16 @@ positive
 
 | Kind | Examples | Notes |
 |---|---|---|
-| Integer | `42`, `-7` | decimal only — `0x2A`, `0b101` and `1_000` are not lexed |
+| Integer | `42`, `-7`, `0x2A`, `0b101` | hex and binary prefixes lex; `0o17` and `1_000` do not |
 | Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |
-| String | `"hello"` | **double quotes only**; escapes `\n \t \" \\` |
+| String | `"hello"`, `'hello'` | single or double quotes; escapes `\n \t \" \\` |
 | Boolean | `true`, `false` | |
 | Null | `null` | |
 | Array | `[1, 2, 3]` | see [Types](types.md) |
 | Object | `{"a": 1, b: 2}` | see [Types](types.md) |
 
-Single-quoted and triple-quoted strings are parse errors; a string literal may
+Triple-quoted strings are parse errors, and bytes literals (`b"..."`) are refused
+with `bytes literals (b"...") are not supported yet`. A string literal may
 contain a raw newline.
 
 ```crush
@@ -136,6 +144,8 @@ let s = "tab:\there"
 print(n)
 print(pi)
 print(s)
+print(0x2A + 0b101)
+print('single "quotes" work too')
 ```
 
 <!-- check: output -->
@@ -143,6 +153,8 @@ print(s)
 42
 3.14
 tab:	here
+47
+single "quotes" work too
 ```
 
 ## Statements and semicolons
@@ -195,9 +207,10 @@ Blocks are delimited by `{ }` and are used by functions, `if`, loops and
 `try`/`catch`. A bare block as a statement is not supported; use `if true { ... }`
 if you need one.
 
-Crush has **function-level scope**, not block scope: a `let` inside an `if` or
-loop body that reuses an existing name rebinds the same variable (see
-[Variables](variables.md)).
+Names resolve at **function level**, not per block: after a `let` inside an `if`
+or loop body, the name refers to that binding for the rest of the function (see
+[Variables](variables.md)). Each execution of a `let` does create a fresh
+binding, which is what a [closure](closures.md) captures.
 
 ## Variables and functions
 
@@ -225,8 +238,8 @@ compile time — see [Types](types.md).
 ## Operators
 
 Full tables are in [Operators](operators.md). In short: `+ - * / %`,
-`== != < > <= >=`, `&& || !`, unary `-`, and the pipeline `|>`. There is no `**`,
-`//`, `+=`/`-=`, `and`/`or`/`not`, or ternary `? :`.
+`== != < > <= >=`, `&& || !` (also spelled `and`, `or`, `not`), unary `-`, and the
+pipeline `|>`. There is no `**`, `//`, `+=`/`-=`, or ternary `? :`.
 
 ### Precedence (high → low)
 
@@ -274,6 +287,9 @@ print(i)
 for n in 0..3 {
     print(n)
 }
+for n in 1..=2 {
+    print(n * 10)
+}
 ```
 
 <!-- check: output -->
@@ -283,6 +299,8 @@ big
 0
 1
 2
+10
+20
 ```
 
 `break` and `continue` work in `while` and `for`. See [Control Flow](control_flow.md).
@@ -318,6 +336,9 @@ print("Hello from Python")
 }
 ```
 
+A block that sends values back to Crush names them after `->`:
+`@python -> total { ... }`.
+
 <!-- check: output -->
 ```text
 Hello from Python
@@ -328,11 +349,14 @@ variables cross the boundary, and the (important) security caveats.
 
 ## Imports and exports
 
-`import a.b` and `use @lang ...` **parse**, but importing does not load anything
-yet: `import` is lowered to a `module.load` capability that nothing registers, so
-a program containing one fails at run time with `unknown capability:
-module.load` (crush-ast **CRUSH-110**). Every program is currently a single
-file. There is no `std.*` module tree.
+`import a.b` **parses**, but importing does not load anything yet: `import` is
+lowered to a `module.load` capability that nothing registers, so a program
+containing one is refused before it runs (`not available in this host:
+module.load`, crush-ast **CRUSH-110**). Every program is currently a single file.
+There is no `std.*` module tree.
+
+`use @lang python "math"` is different and does work: it writes `import math` into
+every later `@python` block (see [Polyglot](polyglot.md#imports-for-blocks-use-lang)).
 
 <!-- check: nyi CRUSH-110 -->
 ```crush
@@ -358,11 +382,15 @@ print(result)
 
 ## Annotations
 
-`@name` also introduces compiler/AI annotations such as `@invariant` and
-`@decision`, attached to the next declaration. These are metadata for tooling,
-not runtime behaviour; see the note at the end of the
-[Capability System](capabilities.md) chapter and the [AI-Native CAST](../cast/ai-native.md)
-chapter.
+`@name` also introduces annotations:
+
+- `@capabilities [fs.read, time.now_ms]` declares what the program may use, and
+  the compiler enforces it ([Capability System](capabilities.md#declaring-what-a-program-uses-capabilities)).
+- `@kind(...)` before a `struct` chooses its object semantics
+  ([Structs, Methods and Kinds](structs.md#kind-choosing-object-semantics)).
+- `@module`, `@decision`, `@invariant`, `@wip`, `@temporary`, `@errors` are
+  metadata for tools and agents, attached to the next declaration; they don't
+  change what the program does ([Annotations](annotations.md)).
 
 ## Style
 
@@ -376,34 +404,48 @@ This is the grammar the parser implements, simplified (from
 `crates/crush-frontend/src/parser/mod.rs`):
 
 ```ebnf
-program     = statement* ;
+program     = ( statement | impl_block | trait_def | annotation )* ;
 
 statement   = let_stmt | fn_def | struct_def | if_stmt | while_stmt
             | for_stmt | return_stmt | break | continue
-            | try_stmt | throw_stmt | export_stmt | import_stmt
-            | lang_block | expr_stmt ;
+            | try_stmt | throw_stmt | export_stmt | import_stmt | use_stmt
+            | lang_block | match_expr | expr_stmt ;
 
 let_stmt    = "let" IDENT ( ":" type )? "=" expression ";"? ;
 fn_def      = "async"? "fn" IDENT "(" params? ")" ( "->" type )? block ;
-struct_def  = "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;
+struct_def  = kind_annot? "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;  (* one line *)
+kind_annot  = "@kind" "(" IDENT ":" value ( "," IDENT ":" value )* ")" ;
+impl_block  = "impl" ( IDENT "for" )? IDENT "{" fn_def* "}" ;
+trait_def   = "trait" IDENT "{" ( "fn" IDENT "(" params ")" ( ";" | block ) )* "}" ;
 if_stmt     = "if" expression block ( "else" ( if_stmt | block ) )? ;
 while_stmt  = "while" expression block ;
-for_stmt    = "for" IDENT "in" expression block ;
+for_stmt    = "for" IDENT "in" expression block ;           (* a..b, a..=b, arrays, strings, maps *)
 try_stmt    = "try" block "catch" IDENT block ;
 throw_stmt  = "throw" expression ;
 export_stmt = "export" IDENT ;
-lang_block  = "@" IDENT ( "[" deps "]" )? "{" raw source "}" ;
+use_stmt    = "use" "@lang" IDENT STRING ( "as" IDENT )? ;
+lang_block  = "@" IDENT ( "[" deps "]" )? ( "->" ( IDENT | "(" IDENT ( "," IDENT )* ")" ) )?
+              "{" raw source "}" ;
 block       = "{" statement* "}" ;
 
 expression  = literal | IDENT | expression binop expression
-            | unop expression | call | field | index
-            | "new" IDENT "(" ")" | "match" expression "{" arms "}" ;
-call        = expression "(" args? ")" ;
+            | unop expression | call | field | index | slice
+            | lambda | struct_lit | "new" IDENT "(" ")" | IDENT "::" IDENT
+            | match_expr | "spawn" call | "await" expression ;
+lambda      = "|" params? "|" ( expression | block ) ;
+struct_lit  = IDENT "{" ( IDENT ":" expression ","? )* "}" ;
+match_expr  = "match" expression "{" ( pattern ( "=>" | "->" ) ( expression | block ) ","? )* "}" ;
+pattern     = literal | IDENT | "_" | IDENT "{" ( IDENT ":" pattern ","? )* "}" ;
+call        = IDENT "(" args? ")" | expression "." IDENT "(" args? ")" ;
 ```
+
+A call's callee must be a name (or `value.method`): `fs[0](1)` and `f()(x)` are
+parse errors today (crush-ast CRUSH-zorro-24).
 
 ## Next Steps
 
 - **[Data Types](types.md)**: the type system and collections
+- **[Closures](closures.md)** and **[Structs, Methods and Kinds](structs.md)**
 - **[Variables](variables.md)**: declaration and scope
 - **[Control Flow](control_flow.md)**: loops, `match`, errors
 - **[Functions](functions.md)**: parameters, returns, recursion

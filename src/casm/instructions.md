@@ -3,8 +3,8 @@
 Every instruction has two spellings: the **JSON name** used in the CASM IR
 (`"op": "push_int"`) and the **CVM1 mnemonic** used in the text assembly and the
 binary (`PUSH`). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against the crush-ast `v0.3.9` VM; the examples at the end of
-each section are run by this guide's checker.
+Behaviour was checked against crush-ast `3ae0b4a` (2026-10-16); the examples at the
+end of each section are run by this guide's checker.
 
 ## Reading stack effects
 
@@ -32,7 +32,7 @@ Operands in the text assembly follow the mnemonic: `PUSH 42`, `LOAD 3`,
 | `pop` | `POP` | — | `a →` | |
 | `dup` | `DUP` | — | `a → a a` | |
 | `swap` | `SWAP` | — | `a b → b a` | |
-| `rot` | `ROT` | — | `a b c → b a c` | as observed on `v0.3.9`; **not** Forth's `ROT` |
+| `rot` | `ROT` | — | `a b c → b a c` | as observed on `3ae0b4a`; **not** Forth's `ROT` |
 | `pick` | `PICK n` | `n` | `… → … v` | copy the item `n` below the top (`PICK 2` copies the third) |
 | `roll` | `ROLL n` | `n` | `… → … v` | *move* the item `n` below the top to the top |
 | — | `NOP` | — | — | text/binary only |
@@ -288,7 +288,7 @@ a-b
 13
 ```
 
-(The Crush-level equivalents of these live in the `--stdlib` capabilities —
+(The Crush-level equivalents of these live in the standard-library capabilities —
 `str.*`, `math.*`, `conv.*` — and compile to `CAP_CALL`s, not to these opcodes. See
 the [standard library](../crush/stdlib.md).)
 
@@ -309,13 +309,74 @@ capability: NAME`; if it is registered but missing from the manifest, with
 `capability not declared in manifest: NAME`. See the
 [capability chapter](../crush/capabilities.md).
 
+## Records and Kinds (COSM)
+
+Structs compile to **Records** of a **Kind** (crush-ast CRUSH-zorro-43). The
+program carries a kind table, written in text assembly as one `.cosm` line of
+JSON (`crushc --emit casm` prints a readable summary above it as `;` comments),
+and functions that need their arity for bound methods are written `.func name N`.
+For this source:
+
+```crush
+struct P { x: Int }
+impl P { fn get(self) { return self.x } }
+let p = P { x: 7 }
+print(p.get())
+print(p.x)
+```
+
+<!-- check: output -->
+```text
+7
+7
+```
+
+`crushc --emit casm` writes:
+
+<!-- check: output -->
+```casm
+; kind table (COSM): 1 Kind, 0 interfaces
+;   kind P (crush): fields [x], members [get]
+.cosm {"kinds":[{"name":"P","home_lang":"crush","span":{"line":1,"col":1},"storage":{"sealed":{"fields":[{"name":"x","type":"Int"}]}},"semantics":"reference","resolution":"none","receiver":"explicit_ref","construct":"literal","members":[{"name":"get","span":{"line":2,"col":10},"kind":"method","fn":"P::get"}],"equality":"structural"}],"interfaces":[]}
+.func main 0
+    NEW_RECORD "P"
+    PUSH 7
+    SET_FIELD "x"
+    STORE 0
+    LOAD 0
+    CALL_MEMBER "get" 0
+    CAP_CALL "io.print" 1
+    LOAD 0
+    GET_FIELD "x"
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
+.func P::get 1
+    STORE 0
+    LOAD 0
+    GET_FIELD "x"
+    RET
+```
+
+```text
+7
+7
+```
+
+The member opcodes are `GET_MEMBER`, `SET_MEMBER`, `HAS_MEMBER`, `DEL_MEMBER`,
+`CALL_MEMBER name argc`, `CONSTRUCT kind argc`, `GET_SLOT`, `SET_SLOT`, `IS_KIND`
+(what a struct pattern tests), `COPY` (value semantics) and `NEW_RECORD`.
+`GET_FIELD`/`SET_FIELD` on a Record are member accesses. Only the CVM1 VMs run
+them; FastVM, the JIT and the AOT backends refuse a program that needs them (see
+[Engines, AOT and Walkers](../crush/engines.md)).
+
 ## Polyglot, concurrency, AI and DOM
 
 | JSON `op` | CVM1 | Notes |
 |---|---|---|
 | `exec_lang` | `EXEC_LANG "json"` | run a `@python { }` / `@javascript { }` / `@bash { }` block; the operand is a JSON string with `lang`, `code`, `var_count` and the marshalling lists. Needs the matching `polyglot.<lang>` capability — see [Polyglot](../crush/polyglot.md) |
-| `spawn` `yield` `await` | `SPAWN n` `YIELD` `AWAIT` | dispatched to the `concurrency_native.spawn/yield/await` gates; **stubs** — nothing is scheduled |
-| `ai_query` … (13 names) | `AI_QUERY` … (10 opcodes) | **stubs**, see [AI-Native CAST](../cast/ai-native.md#what-actually-runs) |
+| `spawn` `yield` `await` | `SPAWN n` `YIELD` `AWAIT` | real green tasks on the CVM1 VMs, see [Concurrency](../crush/concurrency.md) |
+| `ai_query` … (10 names) | `AI_QUERY` … (10 opcodes) | gated through `ai_native.<kind>` capabilities; `ai_capability_discovery`, `ai_adaptation_request`, `ai_semantic_switch` are refused. See [AI-Native CAST](../cast/ai-native.md#what-actually-runs) |
 | `dom_query` `dom_mutate` `dom_event_listener` | `DOM_QUERY` … | **stubs**: lowered to `NOP`; the `dom_native.*` gates exist only for hand-written CVM1 |
 
 ## What lowers to CVM1
@@ -325,22 +386,22 @@ program. It handles exactly these IR operations:
 
 | | |
 |---|---|
-| **Lowered faithfully** | `push_int` `push_float` `push_str` `push_bool` `push_null` `pop` `dup` `swap` `load` `store` `add` `sub` `mul` `div` `mod` `neg` `eq` `ne` `lt` `gt` `le` `ge` `and` `or` `not` `call` `cap_call` `ret` `halt` `jmp` `jmp_if` `jmp_if_not` `enter_try` `exit_try` `throw` `array_push` `array_pop` `len` `index` `arr_get` `arr_set` `make_range` `str_contains` `str_split` `str_replace` `str_join` `new_obj` `get_field` `set_field` `exec_lang` `spawn` `yield` `await` |
-| **Lowered with a loss** | `new_array` (size ignored — always empty), `new_struct` (→ `NEW_OBJ`, name dropped), `export_var` (→ `NOP`), `dom_*` and all `ai_*` including `ai_capability_discovery`, `ai_adaptation_request`, `ai_semantic_switch` (→ `NOP`) |
-| **Rejected** | everything else the `casm` crate defines — `arr_push` `arr_pop` `arr_len` `bit_*` `shl` `shr` `rot` `pick` `roll` `type_of` `cast` `math_*` `str_starts_with` `str_ends_with` `str_to_*` `str_trim` `new_tuple` `new_list` `new_vector` `new_set` `*_push` `import_var` `call_host` `call_interface` `break` `continue` — fail with `Unsupported CVM1 opcode: NAME at FUNCTION:INDEX` |
+| **Lowered** | every IR operation except the rows below: the stack, arithmetic, comparison, logic, bit (`bit_*`, `shl`, `shr`), `math_*`, `type_of`, `cast`, string, array/collection, object and COSM member ops, calls, jumps, `try`/`throw`, `exec_lang`, `spawn`/`yield`/`await`, and ten `ai_*` ops |
+| **Lowered with a loss** | `new_array` (size ignored: always empty), `new_struct` (→ `NEW_OBJ`, name dropped), `export_var` and the `dom_*` ops (→ `NOP`) |
+| **Rejected** | `break`, `continue` (no loop target in the instruction), `import_var`, `call_host`, `call_interface`, and the declined `ai_capability_discovery`, `ai_adaptation_request`, `ai_semantic_switch`: they fail with `Unsupported CVM1 opcode: NAME at FUNCTION:INDEX` |
 
-So for hand-written programs the **text assembly is the more capable form**: it
-reaches `ROT`, `PICK`, `CAST`, `MATH_*`, the bit operations, tuples and sets that
-the IR route refuses. For programs *compiled from Crush*, the compiler stays inside
-the "lowered faithfully" set.
+(crush-ast keeps this classification exhaustive in its
+`crush-lang-sdk/tests/casm_lowering_completeness.rs`; the spot checks below were
+run against `3ae0b4a`.) A bit shift lowers and runs:
 
 <!-- check: casm-json -->
-<!-- check: runfail Unsupported CVM1 opcode: shl -->
+<!-- check: output -->
 ```json
 {
   "version": "1.0",
   "functions": { "main": { "body": [
     {"op": "push_int", "value": 1},
+    {"op": "push_int", "value": 3},
     {"op": "shl"},
     {"op": "cap_call", "name": "io.print", "argc": 1},
     {"op": "halt"}
@@ -349,4 +410,22 @@ the "lowered faithfully" set.
 }
 ```
 
-(The block above is expected to fail: `shl` is in the IR but not lowered.)
+```text
+8
+```
+
+while `break` is refused:
+
+<!-- check: casm-json -->
+<!-- check: runfail Unsupported CVM1 opcode: break -->
+```json
+{
+  "version": "1.0",
+  "functions": { "main": { "body": [
+    {"op": "push_int", "value": 1},
+    {"op": "break"},
+    {"op": "halt"}
+  ] } },
+  "manifest": { "permissions": ["io.print"] }
+}
+```
