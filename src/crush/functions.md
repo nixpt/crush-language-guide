@@ -1,6 +1,6 @@
 # Functions
 
-> Verified against crush-ast `3ae0b4a` (2026-10-16).
+> Verified against crush-ast `cb655f3` (2026-10-16).
 
 This chapter covers defining and calling functions. Named functions are
 top-level declarations, and they are also **values**: you can store one in a

@@ -1,6 +1,6 @@
 # Crush Overview
 
-> Verified against crush-ast `3ae0b4a` (2026-10-16).
+> Verified against crush-ast `cb655f3` (2026-10-16).
 
 **Crush** is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,

@@ -2,7 +2,7 @@
 
 Crush's operators are deliberately few.
 
-> Verified against crush-ast `3ae0b4a` (2026-10-16).
+> Verified against crush-ast `cb655f3` (2026-10-16).
 
 ## Arithmetic
 

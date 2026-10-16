@@ -15,7 +15,7 @@ checks that keep the guide's code honest (nothing is labelled by hand):
 
 The Run button uses **crush-web**, the WebAssembly build of the Crush VM that also
 powers the [playground](https://crushlang.org/playground/). It is the same compiler
-and VM as `crush-run` (the book's copy is built from crush-ast `3ae0b4a`, the commit
+and VM as `crush-run` (the book's copy is built from crush-ast `cb655f3`, the commit
 this guide is verified against), with a different set of grants:
 
 - **Granted:** what `crush run` grants with no flags: `print` / `io.print`, the

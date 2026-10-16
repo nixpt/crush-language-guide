@@ -40,7 +40,7 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast 3ae0b4a, src/play/pkg) handles itself: crush_vm::run's
+# What crush-web (crush-ast cb655f3, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
 # collections.*, json.*, ...: on by default since CRUSH-113), and sys.args/sys.exit.
 # `io.read` is there but always returns "" (no stdin in a browser), so it is

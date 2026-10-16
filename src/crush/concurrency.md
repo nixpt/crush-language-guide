@@ -1,6 +1,6 @@
 # Concurrency
 
-> Verified against crush-ast `3ae0b4a` (2026-10-16). New since the 0.3 line
+> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line
 > (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).
 
 Crush has two kinds of concurrency:
@@ -104,9 +104,10 @@ fn main() {
 main ends
 ```
 
-> **Known bug ([crush-ast #251](https://github.com/nixpt/crush-ast/issues/251), open).**
-> `await` on a value that is not a task handle silently gives `null`:
-> `let v = await 5` sets `v` to `null`.
+`await` on a value that is not a task handle gives the value back, as in JavaScript:
+`let v = await 5` sets `v` to `5`. (crush-ast builds before
+[#265](https://github.com/nixpt/crush-ast/pull/265) gave `null`; see
+[#251](https://github.com/nixpt/crush-ast/issues/251).)
 
 ## `parallel_map`
 

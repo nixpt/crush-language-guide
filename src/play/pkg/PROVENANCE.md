@@ -5,7 +5,7 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `3ae0b4a`
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `cb655f3`
   (2026-10-16), the same commit the guide's examples are verified against
 - toolchain: rustc 1.96.0, `cargo build --release --target wasm32-unknown-unknown`
   in `crates/crush-web` (with `buckets` checked out beside crush-ast), then
@@ -13,7 +13,7 @@ crate:
 - no `wasm-opt` pass (that is why it is larger than the earlier 4e9c388 build,
   which also lacked the standard library)
 - sha256:
-  - `crush_web_bg.wasm` `a969efd1705631786d77c732cad9d1a8fcb2c39ee2aaa3d8b755b054dc82b44e`
+  - `crush_web_bg.wasm` `d31fa7b09840fa943604468d736f0c4b77d9c0d5b692ac331ea5b45c83a0042a`
   - `crush_web.js` `e6eaba3a29c62ac8a06584f3a93b666ce75a4bb99b001ad9790c5707ecce4643`
 
 The book serves its own copy because module workers must be same-origin.

@@ -6,7 +6,7 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
-> Verified against crush-ast `3ae0b4a` (the commit in the repository's
+> Verified against crush-ast `cb655f3` (the commit in the repository's
 > `CRUSH_AST_COMMIT` file). 123 programs.
 
 | Area | Programs | Covers |
@@ -53,7 +53,6 @@ changes and the corpus fails, which is the signal to update the guide.
 | `polyglot/bash`: a `@bash` block sees no Crush variables | [#255](https://github.com/nixpt/crush-ast/issues/255) |
 | `structs/method-on-loop-variable`: `s.area()` on a `for` variable is refused | [#256](https://github.com/nixpt/crush-ast/issues/256) |
 | `closures/builtin-not-a-value`: `let g = len` fails at run time | [#257](https://github.com/nixpt/crush-ast/issues/257) |
-| `concurrency/await-non-task`: `await 5` is `null` | [#251](https://github.com/nixpt/crush-ast/issues/251) |
 | `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
 
 ## Running it
