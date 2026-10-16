@@ -18,6 +18,8 @@ Serves book/ on a local port and drives it with Playwright:
     quota covers the whole run;
   * a granted @javascript block matches its page output, has no page DOM, storage or
     network, is refused when the browser can't reproduce node, and times out;
+  * an ungranted capability is refused before anything prints; a --time block is
+    granted the clock and nothing else;
   * a documented refusal shows the refusal verdict; host-only labels name the reason;
   * with JavaScript disabled the page has plain code blocks and no controls;
   * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders;
@@ -175,9 +177,12 @@ def main():
             refusal_src = block_src("crush/capabilities.md", 'fs.read("data.txt")')
             refusal = page.locator(f'div.crush-block[data-src="{refusal_src}"]')
             run_block(page, refusal)
-            check("Refused: capability fs.read was not granted" in refusal.locator(".crush-verdict").inner_text(), "fs.read refusal shows the refusal verdict")
+            outs = [o.inner_text().strip() for o in refusal.locator(".crush-out pre.crush-output").all()]
+            check("Refused before running" in refusal.locator(".crush-verdict").inner_text() and len(outs) == 1
+                  and outs[0].endswith("--fs: fs.read"),
+                  f"fs.read is refused before anything prints, as crush-run does ({outs!r})")
             host = page.locator(f'div.crush-block[data-src="{block_src("crush/capabilities.md", "CRUSH_GUIDE_DEMO_UNSET")}"]')
-            check("env.get" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
+            check("process.exec" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
                   "host-only block names its capabilities and has no Run")
             page.goto(base + "crush/polyglot.html")
             check("@python" in page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "print(\"two\")")}"] .crush-why').inner_text(),
@@ -260,7 +265,19 @@ def main():
             js.locator("button.crush-reset").click()
             check(not errors, f"no page errors ({errors[:2]})")
 
-            # 7. no JavaScript: plain code blocks
+            # 7. the clock and the environment, granted like --time / --env
+            page.goto(base + "crush/capabilities.html")
+            clock = page.locator(f'div.crush-block[data-src="{block_src("crush/capabilities.md", "let t = time.now_ms()")}"]')
+            check("grants the clock" in clock.locator(".crush-badge-grant").inner_text(), "a --time block shows its grant")
+            check("matches the guide's output" in run_block(page, clock), "the --time example matches the guide's output")
+            status, outs = edited_run(clock, 'print(env.get("HOME"))\nprint(env.all())\nprint(str.len(time.now_iso()) > 20)\n')
+            check("failed" in status and outs[-1].endswith("--env: env.all, env.get"),
+                  f"a block granted only the clock is refused the environment before running ({outs!r})")
+            status, outs = edited_run(clock, 'let t = time.now_ms()\ntime.sleep(30)\nprint(time.elapsed(t) >= 30)\nprint(time.now() > 1700000000)\n')
+            check(status.startswith("ok") and outs[0] == "true\ntrue", f"time.sleep and the clock work in the browser ({status!r}, {outs!r})")
+            clock.locator("button.crush-reset").click()
+
+            # 8. no JavaScript: plain code blocks
             ctx = browser.new_context(java_script_enabled=False)
             nojs = ctx.new_page()
             nojs.goto(base + "crush/types.html")

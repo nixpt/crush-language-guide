@@ -21,11 +21,12 @@ book/notebooks/ (notebook_path(); the explainer page is notebooks.md).
 
     data-crush=run    runs in the browser; data-expect is the checker-verified output,
                       data-stdin the input it was verified with (`check: stdin`)
-    data-grants       capabilities the page grants the block's runs (polyglot.javascript)
+    data-grants       capabilities the page grants the block's runs (polyglot.javascript,
+                      time, env), from the block's `check: flags`
     data-crush=fail   meant to fail (compile error, documented refusal, not yet
                       implemented); Run demonstrates the failure
     data-crush=host   needs something the browser does not grant (@python/@bash, fs, net,
-                      env, time, process); labelled, no Run
+                      process); labelled, no Run
     data-crush=none   not a standalone program (fragment, needs special setup)
 
 Usage:
@@ -66,6 +67,13 @@ POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
 # the host): the page grants the matching capability for that run only, and
 # crush-web hands the block to src/play/guest-js.js inside the sandboxed worker.
 BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript"}
+# Host flags whose capabilities the browser can grant a run too: the clock (from
+# JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
+BROWSER_FLAGS = {"--time": "time", "--env": "env"}
+# Calls that report facts about the machine running the program. In a browser they
+# describe the browser (wasm32, an empty environment), so a block that prints them
+# cannot match the output the guide shows: it stays labelled as needing the host.
+MACHINE_FACTS = {"env.os", "env.arch", "env.home_dir", "env.all"}
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",
             "--env": "the environment", "--time": "the clock", "--process": "processes"}
 
@@ -81,13 +89,17 @@ def host_needs(d, code):
     for ns, fn in CALL.findall(code):
         if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
             calls.setdefault(ns, []).append(f"{ns}.{fn}")
-    host_ns = [ns for ns in calls if ns in HOST_CAPS]
+    browser_ns = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
+    host_ns = [ns for ns in calls if ns in HOST_CAPS and ns not in browser_ns]
     granted = {f for f in flags if f in FLAG_WHY} | {"--fs" for f in flags if f.startswith("fs.")}
     if host_ns:
         uniq = sorted({c for ns in host_ns for c in calls[ns]})
         needs.append("uses " + ", ".join(f"`{c}`" for c in uniq[:4]) + (" …" if len(uniq) > 4 else ""))
-    elif granted - {"--polyglot"} or ("--polyglot" in flags and not langs):
-        needs.append("needs " + ", ".join(sorted(FLAG_WHY[f] for f in granted)))
+    elif granted - {"--polyglot"} - set(BROWSER_FLAGS) or ("--polyglot" in flags and not langs):
+        needs.append("needs " + ", ".join(sorted(FLAG_WHY[f] for f in granted - set(BROWSER_FLAGS))))
+    facts = sorted({c for cs in calls.values() for c in cs if c in MACHINE_FACTS})
+    if facts and not host_ns:
+        needs.append("reports the machine it runs on (" + ", ".join(f"`{c}`" for c in facts) + ")")
     lib = sorted({c for ns in calls if ns in STDLIB for c in calls[ns]})
     if lib:
         needs.append("uses the standard library (" + ", ".join(f"`{c}`" for c in lib[:3]) + (" …" if len(lib) > 3 else "") + ")")
@@ -96,10 +108,12 @@ def host_needs(d, code):
 
 def grants(d, code):
     """The capabilities the page grants this block's runs: what its host flags grant
-    that the browser can provide (today, @javascript under --polyglot)."""
-    if "--polyglot" not in d.get("flags", "").split():
-        return []
-    return sorted({BROWSER_LANGS[l] for l in POLYGLOT.findall(code) if l in BROWSER_LANGS})
+    that the browser can provide (@javascript under --polyglot, --time, --env)."""
+    flags = d.get("flags", "").split()
+    out = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
+    if "--polyglot" in flags:
+        out |= {BROWSER_LANGS[l] for l in POLYGLOT.findall(code) if l in BROWSER_LANGS}
+    return sorted(out)
 
 
 def classify(block):

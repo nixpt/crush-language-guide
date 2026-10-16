@@ -150,6 +150,13 @@ onmessage = (e) => {
 
     // ── explaining failures (after crush-website's playground classify()) ───────
     function classify(error) {
+        let pre = error.match(/needs capabilities this run does not grant; nothing was run:\n([\s\S]*)/);
+        if (pre) {
+            return { kind: 'refused', title: 'Refused before running: a capability was not granted',
+                body: 'Like crush-run, the runtime works out every capability the program can reach and refuses the ' +
+                    'whole run, before anything prints, if one is not granted. Each line below names the crush-run ' +
+                    'flag that grants it; this page grants an example only what its "grants" label says.' };
+        }
         let m = error.match(/@(\w+) requires the 'polyglot\.\w+' capability/);
         if (m) {
             return { kind: 'refused', title: `Refused: the @${m[1]} block was not granted`,
@@ -210,6 +217,12 @@ onmessage = (e) => {
     }
 
     const LABELS = { fail: 'expected to fail', host: 'needs the host', none: 'not runnable' };
+    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', time: 'the clock', env: 'the environment' };
+    const GRANT_WHY = {
+        'polyglot.javascript': '@javascript blocks (--polyglot), run in an isolated worker with no network, storage or access to this page',
+        time: 'the clock (--time), read from your browser',
+        env: 'the environment (--env), which in a browser is empty',
+    };
 
     // ── one block ─────────────────────────────────────────────────────────────
     function setup(block) {
@@ -239,10 +252,9 @@ onmessage = (e) => {
         reset.hidden = true;
         bar.prepend(run, edit, reset, play);
         if (grants.length) {
-            const langs = grants.map((g) => '@' + g.replace(/^polyglot\./, '')).join(', ');
-            const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + langs);
-            chip.title = `Runs of this example are granted ${grants.join(', ')} (natively: --polyglot). ` +
-                'The block runs in an isolated worker: no network, no storage, no access to this page.';
+            const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + grants.map((g) => GRANT_NAMES[g] || g).join(', '));
+            chip.title = 'Runs of this example are granted ' + grants.map((g) => GRANT_WHY[g] || g).join('; ') +
+                ', as the guide runs it with crush-run. Nothing else is granted.';
             play.after(chip);
         }
 
@@ -319,7 +331,7 @@ onmessage = (e) => {
             const eof = button('End input', 'crush-eof', 'End of input: io.read returns "" (Ctrl+D)');
             form.append(el('span', 'crush-prompt', '›'), field, send, eof);
             const foot = el('div', 'crush-status', 'waiting for input · Enter sends a line · End input (Ctrl+D) closes it');
-            out.replaceChildren(term, form, foot);
+            out.replaceChildren(...(term.textContent ? [term] : []), form, foot);
             field.focus({ preventScroll: true });
             return new Promise((resolve) => {
                 pendingInput = (line) => {
@@ -420,6 +432,7 @@ onmessage = (e) => {
     function init() {
         document.querySelectorAll('div.crush-block[data-crush]').forEach(setup);
     }
+
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 })();

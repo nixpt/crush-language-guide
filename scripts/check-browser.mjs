@@ -31,7 +31,7 @@ set_lang_executor((lang, code, env) => {
 });
 
 // What the page's Run does (interactive/crush-run.js): a Session with the block's
-// grants (data-grants: polyglot.javascript under --polyglot); each io.read gets
+// grants (data-grants: polyglot.javascript, time, env); each io.read gets
 // the next line of the block's `check: stdin` text (what a reader following the
 // guide types), then end of input. A non-zero sys.exit status is a failure.
 function run(code, stdin, grants) {
