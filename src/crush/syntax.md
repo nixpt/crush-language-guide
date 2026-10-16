@@ -183,6 +183,19 @@ print(a + b)
 3
 ```
 
+An expression cannot continue onto the next line, **even inside `()`, `[]` or
+`{}`**: the newline ends it, so a multi-line array, map or argument list is a parse
+error (`unexpected token in expression: newline`). Keep such expressions on one
+line, or build them with several statements. Blocks (`fn`/`if`/`while` bodies,
+lambda bodies, `match` arms) do span lines.
+
+<!-- check: error -->
+```crush
+let a = [1,
+  2]
+print(a)
+```
+
 ### Return values
 
 A function returns a value only through an explicit `return`. A bare final

@@ -7,11 +7,11 @@ the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
 > Verified against crush-ast `3ae0b4a` (the commit in the repository's
-> `CRUSH_AST_COMMIT` file). 121 programs.
+> `CRUSH_AST_COMMIT` file). 122 programs.
 
 | Area | Programs | Covers |
 |---|---:|---|
-| `basics/` | 10 | literals, `print` vs `io.print`, semicolons, comments, return values, scoping, annotations, Nepali keywords |
+| `basics/` | 11 | literals, `print` vs `io.print`, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords |
 | `operators/` | 10 | arithmetic, comparison, `and`/`or`/`not`, short-circuit, string `+`, `\|>`, overflow, division by zero |
 | `strings/` | 6 | indexing, `str.*`, `conv.chr`/`ord`, escapes; string methods and slices that don't exist |
 | `collections/` | 11 | arrays, `array.pop`, maps (insertion order, subscripts, iteration), `collections.*`, `json.*` |
