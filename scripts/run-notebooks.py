@@ -25,7 +25,7 @@ per-notebook table as Markdown (for a PR body).
 Install the kernel (https://github.com/nixpt/crush-notebook):
     cargo install --locked crush-notebook-kernel@0.1.1
 """
-import argparse, json, shutil, subprocess, sys, tempfile
+import argparse, json, select, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,11 +37,19 @@ class Kernel:
         self.n = 0
         self.call("initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "guide-run-notebooks", "version": "0"}})
 
+    # A kernel that stops answering (e.g. a cell blocked on io.read, which would read
+    # these very commands) fails the run instead of hanging it.
+    TIMEOUT_S = 300
+
     def call(self, method, params):
         self.n += 1
         self.p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": self.n, "method": method, "params": params}) + "\n")
         self.p.stdin.flush()
+        deadline = time.monotonic() + self.TIMEOUT_S
         while True:
+            if not select.select([self.p.stdout], [], [], max(0.0, deadline - time.monotonic()))[0]:
+                self.p.kill()
+                raise RuntimeError(f"kernel did not answer {method} within {self.TIMEOUT_S} s")
             line = self.p.stdout.readline()
             if not line:
                 raise RuntimeError(f"kernel exited during {method}")

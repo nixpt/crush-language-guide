@@ -137,7 +137,10 @@ def cells_for(text, rel):
             i += 1
             continue
         b = blocks.get(i)
-        if b and b["kind"] != "none":
+        # A block that reads standard input stays plain code in the markdown: the
+        # notebook kernel takes its own commands on stdin, so io.read would wait on
+        # them forever. (The page runs it, asking the reader for each line.)
+        if b and b["kind"] != "none" and not reads_stdin(b):
             flush()
             n += 1
             guide = {"src": b["src"], "browser": b["kind"]}
@@ -163,6 +166,11 @@ def cells_for(text, rel):
         i += 1
     flush()
     return cells
+
+
+def reads_stdin(b):
+    """Whether a block reads standard input (`check: stdin`, or an io.read call)."""
+    return b.get("stdin") is not None or re.search(r"(?<![\w.])io\.read\s*\(", b["code"]) is not None
 
 
 def cell(cid, kind, source, meta):
