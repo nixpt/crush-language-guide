@@ -3,7 +3,9 @@
 ### AOT (ahead-of-time) backends
 `crush-aot` and `crush-aotc` translate CASM to Rust or C source for native
 compilation. They live in the crush-ast repository and are not published to
-crates.io. They reject programs that use CASM instructions they do not support.
+crates.io. They refuse, by name, programs that use instructions they do not support
+(closures, method calls, `spawn`, `@lang` blocks, most standard-library calls). See
+[Engines, AOT and Walkers](../crush/engines.md).
 
 ### Capability
 A named host function that a Crush program may call, written as a dotted call
@@ -69,17 +71,24 @@ The Rust crate to embed Crush: `Runtime`, `HostCapsBuilder`, `ProgramBuilder`, a
 `compile` module. It also provides the `crush`, `crushc`, `crush-run`, `crush-compile`,
 `crush-repl` and `crush-diff` binaries.
 
+### Kind (COSM)
+The run-time type of a struct instance (a **Record**): its fields, methods and the
+object semantics `@kind(...)` chose (reference or value, receiver, lookup, …). COSM,
+the Crush Object Semantic Model, is how crush-ast describes every language's objects.
+See [Structs, Methods and Kinds](../crush/structs.md).
+
 ### Slot
 A numbered local variable in a CVM1 call frame (`LOAD 3`, `STORE 3`). The IR names
 variables; lowering assigns slots.
 
 ### Stub
-An implemented interface with placeholder behaviour. The `ai_*`, `dom_*` and
-`spawn`/`yield`/`await` instructions are stubs today. See
+An implemented interface with placeholder behaviour. The `ai_*` and `dom_*`
+instructions are stubs today. See
 [AI-Native CAST](../cast/ai-native.md#what-actually-runs).
 
 ### Walker
 A front end that translates source in some language into CAST (Python, JavaScript,
-Bash and others, in `crush-lang-*` crates). Coverage varies by language; walkers are
-not the same thing as `@lang` execution — only Python, JavaScript and Bash blocks can
-actually run.
+Rust, Bash and others, in `crush-lang-*` crates); `crush-walk-run FILE` runs the
+result. Coverage varies by language and untranslatable constructs are refused. Walkers
+are not the same thing as `@lang` execution, which runs a real interpreter (only
+Python, JavaScript and Bash blocks). See [Engines, AOT and Walkers](../crush/engines.md).

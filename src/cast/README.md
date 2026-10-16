@@ -12,7 +12,7 @@ produce it from other languages, and an AI agent can write it directly (see
 ```
 
 This page is the schema reference. It is derived from `crates/crush-cast/src/lib.rs`
-in crush-ast (`v0.3.9`); the examples are accepted by `crush_cast::validate_json`,
+in crush-ast (verified against `cb655f3`, 2026-10-16); the examples are accepted by `crush_cast::validate_json`,
 compiled and run by this guide's checker.
 
 ## Document structure
@@ -129,8 +129,10 @@ node (it defaults to `{}`), with one exception: **`CapabilityCall` requires its
 | `TryCatch` | `body`, `error_var`, `handler` | |
 | `Throw` | `value` | |
 | `FunctionDef` | `name`, `params`, `body` | nested function definition |
-| `StructDef` | `name`, `fields` | `fields` is `[[name, type], …]` |
-| `LangBlock` | `lang`, `code`, `variables`, `imports`, `deps` | a polyglot `@lang { }` block; `variables` are marshalled in, `meta.polyglot_output` names the variable marshalled out |
+| `StructDef` | `name`, `fields`, `kind` | `fields` is `[[name, type], …]`; `kind` is the `@kind(…)` annotation as written (`{"args": [{"key", "value"}]}`, values `Name` / `Apply` / `List`), or absent |
+| `ImplBlock` | `type_name`, `trait_name` (optional), `methods` | `impl P { … }` / `impl T for P { … }`; each method is `{name, params, body}`, `self` is an ordinary first parameter |
+| `TraitDef` | `name`, `methods` | a method without `body` is a required signature |
+| `LangBlock` | `lang`, `code`, `variables`, `outputs`, `imports`, `deps` | a polyglot `@lang { }` block; `variables` are marshalled in, `outputs` (the `-> names`, mirrored in `meta.polyglot_outputs`) are marshalled out. After `prepare_polyglot_blocks`, `code` carries the generated marshalling prologue/epilogue |
 | `Import` | `import` | an `ImportStatement` — parsed, but **not executed**: see below |
 | `DomMutate`, `DomEventListener` | | DOM nodes; compile to `NOP` today |
 | `AI` | `ai_type`, … | AI statements — see [AI-Native CAST](ai-native.md) |
@@ -159,8 +161,8 @@ imports are not implemented yet (CRUSH-110).
 | `Range` | `start`, `end` |
 | `Match` | `expression`, `arms` (`{pattern, body}` pairs) |
 | `Pipeline` | `segments` — `a \|> b \|> c` |
-| `Spawn`, `Await`, `Yield` | task / async forms (stubs, see [CASM](../casm/instructions.md#polyglot-concurrency-ai-and-dom)) |
-| `Lambda` | `params`, `body` — the node exists, but the Crush parser cannot produce it: lambdas are not implemented (CRUSH-75) |
+| `Spawn`, `Await`, `Yield` | green tasks: `Spawn` is `{function, args}` (see [Concurrency](../crush/concurrency.md)) |
+| `Lambda` | `params` (`[name, type]` pairs), `body` — what `\|x\| x + k` parses to; captures are worked out by the compiler, not stored in CAST (see [Closures](../crush/closures.md)) |
 | `VectorMath` | `operator`, `args` |
 | `DomQuery` | `query_type`, `selector` |
 | `AI` | `ai_type`, … — see [AI-Native CAST](ai-native.md) |
@@ -270,7 +272,7 @@ CBOR:
 than `CAST_VERSION` (`"0.1"`): `version mismatch at cast boundary: expected 0.1,
 found …`. The corpus in `examples/cast/` uses `"0.1"` / `"0.1.0"`.
 
-> **Known inconsistency (crush-ast `v0.3.9`).** The Crush front end stamps the trees
+> **Known inconsistency (since crush-ast `v0.3.9`, still in `cb655f3`).** The Crush front end stamps the trees
 > it produces `cast_version: "1.0.0"`, which the versioned loader then rejects — so a
 > CAST dump from the compiler cannot be re-loaded with `Program::load`, though
 > `serde_json` and `validate_json` accept it. When you write CAST by hand or from an

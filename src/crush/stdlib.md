@@ -1,5 +1,7 @@
 # Standard Library
 
+> Verified against crush-ast `cb655f3` (2026-10-16).
+
 Crush's "standard library" is a set of **capabilities** — dotted functions such
 as `str.split` and `math.sqrt` — that the host registers. It is *not* a module
 system: there is no `import std.io`, and `import` does not load anything yet
@@ -7,22 +9,23 @@ system: there is no `import std.io`, and `import` does not load anything yet
 
 ## Turning it on
 
-Almost all of the library lives behind a Cargo feature **and** a CLI flag:
+It is **on by default** (crush-ast CRUSH-113): the `stdlib` Cargo feature of
+`crush-lang-sdk` is a default feature, and `crush-run`/`crush run` register the
+library without a flag, because these capabilities confer no authority. They are
+pure computation and do no I/O; for files, network, time and processes see
+[Capability System](capabilities.md).
 
-1. Build the toolchain with the `stdlib` feature of `crush-lang-sdk`
-   (`cargo build -p crush-lang-sdk --features stdlib`). It is **off by default**
-   (crush-ast **CRUSH-113**); on a build without it, `--stdlib` only prints
-   `warning: --stdlib requires the 'stdlib' feature`.
-2. Run with `--stdlib`: `crush run --stdlib prog.crush`.
-
-The examples in this chapter are all executed with `--stdlib`. These are
-pure-computation capabilities — they do no I/O. For files, network, time and
-processes see [Capability System](capabilities.md).
+- `--stdlib` is still accepted, for compatibility, and changes nothing.
+- `--no-stdlib` leaves the library out. A program that uses it is then refused
+  before it runs, with `stdlib (default; --no-stdlib): str.to_upper`.
+- A build with `default-features = false` (an embedder can choose that) has no
+  library; `--stdlib` is then an error.
 
 Arguments are positional and the arity is checked (`[runtime] str.replace takes 3
 arg(s), got 2`). Note that some predicates return `1`/`0` rather than
-`true`/`false` (for example `str.starts_with`, `regex.test`,
-`collections.includes`), so compare with `== 1` rather than assuming a `Bool`.
+`true`/`false` (for example `str.starts_with`, `str.ends_with`, `regex.test`,
+`collections.includes`), while `str.contains` returns a `Bool`, so compare with
+`== 1` rather than assuming a `Bool`.
 
 ## Strings — `str.*`
 
@@ -38,9 +41,10 @@ arg(s), got 2`). Note that some predicates return `1`/`0` rather than
 | `str.repeat(s, n)` | string |
 | `str.substring(s, start, end)` | string (`end` exclusive) |
 | `str.char_at(s, i)`, `str.index_of(s, sub)` | one-char string / index |
+| `str.format(template, value)` | the first `{}` replaced by `value` (exactly two arguments) |
 | `str.format(template, args)` | `{}` placeholders filled from `args` |
 
-`str.concat(...)` and `str.len(s)` are always available, even without `--stdlib`.
+`str.concat(...)` and `str.len(s)` are always available, even with `--no-stdlib`.
 
 ```crush
 print(str.split("a,b,c", ","))
@@ -145,21 +149,23 @@ print(collections.unique([1, 1, 2, 2, 3]))
 [1, 2, 3]
 ```
 
-`collections.keys(obj)` returns the keys **sorted**, and is how you iterate an
-object deterministically — `for k in obj` isn't supported, and printing an object
-directly lists its keys in an unspecified (per-run) order:
+Objects keep their keys in **insertion order**: `collections.keys(obj)`,
+`collections.values(obj)`, `collections.entries(obj)`, `for k in obj` and printing
+all walk the keys in the order they were first set (not sorted):
 
 ```crush
-let m = {"a": 1, "b": 2}
+let m = {"b": 2, "a": 1}
 for k in collections.keys(m) {
     print(k)
 }
+print(collections.entries(m))
 ```
 
 <!-- check: output -->
 ```text
-a
 b
+a
+[[b, 2], [a, 1]]
 ```
 
 ## JSON — `json.*`
@@ -233,7 +239,7 @@ print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 
 ## Other families
 
-Also registered under `--stdlib`: `bytes.*` (`from_string`, `to_string`, `len`,
+Also in the standard library: `bytes.*` (`from_string`, `to_string`, `len`,
 `slice`), `buffer.*` (`alloc`, `read`, `write`, `freeze`), `binary.read_*` /
 `binary.write_*` (u16/u32/u64, big/little endian), `result.*` (`ok`, `err`,
 `is_ok`, `unwrap` — results are plain `{ok, value}` objects), `text.sort`,
@@ -242,22 +248,29 @@ helpers implemented in Crush itself (`crates/crush-lang-sdk/sbl/`).
 
 ```crush
 print(result.unwrap(result.ok(5)))
-print(env.os())
+print(result.ok(5))
+print(result.is_ok(result.err("no")))
+print(str.format("Hello {}!", "World"))
 ```
 
 <!-- check: output -->
 ```text
 5
-linux
+{ok: true, value: 5}
+false
+Hello World!
 ```
 
-(The second line depends on the machine running the example.)
+`env.os()` and `env.arch()` return the host's OS and CPU names (`linux`,
+`x86_64`), so their output depends on the machine.
 
 ## Not in the library
 
-There is no `std.*` module tree, `io.eprint`, `sys.*`, `array.length` or
-`map.*`. For output use `print`/`io.print`; for the process environment use
-`env.get` (`--env`); for arguments, there is currently no accessor.
+There is no `std.*` module tree, `io.eprint`, `array.length` or `map.*`. For
+output use `print`/`io.print`; for the process environment use `env.get`
+(`--env`). Program arguments are `sys.args()`, an array of what follows the file
+name on the command line (`crush run prog.crush a b` → `[a, b]`), and
+`sys.exit(code)` stops the program with that exit status.
 
 ## Next Steps
 

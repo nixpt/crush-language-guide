@@ -1,0 +1,7 @@
+// PITFALL (crush-ast issue #266): everything after `{` is the block's Python,
+// so a `//` comment on the header line is a Python syntax error, reported as
+// "Undefined variable: m". Put comments above the block, or use `#` inside it.
+@python -> m {   // the answer
+m = 42
+}
+print(m)

@@ -1,0 +1,4 @@
+// The first failing item, in input order, is the error.
+fn main() {
+    print(parallel_map([2, 0, 1, 0], |x| 10 / x))
+}

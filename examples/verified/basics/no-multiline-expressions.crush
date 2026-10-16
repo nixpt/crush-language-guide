@@ -1,0 +1,7 @@
+// An expression cannot continue onto the next line, even inside (), [] or {}:
+// a newline ends it. Keep literals and argument lists on one line, or build
+// them up with several statements. (Blocks: fn/if/while bodies, lambda bodies
+// and match arms, do span lines.)
+let a = [1,
+  2]
+print(a)

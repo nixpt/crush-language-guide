@@ -1,0 +1,2 @@
+// == between a string and an int is a compile-time type error, not `false`.
+print("1" == 1)

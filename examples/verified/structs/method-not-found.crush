@@ -1,0 +1,11 @@
+// A method call resolves on a struct instance, never on a global capability:
+// calling a method a struct does not have is a runtime error.
+struct S { n: Int }
+impl S { fn size(self) { return self.n } }
+struct T { n: Int }
+fn main() {
+    let s = S { n: 3 }
+    print(s.size())
+    let t = T { n: 1 }
+    print(t.size())
+}

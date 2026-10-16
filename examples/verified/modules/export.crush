@@ -1,0 +1,5 @@
+// `export name` marks an existing variable or function; it is not a declaration
+// form (`export fn f()` is a parse error). Every program is one file today.
+let result = 6 * 7
+export result
+print(result)

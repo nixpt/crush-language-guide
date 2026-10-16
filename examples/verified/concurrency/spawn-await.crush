@@ -1,0 +1,17 @@
+// spawn f(args) starts a green task and returns a handle; await h waits for it
+// and gives its return value. Tasks run in the same VM, interleaving at yield.
+fn worker(name, n) {
+    let i = 0
+    while i < n {
+        print(name + " step " + i)
+        yield
+        i = i + 1
+    }
+    return name + " done"
+}
+fn main() {
+    let a = spawn worker("a", 2)
+    let b = spawn worker("b", 2)
+    print(await a)
+    print(await b)
+}

@@ -1,0 +1,7 @@
+// array.pop(a) removes and returns the last element.
+let a = [1, 2, 3, 4]
+let last = array.pop(a)
+print(last)
+print(a)
+array.push(a, 9)
+print(a)

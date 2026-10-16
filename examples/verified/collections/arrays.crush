@@ -1,0 +1,13 @@
+// Arrays: index, assign by index, negative index, slice, push, + to join.
+let a = [10, 20, 30]
+print(a[0])
+a[1] = 99
+print(a)
+print(a[-1])
+print(a[0:2])
+a.push(40)
+print(a)
+print(len(a))
+print([1] + [2, 3])
+let nested = [[1, 2], [3]]
+print(nested[0][1])

@@ -1,0 +1,1 @@
+[compile] `->` output lists are not supported for @bash: it has no value marshaling

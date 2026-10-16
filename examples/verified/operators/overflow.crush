@@ -1,0 +1,4 @@
+// Int arithmetic is checked: overflowing i64 is a runtime error, never a wrap.
+let big = 9223372036854775807
+print(big)
+print(big + 1)

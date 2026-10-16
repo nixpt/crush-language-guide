@@ -1,0 +1,3 @@
+// a slash comment
+# a hash comment
+print("hello") // trailing comments work too

@@ -1,0 +1,3 @@
+// A wrong annotation is a compile error, so nothing runs.
+let x: Int = "not a number"
+print("never printed")

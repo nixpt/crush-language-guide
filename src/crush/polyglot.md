@@ -1,5 +1,8 @@
 # Polyglot Programming
 
+> Verified against crush-ast `cb655f3` (2026-10-16), with Python 3.14, Node 26 and
+> bash 5.3 on the host.
+
 A Crush program can embed code from other languages with `@language { ... }`
 blocks. This chapter describes what actually happens when you run one today —
 which languages work, how values cross the boundary, how errors and timeouts
@@ -15,7 +18,7 @@ behave, and, importantly, **how much isolation you do and don't get**.
 A block's source text is handed to a real interpreter — `python3 -c`, `node -e`,
 or `bash -c` — as a **child process**. Crush marshals some variables in, runs the
 interpreter, captures its standard output, and (for Python and JavaScript)
-marshals one result variable back. There is no embedded WebAssembly runtime, no
+marshals back the variables the block **declares** with `-> names`. There is no embedded WebAssembly runtime, no
 WASI capability bridge, and no in-process interpreter.
 
 ## Languages
@@ -26,11 +29,11 @@ WASI capability bridge, and no in-process interpreter.
 | `@javascript { }` | `node -e` | `@js`, `@node`, `@es6`, `@ecmascript` |
 | `@bash { }` | `bash -c` | `@sh` |
 
-The interpreter must be on `PATH`. Any other tag (`@rust`, `@go`, `@c`, …) fails
-at run time with `unknown capability: no executor registered for language
-'rust'`.
+The interpreter must be on `PATH`; `crush doctor` checks which ones it finds. Any
+other tag (`@rust`, `@go`, `@c`, …) parses, but the program is refused before it
+runs (`not available in this host: polyglot.rust`).
 
-<!-- check: runfail no executor registered for language 'rust' -->
+<!-- check: runfail not available in this host: polyglot.rust -->
 <!-- check: flags --polyglot -->
 ```crush
 @rust {
@@ -52,9 +55,10 @@ ambient authority. Turn it on per run:
 crush run --polyglot program.crush        # same flag on crush-run
 ```
 
-Without it the block is refused:
+Without it the program is refused before anything runs (`--polyglot:
+polyglot.python`):
 
-<!-- check: runfail requires the 'polyglot.python' capability -->
+<!-- check: runfail polyglot.python -->
 ```crush
 @python {
 print("hi")
@@ -95,34 +99,84 @@ explicit blank line (`print()`), or print from Crush.
 
 ### Python and JavaScript
 
-For `@python` and `@javascript` blocks, Crush analyses the block's own source:
+For `@python` and `@javascript` blocks:
 
-- **In:** every name the block *reads* that is a Crush variable already in scope
-  (a `let`, a parameter, a loop variable, or an earlier block's result) is
-  injected, with its type preserved.
-- **Out:** the **last name bound at the top level of the block** is marshaled
-  back and becomes a Crush variable of that name. Earlier assignments in the same
-  block do not escape.
+- **In (automatic):** every name the block *reads* that is a Crush variable
+  already in scope (a `let`, a parameter, a loop variable, or an earlier block's
+  output) is injected as a variable of that name, with its type preserved.
+- **Out (declared):** the names after `->` in the block header are marshaled back
+  and become (or assign) Crush variables at that line. Nothing else leaves the
+  block. Use `-> name` for one and `-> (a, b)` for several.
 
 <!-- check: flags --polyglot -->
 ```crush
+let count = 10
 let base = 5
-@python {
-import math
-doubled = base * 2
-result = math.pow(base, 3)
+@python -> total {
+tmp = base * 3
+total = tmp * 2
 }
-print(result)
+print(total)
+print(count)
 ```
 
 <!-- check: output -->
 ```text
-125.0
+30
+10
 ```
 
-Here `base` goes in, `result` (the last top-level binding) comes out, and
-`doubled` is local to the block — using it afterwards is a compile error
-(`Undefined variable`).
+Here `base` goes in, `total` comes out, and `tmp` stays inside the block (using it
+afterwards is a compile error, `Undefined variable`). Several outputs:
+
+<!-- check: flags --polyglot -->
+```crush
+let xs = [2, 4, 4, 4, 5, 5, 7, 9]
+@python -> (mean, spread) {
+mean = sum(xs) / len(xs)
+spread = max(xs) - min(xs)
+}
+print(mean)
+print(spread)
+```
+
+<!-- check: output -->
+```text
+5.0
+7
+```
+
+Listing a name the block never binds is a compile error; a name bound only on
+some paths is a run-time error naming it (`output variable 'r' was not bound by
+the block`), never a silent `null`:
+
+<!-- check: error -->
+```crush
+@python -> missing {
+x = 1
+}
+print(missing)
+```
+
+```text
+[compile] @python block declares output `missing` but never binds it; add `missing = …` at the block's top level, or drop it from `->`
+```
+
+Everything after the opening `{` is the guest's source, including the rest of
+the header line, so a Crush `//` comment there is Python code. With an output list
+that syntax error is currently reported as `[compile] Undefined variable: m`
+(crush-ast [#266](https://github.com/nixpt/crush-ast/issues/266)). Put comments
+above the block, or use the guest's own comment syntax inside it.
+
+**Blocks without `->` (being phased out).** A block with no output list still
+exports its *last top-level assignment*, as in earlier releases, but the compiler
+now warns on standard error, and warns again if that overwrites an existing Crush
+variable. The next release drops the implicit export, so declare your outputs:
+
+```text
+warning: @python block exports `count` implicitly; add `-> count` to declare it
+warning: @python block overwrites the existing Crush variable `count`; declare `-> count` to make the overwrite explicit
+```
 
 Values travel as JSON, so the shareable types are exactly these:
 
@@ -140,7 +194,7 @@ Values travel as JSON, so the shareable types are exactly these:
 let n = 5
 let tags = ["a", "b"]
 let cfg = {"k": 1}
-@python {
+@python -> out {
 out = [n * 2, len(tags), cfg["k"], None, True]
 }
 print(out)
@@ -154,10 +208,10 @@ print(out)
 An output variable that can't be serialised to JSON (a class instance, an open
 file, a function) fails the block with a clear error rather than being dropped:
 
-<!-- check: runfail cannot marshal output variable 'obj' -->
+<!-- check: runfail cannot marshal output variable(s) obj -->
 <!-- check: flags --polyglot -->
 ```crush
-@python {
+@python -> obj {
 class C:
     pass
 obj = C()
@@ -170,13 +224,13 @@ Blocks compose through Crush variables, across languages:
 <!-- check: flags --polyglot -->
 ```crush
 let x = 1
-@python {
+@python -> y {
 y = x + 1
 }
-@javascript {
+@javascript -> z {
 const z = y * 10
 }
-@python {
+@python -> w {
 w = z + 1
 }
 print(w)
@@ -193,7 +247,7 @@ Blocks inside functions and loops see the enclosing scope:
 ```crush
 let total = 0
 for i in 0..3 {
-    @python {
+    @python -> sq {
 sq = i * i
     }
     total = total + sq
@@ -207,53 +261,80 @@ print(total)
 ```
 
 Python and JavaScript state does **not** persist between blocks: each block is a
-fresh interpreter, and only the marshaled result variable carries over. You
-cannot define a function in one block and call it from Crush or from another
-block.
+fresh interpreter, and only the declared outputs carry over. You cannot define a
+function in one block and call it from Crush or from another block.
+
+<!-- check: flags --polyglot -->
+```crush
+@python -> a {
+a = 1
+hidden = 2
+}
+@python -> r {
+r = "hidden" in globals()
+}
+print(a)
+print(r)
+```
+
+<!-- check: output -->
+```text
+1
+false
+```
+
+### Imports for blocks: `use @lang`
+
+`use @lang python "module"` (optionally `as alias`) writes the import into every
+later `@python` block, so each block doesn't have to repeat it. Each block is
+still its own process:
+
+<!-- check: flags --polyglot -->
+```crush
+use @lang python "math"
+use @lang python "json" as j
+@python -> (val, text) {
+val = math.factorial(5)
+text = j.dumps({"a": 1})
+}
+print(val)
+print(text)
+```
+
+<!-- check: output -->
+```text
+120
+{"a": 1}
+```
 
 ### Bash
 
-`@bash` blocks have no marshaling analysis. They receive the `let` variables
-declared **earlier at the top level of the same function body** as environment
-variables (stringified — an array arrives as `[1, 2]`), and nothing comes back
-except the printed output:
+`@bash` blocks have no value marshaling: only their printed output comes back,
+and `->` on a `@bash` block is a compile error (`` `->` output lists are not
+supported for @bash: it has no value marshaling ``).
+
+> **Known bug ([crush-ast #255](https://github.com/nixpt/crush-ast/issues/255)).**
+> Earlier releases passed the function's top-level `let`s to a `@bash` block as
+> environment variables. Since explicit outputs landed (CRUSH-270) a `@bash` block
+> receives **no** Crush variables, and `$name` silently expands to the empty
+> string:
 
 <!-- check: flags --polyglot -->
 ```crush
 let name = "crush"
 @bash {
-echo "hello $name"
+echo "hello [$name]"
 }
 ```
 
 <!-- check: output -->
 ```text
-hello crush
+hello []
 ```
 
-Two surprises: function **parameters** are not passed to a `@bash` block, and
-neither is the result of an earlier `@python`/`@javascript` block — copy it into
-a `let` first:
-
-<!-- check: flags --polyglot -->
-```crush
-@python {
-m = 7
-}
-let n = m
-@bash {
-echo "n=$n"
-}
-```
-
-<!-- check: output -->
-```text
-n=7
-```
-
-Bash also inherits the host environment (`$HOME`, `$PATH`, …) in the default,
-unsandboxed lane, so don't keep secrets in Crush variables around a `@bash` block
-you don't control.
+Until that is fixed, compute the value in a `@python` block and print it, or
+write it to a file the `@bash` block reads. Bash inherits the host environment
+(`$HOME`, `$PATH`, …) in the default, unsandboxed lane.
 
 ## Errors
 
@@ -352,7 +433,7 @@ prefixed `pypi:` or `npm:`; bare names are buckets package aliases. A bare
 
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
 ```crush
-@python[pypi:six] {
+@python[pypi:six] -> v {
 import six
 v = six.__version__
 }
@@ -365,8 +446,9 @@ print(v)
 
 The first run prints buckets' progress lines (`resolved python.org@^3.11 → …`) to
 standard error while it downloads. In a default build the `[...]` part still
-parses, but the dependencies are **silently ignored**, so `import six` then fails
-with `ModuleNotFoundError`. An unknown package fails with
+parses, but the dependencies are **silently ignored**: `import six` then works
+only if the host's own Python happens to have `six`, and an unresolvable
+`[pypi:nothing_here_xyz]` is not reported at all. An unknown package fails with
 `@python block sandbox setup failed: Failed to resolve version for 'pypi:…'`.
 
 Even the sandboxed lane is a first cut: the working directory is writable, memory
@@ -375,7 +457,7 @@ is not limited, and only `python`, `javascript` and `bash` are wired up.
 ## Limitations summary
 
 - Languages: Python, JavaScript (Node), Bash. Nothing else executes.
-- Value passing is JSON-only, one output variable, Python/JS only.
+- Value passing is JSON-only, Python/JS only, and outputs are declared with `->`.
 - No shared interpreter state or cross-block function calls.
 - Guest errors and timeouts abort the program; they can't be caught from Crush.
 - Default execution is **unsandboxed**; the sandbox is a build-time opt-in.

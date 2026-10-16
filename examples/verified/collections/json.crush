@@ -1,0 +1,5 @@
+// json.parse / json.stringify.
+let o = json.parse("{\"name\": \"Ada\", \"n\": 3}")
+print(o.name)
+print(o.n + 1)
+print(json.stringify({"x": 1, "y": [true, null]}))

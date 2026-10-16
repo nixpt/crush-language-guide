@@ -1,0 +1,4 @@
+// --env, --time and --process each switch on one group.
+print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
+print(time.now() > 0)
+print(process.exec("echo", "hi"))

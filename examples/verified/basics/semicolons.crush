@@ -1,0 +1,5 @@
+// Semicolons are optional; two statements on one line need one between them.
+let a = 1; let b = 2;
+print(a + b);
+let c = 3
+print(c)

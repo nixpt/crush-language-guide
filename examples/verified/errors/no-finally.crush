@@ -1,0 +1,2 @@
+// There is no `finally`.
+try { print(1) } catch e { print(e) } finally { print("f") }

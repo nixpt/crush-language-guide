@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Run the verified corpus (examples/verified/) and diff every program's output.
+
+Usage:
+    scripts/verify-examples [--bin-dir DIR] [-v] [--bless] [PATH ...]
+
+Each program is a file under examples/verified/<area>/ with siblings that say
+what must happen when it runs:
+
+    name.crush | name.casm | name.cvm1   the program
+    name.out     exact expected stdout (trailing whitespace ignored)
+    name.err     the program must FAIL (non-zero exit), and its stdout+stderr
+                 must contain every non-empty line of this file
+    name.flags   extra crush-run flags, one line (e.g. `--polyglot`, `--fs --fs-root .`)
+    name.stdin   fed to stdin (otherwise stdin is /dev/null: a program that calls
+                 io.read() sees EOF instead of hanging)
+    name.needs   host programs that must be on PATH (e.g. `python3 node`); the
+                 program is reported as skipped, not failed, when one is missing
+
+A program needs a .out, a .err, or both. Every program runs as
+`crush-run run <flags> --max-steps 50000000 <file>` in a fresh temporary
+directory holding a copy of the file, with a 60-second timeout.
+
+--bless rewrites .out from the actual stdout of programs that exit 0 (and never
+creates a .err): only use it after reading the new output yourself.
+
+Binaries come from --bin-dir, $CRUSH_BIN_DIR, or PATH. Exit status is non-zero
+if any program misbehaves.
+"""
+import argparse, os, shutil, subprocess, sys, tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CORPUS = ROOT / "examples" / "verified"
+EXTS = (".crush", ".casm", ".cvm1")
+
+
+def programs(paths):
+    roots = [Path(p).resolve() for p in paths] or [CORPUS]
+    for r in roots:
+        if r.is_file():
+            yield r
+        else:
+            yield from sorted(p for p in r.rglob("*") if p.suffix in EXTS)
+
+
+def sidecar(prog, ext):
+    p = prog.with_suffix(ext)
+    return p.read_text() if p.exists() else None
+
+
+def run_one(prog, crush_run):
+    flags = (sidecar(prog, ".flags") or "").split()
+    stdin = sidecar(prog, ".stdin") or ""
+    with tempfile.TemporaryDirectory(prefix="crush-verify-") as tmp:
+        shutil.copy(prog, tmp)
+        cmd = [crush_run, "run", *flags, "--max-steps", "50000000", prog.name]
+        try:
+            p = subprocess.run(cmd, cwd=tmp, input=stdin, capture_output=True, text=True, timeout=60)
+            return p.returncode, p.stdout, p.stderr
+        except subprocess.TimeoutExpired:
+            return 124, "", "TIMEOUT after 60s"
+
+
+def check(prog, crush_run, bless):
+    want_out, want_err = sidecar(prog, ".out"), sidecar(prog, ".err")
+    needs = (sidecar(prog, ".needs") or "").split()
+    missing = [n for n in needs if not shutil.which(n)]
+    if missing:
+        return "skipped", "needs " + " ".join(missing) + " on PATH"
+    if want_out is None and want_err is None and not bless:
+        return "fail", "no .out or .err beside it"
+    rc, out, err = run_one(prog, crush_run)
+    if want_err is not None:
+        if rc == 0:
+            return "fail", "expected a failure, but it exited 0"
+        missing = [l for l in want_err.splitlines() if l.strip() and l.strip() not in out + err]
+        if missing:
+            return "fail", f"failure output lacks {missing[0].strip()!r}; got: {(out + err).strip()[:300]!r}"
+    elif rc != 0:
+        return "fail", f"exit {rc}: {(err or out).strip()[:300]}"
+    if bless and rc == 0:
+        prog.with_suffix(".out").write_text(out)
+        return "blessed", f"{len(out.splitlines())} lines"
+    if want_out is not None and out.rstrip() != want_out.rstrip():
+        import difflib
+        diff = "\n".join(difflib.unified_diff(want_out.rstrip().splitlines(), out.rstrip().splitlines(), "expected", "actual", lineterm=""))
+        return "fail", "stdout differs:\n" + diff
+    return "ok", "fails as expected" if want_err is not None else "output matches"
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--bin-dir", default=os.environ.get("CRUSH_BIN_DIR"))
+    ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--bless", action="store_true", help="rewrite .out from actual stdout (exit-0 programs only)")
+    ap.add_argument("paths", nargs="*")
+    a = ap.parse_args()
+    crush_run = str(Path(a.bin_dir) / "crush-run") if a.bin_dir else shutil.which("crush-run")
+    if not crush_run or not Path(crush_run).exists():
+        sys.exit("missing crush-run (set --bin-dir / CRUSH_BIN_DIR, or put crush-ast's build on PATH)")
+    crush_run = str(Path(crush_run).resolve())  # programs run in a temporary cwd
+    counts, failed = {}, 0
+    for prog in programs(a.paths):
+        status, msg = check(prog, crush_run, a.bless)
+        counts[status] = counts.get(status, 0) + 1
+        failed += status == "fail"
+        if a.verbose or status in ("fail", "skipped", "blessed"):
+            print(f"{status:8} {prog.relative_to(ROOT)}  {msg}")
+    print("\n" + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())) + f"  (total {sum(counts.values())})")
+    sys.exit(1 if failed else 0)
+
+
+if __name__ == "__main__":
+    main()

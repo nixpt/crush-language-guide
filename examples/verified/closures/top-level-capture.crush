@@ -1,0 +1,7 @@
+// A top-level lambda captures top-level variables by reference (unlike a named fn).
+let k = 3
+let mul = |x| x * k
+print(mul(2))
+k = 10
+print(mul(2))
+print(mul)

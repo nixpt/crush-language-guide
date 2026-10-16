@@ -1,0 +1,4 @@
+// Field shorthand `P { x }` is not a pattern; write `P { x: x }`.
+struct P { x: Int }
+let v = P { x: 1 }
+let r = match v { P { x } => x, _ => 0 }

@@ -36,13 +36,14 @@ the FastVM lowering) starts there.
   not list.
 - **The IR has more instructions than the VM bytecode.** The `casm` crate's
   `OpCode` enum is a superset; `casm_to_vm` lowers only part of it (see the
-  [Instruction Reference](instructions.md#what-lowers-to-cvm1)). Some IR
-  instructions lower to a `NOP`; some are rejected with `Unsupported CVM1 opcode`.
-- **The `ai_*`, `dom_*`, `spawn`/`yield`/`await` instructions are stubs.** In the
-  IR→CVM1 lowering the `ai_*` and `dom_*` instructions become `NOP`s; a hand-written
-  CVM1 `AI_QUERY` reaches an `ai_native.query` capability that returns
-  `{ok: true, kind: "query", echo: []}` and does nothing else. See
-  [AI-Native CAST](../cast/ai-native.md#what-actually-runs).
+  [Instruction Reference](instructions.md#what-lowers-to-cvm1)). A few IR
+  instructions lower to a `NOP`; a few are rejected with `Unsupported CVM1 opcode`.
+- **The `ai_*` and `dom_*` instructions are hooks, not features.** An `AI_QUERY`
+  (and the other AI opcodes) calls an `ai_native.query` capability that no CLI
+  provides; an embedder's stub returns `{kind: query, echo: [...], ok: true}` and
+  does nothing else. The `dom_*` IR instructions lower to `NOP`. See
+  [AI-Native CAST](../cast/ai-native.md#what-actually-runs). (`spawn`/`yield`/`await`
+  are real: [Concurrency](../crush/concurrency.md).)
 - **Source mapping** is carried in each IR instruction's `meta` (`line`, `col`);
   the CVM1 binary does not store it (the text assembler keeps a line→offset map for
   debuggers only).

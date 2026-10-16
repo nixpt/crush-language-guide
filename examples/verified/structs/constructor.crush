@@ -1,0 +1,15 @@
+// @kind(construct: ctor(init)) makes Acc(start) call init on a new instance.
+// (crush-run only: crushc rejects it, crush-ast issue #260.)
+@kind(construct: ctor(init))
+struct Acc { total: Int }
+impl Acc {
+    fn init(self, start) { self.total = start }
+    fn add(self, n) {
+        self.total = self.total + n
+        return self
+    }
+}
+let a = Acc(10)
+a.add(5)
+print(a.total)
+print(a)

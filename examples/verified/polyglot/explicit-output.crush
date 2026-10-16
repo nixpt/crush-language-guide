@@ -1,0 +1,10 @@
+// `-> name` lists what comes back. Inputs are automatic: names the block reads
+// that are Crush variables in scope are injected. Nothing else leaves the block.
+let count = 10
+let base = 5
+@python -> total {
+tmp = base * 3
+total = tmp * 2
+}
+print(total)
+print(count)

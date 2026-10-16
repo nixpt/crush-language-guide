@@ -1,0 +1,6 @@
+// A function returns a value only through `return`; a bare final
+// expression does not become the return value.
+fn explicit() { return 5 }
+fn implicit() { 5 }
+print(explicit())
+print(implicit())

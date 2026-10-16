@@ -1,0 +1,9 @@
+// @wip records unfinished work on the next declaration.
+@wip {
+    intent: "parse the config"
+    done: ["read the file"]
+    todo: ["validate keys"]
+    unresolved: []
+}
+fn parse() { return "partial" }
+print(parse())

@@ -1,0 +1,7 @@
+// @javascript runs under node; values travel as JSON.
+let n = 5
+let tags = ["a", "b"]
+@javascript -> out {
+const out = [n * 2, tags.length, tags.join("+")]
+}
+print(out)

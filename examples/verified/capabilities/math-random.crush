@@ -1,0 +1,8 @@
+// math.seed makes math.random / math.random_int reproducible.
+math.seed(42)
+let a = math.random_int(0, 100)
+math.seed(42)
+let b = math.random_int(0, 100)
+print(a == b)
+let f = math.random()
+print(f >= 0.0 && f < 1.0)

@@ -1,0 +1,3 @@
+// Reading a missing key is a runtime error, not null.
+let m = {"a": 1}
+print(m["zz"])

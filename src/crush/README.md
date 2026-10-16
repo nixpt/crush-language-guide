@@ -1,5 +1,7 @@
 # Crush Overview
 
+> Verified against crush-ast `cb655f3` (2026-10-16).
+
 **Crush** is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
 and an intermediate representation (CAST) that other languages can be translated
@@ -8,20 +10,22 @@ when something doesn't.
 
 ## What Crush is
 
-- **A language.** `let`, `fn`, `if`/`while`/`for`, structs, `match`, `try`/`catch`,
-  arrays and objects, a pipeline operator. Dynamically typed at run time with
+- **A language.** `let`, `fn`, `if`/`while`/`for`, `match`, `try`/`catch`,
+  arrays and objects, closures and function values, structs with `impl` methods
+  and `trait`s, green tasks, a pipeline operator. Dynamically typed at run time with
   optional compile-time type hints. See [Syntax](syntax.md).
 - **Capability-gated.** A program can't print files, open sockets or start
   processes unless the host turns the matching capability on. Capability calls
   are ordinary dotted calls — `fs.read("x")`, `io.print("y")`. See
   [Capability System](capabilities.md).
-- **Polyglot.** `@python { }`, `@javascript { }` and `@bash { }` blocks run
-  other languages and exchange variables with Crush. They currently run as
+- **Polyglot.** `@python -> out { }`, `@javascript { }` and `@bash { }` blocks
+  run other languages and exchange variables with Crush. They currently run as
   ordinary subprocesses **outside** the capability model unless you build the
   optional sandbox. See [Polyglot Programming](polyglot.md).
 - **A pipeline.** Source becomes CAST (an AST in JSON), then CASM (bytecode), then
   runs on a VM (`crush-vm`), with a faster VM, a JIT and ahead-of-time backends
-  also in the repository.
+  also in the repository ([Engines, AOT and Walkers](engines.md)). Walkers
+  translate Python, JavaScript, Rust and other languages into the same CAST.
 
 ## Hello, Crush
 
@@ -45,20 +49,25 @@ crush run hello.crush
 
 ```crush
 struct Point { x: Int, y: Int }
-
-fn distance_sq(p) {
-    return p.x * p.x + p.y * p.y
+impl Point {
+    fn distance_sq(self) { return self.x * self.x + self.y * self.y }
 }
 
-let p = new Point()
-p.x = 3
-p.y = 4
-print(distance_sq(p))
+let points = [Point { x: 3, y: 4 }, Point { x: 1, y: 1 }]
+let far = |p| p.distance_sq() > 10
+let i = 0
+while i < len(points) {
+    let p = points[i]
+    if far(p) {
+        print("far: " + p.distance_sq())
+    }
+    i = i + 1
+}
 ```
 
 <!-- check: output -->
 ```text
-25
+far: 25
 ```
 
 ## Security model, in short
@@ -77,10 +86,13 @@ print(distance_sq(p))
 
 | Area | Status |
 |---|---|
-| Core language (functions, loops, structs, `try`/`catch`, `match` expressions) | works |
-| Lambdas and closures, `import`, `spawn`/`async`/`await` | not yet — see the chapters for ticket links |
-| Capabilities and `--stdlib` | works; small |
-| Polyglot: Python, JavaScript, Bash | works (host authority by default) |
+| Core language (functions, loops, `try`/`catch`, `match`) | works |
+| Closures and function values | works on the VM; AOT refuses them by name |
+| Structs, `impl`, `trait`, `@kind`, struct patterns | works on the VM; AOT refuses method calls by name |
+| `spawn` / `yield` / `await`, `parallel_map` | works on the VM |
+| `import` (multi-file programs) | not yet: CRUSH-110 |
+| Capabilities, `@capabilities`, the standard library | works; the standard library is on by default |
+| Polyglot: Python, JavaScript (declared `->` outputs), Bash | works (host authority by default); `@bash` sees no Crush variables today (#255) |
 | Polyglot sandbox | opt-in build, verified on Linux with `bwrap` |
 | CAST / CASM formats | documented in their own sections |
 
@@ -88,5 +100,6 @@ print(distance_sq(p))
 
 - **[Syntax & Grammar](syntax.md)**
 - **[Types](types.md)**
+- **[Closures](closures.md)** and **[Structs, Methods and Kinds](structs.md)**
 - **[Capability System](capabilities.md)**
 - **[Polyglot Programming](polyglot.md)**

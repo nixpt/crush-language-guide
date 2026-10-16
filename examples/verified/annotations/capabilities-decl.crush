@@ -1,0 +1,3 @@
+// @capabilities is the one annotation the compiler enforces (see capabilities/).
+@capabilities [io.print]
+io.print("declared")

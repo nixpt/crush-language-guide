@@ -1,0 +1,4 @@
+// import parses, but nothing loads modules yet (crush-ast CRUSH-110): it lowers
+// to a module.load capability no host provides, so the program is refused.
+import helpers
+print("never reached")

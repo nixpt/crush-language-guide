@@ -1,0 +1,12 @@
+// spawn takes any function value. A spawned closure shares the variables it
+// captured with the function that made it.
+fn main() {
+    let n = 0
+    let inc = || {
+        n = n + 1
+        return n
+    }
+    let h = spawn inc()
+    await h
+    print(n)
+}

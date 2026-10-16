@@ -1,0 +1,35 @@
+// @module / @decision / @invariant / @errors / @temporary are metadata for tools
+// and agents: they compile and do not change what the program does.
+@module {
+    purpose: "Show the manifest annotations"
+    exports: [area]
+}
+
+@decision "ints-not-floats" {
+    chose: "integer sides"
+    over: ["float sides"]
+    because: "exact output in the docs"
+    revisit-if: ["we need fractional sizes"]
+}
+
+@invariant "area-non-negative" {
+    description: "area never returns a negative number"
+    applies_to: [area]
+}
+
+@errors {
+    Overflow: rare
+}
+fn area(w, h) {
+    return w * h
+}
+
+@temporary {
+    reason: "demo"
+    expires-when: "never"
+    added: "2026-10-16"
+}
+fn helper() { return 1 }
+
+print(area(3, 4))
+print(helper())

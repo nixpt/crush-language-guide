@@ -1,0 +1,10 @@
+// for over an array, a half-open range a..b and an inclusive range a..=b.
+for item in ["a", "b"] {
+    print(item)
+}
+for n in 0..3 {
+    print(n)
+}
+for n in 1..=2 {
+    print(n * 10)
+}

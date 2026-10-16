@@ -1,0 +1,12 @@
+// Maps keep insertion order. Dot and string subscripts both read and write.
+let m = {"b": 2, "a": 1}
+m["c"] = 3
+m.d = 4
+print(m)
+print(m.a)
+print(m["b"])
+print(collections.keys(m))
+print(collections.values(m))
+for k in collections.keys(m) {
+    print(k + "=" + m[k])
+}

@@ -1,0 +1,6 @@
+// Script style: top-level statements run first, then fn main() if there is one.
+print("top-level runs first")
+
+fn main() {
+    print("then main")
+}

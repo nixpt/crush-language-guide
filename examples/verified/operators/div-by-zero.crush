@@ -1,0 +1,2 @@
+// Integer division by zero stops the program with a runtime error.
+print(1 / 0)

@@ -1,0 +1,8 @@
+// --fs grants the fs.* family, confined to --fs-root (default: the current dir).
+fs.write("out.txt", "hello")
+print(fs.exists("out.txt"))
+print(fs.read("out.txt"))
+fs.mkdir("sub")
+fs.write("sub/a.txt", "a")
+print(fs.list("sub"))
+print(fs.exists("missing.txt"))
