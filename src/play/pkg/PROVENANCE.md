@@ -5,12 +5,8 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `4a4b6dd`
-  (branch `agent/claude/CRUSH-web-parity`): `cb655f3`, the commit the guide's
-  examples are verified against, plus crush-web's browser changes (refusing
-  ungranted capabilities before running, as crush-run does; grantable `time` and
-  `env`; guest errors reported as natively). Rebuild at the merge commit once
-  that lands, and move `CRUSH_AST_COMMIT` to it.
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `aa07413`
+  (2026-10-16), the same commit the guide's examples are verified against
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**,
   so a granted `@javascript` block gets Crush variables in and a typed value out,
   as with `crush-run --polyglot` (the page runs the block with
@@ -21,13 +17,13 @@ crate:
   directory (cargo still hashes the checkout's location into symbol names, so a
   build from a checkout elsewhere has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 6,854,107 bytes (1,959,155 gzipped). The
+- size: `crush_web_bg.wasm` is 6,856,830 bytes (1,966,985 gzipped). The
   previous build (`cb655f3`, default features, no `polyglot-javascript`) was
-  5,001,948 bytes (1,439,176 gzipped): +1.85 MB raw, +0.52 MB over the wire, almost
+  5,001,948 bytes (1,439,176 gzipped): +1.85 MB raw, +0.53 MB over the wire, almost
   all of it `@javascript` marshaling (the same commit with only that feature added
   is 6,835,626 bytes).
 - sha256:
-  - `crush_web_bg.wasm` `1eca4dac3013e343df58d977306f0fb7ef7252463fd2f4a3b3742e6a249ed98e`
+  - `crush_web_bg.wasm` `a43860c32a4a7aa9b8e53933a5a38f5851423515c60458c4491bf13cae8f992f`
   - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
 
 The book serves its own copy: the page fetches these files and hands them to the

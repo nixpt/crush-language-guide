@@ -1,6 +1,6 @@
 # Polyglot Programming
 
-> Verified against crush-ast `cb655f3` (2026-10-16), with Python 3.14, Node 26 and
+> Verified against crush-ast `aa07413` (2026-10-16), with Python 3.14, Node 26 and
 > bash 5.3 on the host.
 
 A Crush program can embed code from other languages with `@language { ... }`

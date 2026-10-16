@@ -1,6 +1,6 @@
 # Control Flow
 
-> Verified against crush-ast `cb655f3` (2026-10-16).
+> Verified against crush-ast `aa07413` (2026-10-16).
 
 Crush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,
 and `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.

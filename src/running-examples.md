@@ -20,9 +20,8 @@ environment** (`--env`). Edited code keeps the example's grants.
 
 The Run button uses **crush-web**, the WebAssembly build of the Crush VM that also
 powers the [playground](https://crushlang.org/playground/). It is the same compiler
-and VM as `crush-run` (the book's copy is built from crush-ast `4a4b6dd`: `cb655f3`,
-the commit this guide is verified against, plus crush-web's browser changes), and
-it grants the same way:
+and VM as `crush-run` (the book's copy is built from crush-ast `aa07413`, the commit this guide is
+verified against), and it grants the same way:
 
 - **Always granted:** what `crush run` grants with no flags: `print` /
   `io.print`, the whole standard library (`str.*`, `math.*`, `conv.*`,
