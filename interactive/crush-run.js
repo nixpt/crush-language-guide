@@ -83,6 +83,7 @@ onmessage = (e) => {
     // VM runs longer than `budget` ms. A step of a run whose worker has since been
     // replaced (another run timed out) reports `lost`.
     function step(msg, budget, gen) {
+        if (host) return hostStep(msg);
         const job = queue.then(async () => {
             if (!worker) {
                 if (gen != null) return { status: 'lost' };
@@ -110,6 +111,18 @@ onmessage = (e) => {
         });
         queue = job.catch(() => { worker = null; });
         return job;
+    }
+
+    // In surfer (SURF-GUIDE-RUN-1) the browser runs Crush natively and offers it
+    // as window.__surferCrush: the same steps and reports as the worker, with the
+    // running-time limit enforced by the browser, which grants a run at most
+    // `host.grantable` (the rest is refused before the program runs).
+    const host = typeof window.__surferCrush === 'object' && window.__surferCrush ? window.__surferCrush : null;
+
+    function hostStep(msg) {
+        const call = msg.op === 'start' ? host.start(msg.id, msg.source, msg.grants)
+            : msg.op === 'input' ? host.input(msg.id, msg.line) : host.eof(msg.id);
+        return call.then((r) => Object.assign({ gen: 0 }, r), (e) => ({ status: 'error', output: '', steps: 0, gen: 0, error: String(e) }));
     }
 
     // Run `source` to completion. When the program calls io.read, `readLine(output,
@@ -255,6 +268,12 @@ onmessage = (e) => {
             const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + grants.map((g) => GRANT_NAMES[g] || g).join(', '));
             chip.title = 'Runs of this example are granted ' + grants.map((g) => GRANT_WHY[g] || g).join('; ') +
                 ', as the guide runs it with crush-run. Nothing else is granted.';
+            const withheld = host ? grants.filter((g) => host.grantable.indexOf(g) < 0) : [];
+            if (withheld.length) {
+                chip.textContent += ' (not in this browser)';
+                chip.title = 'This browser does not grant ' + withheld.map((g) => GRANT_NAMES[g] || g).join(', ') +
+                    ' to web pages, so Run is refused before the program runs. Run it with crush-run.';
+            }
             play.after(chip);
         }
 
