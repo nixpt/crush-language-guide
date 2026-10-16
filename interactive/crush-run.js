@@ -433,6 +433,14 @@ onmessage = (e) => {
         document.querySelectorAll('div.crush-block[data-crush]').forEach(setup);
     }
 
+    // For scripts/check-corpus-browser.py: run `source` exactly as a Run button
+    // does, with `grants`, feeding `stdin` line by line and then end of input.
+    window.crushRun = Object.freeze({
+        run(source, { grants = [], stdin = '' } = {}) {
+            const lines = stdin === '' ? [] : stdin.replace(/\n$/, '').split('\n');
+            return execute(source, () => Promise.resolve(lines.length ? lines.shift() : null), grants);
+        },
+    });
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 })();
