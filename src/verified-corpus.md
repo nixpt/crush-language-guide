@@ -7,7 +7,7 @@ the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
 > Verified against crush-ast `3ae0b4a` (the commit in the repository's
-> `CRUSH_AST_COMMIT` file). 122 programs.
+> `CRUSH_AST_COMMIT` file). 123 programs.
 
 | Area | Programs | Covers |
 |---|---:|---|
@@ -23,7 +23,7 @@ observed by running one of these programs.
 | `errors/` | 6 | `try`/`catch`/`throw`, rethrow, what `catch` can't catch, `result.*` |
 | `modules/` | 2 | `import` (refused), `export` |
 | `capabilities/` | 9 | refusal before running, `--fs` and `--fs-root`, `@capabilities`, `io.read`, `sys.args`, `math.random` |
-| `polyglot/` | 14 | `--polyglot`, `-> outputs`, JavaScript, chaining, `use @lang`, isolation, errors, bash |
+| `polyglot/` | 15 | `--polyglot`, `-> outputs`, JavaScript, chaining, `use @lang`, isolation, errors, bash |
 | `concurrency/` | 7 | `spawn`/`yield`/`await`, `async fn`, `parallel_map` and its rules |
 | `annotations/` | 3 | manifest annotations, `@wip`, `@capabilities` |
 | `ai-native/` | 2 | the refused `semantic_switch`, AI expressions not in source |
@@ -54,6 +54,7 @@ changes and the corpus fails, which is the signal to update the guide.
 | `structs/method-on-loop-variable`: `s.area()` on a `for` variable is refused | [#256](https://github.com/nixpt/crush-ast/issues/256) |
 | `closures/builtin-not-a-value`: `let g = len` fails at run time | [#257](https://github.com/nixpt/crush-ast/issues/257) |
 | `concurrency/await-non-task`: `await 5` is `null` | [#251](https://github.com/nixpt/crush-ast/issues/251) |
+| `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
 
 ## Running it
 

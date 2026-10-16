@@ -162,6 +162,12 @@ print(missing)
 [compile] @python block declares output `missing` but never binds it; add `missing = …` at the block's top level, or drop it from `->`
 ```
 
+Everything after the opening `{` is the guest's source, including the rest of
+the header line, so a Crush `//` comment there is Python code. With an output list
+that syntax error is currently reported as `[compile] Undefined variable: m`
+(crush-ast [#266](https://github.com/nixpt/crush-ast/issues/266)). Put comments
+above the block, or use the guest's own comment syntax inside it.
+
 **Blocks without `->` (being phased out).** A block with no output list still
 exports its *last top-level assignment*, as in earlier releases, but the compiler
 now warns on standard error, and warns again if that overwrites an existing Crush
