@@ -10,3 +10,5 @@ book/
 .dejavue/embedder_circuit.json
 .dejavue/timeline.jsonl.bak-*
 
+# agent worktrees live inside the repo (squadron SQ-204)
+.jagent/worktrees/
