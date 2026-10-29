@@ -12,7 +12,7 @@ produce it from other languages, and an AI agent can write it directly (see
 ```
 
 This page is the schema reference. It is derived from `crates/crush-cast/src/lib.rs`
-in crush-ast (verified against `aa07413`, 2026-10-16); the examples are accepted by `crush_cast::validate_json`,
+in crush-ast (verified against `b1791d8e`, 2026-10-29); the examples are accepted by `crush_cast::validate_json`,
 compiled and run by this guide's checker.
 
 ## Document structure
@@ -272,7 +272,7 @@ CBOR:
 than `CAST_VERSION` (`"0.1"`): `version mismatch at cast boundary: expected 0.1,
 found …`. The corpus in `examples/cast/` uses `"0.1"` / `"0.1.0"`.
 
-> **Known inconsistency (since crush-ast `v0.3.9`, still in `aa07413`).** The Crush front end stamps the trees
+> **Known inconsistency (since crush-ast `v0.3.9`, still in `b1791d8e`).** The Crush front end stamps the trees
 > it produces `cast_version: "1.0.0"`, which the versioned loader then rejects — so a
 > CAST dump from the compiler cannot be re-loaded with `Program::load`, though
 > `serde_json` and `validate_json` accept it. When you write CAST by hand or from an

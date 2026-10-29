@@ -1,4 +1,5 @@
-// PITFALL (crush-ast issue #257): built-ins such as len are not function values.
-// This compiles, then fails at run time; wrap it instead: let g = |x| len(x)
+// Built-ins such as len are not function values: using one as a value is a
+// compile error that names the lambda to write instead (crush-ast #257; before
+// that it compiled and failed at run time).
 let g = len
 print(g([1]))

@@ -5,8 +5,8 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `aa07413`
-  (2026-10-16), the same commit the guide's examples are verified against
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `b1791d8e`
+  (2026-10-29), the same commit the guide's examples are verified against
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**,
   so a granted `@javascript` block gets Crush variables in and a typed value out,
   as with `crush-run --polyglot` (the page runs the block with
@@ -17,13 +17,16 @@ crate:
   directory (cargo still hashes the checkout's location into symbol names, so a
   build from a checkout elsewhere has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 6,856,830 bytes (1,966,985 gzipped). The
-  previous build (`cb655f3`, default features, no `polyglot-javascript`) was
-  5,001,948 bytes (1,439,176 gzipped): +1.85 MB raw, +0.53 MB over the wire, almost
-  all of it `@javascript` marshaling (the same commit with only that feature added
-  is 6,835,626 bytes).
+- size: `crush_web_bg.wasm` is 9,786,136 bytes (2,656,656 gzipped). The
+  previous build (`aa07413`, same features) was 6,856,830 bytes (1,966,985
+  gzipped): +2.93 MB raw, +0.69 MB over the wire. Almost all of it is the
+  `polyglot-javascript` feature, i.e. the JavaScript walker it links: the JS class
+  work since `aa07413` (CRUSH-277/284/285/293: classes, accessors, `super`,
+  statics). With default features only, `b1791d8e` builds to 5,283,340 bytes
+  (`cb655f3`: 5,001,948), so the feature now adds ~4.5 MB where it added ~1.85 MB.
+  The JS glue (`crush_web.js`) is byte-identical to the `aa07413` build.
 - sha256:
-  - `crush_web_bg.wasm` `a43860c32a4a7aa9b8e53933a5a38f5851423515c60458c4491bf13cae8f992f`
+  - `crush_web_bg.wasm` `ff04754c654f8948073e9534aefb82ee8d654809471ff65aa7f301760231f893`
   - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
 
 The book serves its own copy: the page fetches these files and hands them to the

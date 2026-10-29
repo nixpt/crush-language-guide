@@ -1,1 +1,1 @@
-load from uninitialised slot
+[compile] `len` is a built-in, not a function value; wrap it in a lambda: `|x| len(x)`

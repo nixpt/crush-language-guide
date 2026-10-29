@@ -1,6 +1,6 @@
 # Closures and Function Values
 
-> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line
+> Verified against crush-ast `b1791d8e` (2026-10-29). New since the 0.3 line
 > (crush-ast CRUSH-251).
 
 Functions in Crush are values. A named function can be stored, passed and
@@ -239,9 +239,11 @@ print(fs[0](1))
 [compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function
 ```
 
-The built-ins `print` and `len` are not function values: `let g = len` compiles
-but fails when it runs (`load from uninitialised slot`, crush-ast
-[#257](https://github.com/nixpt/crush-ast/issues/257)). Wrap them in a lambda:
+The built-ins (`print`, `len`, `parallel_map`, …) are not function values:
+`let g = len` is a compile error that names the fix, `` `len` is a built-in, not a
+function value; wrap it in a lambda: `|x| len(x)` `` (crush-ast
+[#257](https://github.com/nixpt/crush-ast/issues/257); before, it compiled and
+failed at run time). Wrap them in a lambda:
 
 ```crush
 let size = |x| len(x)

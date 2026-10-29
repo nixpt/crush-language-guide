@@ -1,6 +1,6 @@
 # Annotations
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `b1791d8e` (2026-10-29).
 
 An annotation is an `@name` form written before a declaration (or at the top of
 a file). Three kinds exist:
@@ -100,17 +100,21 @@ this host: invariant.evaluate`.)
 
 CAST has AI nodes (queries, tool chains, agent delegation, goals, …) for programs
 that agents emit as JSON; they are described in [AI-Native CAST](../cast/ai-native.md).
-They are **not** Crush source functions: `ai_semantic_match(...)` in a `.crush`
-file is just an undefined name.
+Two of them also have Crush built-ins, `ai_semantic_match(text, target,
+threshold)` and `ai_synthesize(prompt)`, which compile to the same
+capability-gated call as the CAST `SemanticMatch` / `Synthesize` nodes. `crush-run`
+has no AI backend, so such a program is refused before it runs; a host that
+provides `ai_native.semantic_match` can run it:
 
-<!-- check: error -->
+<!-- check: runfail not available in this host: ai_native.semantic_match -->
 ```crush
 let m = ai_semantic_match("refund", "billing", 0.8)
 print(m)
 ```
 
 ```text
-[compile] Undefined function: ai_semantic_match
+[capabilities] … needs capabilities this run does not grant; nothing was run:
+  not available in this host: ai_native.semantic_match
 ```
 
 The one AI statement with Crush syntax, `semantic_switch`, parses but is refused

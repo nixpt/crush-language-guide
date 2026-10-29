@@ -1,0 +1,7 @@
+// Negative slice bounds count from the end, like a[-1] (fixed in crush-ast
+// #254; before that they were silently clamped).
+let a = [1, 2, 3, 4]
+print(a[-1])
+print(a[1:-1])
+print(a[-3:])
+print(a[:-1])

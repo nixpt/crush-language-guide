@@ -1,0 +1,5 @@
+// `return match ...` returns the match's value (fixed in crush-ast #253;
+// before that the parser took it as a bare `return` and it gave null).
+fn name(v) { return match v { 1 => "one", _ => "other" } }
+print(name(1))
+print(name(2))

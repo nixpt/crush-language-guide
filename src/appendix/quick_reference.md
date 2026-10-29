@@ -1,7 +1,7 @@
 # Quick Reference
 
 Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide's checker against crush-ast `aa07413`. Details live in
+can run is run by the guide's checker against crush-ast `b1791d8e`. Details live in
 the chapters linked from each heading.
 
 ## Command line ([Getting Started](../getting-started.md))
@@ -120,8 +120,7 @@ b
 `0..3` excludes the end, `0..=3` includes it. `for` also walks a string's
 characters and a map's keys. `break` and `continue` work in `while` and `for`.
 `match v { 1 => "one", P { x: a } => a, _ => "other" }` matches literals,
-bindings and struct patterns (bind it with `let`; `return match …` returns `null`
-today, #253).
+bindings and struct patterns; `return match …` returns its value.
 
 ### Operators ([Operators](../crush/operators.md))
 
