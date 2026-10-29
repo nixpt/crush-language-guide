@@ -34,7 +34,10 @@ export CARGO_TARGET_DIR=$target
 export RUSTFLAGS="--remap-path-prefix=$src=crush-ast --remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}/registry/src=registry --remap-path-prefix=$(rustc --print sysroot)=rust"
 (cd "$src/crates/crush-web" && cargo build --release --target wasm32-unknown-unknown --features "$features")
 out=$(mktemp -d)
-wasm-bindgen --target web --out-dir "$out" "$target/wasm32-unknown-unknown/release/crush_web.wasm"
+# --remove-name-section: the ~1.3 MB debugging `name` section. crush-web's
+# release profile strips only debug info, because a symbol strip also drops the
+# `target_features` section that tells wasm-bindgen to emit externref glue.
+wasm-bindgen --target web --remove-name-section --out-dir "$out" "$target/wasm32-unknown-unknown/release/crush_web.wasm"
 cp "$out/crush_web_bg.wasm" "$out/crush_web.js" "$guide/src/play/pkg/"
 rm -rf "$out"
 
