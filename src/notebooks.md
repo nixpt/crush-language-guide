@@ -68,7 +68,7 @@ and the cell kinds it does not run yet are described in the
 > **Kernel lag.** The published `crush-notebook-kernel` (0.1.1) is built on
 > crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
 > declared polyglot outputs and the default-on standard library. Cells using those
-> fail in the kernel even though the page (verified against crush-ast `b1791d8e`)
+> fail in the kernel even though the page (verified against crush-ast `d04bc60a`)
 > shows them working. Use `crush run`, or the page's Run button, for those until a
 > kernel built on a newer crush-ast is published.
 

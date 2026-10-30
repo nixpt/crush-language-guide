@@ -1,6 +1,6 @@
 # Syntax and Grammar
 
-> Verified against crush-ast `b1791d8e` (2026-10-29): every runnable block on this
+> Verified against crush-ast `d04bc60a` (2026-10-29): every runnable block on this
 > page was compiled and run with that build.
 
 This chapter covers the lexical structure and grammar that the Crush parser

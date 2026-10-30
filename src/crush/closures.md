@@ -1,6 +1,6 @@
 # Closures and Function Values
 
-> Verified against crush-ast `b1791d8e` (2026-10-29). New since the 0.3 line
+> Verified against crush-ast `d04bc60a` (2026-10-29). New since the 0.3 line
 > (crush-ast CRUSH-251).
 
 Functions in Crush are values. A named function can be stored, passed and

@@ -5,12 +5,8 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at `b1791d8e`
-  (2026-10-29), the commit the guide's examples are verified against, **plus
-  crush-ast [#311](https://github.com/nixpt/crush-ast/pull/311)** (`f0e292c6`).
-  #311 changes only `crush-web`'s and `crush-lang-sdk`'s manifests and
-  `crush-web/Cargo.lock`, so no Crush source differs from `b1791d8e`. Rebuild
-  from the commit that merges it, and drop this note, once it is on `main`.
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `d04bc60a`
+  (2026-10-29), the same commit the guide's examples are verified against
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**,
   so a granted `@javascript` block gets Crush variables in and a typed value out,
   as with `crush-run --polyglot` (the page runs the block with
@@ -23,17 +19,18 @@ crate:
   the checkout's location into symbol names, so a build from a checkout elsewhere
   has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 4,987,479 bytes (1,506,581 gzipped). Built from
-  `b1791d8e` itself it was 9,786,136 (2,656,656 gzipped), and from `aa07413`
-  6,856,830 (1,966,985). The JS support itself was not the cause:
+- size: `crush_web_bg.wasm` is 4,993,152 bytes (1,509,307 gzipped). Built from
+  `b1791d8e` (before #311) it was 9,786,136 (2,656,656 gzipped), and from
+  `aa07413` 6,856,830 (1,966,985). The JS support itself was not the cause:
   `polyglot-javascript` also linked swc, a second JavaScript parser that only
   whole-file `.js` lowering uses (never in the browser, ~1.1 MB), and crush-web,
   being its own workspace root, built with cargo's default profile (no LTO, ~1 MB
   of function names kept). #311 fixes both. Interpreter-bound programs run ~10%
   slower than the 9.79 MB build. `crush_web.js` is byte-identical to the
-  `aa07413` and `b1791d8e` builds.
+  `aa07413` and `b1791d8e` builds. (#313, also in `d04bc60a`, adds the
+  lowered-block output capture to the VM, 5.7 KB.)
 - sha256:
-  - `crush_web_bg.wasm` `ac07728c639255086ec5b5ea1e4918577f470999def86c3a1b4ef1a50dc59214`
+  - `crush_web_bg.wasm` `9c8483311b0f3751b8782d02f59527b04c34205edaecb4b8aa87bd9400cfe7aa`
   - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
 
 The book serves its own copy: the page fetches these files and hands them to the

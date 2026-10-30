@@ -1,7 +1,7 @@
 # Examples
 
 Runnable Crush programs. Every program and every output block on these pages is
-executed against crush-ast `b1791d8e` by `scripts/check-examples.py`, so what you
+executed against crush-ast `d04bc60a` by `scripts/check-examples.py`, so what you
 read is what happens. Pages also record where a
 language feature is *not yet implemented*, with the crush-ast ticket.
 

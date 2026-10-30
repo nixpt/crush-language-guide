@@ -1,6 +1,6 @@
 # AI-Native CAST
 
-> Verified against crush-ast `b1791d8e` (2026-10-29).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 ## The doctrine
 

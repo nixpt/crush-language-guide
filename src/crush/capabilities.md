@@ -1,6 +1,6 @@
 # Capability System
 
-> Verified against crush-ast `b1791d8e` (2026-10-29).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 Crush programs can't touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,

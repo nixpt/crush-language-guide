@@ -8,7 +8,7 @@ toolchain.
 Run it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`
 on `PATH`; `crush doctor` checks).
 
-> Verified against crush-ast `b1791d8e` (2026-10-29).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 <!-- check: flags --polyglot -->
 ```crush
