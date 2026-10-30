@@ -1,7 +1,7 @@
 # Quick Reference
 
 Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide's checker against crush-ast `d04bc60a`. Details live in
+can run is run by the guide's checker against crush-ast `c1cc21fb`. Details live in
 the chapters linked from each heading.
 
 ## Command line ([Getting Started](../getting-started.md))

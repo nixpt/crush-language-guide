@@ -1,6 +1,6 @@
 # Structs, Methods and Kinds
 
-> Verified against crush-ast `d04bc60a` (2026-10-29). New since the 0.3 line:
+> Verified against crush-ast `c1cc21fb` (2026-10-30). New since the 0.3 line:
 > `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the
 > COSM object model).
 

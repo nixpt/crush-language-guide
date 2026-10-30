@@ -1,6 +1,6 @@
 # Data Types
 
-> Verified against crush-ast `d04bc60a` (2026-10-29).
+> Verified against crush-ast `c1cc21fb` (2026-10-30).
 
 Crush is dynamically typed at run time, with a **static checker** that catches
 obvious mismatches at compile time when you add type annotations. This chapter
