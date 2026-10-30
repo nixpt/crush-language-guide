@@ -80,6 +80,28 @@ PY_HOST = [
     (re.compile(r"\b(socket|ssl|select|ftplib|smtplib)\b|\burllib\.request\b|\bhttp\.client\b"), "the network"),
     (re.compile(r"\bpypi:"), "packages"),
 ]
+# What a @javascript block can only do in node, as src/play/guest-js.js refuses
+# it: node modules other than `util`, the network, the process's own details.
+JS_HOST = [
+    (re.compile(r"\brequire\s*\(\s*['\"](?!(?:node:)?util['\"])|\bimport\s*\(|^\s*import\s", re.M), "node modules"),
+    (re.compile(r"\b(fetch|XMLHttpRequest|WebSocket|EventSource)\b"), "the network"),
+    (re.compile(r"\bprocess\.(?!(?:env|exit|exitCode|stdout|stderr)\b)\w+"), "the process (`process.*`)"),
+]
+LANG_HEADER = re.compile(r"@(\w+)[^{\n]*\{")
+
+
+def lang_bodies(code, lang):
+    """The text of each `@lang { ... }` block in `code` (braces matched)."""
+    bodies = []
+    for m in LANG_HEADER.finditer(code):
+        if m.group(1) != lang:
+            continue
+        depth, i = 1, m.end()
+        while i < len(code) and depth:
+            depth += {"{": 1, "}": -1}.get(code[i], 0)
+            i += 1
+        bodies.append(code[m.end():i - 1])
+    return bodies
 # Host flags whose capabilities the browser can grant a run too: the clock (from
 # JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
 BROWSER_FLAGS = {"--time": "time", "--env": "env"}
@@ -98,10 +120,12 @@ def host_needs(d, code):
     host_langs = [l for l in langs if l not in BROWSER_LANGS]
     if "--polyglot" in flags and host_langs:
         needs.append("uses " + ", ".join(f"`@{l}`" for l in host_langs) + " blocks (polyglot)")
-    if "--polyglot" in flags and "python" in langs:
-        py_host = [what for pattern, what in PY_HOST if pattern.search(code)]
-        if py_host:
-            needs.append("has an `@python` block that uses " + ", ".join(py_host))
+    for lang, rules in (("python", PY_HOST), ("javascript", JS_HOST)):
+        if "--polyglot" in flags and lang in langs:
+            body = "\n".join(lang_bodies(code, lang))
+            uses = [what for pattern, what in rules if pattern.search(body)]
+            if uses:
+                needs.append(f"has an `@{lang}` block that uses " + ", ".join(uses))
     calls = {}
     for ns, fn in CALL.findall(code):
         if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:

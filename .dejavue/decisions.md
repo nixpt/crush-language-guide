@@ -55,3 +55,18 @@ Rejected alternatives:
 Outcome:
 11 more guide blocks runnable; whole verified corpus and the UI test pass in headless Chrome
 
+
+## 2026-10-29T23:39:32-05:00 — Run @javascript on the page as node -e does: async via crush-web deferLang, node's own util.inspect
+
+Reason:
+The synchronous executor could not wait for promises or timers, so async blocks were refused, and the hand-written formatter refused Map/Set/classes/long arrays. crush-ast #314 adds Session deferLang (need_lang / provide_lang / fail_lang), so guest-js.js runs a block as an async function with its own event loop over the browser's timers, until nothing is pending; uncaught errors, unhandled rejections and non-zero exit fail it like node. console.* use node-inspect-extracted 3.3.4 (node's lib/internal/util/inspect.js, MIT, vendored as src/play/node-inspect.js): 57/59 values byte-identical to node 26; the two V8-internal ones (a Promise's state, a native Proxy) are refused, or made exact by handing the block the library's Proxy. 31 compared cases match node -e or are refused loudly.
+
+Artifacts: src/play/guest-js.js, src/play/node-inspect.js
+
+Rejected alternatives:
+- **keep refusing async and special formatting**
+- **hand-written inspect (cannot stay exact)**
+
+Outcome:
+check-browser 193/0 FAIL; corpus in Chrome 118 + 4 refusals; UI test 312 ok, 0 FAIL
+

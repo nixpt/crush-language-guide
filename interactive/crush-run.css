@@ -109,6 +109,7 @@ a.crush-btn, a.crush-btn:visited { color: var(--fg); }
 .crush-status { font-size: 0.8em; color: var(--icons); margin-top: 0.3em; }
 .crush-matches { color: var(--blockquote-tip-color); font-weight: 600; }
 .crush-differs { color: var(--blockquote-caution-color); font-weight: 600; }
+.crush-withheld { color: var(--fg); opacity: 0.75; }
 
 .crush-verdict {
     padding: 0.5em 1em;

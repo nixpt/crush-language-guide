@@ -46,6 +46,21 @@ export class Session {
         return takeFromExternrefTable0(ret[0]);
     }
     /**
+     * The pending `@lang` block (`need_lang`) failed with `message` (what it
+     * would print on stderr). The run then fails as a native run does.
+     * @param {string} message
+     * @returns {any}
+     */
+    fail_lang(message) {
+        const ptr0 = passStringToWasm0(message, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.session_fail_lang(this.__wbg_ptr, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
      * Compile `source` with options `{ max_steps?, args?, grants? }` (`stdin` is ignored —
      * use `provide`). Nothing runs until [`Session::run`].
      * @param {string} source
@@ -72,6 +87,21 @@ export class Session {
         const ptr0 = passStringToWasm0(line, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.session_provide(this.__wbg_ptr, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
+    }
+    /**
+     * The pending `@lang` block (`need_lang`) ran: `stdout` is everything it
+     * printed (with the result-sentinel line its marshaling prints). Continue.
+     * @param {string} stdout
+     * @returns {any}
+     */
+    provide_lang(stdout) {
+        const ptr0 = passStringToWasm0(stdout, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.session_provide_lang(this.__wbg_ptr, ptr0, len0);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -390,6 +420,10 @@ function __wbg_get_imports() {
             const ret = new Error();
             return ret;
         },
+        __wbg_new_7796ffc7ed656783: function() {
+            const ret = new Map();
+            return ret;
+        },
         __wbg_new_cd45aabdf6073e84: function(arg0) {
             const ret = new Uint8Array(arg0);
             return ret;
@@ -432,6 +466,10 @@ function __wbg_get_imports() {
             const ret = module.require;
             return ret;
         }, arguments); },
+        __wbg_set_575dd786d51585f8: function(arg0, arg1, arg2) {
+            const ret = arg0.set(arg1, arg2);
+            return ret;
+        },
         __wbg_set_6be42768c690e380: function(arg0, arg1, arg2) {
             arg0[arg1] = arg2;
         },

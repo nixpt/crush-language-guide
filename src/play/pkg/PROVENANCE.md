@@ -5,13 +5,19 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `d04bc60a`
-  (2026-10-29), the same commit the guide's examples are verified against
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at `d04bc60a`
+  (2026-10-29), the commit the guide's examples are verified against, **plus
+  crush-ast [#314](https://github.com/nixpt/crush-ast/pull/314)** (`e6294310`:
+  `Session`'s `deferLang`, so the page runs a `@javascript` block asynchronously).
+  #314 changes crush-web's `Session` and `PortableVm`'s `@lang` hand-off only;
+  no Crush source compiles differently. Rebuild from the commit that merges it,
+  and drop this note, once it is on `main`.
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**
   and **`polyglot-python`**, so a granted `@javascript` / `@python` block gets
   Crush variables in and a typed value out, as with `crush-run --polyglot` (the
-  page runs the block with `src/play/guest-js.js`, or `src/play/guest-py.js` in
-  Pyodide, `src/play/pyodide.json`; see `src/play/worker.js`)
+  page runs the block with `src/play/guest-js.js` (with `src/play/node-inspect.js`),
+  or `src/play/guest-py.js` in Pyodide, `src/play/pyodide.json`; see
+  `src/play/worker.js`)
 - toolchain: rustc 1.96.0 for `wasm32-unknown-unknown` with crush-web's own
   release profile (#311: `opt-level = "s"`, LTO, one codegen unit, debug info
   stripped), then `wasm-bindgen 0.2.126 --target web --remove-name-section` (the
@@ -20,7 +26,8 @@ crate:
   the checkout's location into symbol names, so a build from a checkout elsewhere
   has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 6,819,694 bytes (2,173,623 gzipped);
+- size: `crush_web_bg.wasm` is 6,834,952 bytes (2,176,635 gzipped; 6,819,694 at
+  `d04bc60a` alone, #314 adds 15 KB);
   `polyglot-python` (rustpython's parser, for the marshaling) is 1,826,542 bytes
   of it (664,316 gzipped): with only `polyglot-javascript` the same commit is
   4,993,152 (1,509,307). Pyodide itself is not part of this build: the page
@@ -31,12 +38,12 @@ crate:
   whole-file `.js` lowering uses (never in the browser, ~1.1 MB), and crush-web,
   being its own workspace root, built with cargo's default profile (no LTO, ~1 MB
   of function names kept). #311 fixes both. Interpreter-bound programs run ~10%
-  slower than the 9.79 MB build. `crush_web.js` is byte-identical to the
-  `aa07413` and `b1791d8e` builds. (#313, also in `d04bc60a`, adds the
-  lowered-block output capture to the VM, 5.7 KB.)
+  slower than the 9.79 MB build. (#313, also in `d04bc60a`, adds the
+  lowered-block output capture to the VM, 5.7 KB.) `crush_web.js` gains
+  `Session.provide_lang` / `fail_lang` from #314.
 - sha256:
-  - `crush_web_bg.wasm` `09cb18c7bdc72d4057a9a21b18d2a8b427678a59739e955d1668f7f1398783c9`
-  - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
+  - `crush_web_bg.wasm` `730ef977044b2781fff3bea7e2cd06214772ab98ca49fbfe9a37eac79691d8d9`
+  - `crush_web.js` `3f4c724d6ff16488d12b9ee2416fe4eb2164ed534eed2dd0817d3776bbcbd3be`
 
 The book serves its own copy: the page fetches these files and hands them to the
 worker in its sandboxed iframe, which has no network of its own.
