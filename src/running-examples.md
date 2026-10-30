@@ -64,16 +64,23 @@ isolated worker as the VM, and behaves like that `node -e` run:
 
 - Crush variables go in and `->` outputs come back as JSON, as natively; every
   block starts with a fresh scope, and globals it creates are removed afterwards.
-- What it prints with `console.log` (and `console.info`/`debug`,
-  `process.stdout.write`) is its output, formatted as node formats it;
-  `console.error`/`warn` go to its error output, which is shown if the block
-  fails. `process.env` holds its inputs and `process.exit` works.
-- Where the browser cannot reproduce node exactly, the block is **refused**, never
-  approximated: `require` and other `process.*` properties, anything asynchronous
-  (timers, promises, `async`/`await`, `fetch`), and logging values node formats
-  specially (class instances, `Map`/`Set`, functions, arrays of more than six
-  items, which node lays out in columns). Turn such a value into a string or JSON
-  first, or run the program with `crush-run`.
+- It runs as node runs a script: top-level `await`, promises, `async` functions,
+  `queueMicrotask` and timers (`setTimeout`, `setInterval`, `setImmediate`) all
+  work, and the block finishes when nothing is left to run, in node's order. An
+  uncaught exception (also in a timer or a promise), an unhandled rejection, or
+  `process.exit` / `process.exitCode` with a non-zero status fails it, as it makes
+  node exit non-zero.
+- What it prints with `console.log` (and `info`/`debug`/`dir`/`group`/`count`,
+  `process.stdout.write`) is its output, formatted by node's own `util.inspect`
+  and `util.format` (`Map(1) { 'a' => 1 }`, class instances, long arrays in
+  columns, ...), so it reads exactly as node prints it; `require('util')` is that
+  module. `console.error`/`warn`/`assert` go to its error output, which is shown
+  if the block fails. `process.env` holds its inputs.
+- Where only node can answer, the block is **refused**, never approximated: node
+  modules other than `util`, the network (`fetch`, `XMLHttpRequest`,
+  `WebSocket`), the process's own details (`process.argv`, `platform`,
+  `nextTick`, ...), and printing a Promise or a timer object (node shows their
+  internals). Run such a program with `crush-run --polyglot`.
 - The block runs with no authority: the worker sits in a sandboxed frame with an
   opaque origin and a content security policy that allows no network, so the
   block has no access to this page, its cookies or storage, or the network.

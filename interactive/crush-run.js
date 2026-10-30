@@ -39,9 +39,10 @@ onmessage = (e) => {
             if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`);
             return r[how]();
         });
-        return Promise.all([get('play/guest-js.js', 'text'), get('play/guest-py.js', 'text'), get('play/worker.js', 'text'),
-            get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
-            .then(([guestJs, guestPy, work, glue, wasm]) => ({ worker: guestJs + '\n' + guestPy + '\n' + work, glue, wasm }));
+        return Promise.all([get('play/node-inspect.js', 'text'), get('play/guest-js.js', 'text'), get('play/guest-py.js', 'text'),
+            get('play/worker.js', 'text'), get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
+            .then(([inspect, guestJs, guestPy, work, glue, wasm]) =>
+                ({ worker: [inspect, guestJs, guestPy, work].join('\n'), glue, wasm }));
     }
 
     // ── Python: Pyodide, fetched on the first granted @python run ─────────────
@@ -241,8 +242,9 @@ onmessage = (e) => {
         }
         if (/not supported by the in-browser JavaScript runtime/.test(error)) {
             return { kind: 'refused', title: 'Refused: this @javascript block needs node',
-                body: 'The browser runs a granted @javascript block only where it can reproduce node exactly, ' +
-                    'and refuses the rest rather than approximate it. Run the program with crush-run --polyglot.' };
+                body: 'The browser runs a granted @javascript block as node runs it (promises, timers, node\'s own ' +
+                    'formatting) and refuses what only node can do (node modules other than util, the network, ' +
+                    'process details) rather than approximate it. Run the program with crush-run --polyglot.' };
         }
         m = error.match(/unknown capability: ([\w.]+)/);
         if (m) {

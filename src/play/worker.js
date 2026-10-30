@@ -23,7 +23,11 @@
 let crush = null;
 const sessions = new Map();
 
-function executor(lang, code, env) {
+// A granted block, handed out by a deferLang Session (`need_lang`): @javascript
+// runs asynchronously, as node runs a script (its promises and timers), and
+// @python in Pyodide. Resolves to what it printed; rejects with what it would
+// print on stderr.
+async function runBlock(lang, code, env) {
     if (lang === 'javascript' || lang === 'js') return self.crushGuestJs.run(code, env);
     if (lang === 'python') return self.crushGuestPy.run(code, env);
     throw new Error(`@${lang} blocks cannot run in the browser`);
@@ -56,11 +60,11 @@ async function loadPython(files) {
     self.crushGuestPy.init(pyodide);
 }
 
-function step(m) {
+async function step(m) {
     let s = sessions.get(m.id), r;
     try {
         if (m.op === 'start') {
-            s = new crush.Session(m.source, { grants: m.grants || [] });
+            s = new crush.Session(m.source, { grants: m.grants || [], deferLang: true });
             sessions.set(m.id, s);
             r = s.run();
         } else if (!s) {
@@ -70,6 +74,20 @@ function step(m) {
         } else {
             r = s.close();
         }
+        // Each granted block the run reaches: run it, then continue the run.
+        let output = r.output;
+        while (r.status === 'need_lang') {
+            const { lang, code, env } = r.lang;
+            let next;
+            try {
+                next = s.provide_lang(await runBlock(lang, code, env));
+            } catch (e) {
+                next = s.fail_lang(String((e && e.message) || e));
+            }
+            output += next.output;
+            r = next;
+        }
+        r.output = output;
     } catch (e) {
         // A wasm trap (a panic in crush-web) leaves the instance unusable.
         const fatal = e instanceof WebAssembly.RuntimeError;
@@ -88,7 +106,8 @@ self.onmessage = async ({ data }) => {
     try {
         crush = await import(URL.createObjectURL(new Blob([glue], { type: 'text/javascript' })));
         crush.initSync({ module: wasm });
-        crush.set_lang_executor(executor);
+        // Sessions run with deferLang: each granted block comes back to step()
+        // as `need_lang` (runBlock), so no synchronous executor is installed.
     } catch (e) {
         port.postMessage({ loadError: String((e && e.message) || e) });
         return;
@@ -100,8 +119,7 @@ self.onmessage = async ({ data }) => {
             return;
         }
         const started = performance.now();
-        const r = step(m);
-        port.postMessage(Object.assign({ id: m.id, ms: performance.now() - started }, r));
+        step(m).then((r) => port.postMessage(Object.assign({ id: m.id, ms: performance.now() - started }, r)));
     };
     port.postMessage({ ready: true });
 };

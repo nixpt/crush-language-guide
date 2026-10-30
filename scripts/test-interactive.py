@@ -254,9 +254,21 @@ def main():
             status, outs = edited_run(js, probe)
             check(status.startswith("ok") and outs[0] == "[undefined, undefined, undefined, undefined, null, SecurityError, NetworkError]",
                   f"a @javascript block sees no page, storage or network ({outs!r})")
-            status, outs = edited_run(js, '@javascript {\nconsole.log(new Map())\n}\n')
+            status, outs = edited_run(js, '@javascript {\nconst fs = require("fs")\n}\n')
             check("failed" in status and "not supported by the in-browser JavaScript runtime" in outs[-1],
-                  f"what the browser cannot reproduce exactly is refused ({outs[-1][:90]!r})")
+                  f"what only node can do is refused ({outs[-1][:90]!r})")
+            # runs as node -e does: top-level await, the event loop, node's own formatting
+            status, outs = edited_run(js, '@javascript -> r {\n'
+                                          'setTimeout(() => console.log("timer"), 5)\n'
+                                          'queueMicrotask(() => console.log("micro"))\n'
+                                          'class P { constructor() { this.x = 1 } }\n'
+                                          'console.log(new Map([["a", 1]]), new P())\n'
+                                          'const r = await new Promise((res) => setTimeout(() => res(42), 20))\n'
+                                          '}\nprint(r)\n')
+            check(status.startswith("ok") and outs[0] == "Map(1) { 'a' => 1 } P { x: 1 }\nmicro\ntimer42",
+                  f"@javascript awaits, runs its timers and prints like node ({outs!r})")
+            status, outs = edited_run(js, '@javascript {\nPromise.reject(new Error("boom"))\n}\nprint("after")\n')
+            check("failed" in status and "Error: boom" in outs[-1], f"an unhandled rejection fails the block ({outs!r})")
             status, outs = edited_run(js, 'print("start")\n@javascript {\nwhile (true) {}\n}\n')
             # The worker is stopped mid-step, so output from that step ("start") is lost; the page says so.
             check(status.startswith("timed out") and outs == ["Stopped after 8 s of running time. Output printed before the stop is lost with the stopped runtime."],

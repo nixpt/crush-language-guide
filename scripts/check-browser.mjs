@@ -23,10 +23,12 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = path.join(root, 'src', 'play', 'pkg');
 const verbose = process.argv.includes('-v');
-const { initSync, Session, set_lang_executor } = await import(path.join(pkg, 'crush_web.js'));
+const { initSync, Session } = await import(path.join(pkg, 'crush_web.js'));
 initSync({ module: fs.readFileSync(path.join(pkg, 'crush_web_bg.wasm')) });
-// Granted @javascript / @python blocks run through the page's own executors
-// (worker.js does the same); @python in the same Pyodide release the page loads.
+// Granted @javascript / @python blocks run through the page's own runners, as
+// worker.js runs them: @javascript asynchronously with node's util.inspect,
+// @python in the same Pyodide release the page loads.
+await import(path.join(root, 'src', 'play', 'node-inspect.js'));
 await import(path.join(root, 'src', 'play', 'guest-js.js'));
 await import(path.join(root, 'src', 'play', 'guest-py.js'));
 const pin = JSON.parse(fs.readFileSync(path.join(root, 'src', 'play', 'pyodide.json'), 'utf8'));
@@ -37,21 +39,32 @@ if (!fs.existsSync(path.join(pyodideDir, 'pyodide.mjs'))) {
 }
 const { loadPyodide } = await import(path.join(pyodideDir, 'pyodide.mjs'));
 globalThis.crushGuestPy.init(await loadPyodide({ indexURL: pyodideDir + path.sep }));
-set_lang_executor((lang, code, env) => {
+async function runBlock(lang, code, env) {
     if (lang === 'javascript' || lang === 'js') return globalThis.crushGuestJs.run(code, env);
     if (lang === 'python') return globalThis.crushGuestPy.run(code, env);
     throw new Error(`@${lang} blocks cannot run in the browser`);
-});
+}
 
 // What the page's Run does (interactive/crush-run.js): a Session with the block's
 // grants (data-grants: polyglot.javascript, time, env); each io.read gets
 // the next line of the block's `check: stdin` text (what a reader following the
 // guide types), then end of input. A non-zero sys.exit status is a failure.
-function run(code, stdin, grants) {
-    const s = new Session(code, { grants });
+async function run(code, stdin, grants) {
+    const s = new Session(code, { grants, deferLang: true });
     const lines = stdin == null ? [] : stdin.replace(/\n$/, '').split('\n');
     let r = s.run(), out = r.output;
-    while (r.status === 'need_input') { r = lines.length ? s.provide(lines.shift()) : s.close(); out += r.output; }
+    while (r.status === 'need_input' || r.status === 'need_lang') {
+        if (r.status === 'need_lang') {
+            try {
+                r = s.provide_lang(await runBlock(r.lang.lang, r.lang.code, r.lang.env));
+            } catch (e) {
+                r = s.fail_lang(String((e && e.message) || e));
+            }
+        } else {
+            r = lines.length ? s.provide(lines.shift()) : s.close();
+        }
+        out += r.output;
+    }
     s.free();
     const exited = r.exit_code != null && r.exit_code !== 0;
     if (r.status === 'done' && !exited) return { ok: true, out };
@@ -63,7 +76,7 @@ const counts = {}, bad = [];
 for (const b of blocks) {
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'none') continue;
-    const r = run(b.code, b.stdin, b.grants);
+    const r = await run(b.code, b.stdin, b.grants);
     let problem = null;
     if (b.kind === 'run') {
         if (!r.ok) problem = 'labelled runnable, but fails in the browser: ' + r.err.split('\n')[0];
