@@ -111,13 +111,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:81",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "one\ntwothree\n"
      }
     }
@@ -148,13 +147,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:112",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "30\n10\n"
      }
     }
@@ -221,13 +219,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:151",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "5.0\n7\n"
      }
     }
@@ -294,13 +291,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:211",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "[10, 2, 1, null, true]\n"
      }
     }
@@ -324,20 +320,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "@python -> obj {\nclass C:\n    pass\nobj = C()\n}\nprint(1)\n",
+   "source": "fn main() {\n    @python -> obj {\n    class C:\n        pass\n    obj = C()\n    }\n    print(1)\n}\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "expected-failure"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:231",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
       "expect_error": "cannot marshal output variable(s) obj"
      }
     }
@@ -368,13 +364,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:243",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "21\n"
      }
     }
@@ -405,13 +400,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:265",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "5\n"
      }
     }
@@ -442,13 +436,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:286",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "1\nfalse\n"
      }
     }
@@ -479,13 +472,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:311",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "run",
       "expect_output": "120\n{\"a\": 1}\n"
      }
     }
@@ -546,20 +538,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "print(\"a\")\nprint(\"b\")\n@python {\nraise ValueError(\"x\")\n}\n",
+   "source": "fn main() {\n    print(\"a\")\n    print(\"b\")\n    @python {\n    raise ValueError(\"x\")\n    }\n}\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "expected-failure"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:366",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
       "expect_error": "at .crush line 3"
      }
     }
@@ -596,7 +588,7 @@
      "guide": {
       "src": "crush/polyglot.md:414",
       "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "why": "has an `@python` block that uses the host's files, which the in-browser runtime does not provide",
       "expect_output": "true\n"
      }
     }

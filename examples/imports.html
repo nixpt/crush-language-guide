@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
+            window.path_to_searchindex_js = "../searchindex-720957d5.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -235,7 +235,8 @@ print("loaded")
 <p><code>use @lang &lt;language&gt; "&lt;module&gt;" [as &lt;alias&gt;]</code> writes the import into every later
 block of that language, under the module’s own name and the alias:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="examples/imports.md:46" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="examples/imports.md:46" data-expect="126
+" data-grants="polyglot.python">
 <pre><code class="language-crush">use @lang python "math" as m
 
 @python -&gt; v {
@@ -304,7 +305,7 @@ programs and pass data through files or the host.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../interactive/crush-run-d03ab597.js"></script>
+        <script src="../interactive/crush-run-e40b69eb.js"></script>
 
 
 

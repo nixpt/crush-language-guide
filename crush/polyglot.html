@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
+            window.path_to_searchindex_js = "../searchindex-720957d5.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -257,7 +257,9 @@ order. Two details to know: the block’s output is <strong>trimmed</strong> (so
 trailing newline), and anything written to standard error is discarded when the
 block succeeds.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:81" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:81" data-expect="one
+twothree
+" data-grants="polyglot.python">
 <pre><code class="language-crush">print("one")
 @python {
 print("two")
@@ -284,7 +286,9 @@ and become (or assign) Crush variables at that line. Nothing else leaves the
 block. Use <code>-&gt; name</code> for one and <code>-&gt; (a, b)</code> for several.</li>
 </ul>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:112" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:112" data-expect="30
+10
+" data-grants="polyglot.python">
 <pre><code class="language-crush">let count = 10
 let base = 5
 @python -&gt; total {
@@ -320,7 +324,9 @@ print(out)
 </code></pre>
 <p>Several outputs:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:151" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:151" data-expect="5.0
+7
+" data-grants="polyglot.python">
 <pre><code class="language-crush">let xs = [2, 4, 4, 4, 5, 5, 7, 9]
 @python -&gt; (mean, spread) {
 mean = sum(xs) / len(xs)
@@ -377,7 +383,8 @@ warning: @python block overwrites the existing Crush variable `count`; declare `
 </table>
 </div>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:211" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:211" data-expect="[10, 2, 1, null, true]
+" data-grants="polyglot.python">
 <pre><code class="language-crush">let n = 5
 let tags = ["a", "b"]
 let cfg = {"k": 1}
@@ -395,7 +402,7 @@ print(out)
 file, a function) fails the block with a clear error rather than being dropped:</p>
 <!-- check: runfail cannot marshal output variable(s) obj -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:231" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:231" data-why="this example shows a run-time error" data-grants="polyglot.python" data-expect-error="cannot marshal output variable(s) obj">
 <pre><code class="language-crush">@python -&gt; obj {
 class C:
     pass
@@ -407,7 +414,8 @@ print(1)
 
 <p>Blocks compose through Crush variables, across languages:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:243" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:243" data-expect="21
+" data-grants="polyglot.javascript polyglot.python">
 <pre><code class="language-crush">let x = 1
 @python -&gt; y {
 y = x + 1
@@ -427,7 +435,8 @@ print(w)
 </code></pre>
 <p>Blocks inside functions and loops see the enclosing scope:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:265" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:265" data-expect="5
+" data-grants="polyglot.python">
 <pre><code class="language-crush">let total = 0
 for i in 0..3 {
     @python -&gt; sq {
@@ -446,7 +455,9 @@ print(total)
 fresh interpreter, and only the declared outputs carry over. You cannot define a
 function in one block and call it from Crush or from another block.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:286" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:286" data-expect="1
+false
+" data-grants="polyglot.python">
 <pre><code class="language-crush">@python -&gt; a {
 a = 1
 hidden = 2
@@ -468,7 +479,9 @@ false
 later <code>@python</code> block, so each block doesn’t have to repeat it. Each block is
 still its own process:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:311" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:311" data-expect="120
+{&quot;a&quot;: 1}
+" data-grants="polyglot.python">
 <pre><code class="language-crush">use @lang python "math"
 use @lang python "json" as j
 @python -&gt; (val, text) {
@@ -516,7 +529,7 @@ write it to a file the <code>@bash</code> block reads. Bash inherits the host en
 right place in your <code>.crush</code> file:</p>
 <!-- check: runfail at .crush line 3 -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:366" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:366" data-why="this example shows a run-time error" data-grants="polyglot.python" data-expect-error="at .crush line 3">
 <pre><code class="language-crush">print("a")
 print("b")
 @python {
@@ -555,7 +568,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:414" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:414" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -680,7 +693,7 @@ is not limited, and only <code>python</code>, <code>javascript</code> and <code>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../interactive/crush-run-d03ab597.js"></script>
+        <script src="../interactive/crush-run-e40b69eb.js"></script>
 
 
 

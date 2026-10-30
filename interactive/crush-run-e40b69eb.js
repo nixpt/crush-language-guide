@@ -39,9 +39,58 @@ onmessage = (e) => {
             if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`);
             return r[how]();
         });
-        return Promise.all([get('play/guest-js.js', 'text'), get('play/worker.js', 'text'),
+        return Promise.all([get('play/guest-js.js', 'text'), get('play/guest-py.js', 'text'), get('play/worker.js', 'text'),
             get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
-            .then(([guest, work, glue, wasm]) => ({ worker: guest + '\n' + work, glue, wasm }));
+            .then(([guestJs, guestPy, work, glue, wasm]) => ({ worker: guestJs + '\n' + guestPy + '\n' + work, glue, wasm }));
+    }
+
+    // ── Python: Pyodide, fetched on the first granted @python run ─────────────
+    // The release pinned in play/pyodide.json (CPython compiled to WebAssembly),
+    // from its CDN; each file must match its pinned sha256 before it is used.
+    // The bytes are kept for the page, so a restarted worker (after a run that
+    // ran out of time) loads Python again without downloading it again.
+    let pythonFiles = null, pythonGen = -1;
+
+    async function sha256(buf) {
+        const d = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+        return Array.from(d, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function fetchPython() {
+        const r = await fetch(new URL(root + 'play/pyodide.json', document.baseURI));
+        if (!r.ok) throw new Error(`play/pyodide.json: HTTP ${r.status}`);
+        const pin = await r.json();
+        const files = await Promise.all(Object.entries(pin.files).map(async ([name, want]) => {
+            const f = await fetch(pin.base + name);
+            if (!f.ok) throw new Error(`${pin.base + name}: HTTP ${f.status}`);
+            const buf = await f.arrayBuffer();
+            if (await sha256(buf) !== want.sha256) throw new Error(`${name} does not match its pinned sha256 (play/pyodide.json)`);
+            return [name, buf];
+        }));
+        return Object.fromEntries(files);
+    }
+
+    // Load Python into the current worker, once per worker.
+    async function ensurePython() {
+        if (pythonGen === generation) return;
+        if (!pythonFiles) pythonFiles = fetchPython().catch((e) => { pythonFiles = null; throw e; });
+        const files = await pythonFiles;
+        const copies = {}, transfer = [];
+        for (const [name, buf] of Object.entries(files)) { copies[name] = buf.slice(0); transfer.push(copies[name]); }
+        await new Promise((resolve, reject) => {
+            const onMessage = ({ data }) => {
+                if (data.id !== 'python') return;
+                worker.removeEventListener('message', onMessage);
+                if (data.loadError) reject(new Error(data.loadError)); else resolve();
+            };
+            worker.addEventListener('message', onMessage);
+            worker.postMessage({ id: 'python', op: 'python', files: copies }, transfer);
+        });
+        pythonGen = generation;
+    }
+
+    function needsPython(grants) {
+        return (grants || []).indexOf('polyglot.python') >= 0;
     }
 
     function startWorker() {
@@ -57,7 +106,7 @@ onmessage = (e) => {
         worker = {
             addEventListener: (t, f) => port.addEventListener(t, f),
             removeEventListener: (t, f) => port.removeEventListener(t, f),
-            postMessage: (m) => port.postMessage(m),
+            postMessage: (m, transfer) => port.postMessage(m, transfer || []),
             terminate: () => { port.close(); frame.remove(); },
         };
         port.start();
@@ -91,6 +140,13 @@ onmessage = (e) => {
             }
             await workerReady;
             if (gen != null && gen !== generation) return { status: 'lost' };
+            if (msg.op === 'start' && needsPython(msg.grants)) {
+                try {
+                    await ensurePython();
+                } catch (e) {
+                    throw Object.assign(new Error(e.message), { python: true });
+                }
+            }
             const mine = generation;
             return new Promise((resolve) => {
                 const timer = setTimeout(() => {
@@ -174,8 +230,14 @@ onmessage = (e) => {
         if (m) {
             return { kind: 'refused', title: `Refused: the @${m[1]} block was not granted`,
                 body: 'Crush never runs a polyglot block unless whoever runs the program grants it ' +
-                    '(natively, the --polyglot flag). This page grants @javascript only to the examples ' +
-                    'marked "grants @javascript", and never @python or @bash: a browser has no interpreter for them.' };
+                    '(natively, the --polyglot flag). This page grants @javascript and @python only to the examples ' +
+                    'marked "grants @javascript" / "grants @python", and never @bash: a browser has no shell.' };
+        }
+        if (/not supported by the in-browser Python runtime/.test(error)) {
+            return { kind: 'refused', title: 'Refused: this @python block needs the host',
+                body: 'The browser runs a granted @python block in Pyodide (CPython compiled to WebAssembly) and refuses ' +
+                    'what only the host can answer (files, processes, the network) rather than answer it differently. ' +
+                    'Run the program with crush-run --polyglot.' };
         }
         if (/not supported by the in-browser JavaScript runtime/.test(error)) {
             return { kind: 'refused', title: 'Refused: this @javascript block needs node',
@@ -230,9 +292,11 @@ onmessage = (e) => {
     }
 
     const LABELS = { fail: 'expected to fail', host: 'needs the host', none: 'not runnable' };
-    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', time: 'the clock', env: 'the environment' };
+    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', 'polyglot.python': '@python', time: 'the clock', env: 'the environment' };
     const GRANT_WHY = {
         'polyglot.javascript': '@javascript blocks (--polyglot), run in an isolated worker with no network, storage or access to this page',
+        'polyglot.python': '@python blocks (--polyglot), run in Pyodide (CPython 3.14 compiled to WebAssembly, downloaded the first ' +
+            'time, about 6 MB) in an isolated worker with no network, storage or access to this page',
         time: 'the clock (--time), read from your browser',
         env: 'the environment (--env), which in a browser is empty',
     };
@@ -373,7 +437,10 @@ onmessage = (e) => {
             run.disabled = true;
             run.textContent = 'Running…';
             out.hidden = false;
-            out.replaceChildren(el('div', 'crush-status', worker ? 'running…' : 'loading the Crush runtime…'));
+            const loading = !worker ? 'loading the Crush runtime…' : '';
+            const python = needsPython(grants) && !host && pythonGen !== generation
+                ? 'loading Python (Pyodide, about 6 MB the first time)…' : '';
+            out.replaceChildren(el('div', 'crush-status', python || loading || 'running…'));
             term = el('pre', 'crush-output crush-term');
             shown = 0;
             const wasEdited = edited();
@@ -381,8 +448,11 @@ onmessage = (e) => {
             try {
                 r = await execute(source(), readLine, grants);
             } catch (err) {
-                r = { ok: false, loadError: true, inputs: [], error: 'Could not start the Crush runtime: ' + err.message +
-                    '. Running examples needs WebAssembly and Web Workers (a recent Chrome, Firefox, Safari or Edge).' };
+                r = { ok: false, loadError: true, inputs: [], error: err.python
+                    ? 'Could not load Python (Pyodide) for this @python block: ' + err.message +
+                        '. It is downloaded from a CDN the first time a page runs @python; check your connection and run it again.'
+                    : 'Could not start the Crush runtime: ' + err.message +
+                        '. Running examples needs WebAssembly and Web Workers (a recent Chrome, Firefox, Safari or Edge).' };
             }
             run.disabled = false;
             run.textContent = 'Run';

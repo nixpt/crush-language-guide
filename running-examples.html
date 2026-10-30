@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8ab566cb.js";
+            window.path_to_searchindex_js = "searchindex-720957d5.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -193,15 +193,15 @@ checks that keep the guide’s code honest (nothing is labelled by hand):</p>
 <tbody>
 <tr><td><strong>Run</strong> · <strong>Edit</strong> · <strong>Playground ↗</strong></td><td>The example runs in your browser. Run shows its output under the block and, where the guide prints the expected output, whether yours <em>matches the guide’s output</em>. Edit turns the block into an editor (Ctrl+Enter runs it); Reset puts the original back. Playground opens it on <a href="https://crushlang.org/playground/">crushlang.org/playground</a>.</td></tr>
 <tr><td><strong>expected to fail</strong></td><td>The example is <em>meant</em> to fail: a compile error, a refused capability, or a feature that is not implemented yet. Run demonstrates the failure and says whether it <em>fails as the guide says</em>.</td></tr>
-<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, the clock). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="getting-started.html">Getting Started</a>.</td></tr>
+<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@bash</code> block, <code>fs.read</code>, an <code>@python</code> block that reads files). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="getting-started.html">Getting Started</a>.</td></tr>
 <tr><td><strong>not runnable</strong></td><td>A fragment or a program that needs special setup; the label says which.</td></tr>
 </tbody>
 </table>
 </div>
 <p>An example whose <code>crush-run</code> flags the browser can honour carries a <strong>grants</strong>
-label saying what its runs are granted, and nothing else is: <strong>@javascript</strong>
-(<code>--polyglot</code> with only <code>@javascript</code> blocks), <strong>the clock</strong> (<code>--time</code>) or <strong>the
-environment</strong> (<code>--env</code>). Edited code keeps the example’s grants.</p>
+label saying what its runs are granted, and nothing else is: <strong>@javascript</strong> and
+<strong>@python</strong> (<code>--polyglot</code> with only <code>@javascript</code> / <code>@python</code> blocks), <strong>the
+clock</strong> (<code>--time</code>) or <strong>the environment</strong> (<code>--env</code>). Edited code keeps the example’s grants.</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
@@ -264,15 +264,37 @@ block has no access to this page, its cookies or storage, or the network.</li>
 <li>A block that never finishes is stopped with the run at the time limit; what the
 run printed before the stop is lost with the stopped runtime.</li>
 </ul>
-<h2 id="why-not-python-bash-or-the-filesystem"><a class="header" href="#why-not-python-bash-or-the-filesystem">Why not <code>@python</code>, <code>@bash</code> or the filesystem</a></h2>
+<h2 id="python-blocks"><a class="header" href="#python-blocks"><code>@python</code> blocks</a></h2>
+<p>Natively, <code>crush-run --polyglot</code> runs a <code>@python</code> block with <code>python3 -c</code>. In the
+browser, a block granted <code>polyglot.python</code> runs in <a href="https://pyodide.org">Pyodide</a>
+314.0.7, which is CPython 3.14 (the Python this guide’s examples were checked
+with) compiled to WebAssembly, inside the same isolated worker as the VM, and
+behaves like that <code>python3 -c</code> run:</p>
 <ul>
-<li><strong><code>@python</code></strong> would need a Python in the browser and, before that, crush’s
-marshaling of Crush variables into and out of the block, which is compiled by an
-analyzer that does not build for WebAssembly yet. Without it, only blocks that
-neither read Crush variables nor return values could run. A Python in the
-browser (<a href="https://pyodide.org">Pyodide</a> 0.27) is also a 5.6 MB download, about
-three times this whole runtime, before the first block runs. So <code>@python</code> blocks
-are refused, as <code>crush-run</code> refuses them without <code>--polyglot</code>.</li>
+<li><strong>Downloaded on first use.</strong> The first time you run a <code>@python</code> example on a
+page, the page downloads Pyodide from its CDN (about 6.3 MB compressed) and
+checks every file against the sha256 the guide pins
+(<a href="play/pyodide.json"><code>play/pyodide.json</code></a>) before using it. Pages without a
+<code>@python</code> run never download it, and a page loads it once however many examples
+you run.</li>
+<li>Crush variables go in and <code>-&gt;</code> outputs come back as JSON, as natively. Every
+block starts in a fresh <code>__main__</code>; modules it imports and changes it makes to
+<code>os.environ</code> are undone afterwards.</li>
+<li>What it prints is its output; standard input is empty (natively it is
+<code>/dev/null</code>, so <code>input()</code> raises <code>EOFError</code>). A block that raises fails the run
+with the traceback <code>python3</code> prints, at the block’s <code>.crush</code> line.</li>
+<li>Where only the host can answer, the block is <strong>refused</strong>, never answered
+differently: opening files and <code>os</code> file and directory calls, running processes
+(<code>subprocess</code>, <code>os.system</code>, …) and the network (<code>socket</code>, <code>urllib.request</code>,
+<code>http.client</code>, …). Pyodide’s own bridges to JavaScript (<code>import js</code>,
+<code>import pyodide</code>) do not exist, as in <code>python3</code>. Packages (<code>pypi:</code>) need the
+host. Run such a program with <code>crush-run --polyglot</code>.</li>
+<li>The block has the same lack of authority as a <code>@javascript</code> block, and a block
+that never finishes is stopped at the time limit the same way; the next
+<code>@python</code> run loads Python again from the downloaded files.</li>
+</ul>
+<h2 id="why-not-bash-or-the-filesystem"><a class="header" href="#why-not-bash-or-the-filesystem">Why not <code>@bash</code> or the filesystem</a></h2>
+<ul>
 <li><strong><code>@bash</code></strong> has no browser equivalent, and <code>crush-run</code> never sandboxes it either.</li>
 <li><strong>The filesystem</strong>: <code>crush-run --fs</code> works on real files under <code>--fs-root</code>. A
 per-run in-memory filesystem would need crush’s file capabilities to work over
@@ -334,7 +356,7 @@ without the buttons.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="interactive/crush-run-d03ab597.js"></script>
+        <script src="interactive/crush-run-e40b69eb.js"></script>
 
 
 

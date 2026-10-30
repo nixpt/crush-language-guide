@@ -529,13 +529,12 @@
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "runnable"
     ],
     "extra": {
      "guide": {
       "src": "crush/syntax.md:346",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide"
+      "browser": "run"
      }
     }
    },

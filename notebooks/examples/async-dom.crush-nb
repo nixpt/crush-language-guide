@@ -43,7 +43,7 @@
      "guide": {
       "src": "examples/async-dom.md:14",
       "browser": "host",
-      "why": "uses `@bash`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "why": "uses `@bash` blocks (polyglot), which the in-browser runtime does not provide",
       "expect_output": "mean=3.875 spread=8\nbash: done\n"
      }
     }
