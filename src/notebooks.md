@@ -61,19 +61,19 @@ and the cell kinds it does not run yet are described in the
 |  | Run button on the page | Notebook kernel | `crush-run` |
 |---|---|---|---|
 | Where it runs | your browser (crush-web, WebAssembly) | your machine | your machine |
-| Granted | `print`, the standard library and `io.read` (you type each line), plus what an example's **grants** label says: `@javascript`, the clock, the (empty) environment | `print`, the VM's built-in string helpers, `cson.parse` | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
-| `@python`/`@bash`, filesystem, network | refused | refused | with the matching flag |
+| Granted | `print`, the standard library and `io.read` (you type each line), plus what an example's **grants** label says: `@javascript`, `@python`, the filesystem (an empty in-memory directory), the clock, the (empty) environment | `print`, the standard library, `caison.parse`: what `crush run` grants with no flags | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
+| `@python`/`@javascript`, filesystem | when the example's label grants them | refused | with the matching flag |
+| `@bash`, processes, network | refused | refused | with the matching flag |
 | Between examples | every run starts fresh | cells share a session | one program per file |
 
-> **Kernel lag.** The published `crush-notebook-kernel` (0.1.1) is built on
-> crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
-> declared polyglot outputs and the default-on standard library. Cells using those
-> fail in the kernel even though the page (verified against crush-ast `c1cc21fb`)
-> shows them working. Use `crush run`, or the page's Run button, for those until a
-> kernel built on a newer crush-ast is published.
+The kernel is `crush-notebook-kernel` 0.2.0, built on crush-ast 0.8.0 (the
+commit this guide is verified against, released): every chapter notebook runs
+in it as the page says (the guide's CI checks each cell).
 
-So the examples marked **needs the host** are refused in the notebook too: the
-kernel grants what `crush run` grants with no flags. Run those with `crush-run`
+The examples marked **needs the host** are refused in the notebook too, and so
+are the ones the page runs only because it grants them something (`@python`,
+`@javascript`, the filesystem, the clock): the kernel grants what `crush run`
+grants with no flags. Run those with `crush-run`
 and the flags their page shows (see [Getting Started](getting-started.md)).
 
 In a notebook, cells share a session: a cell's top-level `let`s, functions and

@@ -144,14 +144,22 @@ def cells_for(text, rel):
             flush()
             n += 1
             guide = {"src": b["src"], "browser": b["kind"]}
-            if b["why"]:
+            # The notebook kernel grants what `crush run` grants with no flags, so
+            # a block the page runs only because it grants it something (@python,
+            # @javascript, the filesystem, the clock) needs the host in a notebook.
+            kind = b["kind"]
+            if kind == "run" and b.get("grants"):
+                kind = "host"
+                guide["why"] = ("needs " + ", ".join(b["grants"]) + ", which the page grants it and the "
+                                "notebook kernel does not (it grants what `crush run` grants without flags)")
+            if b["why"] and "why" not in guide:
                 guide["why"] = b["why"]
             if b["expect"] is not None:
                 guide["expect_output"] = b["expect"]
             if b["expect_error"]:
                 guide["expect_error"] = b["expect_error"]
-            meta = {"tags": ["guide", TAG[b["kind"]]], "extra": {"guide": guide}}
-            cells.append(cell(f"{slug}-{n}", "crush", isolate(b["code"], b["kind"]), meta))
+            meta = {"tags": ["guide", TAG[kind]], "extra": {"guide": guide}}
+            cells.append(cell(f"{slug}-{n}", "crush", isolate(b["code"], kind), meta))
             i = b["end"] + 1
             continue
         m = FENCE.match(line)

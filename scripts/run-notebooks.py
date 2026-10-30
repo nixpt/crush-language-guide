@@ -23,7 +23,7 @@ Exit status is non-zero if any cell is judged failed. --markdown prints the
 per-notebook table as Markdown (for a PR body).
 
 Install the kernel (https://github.com/nixpt/crush-notebook):
-    cargo install --locked crush-notebook-kernel@0.1.1
+    cargo install --locked crush-notebook-kernel@0.2.0
 """
 import argparse, json, select, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
