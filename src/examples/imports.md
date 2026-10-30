@@ -1,6 +1,6 @@
 # Import Styles
 
-> Verified against crush-ast `d04bc60a` (2026-10-29).
+> Verified against crush-ast `c1cc21fb` (2026-10-30).
 
 > **Not yet implemented.** Every form of `import` parses, but **none of them load
 > anything** — the compiler lowers each to a capability that the runtime does not

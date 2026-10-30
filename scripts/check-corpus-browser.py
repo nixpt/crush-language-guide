@@ -7,8 +7,8 @@ What scripts/verify-examples does for `crush-run`, for the book's Run button:
 every `.crush` program runs through the built book's own runtime
 (interactive/crush-run.js, `window.crushRun`), with the grants the page would
 give it for its `.flags` (`--polyglot` with only `@javascript` / `@python`
-blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` → env;
-nothing else is grantable), its `.stdin` fed line by line, and the result compared with its
+blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` → env,
+`--fs` → fs, an empty in-memory directory; nothing else is grantable), its `.stdin` fed line by line, and the result compared with its
 `.out` / `.err`:
 
     match     the browser printed exactly the `.out` (trailing whitespace ignored)
@@ -70,6 +70,8 @@ def grants(flags, code):
         out.add("time")
     if "--env" in flags:
         out.add("env")
+    if "--fs" in flags:
+        out.add("fs")
     langs = set(POLYGLOT.findall(code))
     if "--polyglot" in flags and langs and langs <= set(BROWSER_LANGS):
         out |= {BROWSER_LANGS[lang] for lang in langs}

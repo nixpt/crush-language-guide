@@ -294,12 +294,13 @@ onmessage = (e) => {
     }
 
     const LABELS = { fail: 'expected to fail', host: 'needs the host', none: 'not runnable' };
-    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', 'polyglot.python': '@python', time: 'the clock', env: 'the environment' };
+    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', 'polyglot.python': '@python', time: 'the clock', env: 'the environment', fs: 'the filesystem' };
     const GRANT_WHY = {
         'polyglot.javascript': '@javascript blocks (--polyglot), run in an isolated worker with no network, storage or access to this page',
         'polyglot.python': '@python blocks (--polyglot), run in Pyodide (CPython 3.14 compiled to WebAssembly, downloaded the first ' +
             'time, about 6 MB) in an isolated worker with no network, storage or access to this page',
         time: 'the clock (--time), read from your browser',
+        fs: 'the filesystem (--fs): an empty directory of this run\'s own, in memory, that disappears with the run',
         env: 'the environment (--env), which in a browser is empty',
     };
 

@@ -3,7 +3,7 @@
 Every instruction has two spellings: the **JSON name** used in the CASM IR
 (`"op": "push_int"`) and the **CVM1 mnemonic** used in the text assembly and the
 binary (`PUSH`). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against crush-ast `d04bc60a` (2026-10-29); the examples at the
+Behaviour was checked against crush-ast `c1cc21fb` (2026-10-30); the examples at the
 end of each section are run by this guide's checker.
 
 ## Reading stack effects
@@ -32,7 +32,7 @@ Operands in the text assembly follow the mnemonic: `PUSH 42`, `LOAD 3`,
 | `pop` | `POP` | — | `a →` | |
 | `dup` | `DUP` | — | `a → a a` | |
 | `swap` | `SWAP` | — | `a b → b a` | |
-| `rot` | `ROT` | — | `a b c → b a c` | as observed on `d04bc60a`; **not** Forth's `ROT` |
+| `rot` | `ROT` | — | `a b c → b a c` | as observed on `c1cc21fb`; **not** Forth's `ROT` |
 | `pick` | `PICK n` | `n` | `… → … v` | copy the item `n` below the top (`PICK 2` copies the third) |
 | `roll` | `ROLL n` | `n` | `… → … v` | *move* the item `n` below the top to the top |
 | — | `NOP` | — | — | text/binary only |
@@ -392,7 +392,7 @@ program. It handles exactly these IR operations:
 
 (crush-ast keeps this classification exhaustive in its
 `crush-lang-sdk/tests/casm_lowering_completeness.rs`; the spot checks below were
-run against `d04bc60a`.) A bit shift lowers and runs:
+run against `c1cc21fb`.) A bit shift lowers and runs:
 
 <!-- check: casm-json -->
 <!-- check: output -->

@@ -3,7 +3,7 @@
 Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.
 
-> Verified against crush-ast `d04bc60a` (main, 2026-10-29), a release build. That is
+> Verified against crush-ast `c1cc21fb` (main, 2026-10-30), a release build. That is
 > newer than the `0.7.1` release on crates.io: see the note below.
 
 ## 1. Build the toolchain
@@ -199,7 +199,7 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Both snippets are compiled and run against crush-ast `d04bc60a` by
+Both snippets are compiled and run against crush-ast `c1cc21fb` by
 `scripts/check-examples.py --crush-ast`. `Runtime::new()` registers only the
 built-in primitives (`io.print`, `io.read`, …); to expose more — the standard
 library, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass
