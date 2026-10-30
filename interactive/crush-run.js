@@ -330,11 +330,13 @@ onmessage = (e) => {
         play.title = 'Open this example on crushlang.org/playground';
         reset.hidden = true;
         bar.prepend(run, edit, reset, play);
+        // Grants this browser does not give pages (a native host such as surfer):
+        // runs are refused before they start, by the browser, not by the example.
+        const withheld = host ? grants.filter((g) => host.grantable.indexOf(g) < 0) : [];
         if (grants.length) {
             const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + grants.map((g) => GRANT_NAMES[g] || g).join(', '));
             chip.title = 'Runs of this example are granted ' + grants.map((g) => GRANT_WHY[g] || g).join('; ') +
                 ', as the guide runs it with crush-run. Nothing else is granted.';
-            const withheld = host ? grants.filter((g) => host.grantable.indexOf(g) < 0) : [];
             if (withheld.length) {
                 chip.textContent += ' (not in this browser)';
                 chip.title = 'This browser does not grant ' + withheld.map((g) => GRANT_NAMES[g] || g).join(', ') +
@@ -439,7 +441,7 @@ onmessage = (e) => {
             run.disabled = true;
             run.textContent = 'Running…';
             out.hidden = false;
-            const loading = !worker ? 'loading the Crush runtime…' : '';
+            const loading = !worker && !host ? 'loading the Crush runtime…' : '';
             const python = needsPython(grants) && !host && pythonGen !== generation
                 ? 'loading Python (Pyodide, about 6 MB the first time)…' : '';
             out.replaceChildren(el('div', 'crush-status', python || loading || 'running…'));
@@ -505,7 +507,12 @@ onmessage = (e) => {
                 if (pre) parts.push(pre);
                 parts.push(el('pre', 'crush-output crush-error', r.error));
                 status = (r.timeout ? 'timed out' : r.loadError ? 'runtime unavailable' : r.lost ? 'interrupted' : 'failed') + ms;
-                if (!wasEdited && kind === 'fail' && !r.loadError && !r.timeout && !r.lost) {
+                if (withheld.length && c && c.kind === 'refused') {
+                    // Not the example's failure: this browser does not grant what it needs.
+                    status = 'not run' + ms;
+                    verdict = { cls: 'withheld', text: 'this browser does not grant ' +
+                        withheld.map((g) => GRANT_NAMES[g] || g).join(', ') + '; run it with crush-run' };
+                } else if (!wasEdited && kind === 'fail' && !r.loadError && !r.timeout && !r.lost) {
                     const want = block.dataset.expectError;
                     verdict = !want || r.error.includes(want)
                         ? { cls: 'matches', text: '✓ fails as the guide says' }
