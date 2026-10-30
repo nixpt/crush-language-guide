@@ -43,7 +43,7 @@
      "guide": {
       "src": "examples/sysinfo.md:9",
       "browser": "host",
-      "why": "uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide",
+      "why": "reports the machine it runs on (`env.arch`, `env.os`), which the in-browser runtime does not provide",
       "expect_output": "System report\n-------------\nos:   linux\narch: x86_64\nhome is set\nclock ok: true\n"
      }
     }

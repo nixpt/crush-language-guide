@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="../interactive/crush-run-3299f861.css">
+        <link rel="stylesheet" href="../interactive/crush-run-1a365348.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
+            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -248,15 +248,19 @@ print(str.len("héllo"))
 65
 6
 </code></pre>
-<p><code>io.read</code> reads from standard input:</p>
+<p><code>io.read</code> reads a line from standard input. On this page, Run asks you for each
+line; type <code>Ada</code> to get the output below:</p>
 <!-- check: stdin Ada -->
-<!-- check: compile -->
-<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:66" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:66" data-expect="Hello, Ada
+" data-stdin="Ada">
 <pre><code class="language-crush">let name = io.read()
 io.print("Hello, " + name)
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">Hello, Ada
+</code></pre>
 <h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
 <p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
 <code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
@@ -290,7 +294,7 @@ the flag that would grant each:</p>
 leaves out; the standard library is a default feature.</p>
 <p>Without the flag, nothing runs, not even the first line:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:102" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:107" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print("first line")
 print(fs.read("data.txt"))
 </code></pre>
@@ -304,7 +308,7 @@ program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.read`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:124" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -314,7 +318,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:130" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:135" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
 </div>
@@ -337,7 +341,7 @@ has a scope.</p>
 </table>
 </div>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:148" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:153" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 fs.mkdir("sub")
@@ -352,7 +356,7 @@ print(fs.list("sub"))
 </code></pre>
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:165" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:170" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
@@ -382,7 +386,8 @@ catchable by <a href="control_flow.html#what-catch-does-not-catch"><code>try</co
 <p>A program can say up front which capabilities it may use beyond the ambient,
 effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
 <!-- check: flags --time -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:198" data-why="uses `time.now_ms`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:203" data-expect="true
+" data-grants="time">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 let t = time.now_ms()
 print(t &gt; 0)
@@ -396,7 +401,7 @@ print(t &gt; 0)
 (<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:</p>
 <!-- check: runfail not declared in @capabilities: env.get -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:214" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:219" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 print(env.get("HOME"))
 </code></pre>
@@ -535,7 +540,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../interactive/crush-run-b160d67d.js"></script>
+        <script src="../interactive/crush-run-31bba0e7.js"></script>
 
 
 

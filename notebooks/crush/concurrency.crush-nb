@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Concurrency\n\n> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line\n> (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).\n\nCrush has two kinds of concurrency:\n\n- **Green tasks**: `spawn`, `yield`, `await` and `async fn`. Tasks run inside one\n  VM, take turns at `yield` / `await`, and share the variables they capture.\n- **`parallel_map(items, f)`**: real parallelism for pure computation. Each item\n  runs in its own share-nothing VM (a thread on the native VM).\n\n## `spawn`, `yield`, `await`\n\n`spawn f(args)` starts a task and returns a handle; `await h` waits for the task\nand gives its return value; `yield` lets the other tasks run.\n",
+   "source": "# Concurrency\n\n> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line\n> (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).\n\nCrush has two kinds of concurrency:\n\n- **Green tasks**: `spawn`, `yield`, `await` and `async fn`. Tasks run inside one\n  VM, take turns at `yield` / `await`, and share the variables they capture.\n- **`parallel_map(items, f)`**: real parallelism for pure computation. Each item\n  runs in its own share-nothing VM (a thread on the native VM).\n\n## `spawn`, `yield`, `await`\n\n`spawn f(args)` starts a task and returns a handle; `await h` waits for the task\nand gives its return value; `yield` lets the other tasks run.\n",
    "state": {
     "status": "done"
    },

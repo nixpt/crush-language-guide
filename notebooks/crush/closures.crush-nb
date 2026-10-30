@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Closures and Function Values\n\n> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
+   "source": "# Closures and Function Values\n\n> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
    "state": {
     "status": "done"
    },

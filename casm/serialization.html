@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="../interactive/crush-run-3299f861.css">
+        <link rel="stylesheet" href="../interactive/crush-run-1a365348.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
+            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -234,7 +234,7 @@ compiled program is verbose: the five-line <code>add</code> program in the
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
 executable on Unix. The reader skips a leading <code>#!</code> line.</p>
 <blockquote>
-<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> A <code>.casmb</code> file cannot be read back. The
+<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>aa07413</code>).</strong> A <code>.casmb</code> file cannot be read back. The
 writer emits MessagePack’s compact array encoding but <code>Instruction</code> flattens its
 operands into a map, so every load fails with <code>invalid type: sequence, expected a map</code>. Until that is fixed, treat <code>.casmb</code> as write-only and ship <code>.cvm1</code>
 instead. The block below fails exactly this way:</p>
@@ -279,7 +279,7 @@ component only (minor bumps stay compatible):</p>
 <pre><code class="language-json">{ "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 </code></pre>
 <blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
+<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>aa07413</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
 Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</code>. The
 versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
 <em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
@@ -374,7 +374,7 @@ and let the compiler produce CASM — see the doctrine there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../interactive/crush-run-b160d67d.js"></script>
+        <script src="../interactive/crush-run-31bba0e7.js"></script>
 
 
 

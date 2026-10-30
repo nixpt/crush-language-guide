@@ -29,7 +29,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="interactive/crush-run-3299f861.css">
+        <link rel="stylesheet" href="interactive/crush-run-1a365348.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a59f5634.js";
+            window.path_to_searchindex_js = "searchindex-6ef5f213.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -196,7 +196,7 @@ toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
 intermediate representation (CAST) that other languages can be translated into.</p>
 <blockquote>
 <p><strong>Alpha.</strong> This guide documents what the toolchain does today, verified against
-crush-ast <code>cb655f3</code> (main, 2026-10-16): every <code>crush</code> example on these pages is
+crush-ast <code>aa07413</code> (main, 2026-10-16): every <code>crush</code> example on these pages is
 compiled and run by <code>scripts/check-examples.py</code>, and a corpus of 120+ standalone
 programs with their exact output lives in <code>examples/verified/</code>
 (<a href="#the-verified-corpus">The Verified Corpus</a>). Features that exist in the design but
@@ -275,7 +275,7 @@ compiler running inside the agent-native OS.</p>
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.</p>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (main, 2026-10-16), a debug build. That is
+<p>Verified against crush-ast <code>aa07413</code> (main, 2026-10-16), a debug build. That is
 newer than the <code>0.6.0</code> release on crates.io: see the note below.</p>
 </blockquote>
 <h2 id="1-build-the-toolchain"><a class="header" href="#1-build-the-toolchain">1. Build the toolchain</a></h2>
@@ -445,7 +445,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
     assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>Both snippets are compiled and run against crush-ast <code>cb655f3</code> by
+<p>Both snippets are compiled and run against crush-ast <code>aa07413</code> by
 <code>scripts/check-examples.py --crush-ast</code>. <code>Runtime::new()</code> registers only the
 built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
 library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass
@@ -473,29 +473,90 @@ checks that keep the guide’s code honest (nothing is labelled by hand):</p>
 <tbody>
 <tr><td><strong>Run</strong> · <strong>Edit</strong> · <strong>Playground ↗</strong></td><td>The example runs in your browser. Run shows its output under the block and, where the guide prints the expected output, whether yours <em>matches the guide’s output</em>. Edit turns the block into an editor (Ctrl+Enter runs it); Reset puts the original back. Playground opens it on <a href="https://crushlang.org/playground/">crushlang.org/playground</a>.</td></tr>
 <tr><td><strong>expected to fail</strong></td><td>The example is <em>meant</em> to fail: a compile error, a refused capability, or a feature that is not implemented yet. Run demonstrates the failure and says whether it <em>fails as the guide says</em>.</td></tr>
-<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, a standard-library module, standard input). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="#getting-started">Getting Started</a>.</td></tr>
+<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, the clock). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="#getting-started">Getting Started</a>.</td></tr>
 <tr><td><strong>not runnable</strong></td><td>A fragment or a program that needs special setup; the label says which.</td></tr>
 </tbody>
 </table>
 </div>
+<p>An example whose <code>crush-run</code> flags the browser can honour carries a <strong>grants</strong>
+label saying what its runs are granted, and nothing else is: <strong>@javascript</strong>
+(<code>--polyglot</code> with only <code>@javascript</code> blocks), <strong>the clock</strong> (<code>--time</code>) or <strong>the
+environment</strong> (<code>--env</code>). Edited code keeps the example’s grants.</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
-and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>cb655f3</code>, the commit
-this guide is verified against), with a different set of grants:</p>
+and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>aa07413</code>, the commit this guide is
+verified against), and it grants the same way:</p>
 <ul>
-<li><strong>Granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> / <code>io.print</code>, the
-whole standard library (<code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>,
-<code>regex.*</code>, …), and <code>sys.args()</code> (empty).</li>
-<li><strong>Not available:</strong> polyglot blocks (<code>@python</code>, <code>@javascript</code>, <code>@bash</code>: there is no
-host process to run them in), the filesystem, network, environment, clock,
-processes and cryptography, and standard input (<code>io.read</code> returns <code>""</code>).</li>
+<li><strong>Always granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> /
+<code>io.print</code>, the whole standard library (<code>str.*</code>, <code>math.*</code>, <code>conv.*</code>,
+<code>collections.*</code>, <code>json.*</code>, <code>regex.*</code>, …), and <code>sys.args()</code> (empty).</li>
+<li><strong>Standard input.</strong> When a program calls <code>io.read</code>, an input line opens under
+the block: Enter sends one line, <strong>End input</strong> (or Ctrl+D) ends the input, and
+every later <code>io.read</code> returns <code>""</code>, as at the end of a file. Where the guide
+shows the input it ran an example with, the input line suggests it, and the
+output is compared with the guide’s only when you typed that input.</li>
+<li><strong>Granted per example</strong> (the <strong>grants</strong> label): <code>@javascript</code> blocks (below);
+the clock, <code>time.*</code>, read from your browser (<code>time.now_iso</code> has millisecond
+precision; <code>time.sleep</code> waits and counts as running time); and the environment,
+<code>env.*</code>, which in a browser is empty: <code>env.get</code> returns <code>null</code> and <code>env.all()</code>
+is <code>{}</code>, as under <code>env -i crush-run --env</code>.</li>
+<li><strong>Never available:</strong> <code>@python</code> and <code>@bash</code> blocks, the filesystem, the
+network, processes and cryptography. An example that prints facts about the
+machine (<code>env.os()</code>, <code>env.arch()</code>) is labelled as needing the host too: in a
+browser they describe the browser (<code>wasm32</code>), so its output could not match
+the page.</li>
+<li><strong>Refused before running.</strong> Like <code>crush-run</code>, the runtime works out every
+capability a program can reach and, if one is not granted, refuses the whole
+run before anything prints, naming the <code>crush-run</code> flag that would grant it.</li>
 <li><strong>Every run starts fresh.</strong> Examples do not share variables, even on the same
 page. To build on one example in the next, open the chapter as a notebook (see
 <a href="#chapters-as-notebooks">Chapters as Notebooks</a>).</li>
-<li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and an
-8-second wall-clock limit; a runaway loop is stopped, not your tab.
-Output printed before a run-time error is not shown.</li>
+<li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and 8
+seconds of running time; a runaway loop is stopped, not your tab. Both cover the
+whole run, however many lines it reads, and time spent waiting for you to type
+does not count.</li>
+<li><strong>Errors keep earlier output.</strong> When a run fails, what the program printed
+before the error is shown above it, as <code>crush-run</code> prints it. Errors read
+<code>compile error: …</code> / <code>runtime error: …</code> where <code>crush-run</code> prints <code>[compile] …</code> /
+<code>[runtime] …</code>; the messages are the same.</li>
+</ul>
+<h2 id="javascript-blocks"><a class="header" href="#javascript-blocks"><code>@javascript</code> blocks</a></h2>
+<p>Natively, <code>crush-run --polyglot</code> runs a <code>@javascript</code> block with <code>node -e</code>. In the
+browser, a block granted <code>polyglot.javascript</code> runs in JavaScript inside the same
+isolated worker as the VM, and behaves like that <code>node -e</code> run:</p>
+<ul>
+<li>Crush variables go in and <code>-&gt;</code> outputs come back as JSON, as natively; every
+block starts with a fresh scope, and globals it creates are removed afterwards.</li>
+<li>What it prints with <code>console.log</code> (and <code>console.info</code>/<code>debug</code>,
+<code>process.stdout.write</code>) is its output, formatted as node formats it;
+<code>console.error</code>/<code>warn</code> go to its error output, which is shown if the block
+fails. <code>process.env</code> holds its inputs and <code>process.exit</code> works.</li>
+<li>Where the browser cannot reproduce node exactly, the block is <strong>refused</strong>, never
+approximated: <code>require</code> and other <code>process.*</code> properties, anything asynchronous
+(timers, promises, <code>async</code>/<code>await</code>, <code>fetch</code>), and logging values node formats
+specially (class instances, <code>Map</code>/<code>Set</code>, functions, arrays of more than six
+items, which node lays out in columns). Turn such a value into a string or JSON
+first, or run the program with <code>crush-run</code>.</li>
+<li>The block runs with no authority: the worker sits in a sandboxed frame with an
+opaque origin and a content security policy that allows no network, so the
+block has no access to this page, its cookies or storage, or the network.</li>
+<li>A block that never finishes is stopped with the run at the time limit; what the
+run printed before the stop is lost with the stopped runtime.</li>
+</ul>
+<h2 id="why-not-python-bash-or-the-filesystem"><a class="header" href="#why-not-python-bash-or-the-filesystem">Why not <code>@python</code>, <code>@bash</code> or the filesystem</a></h2>
+<ul>
+<li><strong><code>@python</code></strong> would need a Python in the browser and, before that, crush’s
+marshaling of Crush variables into and out of the block, which is compiled by an
+analyzer that does not build for WebAssembly yet. Without it, only blocks that
+neither read Crush variables nor return values could run. A Python in the
+browser (<a href="https://pyodide.org">Pyodide</a> 0.27) is also a 5.6 MB download, about
+three times this whole runtime, before the first block runs. So <code>@python</code> blocks
+are refused, as <code>crush-run</code> refuses them without <code>--polyglot</code>.</li>
+<li><strong><code>@bash</code></strong> has no browser equivalent, and <code>crush-run</code> never sandboxes it either.</li>
+<li><strong>The filesystem</strong>: <code>crush-run --fs</code> works on real files under <code>--fs-root</code>. A
+per-run in-memory filesystem would need crush’s file capabilities to work over
+something other than the disk, which they do not yet.</li>
 </ul>
 <p>Ungranted capabilities are <em>refused</em>, not ignored: that is the
 <a href="#capability-system">capability system</a> working, and the page says so.</p>
@@ -552,8 +613,8 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code> and the standard library</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
-<tr><td>Polyglot, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, the clock, the (empty) environment</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td><code>@python</code>/<code>@bash</code>, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
@@ -562,7 +623,7 @@ and the cell kinds it does not run yet are described in the
 <p><strong>Kernel lag.</strong> The published <code>crush-notebook-kernel</code> (0.1.1) is built on
 crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
 declared polyglot outputs and the default-on standard library. Cells using those
-fail in the kernel even though the page (verified against crush-ast <code>cb655f3</code>)
+fail in the kernel even though the page (verified against crush-ast <code>aa07413</code>)
 shows them working. Use <code>crush run</code>, or the page’s Run button, for those until a
 kernel built on a newer crush-ast is published.</p>
 </blockquote>
@@ -620,7 +681,7 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.</p>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (the commit in the repository’s
+<p>Verified against crush-ast <code>aa07413</code> (the commit in the repository’s
 <code>CRUSH_AST_COMMIT</code> file). 123 programs.</p>
 </blockquote>
 <div class="table-wrapper">
@@ -704,7 +765,7 @@ against the pinned crush-ast commit on every pull request.</p>
 <p class="crush-notebook-link"><a href="notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -812,7 +873,7 @@ enforced.</li>
 <p class="crush-notebook-link"><a href="notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16): every runnable block on this
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16): every runnable block on this
 page was compiled and run with that build.</p>
 </blockquote>
 <p>This chapter covers the lexical structure and grammar that the Crush parser
@@ -1254,7 +1315,7 @@ parse errors today (crush-ast CRUSH-zorro-24).</p>
 <p class="crush-notebook-link"><a href="notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -1671,7 +1732,7 @@ compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0
 <p class="crush-notebook-link"><a href="notebooks/crush/variables.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>This chapter covers declaration, assignment, and the scoping rules the compiler
 enforces today.</p>
@@ -1942,7 +2003,7 @@ possible yet (crush-ast <strong>CRUSH-110</strong>).</p>
 
 <p>Crush’s operators are deliberately few.</p>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <h2 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h2>
 <div class="table-wrapper">
@@ -2181,7 +2242,7 @@ true
 <p class="crush-notebook-link"><a href="notebooks/crush/control_flow.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
@@ -2525,7 +2586,7 @@ program with a <code>[runtime]</code> error instead of reaching your <code>catch
 <p class="crush-notebook-link"><a href="notebooks/crush/functions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>This chapter covers defining and calling functions. Named functions are
 top-level declarations, and they are also <strong>values</strong>: you can store one in a
@@ -2740,7 +2801,7 @@ a top-level lambda can.</li>
 <p class="crush-notebook-link"><a href="notebooks/crush/closures.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16). New since the 0.3 line
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16). New since the 0.3 line
 (crush-ast CRUSH-251).</p>
 </blockquote>
 <p>Functions in Crush are values. A named function can be stored, passed and
@@ -3022,7 +3083,7 @@ backends refuse them by name rather than miscompiling them: <code>crush-aotc</co
 <p class="crush-notebook-link"><a href="notebooks/crush/structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16). New since the 0.3 line:
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16). New since the 0.3 line:
 <code>impl</code>, <code>trait</code>, <code>@kind</code> and struct patterns (crush-ast CRUSH-zorro-41/43, the
 COSM object model).</p>
 </blockquote>
@@ -3449,7 +3510,7 @@ the portable VM and the browser build). The AOT backends build sealed structs
 <p class="crush-notebook-link"><a href="notebooks/crush/concurrency.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16). New since the 0.3 line
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16). New since the 0.3 line
 (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).</p>
 </blockquote>
 <p>Crush has two kinds of concurrency:</p>
@@ -3635,7 +3696,7 @@ instead of dropping it: <code>`spawn` (green tasks) isn't supported on the Rust 
 <p class="crush-notebook-link"><a href="notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -3698,15 +3759,19 @@ print(str.len("héllo"))
 65
 6
 </code></pre>
-<p><code>io.read</code> reads from standard input:</p>
+<p><code>io.read</code> reads a line from standard input. On this page, Run asks you for each
+line; type <code>Ada</code> to get the output below:</p>
 <!-- check: stdin Ada -->
-<!-- check: compile -->
-<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:66" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:66" data-expect="Hello, Ada
+" data-stdin="Ada">
 <pre><code class="language-crush">let name = io.read()
 io.print("Hello, " + name)
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">Hello, Ada
+</code></pre>
 <h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
 <p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
 <code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
@@ -3740,7 +3805,7 @@ the flag that would grant each:</p>
 leaves out; the standard library is a default feature.</p>
 <p>Without the flag, nothing runs, not even the first line:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:102" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:107" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print("first line")
 print(fs.read("data.txt"))
 </code></pre>
@@ -3754,7 +3819,7 @@ program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.read`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:124" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -3764,7 +3829,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:130" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:135" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
 </div>
@@ -3787,7 +3852,7 @@ has a scope.</p>
 </table>
 </div>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:148" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:153" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 fs.mkdir("sub")
@@ -3802,7 +3867,7 @@ print(fs.list("sub"))
 </code></pre>
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:165" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:170" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
@@ -3832,7 +3897,8 @@ catchable by <a href="#what-catch-does-not-catch"><code>try</code>/<code>catch</
 <p>A program can say up front which capabilities it may use beyond the ambient,
 effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
 <!-- check: flags --time -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:198" data-why="uses `time.now_ms`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:203" data-expect="true
+" data-grants="time">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 let t = time.now_ms()
 print(t &gt; 0)
@@ -3846,7 +3912,7 @@ print(t &gt; 0)
 (<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:</p>
 <!-- check: runfail not declared in @capabilities: env.get -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:214" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:219" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 print(env.get("HOME"))
 </code></pre>
@@ -3938,7 +4004,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
 <p class="crush-notebook-link"><a href="notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16), with Python 3.14, Node 26 and
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16), with Python 3.14, Node 26 and
 bash 5.3 on the host.</p>
 </blockquote>
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
@@ -4054,9 +4120,26 @@ print(count)
 10
 </code></pre>
 <p>Here <code>base</code> goes in, <code>total</code> comes out, and <code>tmp</code> stays inside the block (using it
-afterwards is a compile error, <code>Undefined variable</code>). Several outputs:</p>
+afterwards is a compile error, <code>Undefined variable</code>). JavaScript works the same
+way; values travel as JSON:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:133" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/polyglot.md:134" data-expect="[10, 2, a+b]
+" data-grants="polyglot.javascript">
+<pre><code class="language-crush">let n = 5
+let tags = ["a", "b"]
+@javascript -&gt; out {
+const out = [n * 2, tags.length, tags.join("+")]
+}
+print(out)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">[10, 2, a+b]
+</code></pre>
+<p>Several outputs:</p>
+<!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:151" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let xs = [2, 4, 4, 4, 5, 5, 7, 9]
 @python -&gt; (mean, spread) {
 mean = sum(xs) / len(xs)
@@ -4074,7 +4157,7 @@ print(spread)
 <p>Listing a name the block never binds is a compile error; a name bound only on
 some paths is a run-time error naming it (<code>output variable 'r' was not bound by the block</code>), never a silent <code>null</code>:</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:154" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:172" data-why="this example shows a compile error">
 <pre><code class="language-crush">@python -&gt; missing {
 x = 1
 }
@@ -4113,7 +4196,7 @@ warning: @python block overwrites the existing Crush variable `count`; declare `
 </table>
 </div>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:193" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:211" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let n = 5
 let tags = ["a", "b"]
 let cfg = {"k": 1}
@@ -4131,7 +4214,7 @@ print(out)
 file, a function) fails the block with a clear error rather than being dropped:</p>
 <!-- check: runfail cannot marshal output variable(s) obj -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:213" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:231" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python -&gt; obj {
 class C:
     pass
@@ -4143,7 +4226,7 @@ print(1)
 
 <p>Blocks compose through Crush variables, across languages:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:225" data-why="uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:243" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let x = 1
 @python -&gt; y {
 y = x + 1
@@ -4163,7 +4246,7 @@ print(w)
 </code></pre>
 <p>Blocks inside functions and loops see the enclosing scope:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:247" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:265" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let total = 0
 for i in 0..3 {
     @python -&gt; sq {
@@ -4182,7 +4265,7 @@ print(total)
 fresh interpreter, and only the declared outputs carry over. You cannot define a
 function in one block and call it from Crush or from another block.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:268" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:286" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python -&gt; a {
 a = 1
 hidden = 2
@@ -4204,7 +4287,7 @@ false
 later <code>@python</code> block, so each block doesn’t have to repeat it. Each block is
 still its own process:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:293" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:311" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">use @lang python "math"
 use @lang python "json" as j
 @python -&gt; (val, text) {
@@ -4231,7 +4314,7 @@ receives <strong>no</strong> Crush variables, and <code>$name</code> silently ex
 string:</p>
 </blockquote>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:323" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:341" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let name = "crush"
 @bash {
 echo "hello [$name]"
@@ -4252,7 +4335,7 @@ write it to a file the <code>@bash</code> block reads. Bash inherits the host en
 right place in your <code>.crush</code> file:</p>
 <!-- check: runfail at .crush line 3 -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:348" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:366" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print("a")
 print("b")
 @python {
@@ -4291,7 +4374,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:396" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:414" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -4331,7 +4414,7 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
-<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:435" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:453" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
 <pre><code class="language-crush">@python[pypi:six] -&gt; v {
 import six
 v = six.__version__
@@ -4369,7 +4452,7 @@ is not limited, and only <code>python</code>, <code>javascript</code> and <code>
 <p class="crush-notebook-link"><a href="notebooks/crush/stdlib.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
 as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
@@ -4668,7 +4751,7 @@ name on the command line (<code>crush run prog.crush a b</code> → <code>[a, b]
 <p class="crush-notebook-link"><a href="notebooks/crush/annotations.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>An annotation is an <code>@name</code> form written before a declaration (or at the top of
 a file). Three kinds exist:</p>
@@ -4811,7 +4894,7 @@ print(route("refund please"))
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="engines-aot-and-walkers"><a class="header" href="#engines-aot-and-walkers">Engines, AOT and Walkers</a></h1>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16), with rustc 1.96, gcc, Python
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16), with rustc 1.96, gcc, Python
 3.14 and Node 26 on the host.</p>
 </blockquote>
 <p>One Crush program can run on several engines. crush-ast’s rule for them is
@@ -4954,7 +5037,7 @@ sum of squares: 30
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>Runnable Crush programs. Every program and every output block on these pages is
-executed against crush-ast <code>cb655f3</code> by <code>scripts/check-examples.py</code>, so what you
+executed against crush-ast <code>aa07413</code> by <code>scripts/check-examples.py</code>, so what you
 read is what happens. Pages also record where a
 language feature is <em>not yet implemented</em>, with the crush-ast ticket.</p>
 <div class="table-wrapper">
@@ -5243,7 +5326,7 @@ instead — see <a href="#what-catch-does-not-catch">Control Flow</a></li>
 <p class="crush-notebook-link"><a href="notebooks/examples/concurrency-structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <p>A struct is declared once (on one line), built with a literal, and given methods
 in an <code>impl</code> block. Structs are passed by reference.</p>
@@ -5330,7 +5413,7 @@ finished: 2
 <p class="crush-notebook-link"><a href="notebooks/examples/lambdas.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <h2 id="the-pipeline-operator"><a class="header" href="#the-pipeline-operator">The pipeline operator</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
@@ -5429,7 +5512,7 @@ print(parallel_map([1, 2, 3], triple))
 <p class="crush-notebook-link"><a href="notebooks/examples/imports.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <blockquote>
 <p><strong>Not yet implemented.</strong> Every form of <code>import</code> parses, but <strong>none of them load
@@ -5505,7 +5588,7 @@ assemble them. The program needs three capability groups, so it is run with
 <code>crush run --env --time sysinfo.crush</code>; with either flag missing, the program is
 refused before it runs, with the flag it needs (<code>--env: env.get</code>).</p>
 <!-- check: flags --env --time -->
-<div class="crush-block" data-crush="host" data-src="examples/sysinfo.md:9" data-why="uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="examples/sysinfo.md:9" data-why="reports the machine it runs on (`env.arch`, `env.os`), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Gather host facts through capabilities and render a small report.
 let os = env.os()
 let arch = env.arch()
@@ -5617,10 +5700,10 @@ toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
 on <code>PATH</code>; <code>crush doctor</code> checks).</p>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:14" data-why="uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:14" data-why="uses `@bash`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Three languages, one program. Values flow through Crush variables.
 let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
@@ -5671,7 +5754,7 @@ programs, each written by a different LLM that was given little more than “can
 learn crush?” and a pointer to crush-ast. Its README tells the story of each one:
 which constraints the authors hit, and the compiler bugs they found along the way.</p>
 <blockquote>
-<p>Every program below was run on crush-ast <code>cb655f3</code> (2026-10-16) with
+<p>Every program below was run on crush-ast <code>aa07413</code> (2026-10-16) with
 <code>crush-run run --max-steps 500000000 FILE &lt; /dev/null</code>. All of them ran to their
 documented conclusion. The outputs quoted are what that run printed.</p>
 </blockquote>
@@ -5787,7 +5870,7 @@ produce it from other languages, and an AI agent can write it directly (see
  an agent's JSON ──────┘
 </code></pre>
 <p>This page is the schema reference. It is derived from <code>crates/crush-cast/src/lib.rs</code>
-in crush-ast (verified against <code>cb655f3</code>, 2026-10-16); the examples are accepted by <code>crush_cast::validate_json</code>,
+in crush-ast (verified against <code>aa07413</code>, 2026-10-16); the examples are accepted by <code>crush_cast::validate_json</code>,
 compiled and run by this guide’s checker.</p>
 <h2 id="document-structure"><a class="header" href="#document-structure">Document structure</a></h2>
 <pre><code class="language-json">{
@@ -6051,7 +6134,7 @@ CBOR:</p>
 <p><code>Program::deserialize</code> / <code>load</code> check <code>cast_version</code> and refuse a different <strong>major</strong>
 than <code>CAST_VERSION</code> (<code>"0.1"</code>): <code>version mismatch at cast boundary: expected 0.1, found …</code>. The corpus in <code>examples/cast/</code> uses <code>"0.1"</code> / <code>"0.1.0"</code>.</p>
 <blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> The Crush front end stamps the trees
+<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>aa07413</code>).</strong> The Crush front end stamps the trees
 it produces <code>cast_version: "1.0.0"</code>, which the versioned loader then rejects — so a
 CAST dump from the compiler cannot be re-loaded with <code>Program::load</code>, though
 <code>serde_json</code> and <code>validate_json</code> accept it. When you write CAST by hand or from an
@@ -6079,7 +6162,7 @@ when the call is a statement and the capability returns a value).</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
 <blockquote>
-<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
 </blockquote>
 <h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
 <p>CAST is JSON. An agent that knows the <a href="#cast--the-crush-ast">schema</a> can emit a complete
@@ -6489,7 +6572,7 @@ function called <code>main</code>.</p>
 <p>Every instruction has two spellings: the <strong>JSON name</strong> used in the CASM IR
 (<code>"op": "push_int"</code>) and the <strong>CVM1 mnemonic</strong> used in the text assembly and the
 binary (<code>PUSH</code>). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against crush-ast <code>cb655f3</code> (2026-10-16); the examples at the
+Behaviour was checked against crush-ast <code>aa07413</code> (2026-10-16); the examples at the
 end of each section are run by this guide’s checker.</p>
 <h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading stack effects</a></h2>
 <p><code>a b → c</code> means: pop <code>b</code> (the <strong>top</strong>), pop <code>a</code>, push <code>c</code>. The rightmost value is
@@ -6518,7 +6601,7 @@ section</a> lists exactly which IR ops reach the VM.</p>
 <tr><td><code>pop</code></td><td><code>POP</code></td><td>—</td><td><code>a →</code></td><td></td></tr>
 <tr><td><code>dup</code></td><td><code>DUP</code></td><td>—</td><td><code>a → a a</code></td><td></td></tr>
 <tr><td><code>swap</code></td><td><code>SWAP</code></td><td>—</td><td><code>a b → b a</code></td><td></td></tr>
-<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>cb655f3</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
+<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>aa07413</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
 <tr><td><code>pick</code></td><td><code>PICK n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td>copy the item <code>n</code> below the top (<code>PICK 2</code> copies the third)</td></tr>
 <tr><td><code>roll</code></td><td><code>ROLL n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td><em>move</em> the item <code>n</code> below the top to the top</td></tr>
 <tr><td>—</td><td><code>NOP</code></td><td>—</td><td>—</td><td>text/binary only</td></tr>
@@ -6879,7 +6962,7 @@ program. It handles exactly these IR operations:</p>
 </div>
 <p>(crush-ast keeps this classification exhaustive in its
 <code>crush-lang-sdk/tests/casm_lowering_completeness.rs</code>; the spot checks below were
-run against <code>cb655f3</code>.) A bit shift lowers and runs:</p>
+run against <code>aa07413</code>.) A bit shift lowers and runs:</p>
 <!-- check: casm-json -->
 <!-- check: output -->
 <pre><code class="language-json">{
@@ -7183,7 +7266,7 @@ compiled program is verbose: the five-line <code>add</code> program in the
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
 executable on Unix. The reader skips a leading <code>#!</code> line.</p>
 <blockquote>
-<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> A <code>.casmb</code> file cannot be read back. The
+<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>aa07413</code>).</strong> A <code>.casmb</code> file cannot be read back. The
 writer emits MessagePack’s compact array encoding but <code>Instruction</code> flattens its
 operands into a map, so every load fails with <code>invalid type: sequence, expected a map</code>. Until that is fixed, treat <code>.casmb</code> as write-only and ship <code>.cvm1</code>
 instead. The block below fails exactly this way:</p>
@@ -7228,7 +7311,7 @@ component only (minor bumps stay compatible):</p>
 <pre><code class="language-json">{ "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 </code></pre>
 <blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
+<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>aa07413</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
 Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</code>. The
 versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
 <em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
@@ -7277,7 +7360,7 @@ and let the compiler produce CASM — see the doctrine there.</li>
 
 <p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
 with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
-guide’s checker against crush-ast <code>cb655f3</code>, with the output shown. The JSON IR is
+guide’s checker against crush-ast <code>aa07413</code>, with the output shown. The JSON IR is
 covered in <a href="#program-structure">Program Structure</a> and
 <a href="#serialization-formats">Serialization</a>. Opcode details are in the
 <a href="#instruction-set-reference">Instruction Reference</a>.</p>
@@ -7704,7 +7787,7 @@ Python, JavaScript and Bash blocks). See <a href="#engines-aot-and-walkers">Engi
 <p class="crush-notebook-link"><a href="notebooks/appendix/quick_reference.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <p>Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide’s checker against crush-ast <code>cb655f3</code>. Details live in
+can run is run by the guide’s checker against crush-ast <code>aa07413</code>. Details live in
 the chapters linked from each heading.</p>
 <h2 id="command-line-getting-started"><a class="header" href="#command-line-getting-started">Command line (<a href="#getting-started">Getting Started</a>)</a></h2>
 <div class="table-wrapper">
@@ -7993,7 +8076,7 @@ prints <code>ab</code>), and a <code>.casm</code> file needs <code>--cap</code> 
 <p>How Crush relates to the languages people usually compare it with. Crush is <strong>alpha</strong>:
 the language is small, the standard library is a set of host capabilities, and several
 features in its design (imports, an executing AI layer) are not implemented yet. The
-comparisons below are about what is real today (verified against crush-ast <code>cb655f3</code>).</p>
+comparisons below are about what is real today (verified against crush-ast <code>aa07413</code>).</p>
 <h2 id="what-crush-is-for"><a class="header" href="#what-crush-is-for">What Crush is for</a></h2>
 <ul>
 <li><strong>Running untrusted or semi-trusted scripts with explicit authority.</strong> A program can
@@ -8180,7 +8263,7 @@ capability flag.</li>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="interactive/crush-run-b160d67d.js"></script>
+        <script src="interactive/crush-run-31bba0e7.js"></script>
 
         <script>
         window.addEventListener('load', function() {

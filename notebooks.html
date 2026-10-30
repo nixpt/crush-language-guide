@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="interactive/crush-run-3299f861.css">
+        <link rel="stylesheet" href="interactive/crush-run-1a365348.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a59f5634.js";
+            window.path_to_searchindex_js = "searchindex-6ef5f213.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -231,8 +231,8 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code> and the standard library</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
-<tr><td>Polyglot, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, the clock, the (empty) environment</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td><code>@python</code>/<code>@bash</code>, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
@@ -241,7 +241,7 @@ and the cell kinds it does not run yet are described in the
 <p><strong>Kernel lag.</strong> The published <code>crush-notebook-kernel</code> (0.1.1) is built on
 crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
 declared polyglot outputs and the default-on standard library. Cells using those
-fail in the kernel even though the page (verified against crush-ast <code>cb655f3</code>)
+fail in the kernel even though the page (verified against crush-ast <code>aa07413</code>)
 shows them working. Use <code>crush run</code>, or the page’s Run button, for those until a
 kernel built on a newer crush-ast is published.</p>
 </blockquote>
@@ -343,7 +343,7 @@ and each host-only cell has to be refused.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="interactive/crush-run-b160d67d.js"></script>
+        <script src="interactive/crush-run-31bba0e7.js"></script>
 
 
 

@@ -28,7 +28,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="interactive/crush-run-3299f861.css">
+        <link rel="stylesheet" href="interactive/crush-run-1a365348.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a59f5634.js";
+            window.path_to_searchindex_js = "searchindex-6ef5f213.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -193,29 +193,90 @@ checks that keep the guide’s code honest (nothing is labelled by hand):</p>
 <tbody>
 <tr><td><strong>Run</strong> · <strong>Edit</strong> · <strong>Playground ↗</strong></td><td>The example runs in your browser. Run shows its output under the block and, where the guide prints the expected output, whether yours <em>matches the guide’s output</em>. Edit turns the block into an editor (Ctrl+Enter runs it); Reset puts the original back. Playground opens it on <a href="https://crushlang.org/playground/">crushlang.org/playground</a>.</td></tr>
 <tr><td><strong>expected to fail</strong></td><td>The example is <em>meant</em> to fail: a compile error, a refused capability, or a feature that is not implemented yet. Run demonstrates the failure and says whether it <em>fails as the guide says</em>.</td></tr>
-<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, a standard-library module, standard input). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="getting-started.html">Getting Started</a>.</td></tr>
+<tr><td><strong>needs the host</strong></td><td>The example uses something the browser cannot give it; the label says what (a <code>@python</code> block, <code>fs.read</code>, the clock). Run it with <code>crush-run</code> and the flags shown on the page; see <a href="getting-started.html">Getting Started</a>.</td></tr>
 <tr><td><strong>not runnable</strong></td><td>A fragment or a program that needs special setup; the label says which.</td></tr>
 </tbody>
 </table>
 </div>
+<p>An example whose <code>crush-run</code> flags the browser can honour carries a <strong>grants</strong>
+label saying what its runs are granted, and nothing else is: <strong>@javascript</strong>
+(<code>--polyglot</code> with only <code>@javascript</code> blocks), <strong>the clock</strong> (<code>--time</code>) or <strong>the
+environment</strong> (<code>--env</code>). Edited code keeps the example’s grants.</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
-and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>cb655f3</code>, the commit
-this guide is verified against), with a different set of grants:</p>
+and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>aa07413</code>, the commit this guide is
+verified against), and it grants the same way:</p>
 <ul>
-<li><strong>Granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> / <code>io.print</code>, the
-whole standard library (<code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>,
-<code>regex.*</code>, …), and <code>sys.args()</code> (empty).</li>
-<li><strong>Not available:</strong> polyglot blocks (<code>@python</code>, <code>@javascript</code>, <code>@bash</code>: there is no
-host process to run them in), the filesystem, network, environment, clock,
-processes and cryptography, and standard input (<code>io.read</code> returns <code>""</code>).</li>
+<li><strong>Always granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> /
+<code>io.print</code>, the whole standard library (<code>str.*</code>, <code>math.*</code>, <code>conv.*</code>,
+<code>collections.*</code>, <code>json.*</code>, <code>regex.*</code>, …), and <code>sys.args()</code> (empty).</li>
+<li><strong>Standard input.</strong> When a program calls <code>io.read</code>, an input line opens under
+the block: Enter sends one line, <strong>End input</strong> (or Ctrl+D) ends the input, and
+every later <code>io.read</code> returns <code>""</code>, as at the end of a file. Where the guide
+shows the input it ran an example with, the input line suggests it, and the
+output is compared with the guide’s only when you typed that input.</li>
+<li><strong>Granted per example</strong> (the <strong>grants</strong> label): <code>@javascript</code> blocks (below);
+the clock, <code>time.*</code>, read from your browser (<code>time.now_iso</code> has millisecond
+precision; <code>time.sleep</code> waits and counts as running time); and the environment,
+<code>env.*</code>, which in a browser is empty: <code>env.get</code> returns <code>null</code> and <code>env.all()</code>
+is <code>{}</code>, as under <code>env -i crush-run --env</code>.</li>
+<li><strong>Never available:</strong> <code>@python</code> and <code>@bash</code> blocks, the filesystem, the
+network, processes and cryptography. An example that prints facts about the
+machine (<code>env.os()</code>, <code>env.arch()</code>) is labelled as needing the host too: in a
+browser they describe the browser (<code>wasm32</code>), so its output could not match
+the page.</li>
+<li><strong>Refused before running.</strong> Like <code>crush-run</code>, the runtime works out every
+capability a program can reach and, if one is not granted, refuses the whole
+run before anything prints, naming the <code>crush-run</code> flag that would grant it.</li>
 <li><strong>Every run starts fresh.</strong> Examples do not share variables, even on the same
 page. To build on one example in the next, open the chapter as a notebook (see
 <a href="notebooks.html">Chapters as Notebooks</a>).</li>
-<li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and an
-8-second wall-clock limit; a runaway loop is stopped, not your tab.
-Output printed before a run-time error is not shown.</li>
+<li><strong>Limits.</strong> One million VM instructions per run, a bounded call depth, and 8
+seconds of running time; a runaway loop is stopped, not your tab. Both cover the
+whole run, however many lines it reads, and time spent waiting for you to type
+does not count.</li>
+<li><strong>Errors keep earlier output.</strong> When a run fails, what the program printed
+before the error is shown above it, as <code>crush-run</code> prints it. Errors read
+<code>compile error: …</code> / <code>runtime error: …</code> where <code>crush-run</code> prints <code>[compile] …</code> /
+<code>[runtime] …</code>; the messages are the same.</li>
+</ul>
+<h2 id="javascript-blocks"><a class="header" href="#javascript-blocks"><code>@javascript</code> blocks</a></h2>
+<p>Natively, <code>crush-run --polyglot</code> runs a <code>@javascript</code> block with <code>node -e</code>. In the
+browser, a block granted <code>polyglot.javascript</code> runs in JavaScript inside the same
+isolated worker as the VM, and behaves like that <code>node -e</code> run:</p>
+<ul>
+<li>Crush variables go in and <code>-&gt;</code> outputs come back as JSON, as natively; every
+block starts with a fresh scope, and globals it creates are removed afterwards.</li>
+<li>What it prints with <code>console.log</code> (and <code>console.info</code>/<code>debug</code>,
+<code>process.stdout.write</code>) is its output, formatted as node formats it;
+<code>console.error</code>/<code>warn</code> go to its error output, which is shown if the block
+fails. <code>process.env</code> holds its inputs and <code>process.exit</code> works.</li>
+<li>Where the browser cannot reproduce node exactly, the block is <strong>refused</strong>, never
+approximated: <code>require</code> and other <code>process.*</code> properties, anything asynchronous
+(timers, promises, <code>async</code>/<code>await</code>, <code>fetch</code>), and logging values node formats
+specially (class instances, <code>Map</code>/<code>Set</code>, functions, arrays of more than six
+items, which node lays out in columns). Turn such a value into a string or JSON
+first, or run the program with <code>crush-run</code>.</li>
+<li>The block runs with no authority: the worker sits in a sandboxed frame with an
+opaque origin and a content security policy that allows no network, so the
+block has no access to this page, its cookies or storage, or the network.</li>
+<li>A block that never finishes is stopped with the run at the time limit; what the
+run printed before the stop is lost with the stopped runtime.</li>
+</ul>
+<h2 id="why-not-python-bash-or-the-filesystem"><a class="header" href="#why-not-python-bash-or-the-filesystem">Why not <code>@python</code>, <code>@bash</code> or the filesystem</a></h2>
+<ul>
+<li><strong><code>@python</code></strong> would need a Python in the browser and, before that, crush’s
+marshaling of Crush variables into and out of the block, which is compiled by an
+analyzer that does not build for WebAssembly yet. Without it, only blocks that
+neither read Crush variables nor return values could run. A Python in the
+browser (<a href="https://pyodide.org">Pyodide</a> 0.27) is also a 5.6 MB download, about
+three times this whole runtime, before the first block runs. So <code>@python</code> blocks
+are refused, as <code>crush-run</code> refuses them without <code>--polyglot</code>.</li>
+<li><strong><code>@bash</code></strong> has no browser equivalent, and <code>crush-run</code> never sandboxes it either.</li>
+<li><strong>The filesystem</strong>: <code>crush-run --fs</code> works on real files under <code>--fs-root</code>. A
+per-run in-memory filesystem would need crush’s file capabilities to work over
+something other than the disk, which they do not yet.</li>
 </ul>
 <p>Ungranted capabilities are <em>refused</em>, not ignored: that is the
 <a href="crush/capabilities.html">capability system</a> working, and the page says so.</p>
@@ -273,7 +334,7 @@ without the buttons.</p>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="interactive/crush-run-b160d67d.js"></script>
+        <script src="interactive/crush-run-31bba0e7.js"></script>
 
 
 
