@@ -22,9 +22,10 @@ if [[ "$have" != "$want" && -z "${ALLOW_OTHER_COMMIT:-}" ]]; then
     exit 1
 fi
 
-# polyglot-javascript: a granted @javascript block gets Crush variables in and a
-# typed value out (src/play/guest-js.js runs it), as with crush-run --polyglot.
-features=polyglot-javascript
+# polyglot-javascript / polyglot-python: a granted @javascript / @python block gets
+# Crush variables in and a typed value out (src/play/guest-js.js runs JavaScript,
+# src/play/guest-py.js runs Python in Pyodide), as with crush-run --polyglot.
+features=polyglot-javascript,polyglot-python
 need=$(grep -A1 '^name = "wasm-bindgen"$' "$src/crates/crush-web/Cargo.lock" | sed -n 's/^version = "\(.*\)"/\1/p')
 got=$(wasm-bindgen --version | awk '{print $2}')
 [[ "$got" == "$need" ]] || { echo "wasm-bindgen $got on PATH, crush-web needs $need" >&2; exit 1; }

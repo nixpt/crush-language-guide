@@ -6,9 +6,9 @@
 What scripts/verify-examples does for `crush-run`, for the book's Run button:
 every `.crush` program runs through the built book's own runtime
 (interactive/crush-run.js, `window.crushRun`), with the grants the page would
-give it for its `.flags` (`--polyglot` with only `@javascript` blocks →
-polyglot.javascript, `--time` → time, `--env` → env; nothing else is
-grantable), its `.stdin` fed line by line, and the result compared with its
+give it for its `.flags` (`--polyglot` with only `@javascript` / `@python`
+blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` → env;
+nothing else is grantable), its `.stdin` fed line by line, and the result compared with its
 `.out` / `.err`:
 
     match     the browser printed exactly the `.out` (trailing whitespace ignored)
@@ -31,12 +31,11 @@ ROOT = Path(__file__).resolve().parent.parent
 BOOK = ROOT / "book"
 CORPUS = ROOT / "examples" / "verified"
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
-REFUSALS = ("nothing was run", "can't be granted in a browser", "capability (run with --polyglot")
+REFUSALS = ("nothing was run", "can't be granted in a browser", "capability (run with --polyglot",
+            "not supported by the in-browser JavaScript runtime", "not supported by the in-browser Python runtime")
+BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript", "python": "polyglot.python"}
 # Programs where the browser fails loudly, but differently from crush-run, and why.
-KNOWN = {
-    "polyglot/implicit-output-warning": "the deprecated implicit `@python` output needs the Python analyzer, "
-                                        "which crush-web lacks: a compile error instead of the --polyglot refusal",
-}
+KNOWN = {}
 
 
 def serve():
@@ -72,8 +71,8 @@ def grants(flags, code):
     if "--env" in flags:
         out.add("env")
     langs = set(POLYGLOT.findall(code))
-    if "--polyglot" in flags and langs and langs <= {"javascript", "js"}:
-        out.add("polyglot.javascript")
+    if "--polyglot" in flags and langs and langs <= set(BROWSER_LANGS):
+        out |= {BROWSER_LANGS[lang] for lang in langs}
     return sorted(out)
 
 

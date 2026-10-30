@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Download the Pyodide release in src/play/pyodide.json into .pyodide/<version>/.
+
+    scripts/fetch-pyodide            download (skips files already there), check sha256
+    scripts/fetch-pyodide --update   download from `base` and rewrite the pinned sizes and hashes
+
+scripts/check-browser.mjs runs the guide's @python blocks through these files
+(the page itself downloads them from `base` in the reader's browser). Prints
+the directory, which is also what PYODIDE_DIR may point at instead.
+"""
+import hashlib, json, sys, urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PIN = ROOT / "src" / "play" / "pyodide.json"
+
+
+def main():
+    update = "--update" in sys.argv[1:]
+    pin = json.loads(PIN.read_text())
+    out = ROOT / ".pyodide" / pin["version"]
+    out.mkdir(parents=True, exist_ok=True)
+    for name, want in pin["files"].items():
+        path = out / name
+        if update or not path.exists():
+            with urllib.request.urlopen(pin["base"] + name) as r:
+                data = r.read()
+        else:
+            data = path.read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
+        if update:
+            want.update(bytes=len(data), sha256=digest)
+        elif digest != want["sha256"]:
+            sys.exit(f"{name}: sha256 {digest} does not match the pin {want['sha256']} in {PIN.relative_to(ROOT)}")
+        path.write_bytes(data)
+    if update:
+        PIN.write_text(json.dumps(pin, indent=2) + "\n")
+    print(out)
+
+
+if __name__ == "__main__":
+    main()

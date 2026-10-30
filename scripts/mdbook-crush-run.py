@@ -65,8 +65,21 @@ CALL = re.compile(r"(?<![\w.])([a-z_]+)\.([a-z_][a-z_0-9]*)\s*\(")
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
 # Polyglot languages the browser runs when the block is granted (`--polyglot` on
 # the host): the page grants the matching capability for that run only, and
-# crush-web hands the block to src/play/guest-js.js inside the sandboxed worker.
-BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript"}
+# crush-web hands the block to src/play/guest-js.js (@javascript) or
+# src/play/guest-py.js (@python, in Pyodide) inside the sandboxed worker.
+BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript",
+                 "python": "polyglot.python"}
+# What an @python block can only do on the host, as src/play/guest-py.js
+# refuses it (it would otherwise get answers from Pyodide's empty in-memory
+# filesystem, or none): files, processes, the network, packages. A block that
+# uses any of these stays labelled as needing the host.
+PY_HOST = [
+    (re.compile(r"\bopen\s*\(|\bos\.(listdir|scandir|walk|l?stat|remove|unlink|rmdir|mkdir|makedirs|rename|replace|chdir|getcwd|open)\b"),
+     "the host's files"),
+    (re.compile(r"\b(subprocess|multiprocessing)\b|\bos\.(system|popen|fork|spawn\w*|exec\w*|kill)\b"), "processes"),
+    (re.compile(r"\b(socket|ssl|select|ftplib|smtplib)\b|\burllib\.request\b|\bhttp\.client\b"), "the network"),
+    (re.compile(r"\bpypi:"), "packages"),
+]
 # Host flags whose capabilities the browser can grant a run too: the clock (from
 # JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
 BROWSER_FLAGS = {"--time": "time", "--env": "env"}
@@ -85,6 +98,10 @@ def host_needs(d, code):
     host_langs = [l for l in langs if l not in BROWSER_LANGS]
     if "--polyglot" in flags and host_langs:
         needs.append("uses " + ", ".join(f"`@{l}`" for l in host_langs) + " blocks (polyglot)")
+    if "--polyglot" in flags and "python" in langs:
+        py_host = [what for pattern, what in PY_HOST if pattern.search(code)]
+        if py_host:
+            needs.append("has an `@python` block that uses " + ", ".join(py_host))
     calls = {}
     for ns, fn in CALL.findall(code):
         if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
@@ -108,7 +125,8 @@ def host_needs(d, code):
 
 def grants(d, code):
     """The capabilities the page grants this block's runs: what its host flags grant
-    that the browser can provide (@javascript under --polyglot, --time, --env)."""
+    that the browser can provide (@javascript / @python under --polyglot, --time,
+    --env)."""
     flags = d.get("flags", "").split()
     out = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
     if "--polyglot" in flags:

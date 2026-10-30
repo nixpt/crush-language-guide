@@ -11,3 +11,6 @@ book/
 .dejavue/timeline.jsonl.bak-*
 
 __pycache__/
+
+# scripts/fetch-pyodide downloads
+.pyodide/

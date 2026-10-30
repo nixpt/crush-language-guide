@@ -74,14 +74,14 @@ def launch(p):
         raise
 
 
-def run_block(page, block, stdin=None):
+def run_block(page, block, stdin=None, timeout=30000):
     """Run a block; when it asks for input, type the lines of `stdin` (its `check: stdin`), then End input."""
     lines = [] if stdin is None else stdin.rstrip("\n").split("\n")
     block.locator("button.crush-run").click()
     done = "b => b.querySelector('.crush-out .crush-status') && !b.querySelector('button.crush-run').disabled"
     asking = "b => !!b.querySelector('input.crush-input-line')"
     while True:
-        page.wait_for_function(f"b => ({done})(b) || ({asking})(b)", arg=block.element_handle(), timeout=30000)
+        page.wait_for_function(f"b => ({done})(b) || ({asking})(b)", arg=block.element_handle(), timeout=timeout)
         if page.evaluate(f"({done})", block.element_handle()):
             return block.locator(".crush-out .crush-status").inner_text()
         if lines:
@@ -122,7 +122,7 @@ def main():
                     has_run = blk.locator("button.crush-run").count() == 1
                     check(has_run == (b["kind"] in ("run", "fail")), f"{b['src']} [{b['kind']}]: Run button {'present' if has_run else 'absent'}")
                     if b["kind"] != "run":
-                        check(blk.locator(".crush-badge").count() == 1 and blk.locator(".crush-why").inner_text().strip() != "",
+                        check(blk.locator(".crush-badge:not(.crush-badge-grant)").count() == 1 and blk.locator(".crush-why").inner_text().strip() != "",
                               f"{b['src']} [{b['kind']}]: labelled ({blk.locator('.crush-why').inner_text()[:70]!r})")
 
             # 2. every run/fail block in the book, run in Chromium
@@ -185,8 +185,9 @@ def main():
             check("process.exec" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
                   "host-only block names its capabilities and has no Run")
             page.goto(base + "crush/polyglot.html")
-            check("@python" in page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "print(\"two\")")}"] .crush-why').inner_text(),
-                  "polyglot block says it uses @python")
+            hostname = page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "/etc/hostname")}"]')
+            check("the host's files" in hostname.locator(".crush-why").inner_text() and hostname.locator("button.crush-run").count() == 0,
+                  "an @python block that reads host files is host-only and says why")
             check(not errors, f"no page errors ({errors[:2]})")
 
             # 5. standard input: io.read asks for a line under the block
@@ -241,7 +242,7 @@ def main():
                     blk.locator("button.crush-reset").click()
                 blk.locator("button.crush-edit").click()
                 blk.locator("textarea.crush-editor").fill(code)
-                status = run_block(page, blk)
+                status = run_block(page, blk, timeout=timeout)
                 return status, [o.inner_text().strip() for o in blk.locator(".crush-out pre.crush-output").all()]
 
             probe = (
@@ -263,6 +264,29 @@ def main():
             status, outs = edited_run(js, '@javascript -> v {\nconst v = 6 * 7\n}\nprint(v)\n')
             check(status.startswith("ok") and outs[0] == "42", f"the runtime restarts after a timeout ({status!r}, {outs!r})")
             js.locator("button.crush-reset").click()
+            check(not errors, f"no page errors ({errors[:2]})")
+
+            # 6b. granted @python runs in Pyodide, fetched on first use, isolated
+            # like @javascript, and only as python3 would run it on the host
+            page.goto(base + "crush/polyglot.html")
+            py = page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "print(\"two\")")}"]')
+            check("grants @python" in py.locator(".crush-badge-grant").inner_text(), "a granted @python block shows its grant")
+            check("matches the guide's output" in run_block(page, py, timeout=120000),
+                  "the @python example (loading Pyodide) matches the guide's output")
+            status, outs = edited_run(py, '@python -> r {\nimport json, statistics\nr = json.dumps({"mean": statistics.mean([1, 2, 6])})\n}\nprint(r)\n')
+            check(status.startswith("ok") and outs[0] == '{"mean": 3}', f"@python returns a typed value ({status!r}, {outs!r})")
+            status, outs = edited_run(py, '@python {\nimport js\n}\n')
+            check("failed" in status and "ModuleNotFoundError: No module named 'js'" in outs[-1],
+                  f"an @python block cannot reach JavaScript, as python3 cannot ({outs[-1][-80:]!r})")
+            status, outs = edited_run(py, '@python {\nprint(open("/etc/hostname").read())\n}\n')
+            check("failed" in status and "not supported by the in-browser Python runtime" in outs[-1],
+                  f"what only the host can answer is refused ({outs[-1][:90]!r})")
+            status, outs = edited_run(py, 'print("start")\n@python {\nwhile True:\n    pass\n}\n')
+            check(status.startswith("timed out"), f"a runaway @python block is stopped at the time limit ({status!r})")
+            status, outs = edited_run(py, '@python -> v {\nv = 6 * 7\n}\nprint(v)\n', timeout=60000)
+            check(status.startswith("ok") and outs[0] == "42",
+                  f"Python reloads into the restarted runtime without downloading again ({status!r}, {outs!r})")
+            py.locator("button.crush-reset").click()
             check(not errors, f"no page errors ({errors[:2]})")
 
             # 7. the clock and the environment, granted like --time / --env

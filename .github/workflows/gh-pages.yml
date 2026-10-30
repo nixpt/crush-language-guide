@@ -24,7 +24,9 @@ jobs:
       # Every ```crush block's Run button / label, proven against the vendored
       # crush-web build (src/play/pkg). Needs only node + python3.
       - name: Check browser classification
-        run: node scripts/check-browser.mjs
+        run: |
+          python3 scripts/fetch-pyodide
+          node scripts/check-browser.mjs
 
       - name: Build mdBook
         run: mdbook build
