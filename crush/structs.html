@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (2026-10-16). New since the 0.3 line:
+<p>Verified against crush-ast <code>d04bc60a</code> (2026-10-29). New since the 0.3 line:
 <code>impl</code>, <code>trait</code>, <code>@kind</code> and struct patterns (crush-ast CRUSH-zorro-41/43, the
 COSM object model).</p>
 </blockquote>
@@ -307,18 +307,13 @@ print(t.size())
 <pre><code class="language-text">3
 [runtime] `T` has no method `size`
 </code></pre>
-<p>Two current limits:</p>
-<ul>
-<li>The receiver must be a name. <code>S { n: 3 }.size()</code> is a parse error (<code>Cannot call non-function</code>); bind the value with <code>let</code> first.</li>
-<li>A method call on a <strong><code>for</code> loop variable</strong> is mistaken for a capability call
-and the program is refused (<code>not available in this host: s.area</code>; crush-ast
-<a href="https://github.com/nixpt/crush-ast/issues/256">#256</a>). Loop over indexes and
-bind <code>let s = items[i]</code>.</li>
-</ul>
+<p>The receiver must be a name. <code>S { n: 3 }.size()</code> is a parse error (<code>Cannot call non-function</code>); bind the value with <code>let</code> first. A <code>for</code> loop variable is a name
+like any other, so <code>for s in items { s.area() }</code> works (it was refused before
+crush-ast <a href="https://github.com/nixpt/crush-ast/issues/256">#256</a>).</p>
 <h2 id="traits"><a class="header" href="#traits">Traits</a></h2>
 <p>A <code>trait</code> lists method signatures, and may give some of them a default body.
 <code>impl Trait for Struct</code> supplies the rest:</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:147" data-expect="a shape with area 4
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:143" data-expect="a shape with area 4
 a circle
 ">
 <pre><code class="language-crush">struct Square { side: Int }
@@ -345,7 +340,7 @@ a circle
 </code></pre>
 <p>Leaving out a method that has no default is a compile error:</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/structs.md:174" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/structs.md:170" data-why="this example shows a compile error">
 <pre><code class="language-crush">trait T { fn need(self); }
 struct S { }
 impl T for S { }
@@ -360,7 +355,7 @@ impl T for S { }
 the struct type: two different structs with equal fields are <code>==</code>, and so is a
 plain map with the same entries. <code>@kind(equality: identity)</code> makes <code>==</code> mean “the
 same instance”.</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:193" data-expect="true
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:189" data-expect="true
 false
 true
 true
@@ -387,7 +382,7 @@ true
 <p>By default a struct is a <strong>reference</strong>: assignment and argument passing share one
 instance. <code>@kind(semantics: value(copy))</code> makes a value type that is copied on
 assignment, argument passing and return. <code>x.clone()</code> deep-copies either kind.</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:220" data-expect="1
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:216" data-expect="1
 2
 1
 3
@@ -428,7 +423,7 @@ print(r.x)
 <h2 id="struct-patterns-in-match"><a class="header" href="#struct-patterns-in-match">Struct patterns in <code>match</code></a></h2>
 <p>A struct pattern tests the value’s struct type first, then compares or binds its
 fields. Write <code>field: pattern</code> (there is no <code>{ x }</code> shorthand); patterns nest:</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:259" data-expect="P one
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:255" data-expect="P one
 P 5
 Q 5
 wrap of P 2
@@ -486,13 +481,12 @@ key or value is a compile error that lists the valid ones.</p>
 <p>These are the object models of the languages crush-ast lowers (Python classes,
 JS objects, Rust and Go values), which Crush can write directly. Strategies no
 engine runs yet are refused at compile time rather than half-implemented:
-<code>resolution: prototype_chain</code> gives <code>struct `Z` declares `@kind(resolution: prototype_chain)`, which no engine runs yet</code>.</p>
+<code>resolution: embedding_promotion</code> (Go’s embedding) gives <code>struct `Z` declares `@kind(resolution: embedding_promotion)`, which no engine runs yet</code>.</p>
 <p>A constructor (<code>construct: ctor(init)</code>) runs <code>init</code> on a new instance when the
-struct is called like a function. (<code>crush run</code> handles this; <code>crushc</code> and
-<code>crush build</code> wrongly reject it with <code>Undefined function: Acc</code>, crush-ast
-<a href="https://github.com/nixpt/crush-ast/issues/260">#260</a>.)</p>
-<!-- check: nocrushc crush-ast #260 -->
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:320" data-expect="15
+struct is called like a function. (<code>crushc</code> and <code>crush build</code> accept it too
+since crush-ast <a href="https://github.com/nixpt/crush-ast/issues/260">#260</a>; before, they
+rejected it with <code>Undefined function: Acc</code>.)</p>
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:315" data-expect="15
 {total: 15}
 ">
 <pre><code class="language-crush">@kind(construct: ctor(init))
@@ -516,7 +510,7 @@ print(a)
 {total: 15}
 </code></pre>
 <p>Multiple inheritance with a C3 method resolution order (Python’s):</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:344" data-expect="left
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:339" data-expect="left
 right only
 hello from base
 ">
@@ -552,7 +546,7 @@ hello from base
 <p>Bound methods: with <code>receiver: bound_self</code>, reading <code>c.inc</code> (without calling it)
 gives a function value bound to <code>c</code>. With the default receiver it gives the plain
 function, which takes the instance as its first argument:</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:379" data-expect="1
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:374" data-expect="1
 2
 2
 7
@@ -585,7 +579,7 @@ print(g(p))
 7
 </code></pre>
 <p>Open storage accepts fields the struct doesn’t declare:</p>
-<div class="crush-block" data-crush="run" data-src="crush/structs.md:410" data-expect="{x: 1, extra: 2}
+<div class="crush-block" data-crush="run" data-src="crush/structs.md:405" data-expect="{x: 1, extra: 2}
 ">
 <pre><code class="language-crush">@kind(storage: open_dict)
 struct O { x: Int }

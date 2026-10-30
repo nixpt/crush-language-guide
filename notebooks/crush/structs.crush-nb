@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Structs, Methods and Kinds\n\n> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line:\n> `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the\n> COSM object model).\n\nA `struct` declares a record type. `impl` blocks give it methods, `trait`s give\nseveral structs a shared interface with default methods, and `@kind(...)`\nchooses its object semantics (reference or value, how `self` is bound, how\nlookup works). Under the hood each struct is a **Kind** of COSM, the Crush Object\nSemantic Model that crush-ast also uses to lower other languages' classes; see\ncrush-ast's `docs/design/object-model.md`.\n\n## Declaring and building\n\nWrite the fields on **one line** (a struct body spread over several lines is a\nparse error today, gap `GAP-STRUCT-MULTILINE`). Build one with a literal that\nnames **every** field, or with `new Name()` and assign the fields later:\n",
+   "source": "# Structs, Methods and Kinds\n\n> Verified against crush-ast `d04bc60a` (2026-10-29). New since the 0.3 line:\n> `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the\n> COSM object model).\n\nA `struct` declares a record type. `impl` blocks give it methods, `trait`s give\nseveral structs a shared interface with default methods, and `@kind(...)`\nchooses its object semantics (reference or value, how `self` is bound, how\nlookup works). Under the hood each struct is a **Kind** of COSM, the Crush Object\nSemantic Model that crush-ast also uses to lower other languages' classes; see\ncrush-ast's `docs/design/object-model.md`.\n\n## Declaring and building\n\nWrite the fields on **one line** (a struct body spread over several lines is a\nparse error today, gap `GAP-STRUCT-MULTILINE`). Build one with a literal that\nnames **every** field, or with `new Name()` and assign the fields later:\n",
    "state": {
     "status": "done"
    },
@@ -200,7 +200,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "```text\n3\n[runtime] `T` has no method `size`\n```\n\nTwo current limits:\n\n- The receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call\n  non-function`); bind the value with `let` first.\n- A method call on a **`for` loop variable** is mistaken for a capability call\n  and the program is refused (`not available in this host: s.area`; crush-ast\n  [#256](https://github.com/nixpt/crush-ast/issues/256)). Loop over indexes and\n  bind `let s = items[i]`.\n\n## Traits\n\nA `trait` lists method signatures, and may give some of them a default body.\n`impl Trait for Struct` supplies the rest:\n",
+   "source": "```text\n3\n[runtime] `T` has no method `size`\n```\n\nThe receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call\nnon-function`); bind the value with `let` first. A `for` loop variable is a name\nlike any other, so `for s in items { s.area() }` works (it was refused before\ncrush-ast [#256](https://github.com/nixpt/crush-ast/issues/256)).\n\n## Traits\n\nA `trait` lists method signatures, and may give some of them a default body.\n`impl Trait for Struct` supplies the rest:\n",
    "state": {
     "status": "done"
    },
@@ -223,7 +223,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:147",
+      "src": "crush/structs.md:143",
       "browser": "run",
       "expect_output": "a shape with area 4\na circle\n"
      }
@@ -259,7 +259,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:174",
+      "src": "crush/structs.md:170",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -295,7 +295,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:193",
+      "src": "crush/structs.md:189",
       "browser": "run",
       "expect_output": "true\nfalse\ntrue\ntrue\n"
      }
@@ -331,7 +331,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:220",
+      "src": "crush/structs.md:216",
       "browser": "run",
       "expect_output": "1\n2\n1\n3\n3\n"
      }
@@ -367,7 +367,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:259",
+      "src": "crush/structs.md:255",
       "browser": "run",
       "expect_output": "P one\nP 5\nQ 5\nwrap of P 2\nsomething else\n"
      }
@@ -380,7 +380,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "So unlike `==`, a pattern does distinguish `P { x: 5 }` from `Q { x: 5 }`. A\npattern naming a struct that isn't declared is a compile error (`no struct `Nope`\nis declared, so no value can match it`).\n\n## `@kind`: choosing object semantics\n\n`@kind(key: value, ...)` written directly before a `struct` picks a strategy for\neach aspect of the type. Unset keys keep Crush's defaults (in bold). An unknown\nkey or value is a compile error that lists the valid ones.\n\n| Key | Values | What it controls |\n|---|---|---|\n| `storage` | **`sealed`**, `open_dict`, `open_dict_with_slots` | whether undeclared fields may be added |\n| `semantics` | **`reference`**, `value(copy)`, `value(move)`, `value(clone_explicit)` | sharing vs copying on assignment |\n| `receiver` | `dynamic_this`, `bound_self`, `bound_cls`, `explicit_value`, **`explicit_ref`**, `explicit_ref_mut` | what `self` is, and what `obj.method` (unbound) gives |\n| `construct` | **`literal`**, `ctor(f)`, `js_new(f)`, `py_new_init(init)` / `py_new_init(new, init)` | what `Name(args)` does |\n| `resolution` | **`none`**, `single`, `c3`, `prototype_chain`, `embedding_promotion` | how methods are looked up through `parents` |\n| `parents` | a list of structs, `[Base, Mixin]` | the inheritance graph for `resolution` |\n| `equality` | `identity`, **`structural`** | what `==` compares |\n\nThese are the object models of the languages crush-ast lowers (Python classes,\nJS objects, Rust and Go values), which Crush can write directly. Strategies no\nengine runs yet are refused at compile time rather than half-implemented:\n`resolution: prototype_chain` gives `` struct `Z` declares\n`@kind(resolution: prototype_chain)`, which no engine runs yet ``.\n\nA constructor (`construct: ctor(init)`) runs `init` on a new instance when the\nstruct is called like a function. (`crush run` handles this; `crushc` and\n`crush build` wrongly reject it with `Undefined function: Acc`, crush-ast\n[#260](https://github.com/nixpt/crush-ast/issues/260).)\n",
+   "source": "So unlike `==`, a pattern does distinguish `P { x: 5 }` from `Q { x: 5 }`. A\npattern naming a struct that isn't declared is a compile error (`no struct `Nope`\nis declared, so no value can match it`).\n\n## `@kind`: choosing object semantics\n\n`@kind(key: value, ...)` written directly before a `struct` picks a strategy for\neach aspect of the type. Unset keys keep Crush's defaults (in bold). An unknown\nkey or value is a compile error that lists the valid ones.\n\n| Key | Values | What it controls |\n|---|---|---|\n| `storage` | **`sealed`**, `open_dict`, `open_dict_with_slots` | whether undeclared fields may be added |\n| `semantics` | **`reference`**, `value(copy)`, `value(move)`, `value(clone_explicit)` | sharing vs copying on assignment |\n| `receiver` | `dynamic_this`, `bound_self`, `bound_cls`, `explicit_value`, **`explicit_ref`**, `explicit_ref_mut` | what `self` is, and what `obj.method` (unbound) gives |\n| `construct` | **`literal`**, `ctor(f)`, `js_new(f)`, `py_new_init(init)` / `py_new_init(new, init)` | what `Name(args)` does |\n| `resolution` | **`none`**, `single`, `c3`, `prototype_chain`, `embedding_promotion` | how methods are looked up through `parents` |\n| `parents` | a list of structs, `[Base, Mixin]` | the inheritance graph for `resolution` |\n| `equality` | `identity`, **`structural`** | what `==` compares |\n\nThese are the object models of the languages crush-ast lowers (Python classes,\nJS objects, Rust and Go values), which Crush can write directly. Strategies no\nengine runs yet are refused at compile time rather than half-implemented:\n`resolution: embedding_promotion` (Go's embedding) gives `` struct `Z` declares\n`@kind(resolution: embedding_promotion)`, which no engine runs yet ``.\n\nA constructor (`construct: ctor(init)`) runs `init` on a new instance when the\nstruct is called like a function. (`crushc` and `crush build` accept it too\nsince crush-ast [#260](https://github.com/nixpt/crush-ast/issues/260); before, they\nrejected it with `Undefined function: Acc`.)\n",
    "state": {
     "status": "done"
    },
@@ -403,7 +403,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:320",
+      "src": "crush/structs.md:315",
       "browser": "run",
       "expect_output": "15\n{total: 15}\n"
      }
@@ -439,7 +439,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:344",
+      "src": "crush/structs.md:339",
       "browser": "run",
       "expect_output": "left\nright only\nhello from base\n"
      }
@@ -475,7 +475,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:379",
+      "src": "crush/structs.md:374",
       "browser": "run",
       "expect_output": "1\n2\n2\n7\n"
      }
@@ -511,7 +511,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/structs.md:410",
+      "src": "crush/structs.md:405",
       "browser": "run",
       "expect_output": "{x: 1, extra: 2}\n"
      }

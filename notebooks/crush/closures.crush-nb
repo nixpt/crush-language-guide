@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Closures and Function Values\n\n> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
+   "source": "# Closures and Function Values\n\n> Verified against crush-ast `d04bc60a` (2026-10-29). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
    "state": {
     "status": "done"
    },
@@ -378,7 +378,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "```text\n[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function\n```\n\nThe built-ins `print` and `len` are not function values: `let g = len` compiles\nbut fails when it runs (`load from uninitialised slot`, crush-ast\n[#257](https://github.com/nixpt/crush-ast/issues/257)). Wrap them in a lambda:\n",
+   "source": "```text\n[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function\n```\n\nThe built-ins (`print`, `len`, `parallel_map`, …) are not function values:\n`let g = len` is a compile error that names the fix, `` `len` is a built-in, not a\nfunction value; wrap it in a lambda: `|x| len(x)` `` (crush-ast\n[#257](https://github.com/nixpt/crush-ast/issues/257); before, it compiled and\nfailed at run time). Wrap them in a lambda:\n",
    "state": {
     "status": "done"
    },
@@ -401,7 +401,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/closures.md:246",
+      "src": "crush/closures.md:248",
       "browser": "run",
       "expect_output": "3\n"
      }
@@ -437,7 +437,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/closures.md:261",
+      "src": "crush/closures.md:263",
       "browser": "run",
       "expect_output": "5\n[1, 4, 9]\n"
      }

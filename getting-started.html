@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -187,8 +187,8 @@
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.</p>
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (main, 2026-10-16), a debug build. That is
-newer than the <code>0.6.0</code> release on crates.io: see the note below.</p>
+<p>Verified against crush-ast <code>d04bc60a</code> (main, 2026-10-29), a release build. That is
+newer than the <code>0.7.1</code> release on crates.io: see the note below.</p>
 </blockquote>
 <h2 id="1-build-the-toolchain"><a class="header" href="#1-build-the-toolchain">1. Build the toolchain</a></h2>
 <p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
@@ -234,22 +234,23 @@ even when the feature is off, so a lone <code>crush-ast</code> checkout fails wi
 (<code>cargo run -p crush-installer -- install --bin-dir target/release</code> copies them
 into <code>~/.crush/bin</code>; it does not currently include the <code>crush</code> wrapper).</p>
 <blockquote>
-<p><strong>Crates.io.</strong> Release <code>0.6.0</code> (2026-10-15) is published for <code>crush-lang-sdk</code>
+<p><strong>Crates.io.</strong> Release <code>0.7.1</code> (2026-10-20, crush-ast <code>85393971</code>) is published for <code>crush-lang-sdk</code>
 (which installs <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code> and
 <code>crush-diff</code>), <code>crush-vm</code>, <code>crush-frontend</code>, <code>casm</code>, <code>crush-cast</code>, <code>crush-cosm</code>,
 <code>crush-errors</code>, <code>crush-diagnostics</code>, <code>crush-ffi</code>, <code>crush-caison</code> (and its old name
 <code>crush-cson</code>), <code>crush-index</code>, <code>crush-walker-core</code>, <code>crush-lang-python</code>,
 <code>crush-lang-js</code>, <code>crush-lint</code>, <code>crush-installer</code>, <code>tree-sitter-crush</code>, <code>crush-jit</code>,
-<code>crush-python</code> and <code>crush-pkg</code>; <code>crush-aot</code>, <code>crush-aotc</code> and <code>crush-lang-rust</code> are
-not published. <code>0.6.0</code> predates parts of this guide: struct methods resolving on
-their Kind (Records, <code>@kind</code> semantics), explicit polyglot outputs (<code>-&gt; name</code>) and
-the AOT refusals landed on <code>main</code> after it. Build from source for everything
+<code>crush-python</code>, <code>crush-pkg</code>, <code>crush-aotc</code> and <code>crush-lang-rust</code>; <code>crush-aot</code> is not
+published. <code>0.7.1</code> predates these fixes the guide describes: <code>return match …</code>
+returning its value (#253), negative slice bounds (#254), methods on a <code>for</code> loop
+variable (#256), the compile error for a built-in used as a value (#257) and
+<code>crushc</code> accepting constructor calls (#260). Build from source for everything
 here. <strong>Never depend on <code>crush-lang-sdk</code> <code>0.2</code></strong>: that line has been yanked, and
 it runs <code>@lang</code> blocks without the <code>--polyglot</code> gate.</p>
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
-<div class="crush-block" data-crush="run" data-src="getting-started.md:70" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="getting-started.md:71" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">let name = "Crush"
 print("Hello, " + name + "!")
@@ -288,7 +289,7 @@ crush-run caps prog.crush                        # what does it need? (runs noth
 </code></pre>
 <p>For example, this reads a file, so it needs <code>--fs</code>:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="getting-started.md:125" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="getting-started.md:126" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print(fs.read("notes.txt"))
 </code></pre>
 </div>
@@ -357,7 +358,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
     assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>Both snippets are compiled and run against crush-ast <code>aa07413</code> by
+<p>Both snippets are compiled and run against crush-ast <code>d04bc60a</code> by
 <code>scripts/check-examples.py --crush-ast</code>. <code>Runtime::new()</code> registers only the
 built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
 library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass

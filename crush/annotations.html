@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/annotations.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>d04bc60a</code> (2026-10-29).</p>
 </blockquote>
 <p>An annotation is an <code>@name</code> form written before a declaration (or at the top of
 a file). Three kinds exist:</p>
@@ -290,22 +290,25 @@ stored, not executed. (<code>crushc --invariant-runtime</code> emits calls to an
 <h2 id="the-ai-native-statements"><a class="header" href="#the-ai-native-statements">The AI-native statements</a></h2>
 <p>CAST has AI nodes (queries, tool chains, agent delegation, goals, …) for programs
 that agents emit as JSON; they are described in <a href="../cast/ai-native.html">AI-Native CAST</a>.
-They are <strong>not</strong> Crush source functions: <code>ai_semantic_match(...)</code> in a <code>.crush</code>
-file is just an undefined name.</p>
-<!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/annotations.md:107" data-why="this example shows a compile error">
+Two of them also have Crush built-ins, <code>ai_semantic_match(text, target, threshold)</code> and <code>ai_synthesize(prompt)</code>, which compile to the same
+capability-gated call as the CAST <code>SemanticMatch</code> / <code>Synthesize</code> nodes. <code>crush-run</code>
+has no AI backend, so such a program is refused before it runs; a host that
+provides <code>ai_native.semantic_match</code> can run it:</p>
+<!-- check: runfail not available in this host: ai_native.semantic_match -->
+<div class="crush-block" data-crush="fail" data-src="crush/annotations.md:110" data-why="this example shows a run-time error" data-expect-error="not available in this host: ai_native.semantic_match">
 <pre><code class="language-crush">let m = ai_semantic_match("refund", "billing", 0.8)
 print(m)
 </code></pre>
 </div>
 
-<pre><code class="language-text">[compile] Undefined function: ai_semantic_match
+<pre><code class="language-text">[capabilities] … needs capabilities this run does not grant; nothing was run:
+  not available in this host: ai_native.semantic_match
 </code></pre>
 <p>The one AI statement with Crush syntax, <code>semantic_switch</code>, parses but is refused
 at compile time, because it would have compiled to a silent no-op (crush-ast
 CRUSH-265):</p>
 <!-- check: runfail `semantic_switch` isn't supported yet (CRUSH-265) -->
-<div class="crush-block" data-crush="fail" data-src="crush/annotations.md:121" data-why="this example shows a run-time error" data-expect-error="`semantic_switch` isn&#39;t supported yet (CRUSH-265)">
+<div class="crush-block" data-crush="fail" data-src="crush/annotations.md:125" data-why="this example shows a run-time error" data-expect-error="`semantic_switch` isn&#39;t supported yet (CRUSH-265)">
 <pre><code class="language-crush">fn route(text) {
     semantic_switch text {
         case "billing question":

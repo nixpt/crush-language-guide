@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -188,7 +188,7 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.</p>
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (the commit in the repository’s
+<p>Verified against crush-ast <code>d04bc60a</code> (the commit in the repository’s
 <code>CRUSH_AST_COMMIT</code> file). 123 programs.</p>
 </blockquote>
 <div class="table-wrapper">
@@ -243,11 +243,7 @@ changes and the corpus fails, which is the signal to update the guide.</p>
 <tr><th>Pitfall</th><th>Issue</th></tr>
 </thead>
 <tbody>
-<tr><td><code>control-flow/match-return-pitfall</code>: <code>return match …</code> returns <code>null</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/253">#253</a></td></tr>
-<tr><td><code>collections/slice-negative-pitfall</code>: <code>a[1:-1]</code> is <code>[]</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/254">#254</a></td></tr>
 <tr><td><code>polyglot/bash</code>: a <code>@bash</code> block sees no Crush variables</td><td><a href="https://github.com/nixpt/crush-ast/issues/255">#255</a></td></tr>
-<tr><td><code>structs/method-on-loop-variable</code>: <code>s.area()</code> on a <code>for</code> variable is refused</td><td><a href="https://github.com/nixpt/crush-ast/issues/256">#256</a></td></tr>
-<tr><td><code>closures/builtin-not-a-value</code>: <code>let g = len</code> fails at run time</td><td><a href="https://github.com/nixpt/crush-ast/issues/257">#257</a></td></tr>
 <tr><td><code>polyglot/header-comment-pitfall</code>: <code>//</code> on a block header → <code>Undefined variable</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/266">#266</a></td></tr>
 </tbody>
 </table>

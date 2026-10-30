@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`; `crush doctor` checks).\n\n> Verified against crush-ast `aa07413` (2026-10-16).\n",
+   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`; `crush doctor` checks).\n\n> Verified against crush-ast `d04bc60a` (2026-10-29).\n",
    "state": {
     "status": "done"
    },

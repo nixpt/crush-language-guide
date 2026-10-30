@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/appendix/quick_reference.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <p>Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide’s checker against crush-ast <code>aa07413</code>. Details live in
+can run is run by the guide’s checker against crush-ast <code>d04bc60a</code>. Details live in
 the chapters linked from each heading.</p>
 <h2 id="command-line-getting-started"><a class="header" href="#command-line-getting-started">Command line (<a href="../getting-started.html">Getting Started</a>)</a></h2>
 <div class="table-wrapper">
@@ -311,14 +311,13 @@ b
 <p><code>0..3</code> excludes the end, <code>0..=3</code> includes it. <code>for</code> also walks a string’s
 characters and a map’s keys. <code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>.
 <code>match v { 1 =&gt; "one", P { x: a } =&gt; a, _ =&gt; "other" }</code> matches literals,
-bindings and struct patterns (bind it with <code>let</code>; <code>return match …</code> returns <code>null</code>
-today, #253).</p>
+bindings and struct patterns; <code>return match …</code> returns its value.</p>
 <h3 id="operators-operators"><a class="header" href="#operators-operators">Operators (<a href="../crush/operators.html">Operators</a>)</a></h3>
 <p><code>+ - * / %</code> · <code>== != &lt; &gt; &lt;= &gt;=</code> · <code>&amp;&amp; || !</code> or <code>and or not</code> (short-circuit) · unary
 <code>-</code> · pipeline <code>|&gt;</code> · ranges <code>a..b</code>, <code>a..=b</code>. There is no <code>**</code>, <code>//</code>, <code>+=</code>, bitwise
 operator or ternary. <code>Int</code> overflow and division by zero are run-time errors.</p>
 <h3 id="errors"><a class="header" href="#errors">Errors</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:134" data-expect="caught: disk full
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:133" data-expect="caught: disk full
 ">
 <pre><code class="language-crush">try {
     throw "disk full"
@@ -332,7 +331,7 @@ operator or ternary. <code>Int</code> overflow and division by zero are run-time
 <pre><code class="language-text">caught: disk full
 </code></pre>
 <h3 id="structs-and-objects-types"><a class="header" href="#structs-and-objects-types">Structs and objects (<a href="../crush/types.html">Types</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:149" data-expect="7
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:148" data-expect="7
 crush/en
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
@@ -358,7 +357,7 @@ crush/en
 <p>Capability calls are dotted and have <strong>no <code>@</code></strong>. They exist only if you enabled
 them:</p>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:177" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:176" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">if fs.exists("notes.txt") {
     print(fs.read("notes.txt"))
 } else {
@@ -370,7 +369,7 @@ them:</p>
 <!-- check: output -->
 <pre><code class="language-text">no notes
 </code></pre>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:190" data-expect="ab3
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:189" data-expect="ab3
 6
 ">
 <pre><code class="language-crush">io.print("a", "b", 3)
@@ -388,7 +387,7 @@ subprocesses, only with <code>--polyglot</code>, and with the host’s full auth
 by default). Names a block reads are passed in; the names after <code>-&gt;</code> come back.
 Without the flag the program is refused:</p>
 <!-- check: runfail --polyglot -->
-<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:209" data-why="this example shows a refusal" data-expect-error="--polyglot">
+<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:208" data-why="this example shows a refusal" data-expect-error="--polyglot">
 <pre><code class="language-crush">@python {
     print("hello from python")
 }

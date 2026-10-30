@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (2026-10-16).</p>
+<p>Verified against crush-ast <code>d04bc60a</code> (2026-10-29).</p>
 </blockquote>
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -390,12 +390,10 @@ print(a[0:2])
 <p>Reading past the end is a runtime error (<code>array index out of range</code>), and so is
 <code>a[-1]</code> on an empty array; <code>a[-1]</code> on a non-empty one is the last element. The
 method form <code>a.pop()</code> is <strong>not</strong> available (the program is refused with <code>not available in this host: pop</code>); call <code>array.pop(a)</code>.</p>
-<blockquote>
-<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/254">crush-ast #254</a>).</strong>
-Negative slice bounds are silently wrong: <code>[1, 2, 3, 4][1:-1]</code> gives <code>[]</code> and
-<code>[1, 2, 3, 4][-3:]</code> gives the whole array. Compute positive bounds
-(<code>a[1:len(a) - 1]</code>) until it is fixed.</p>
-</blockquote>
+<p>Negative slice bounds count from the end, as an index does: with
+<code>let a = [1, 2, 3, 4]</code>, <code>a[1:-1]</code> is <code>[2, 3]</code>, <code>a[-3:]</code> is <code>[2, 3, 4]</code> and
+<code>a[:-1]</code> is <code>[1, 2, 3]</code>. (Before crush-ast
+<a href="https://github.com/nixpt/crush-ast/issues/254">#254</a> they were silently clamped.)</p>
 <h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
 <p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
 strings. Read and write fields with <strong>dot notation</strong> or a <strong>string subscript</strong>:</p>

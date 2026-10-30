@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `aa07413`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |\n| `crush doctor` | which polyglot interpreters are on `PATH` |\n| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |\n| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |\n\nCapability flags (everything is **off** unless you pass it, except the standard\nlibrary, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`\n`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`\n`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused\nbefore it runs. Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
+   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `d04bc60a`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |\n| `crush doctor` | which polyglot interpreters are on `PATH` |\n| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |\n| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |\n\nCapability flags (everything is **off** unless you pass it, except the standard\nlibrary, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`\n`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`\n`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused\nbefore it runs. Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
    "state": {
     "status": "done"
    },
@@ -126,7 +126,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "`0..3` excludes the end, `0..=3` includes it. `for` also walks a string's\ncharacters and a map's keys. `break` and `continue` work in `while` and `for`.\n`match v { 1 => \"one\", P { x: a } => a, _ => \"other\" }` matches literals,\nbindings and struct patterns (bind it with `let`; `return match …` returns `null`\ntoday, #253).\n\n### Operators ([Operators](https://docs.crushlang.org/crush/operators.html))\n\n`+ - * / %` · `== != < > <= >=` · `&& || !` or `and or not` (short-circuit) · unary\n`-` · pipeline `|>` · ranges `a..b`, `a..=b`. There is no `**`, `//`, `+=`, bitwise\noperator or ternary. `Int` overflow and division by zero are run-time errors.\n\n### Errors\n",
+   "source": "`0..3` excludes the end, `0..=3` includes it. `for` also walks a string's\ncharacters and a map's keys. `break` and `continue` work in `while` and `for`.\n`match v { 1 => \"one\", P { x: a } => a, _ => \"other\" }` matches literals,\nbindings and struct patterns; `return match …` returns its value.\n\n### Operators ([Operators](https://docs.crushlang.org/crush/operators.html))\n\n`+ - * / %` · `== != < > <= >=` · `&& || !` or `and or not` (short-circuit) · unary\n`-` · pipeline `|>` · ranges `a..b`, `a..=b`. There is no `**`, `//`, `+=`, bitwise\noperator or ternary. `Int` overflow and division by zero are run-time errors.\n\n### Errors\n",
    "state": {
     "status": "done"
    },
@@ -149,7 +149,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:134",
+      "src": "appendix/quick_reference.md:133",
       "browser": "run",
       "expect_output": "caught: disk full\n"
      }
@@ -185,7 +185,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:149",
+      "src": "appendix/quick_reference.md:148",
       "browser": "run",
       "expect_output": "7\ncrush/en\n"
      }
@@ -221,7 +221,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:177",
+      "src": "appendix/quick_reference.md:176",
       "browser": "host",
       "why": "uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide",
       "expect_output": "no notes\n"
@@ -246,7 +246,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:190",
+      "src": "appendix/quick_reference.md:189",
       "browser": "run",
       "expect_output": "ab3\n6\n"
      }
@@ -282,7 +282,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:209",
+      "src": "appendix/quick_reference.md:208",
       "browser": "fail",
       "why": "this example shows a refusal",
       "expect_error": "--polyglot"

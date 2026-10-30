@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Control Flow\n\n> Verified against crush-ast `aa07413` (2026-10-16).\n\nCrush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,\nand `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.\n\n## If\n",
+   "source": "# Control Flow\n\n> Verified against crush-ast `d04bc60a` (2026-10-29).\n\nCrush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,\nand `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.\n\n## If\n",
    "state": {
     "status": "done"
    },
@@ -258,7 +258,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "> **Known bug ([crush-ast #256](https://github.com/nixpt/crush-ast/issues/256)).**\n> Calling a method on the loop variable (`for s in shapes { s.area() }`, or\n> `a.push(x)` on an array element) is compiled as a capability named `s.area`, and\n> the program is refused. Bind the element with `let` first (iterate an index and\n> write `let s = shapes[i]`).\n\n## Break and continue\n\n`continue` skips to the next iteration; `break` leaves the innermost loop:\n",
+   "source": "The loop variable is a local like any `let`, so methods work on it:\n`for s in shapes { print(s.area()) }`, or `row.push(x)` on each row of an array of\narrays. (Before crush-ast [#256](https://github.com/nixpt/crush-ast/issues/256)\nsuch a call was compiled as a capability named `s.area` and the program was\nrefused.)\n\n## Break and continue\n\n`continue` skips to the next iteration; `break` leaves the innermost loop:\n",
    "state": {
     "status": "done"
    },
@@ -402,7 +402,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Current limitations (alpha):\n\n- **`return match ...` returns `null`** (silently: crush-ast\n  [#253](https://github.com/nixpt/crush-ast/issues/253)). The parser takes the\n  `return` as a bare return. Bind first, then return:\n",
+   "source": "A `match` can be returned directly (before crush-ast\n[#253](https://github.com/nixpt/crush-ast/issues/253), `return match ...` silently\nreturned `null`):\n",
    "state": {
     "status": "done"
    },
@@ -414,7 +414,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn name(v) {\n    let r = match v {\n        0 => \"zero\",\n        _ => \"other\"\n    }\n    return r\n}\nprint(name(0))\nprint(name(3))\n",
+   "source": "fn name(v) {\n    return match v {\n        0 => \"zero\",\n        _ => \"other\"\n    }\n}\nprint(name(0))\nprint(name(3))\n",
    "state": {
     "status": "pending"
    },
@@ -425,7 +425,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/control_flow.md:237",
+      "src": "crush/control_flow.md:235",
       "browser": "run",
       "expect_output": "zero\nother\n"
      }
@@ -438,7 +438,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "- A `match` with no matching arm evaluates to `null`; there is no\n  exhaustiveness error.\n- No guards (`x if x > 3 => ...`), no range patterns (`0..3 => ...`), no\n  alternatives (`1 | 2 => ...`), no negative or float literal patterns, and no\n  comma after a `{ ... }` arm body (`2 => { 7 }, _ => 0` is a parse error; the\n  last three are listed in crush-ast's CRUSH-192 ticket).\n\n## Errors: `try` / `catch` / `throw`\n\n`throw` raises any value; `catch name { ... }` receives it. There is no\n`finally`, and the parenthesised form `catch (e)` is not accepted.\n",
+   "source": "Current limitations (alpha):\n\n- A `match` with no matching arm evaluates to `null`; there is no\n  exhaustiveness error.\n- No guards (`x if x > 3 => ...`), no range patterns (`0..3 => ...`), no\n  alternatives (`1 | 2 => ...`), no negative or float literal patterns, and no\n  comma after a `{ ... }` arm body (`2 => { 7 }, _ => 0` is a parse error; the\n  last three are listed in crush-ast's CRUSH-192 ticket).\n\n## Errors: `try` / `catch` / `throw`\n\n`throw` raises any value; `catch name { ... }` receives it. There is no\n`finally`, and the parenthesised form `catch (e)` is not accepted.\n",
    "state": {
     "status": "done"
    },
@@ -461,7 +461,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/control_flow.md:267",
+      "src": "crush/control_flow.md:266",
       "browser": "run",
       "expect_output": "2\nError: division by zero\ndone\n"
      }
@@ -497,7 +497,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/control_flow.md:295",
+      "src": "crush/control_flow.md:294",
       "browser": "run",
       "expect_output": "re-inner\n7\n"
      }
@@ -533,7 +533,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/control_flow.md:329",
+      "src": "crush/control_flow.md:328",
       "browser": "fail",
       "why": "not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today"
      }

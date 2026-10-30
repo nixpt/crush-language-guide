@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6ef5f213.js";
+            window.path_to_searchindex_js = "../searchindex-8ab566cb.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d1d19af1.js"></script>
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/closures.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>aa07413</code> (2026-10-16). New since the 0.3 line
+<p>Verified against crush-ast <code>d04bc60a</code> (2026-10-29). New since the 0.3 line
 (crush-ast CRUSH-251).</p>
 </blockquote>
 <p>Functions in Crush are values. A named function can be stored, passed and
@@ -423,10 +423,11 @@ print(fs[0](1))
 
 <pre><code class="language-text">[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function
 </code></pre>
-<p>The built-ins <code>print</code> and <code>len</code> are not function values: <code>let g = len</code> compiles
-but fails when it runs (<code>load from uninitialised slot</code>, crush-ast
-<a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>). Wrap them in a lambda:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:246" data-expect="3
+<p>The built-ins (<code>print</code>, <code>len</code>, <code>parallel_map</code>, …) are not function values:
+<code>let g = len</code> is a compile error that names the fix, <code>`len` is a built-in, not a function value; wrap it in a lambda: `|x| len(x)`</code> (crush-ast
+<a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>; before, it compiled and
+failed at run time). Wrap them in a lambda:</p>
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:248" data-expect="3
 ">
 <pre><code class="language-crush">let size = |x| len(x)
 print(size([1, 2, 3]))
@@ -439,7 +440,7 @@ print(size([1, 2, 3]))
 <h2 id="with-the-pipeline-spawn-and-parallel_map"><a class="header" href="#with-the-pipeline-spawn-and-parallel_map">With the pipeline, <code>spawn</code> and <code>parallel_map</code></a></h2>
 <p>The pipeline operator takes any function value bound to a name, and so do
 <a href="concurrency.html"><code>spawn</code> and <code>parallel_map</code></a>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:261" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:263" data-expect="5
 [1, 4, 9]
 ">
 <pre><code class="language-crush">let inc = |n| n + 1
