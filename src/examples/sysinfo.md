@@ -2,8 +2,8 @@
 
 Crush as a *conductor*: gather facts from the host through capability calls, then
 assemble them. The program needs three capability groups, so it is run with
-`crush run --stdlib --env --time sysinfo.crush`; with any flag missing, the
-corresponding call fails with `unknown capability`.
+`crush run --env --time sysinfo.crush`; with either flag missing, the program is
+refused before it runs, with the flag it needs (`--env: env.get`).
 
 <!-- check: flags --env --time -->
 ```crush
@@ -33,7 +33,7 @@ clock ok: true
 
 **What this shows:**
 
-- `env.os()` / `env.arch()` (`--stdlib`), `env.get(name)` (`--env`, returns `null`
+- `env.os()` / `env.arch()` (standard library, no flag), `env.get(name)` (`--env`, returns `null`
   when the variable is unset), `time.now()` (`--time`) — each group is
   deny-by-default
 - `str.join(array, delimiter)` to assemble text

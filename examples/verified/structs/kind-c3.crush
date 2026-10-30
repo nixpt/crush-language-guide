@@ -1,0 +1,23 @@
+// @kind(resolution: c3, parents: [...]) gives Python-style multiple
+// inheritance with a C3 method resolution order.
+@kind(resolution: c3)
+struct Base { }
+impl Base {
+    fn who(self) { return "base" }
+    fn hello(self) { return "hello from base" }
+}
+@kind(resolution: c3, parents: [Base])
+struct Left { }
+impl Left { fn who(self) { return "left" } }
+@kind(resolution: c3, parents: [Base])
+struct Right { }
+impl Right {
+    fn who(self) { return "right" }
+    fn only_right(self) { return "right only" }
+}
+@kind(resolution: c3, parents: [Left, Right])
+struct Bottom { }
+let b = Bottom { }
+print(b.who())
+print(b.only_right())
+print(b.hello())

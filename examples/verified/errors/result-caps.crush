@@ -1,0 +1,8 @@
+// result.* is a small Result helper in the standard library.
+let ok = result.ok(42)
+let bad = result.err("nope")
+print(result.is_ok(ok))
+print(result.is_ok(bad))
+print(result.unwrap(ok))
+print(ok)
+print(bad)

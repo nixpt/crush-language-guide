@@ -1,0 +1,17 @@
+// A trait lists method signatures and may give default bodies; `impl T for S`
+// supplies them. Calls dispatch on the receiver's Kind.
+struct Square { side: Int }
+struct Circle { r: Int }
+trait Shape {
+    fn area(self);
+    fn describe(self) { return "a shape with area " + self.area() }
+}
+impl Shape for Square { fn area(self) { return self.side * self.side } }
+impl Shape for Circle {
+    fn area(self) { return 3 * self.r * self.r }
+    fn describe(self) { return "a circle" }
+}
+let sq = Square { side: 2 }
+let c = Circle { r: 1 }
+print(sq.describe())
+print(c.describe())

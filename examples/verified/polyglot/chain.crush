@@ -1,0 +1,12 @@
+// Blocks compose through Crush variables, across languages.
+let x = 1
+@python -> y {
+y = x + 1
+}
+@javascript -> z {
+const z = y * 10
+}
+@python -> w {
+w = z + 1
+}
+print(w)

@@ -1,0 +1,10 @@
+// `use @lang python "module" [as alias]` writes the import into every later
+// @python block. Each block is still a fresh python3 process.
+use @lang python "math"
+use @lang python "json" as j
+@python -> (val, text) {
+val = math.factorial(5)
+text = j.dumps({"a": 1})
+}
+print(val)
+print(text)

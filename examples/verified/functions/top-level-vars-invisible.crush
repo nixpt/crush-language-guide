@@ -1,0 +1,6 @@
+// A named function cannot see the script's top-level variables: pass them in.
+let limit = 10
+fn over(n) {
+    return n > limit
+}
+print(over(11))

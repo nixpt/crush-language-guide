@@ -1,0 +1,14 @@
+// Thrown values can be maps (or any other value); catch can rethrow.
+fn fail() {
+    throw {"code": 7, "msg": "bad input"}
+}
+try {
+    try {
+        fail()
+    } catch inner {
+        print("inner saw code " + inner.code)
+        throw inner
+    }
+} catch outer {
+    print("outer saw " + outer.msg)
+}

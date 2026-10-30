@@ -1,0 +1,14 @@
+; crushc --emit casm output for: fn sq(n) { return n * n }  print(sq(7))
+; Run CASM text with --cap for every capability it calls: text has no manifest.
+.func main
+    PUSH 7
+    CALL sq
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
+.func sq
+    STORE 0
+    LOAD 0
+    LOAD 0
+    MUL
+    RET

@@ -1,0 +1,9 @@
+// if / else if / else. Conditions must be Bool: `if 1 { }` is a compile error.
+let x = 5
+if x > 3 {
+    print("big")
+} else if x > 1 {
+    print("medium")
+} else {
+    print("small")
+}

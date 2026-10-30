@@ -1,18 +1,20 @@
 # Import Styles
 
+> Verified against crush-ast `cb655f3` (2026-10-16).
+
 > **Not yet implemented.** Every form of `import` parses, but **none of them load
 > anything** — the compiler lowers each to a capability that the runtime does not
-> provide. The only import form that runs is `use @lang`, which only declares
-> that a polyglot block will use a module. This is crush-ast **CRUSH-110** (open):
-> today there is no way to share code between files.
+> provide, so the program is refused before it runs. The only import form that
+> works is `use @lang`, which declares a module for polyglot blocks. This is
+> crush-ast **CRUSH-110** (open): today there is no way to share code between files.
 
 | Form | Parses | Runs |
 |------|:------:|------|
-| `import io` / `import fs as files` / `import net { a, b }` | yes | fails: `unknown capability: module.load` |
-| `use @mcp "url" { tools } as alias` | yes | fails: `unknown capability: mcp.connect` |
-| `use @cap "cap.path" { names } as alias` | yes | fails: `unknown capability: cap.acquire` |
-| `import @git "url" as alias`, `import @http "url" as alias` | yes | fails: `unknown capability: external.load` |
-| `use @lang python "math" as math` | yes | runs; see below |
+| `import io` / `import fs as files` / `import net { a, b }` | yes | refused: `not available in this host: module.load` |
+| `use @mcp "url" { tools } as alias` | yes | refused: `not available in this host: mcp.connect, mcp.get_tool` |
+| `use @cap "cap.path" { names } as alias` | yes | refused: `not available in this host: cap.acquire` |
+| `import @git "url" as alias`, `import @http "url" as alias` | yes | refused: `not available in this host: external.load` |
+| `use @lang python "math" [as m]` | yes | runs; see below |
 
 Each failing form is checked below, so this page will say so the day one starts
 working:
@@ -37,24 +39,22 @@ print("loaded")
 
 ## `use @lang`
 
-`use @lang <language> "<module>" as <alias>` declares a module for a polyglot
-block. It is accepted and runs, but the alias is not wired to the block's
-variables — the block still has to `import` the module itself:
+`use @lang <language> "<module>" [as <alias>]` writes the import into every later
+block of that language, under the module's own name and the alias:
 
 <!-- check: flags --polyglot -->
 ```crush
-use @lang python "math" as math
+use @lang python "math" as m
 
-@python {
-import math
-v = math.factorial(5)
+@python -> v {
+v = m.factorial(5) + math.factorial(3)
 }
 print(v)
 ```
 
 <!-- check: output -->
 ```text
-120
+126
 ```
 
 ## Sharing code today

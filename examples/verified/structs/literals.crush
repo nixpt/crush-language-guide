@@ -1,0 +1,13 @@
+// A struct declares its fields; build one with a literal or `new Name()`.
+// Fields print in the order they were first set.
+struct Point { x: Int, y: Int }
+let p = Point { y: 2, x: 1 }
+print(p)
+print(p.x + p.y)
+p.x = 10
+print(p)
+let q = new Point()
+print(q)
+q.y = 5
+print(q)
+print(q.x)

@@ -1,0 +1,15 @@
+// throw raises any value; catch NAME receives it. throw crosses function calls.
+fn check(n) {
+    if n < 0 {
+        throw "negative: " + n
+    }
+    return n
+}
+try {
+    print(check(5))
+    print(check(-1))
+    print("not reached")
+} catch e {
+    print("caught " + e)
+}
+print("after")

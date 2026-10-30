@@ -1,0 +1,11 @@
+// semantic_switch parses but is refused at compile time instead of compiling
+// to a silent no-op (CRUSH-265).
+fn route(text) {
+    semantic_switch text {
+        case "billing question":
+            return "billing"
+        fallback:
+            return "human"
+    }
+}
+print(route("refund please"))

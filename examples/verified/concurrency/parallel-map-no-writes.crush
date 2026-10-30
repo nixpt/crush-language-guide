@@ -1,0 +1,9 @@
+// A parallel_map function may read captured variables but not assign them.
+fn main() {
+    let total = 0
+    parallel_map([1, 2], |x| {
+        total = total + x
+        return x
+    })
+    print(total)
+}

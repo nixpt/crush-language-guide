@@ -1,0 +1,15 @@
+// Capture is by reference: a closure can update the variable it captured, and
+// each call of the factory makes a new variable.
+fn make_counter() {
+    let c = 0
+    return || {
+        c = c + 1
+        return c
+    }
+}
+let a = make_counter()
+let b = make_counter()
+print(a())
+print(a())
+print(b())
+print(a())

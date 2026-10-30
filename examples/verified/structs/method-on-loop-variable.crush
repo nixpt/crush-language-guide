@@ -1,0 +1,8 @@
+// PITFALL (crush-ast issue #256): a method call on a `for` loop
+// variable is compiled as a capability named `s.area`, so the program is
+// refused. Bind the element with `let` first (or index the array).
+struct Sq { side: Int }
+impl Sq { fn area(self) { return self.side * self.side } }
+for s in [Sq { side: 2 }] {
+    print(s.area())
+}

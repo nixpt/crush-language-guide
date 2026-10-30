@@ -1,0 +1,11 @@
+// Every block is a fresh interpreter: a name bound in one block is not visible
+// in the next unless it is declared as an output (and so becomes a Crush variable).
+@python -> a {
+a = 1
+hidden = 2
+}
+@python -> r {
+r = "hidden" in globals()
+}
+print(a)
+print(r)

@@ -2,8 +2,8 @@
 
 How Crush relates to the languages people usually compare it with. Crush is **alpha**:
 the language is small, the standard library is a set of host capabilities, and several
-features in its design (lambdas, imports, an executing AI layer) are not implemented
-yet. The comparisons below are about what is real today.
+features in its design (imports, an executing AI layer) are not implemented yet. The
+comparisons below are about what is real today (verified against crush-ast `cb655f3`).
 
 ## What Crush is for
 
@@ -18,7 +18,7 @@ yet. The comparisons below are about what is real today.
   unless you use the opt-in sandbox lane. See [Polyglot](../crush/polyglot.md).
 
 It is **not** a general-purpose replacement for Python or JavaScript: there is no
-package ecosystem, no lambdas, no working `import`, and a small standard library.
+package ecosystem, no working `import`, and a small standard library.
 
 ## Crush vs Python
 
@@ -27,7 +27,8 @@ package ecosystem, no lambdas, no working `import`, and a small standard library
 | Typing | dynamic; annotations (`x: Int`) are optional and checked at compile time | dynamic; hints are not enforced |
 | Ambient authority | none — files, network, processes need a capability flag | everything the OS user can do |
 | Execution | compiled to CVM1 bytecode, run by a Rust VM with quotas | compiled to bytecode, run by CPython |
-| Functions | `fn`, named only (no lambdas yet) | `def`, `lambda` |
+| Functions | `fn` and `\|x\| …` lambdas; values and closures | `def`, `lambda` |
+| Classes | `struct` + `impl` + `trait`; `@kind(resolution: c3, …)` gives Python's MRO | `class` |
 | Ecosystem | tiny; reach Python through `@python { }` | huge |
 
 <!-- check: output -->
@@ -51,9 +52,9 @@ interpolation in Crush, so concatenate with `+`.
 | | Crush | JavaScript |
 |---|---|---|
 | Authority | capability-gated | Node has full OS access; browsers are sandboxed by the platform |
-| Functions | `fn`, no closures or lambdas yet | first-class, closures |
-| Async | `async`/`await`/`spawn` are parsed but not scheduled — treat them as unimplemented | native promises and an event loop |
-| Syntax | braces, optional semicolons, `let`, double-quoted strings only | similar, single quotes allowed |
+| Functions | first-class, closures (capture by reference) | first-class, closures |
+| Async | green tasks: `spawn`/`yield`/`await`, `async fn`; `parallel_map` for threads | native promises and an event loop |
+| Syntax | braces, optional semicolons, `let`, `"…"` or `'…'` strings | similar |
 
 ## Crush vs Rust
 
@@ -108,7 +109,7 @@ do not support.
 ❌ **Look elsewhere when:**
 
 - You need a mature ecosystem, libraries or tooling — use Python or JavaScript.
-- You need closures, modules or imports today.
+- You need modules or imports today.
 - You need hardened isolation of *foreign-language* code: polyglot blocks run as host
   processes unless you build the optional bubblewrap sandbox lane, which is Linux-only.
 

@@ -1,0 +1,2 @@
+// A pattern naming a struct that is not declared is a compile error.
+let r = match 1 { Nope { x: a } => a, _ => 0 }

@@ -1,0 +1,8 @@
+// len(s) counts bytes; s[i] is a one-character string; negative indexes count
+// from the end. Use str.substring for a range (s[a:b] slices arrays only).
+let s = "hello"
+print(len(s))
+print(s[1])
+print(s[-1])
+print(str.substring(s, 1, 3))
+print(len("héllo"))

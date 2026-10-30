@@ -1,0 +1,8 @@
+// A sample of collections.* (standard library, on by default).
+print(collections.reverse([1, 2, 3]))
+print(collections.chunk([1, 2, 3, 4], 2))
+print(collections.unique([1, 1, 2, 2, 3]))
+print(collections.includes([1, 2], 2))
+print(collections.flatten([[1], [2, 3]]))
+print(collections.zip([1, 2], ["a", "b"]))
+print(collections.merge({"a": 1}, {"b": 2}))

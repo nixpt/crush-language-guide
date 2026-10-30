@@ -1,0 +1,9 @@
+// Int / Int is integer division; mixing Int and Float promotes to Float.
+print(10 / 4)
+print(10.0 / 4)
+print(1 + 2.5)
+print(7 % 3)
+print(-7 % 3)       // remainder takes the sign of the dividend
+print(-(2 + 3))
+print(1 + 2 * 3)
+print((1 + 2) * 3)

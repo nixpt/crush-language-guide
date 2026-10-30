@@ -1,0 +1,4 @@
+// The AI expressions (Query, Synthesize, SemanticMatch, ...) exist in CAST, not
+// as Crush source functions: ai_semantic_match is just an undefined name.
+let m = ai_semantic_match("refund", "billing", 0.8)
+print(m)

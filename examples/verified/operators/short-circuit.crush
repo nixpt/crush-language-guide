@@ -1,0 +1,8 @@
+// && and || short-circuit: the right side is not evaluated when the left decides.
+fn loud(v) {
+    print("evaluated")
+    return v
+}
+print(false && loud(true))
+print(true || loud(false))
+print(true && loud(true))

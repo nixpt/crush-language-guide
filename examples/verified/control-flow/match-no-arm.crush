@@ -1,0 +1,3 @@
+// A value match with no matching arm evaluates to null (no exhaustiveness error).
+let r = match 9 { 1 => "one" }
+print(r)

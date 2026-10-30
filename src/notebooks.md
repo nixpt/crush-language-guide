@@ -61,9 +61,16 @@ and the cell kinds it does not run yet are described in the
 |  | Run button on the page | Notebook kernel | `crush-run` |
 |---|---|---|---|
 | Where it runs | your browser (crush-web, WebAssembly) | your machine | your machine |
-| Granted | `print` and the VM's built-in string helpers | the same, plus `cson.parse` | whatever its flags grant (`--fs`, `--polyglot`, `--stdlib`, …) |
-| Polyglot, filesystem, network, stdlib modules | refused | refused | with the matching flag |
+| Granted | `print` and the standard library | `print`, the VM's built-in string helpers, `cson.parse` | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
+| Polyglot, filesystem, network | refused | refused | with the matching flag |
 | Between examples | every run starts fresh | cells share a session | one program per file |
+
+> **Kernel lag.** The published `crush-notebook-kernel` (0.1.1) is built on
+> crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
+> declared polyglot outputs and the default-on standard library. Cells using those
+> fail in the kernel even though the page (verified against crush-ast `cb655f3`)
+> shows them working. Use `crush run`, or the page's Run button, for those until a
+> kernel built on a newer crush-ast is published.
 
 So the examples marked **needs the host** are refused in the notebook too: the
 kernel grants what `crush run` grants with no flags. Run those with `crush-run`

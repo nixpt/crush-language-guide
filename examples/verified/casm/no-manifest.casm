@@ -1,0 +1,6 @@
+; Without --cap io.print, a CASM text program may not call io.print.
+.func main
+    PUSH_STR "hi"
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET

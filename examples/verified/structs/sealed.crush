@@ -1,0 +1,8 @@
+// Structs are sealed: writing a field the struct does not declare is an error.
+struct P { x: Int }
+fn main() {
+    let p = P { x: 1 }
+    print(p)
+    p.z = 2
+    print("not reached")
+}

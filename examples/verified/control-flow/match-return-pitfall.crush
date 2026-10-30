@@ -1,0 +1,9 @@
+// PITFALL (crush-ast issue #253): `return match ...` currently returns
+// null. Bind the match to a variable first, then return it.
+fn bad(v) { return match v { 1 => "one", _ => "other" } }
+fn good(v) {
+    let r = match v { 1 => "one", _ => "other" }
+    return r
+}
+print(bad(1))
+print(good(1))

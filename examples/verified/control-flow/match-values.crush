@@ -1,0 +1,16 @@
+// match is an expression: literal patterns, a binding pattern, and `_`.
+fn describe(n) {
+    let r = match n {
+        0 => "zero",
+        1 => "one",
+        "x" => "the string x",
+        _ => "something else"
+    }
+    return r
+}
+print(describe(0))
+print(describe(1))
+print(describe("x"))
+print(describe(7))
+let doubled = match 21 { n => n * 2 }
+print(doubled)

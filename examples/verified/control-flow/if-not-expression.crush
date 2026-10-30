@@ -1,0 +1,2 @@
+// `if` is a statement, not an expression.
+let y = if true { 1 } else { 2 }

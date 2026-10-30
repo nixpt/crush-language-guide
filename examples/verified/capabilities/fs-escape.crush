@@ -1,0 +1,2 @@
+// Paths outside --fs-root are rejected.
+print(fs.read("../outside.txt"))

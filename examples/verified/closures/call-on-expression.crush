@@ -1,0 +1,4 @@
+// Only a name can be called: fs[0](1) and f()(x) are parse errors today
+// (crush-ast CRUSH-zorro-24). Bind the value to a name first.
+let fs = [|x| x + 1]
+print(fs[0](1))

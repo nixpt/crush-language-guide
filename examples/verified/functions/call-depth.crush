@@ -1,0 +1,8 @@
+// Recursion depth is capped by the call-depth quota (256 frames by default;
+// raise it with --max-call-depth N).
+fn down(n) {
+    if n == 0 { return 0 }
+    return down(n - 1)
+}
+print(down(100))
+print(down(1000))

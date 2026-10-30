@@ -1,0 +1,7 @@
+// A `let` inside an if/while body that reuses a name rebinds the
+// function's variable: there is no block scope for plain lets.
+let x = 1
+if true {
+    let x = 2
+}
+print(x)

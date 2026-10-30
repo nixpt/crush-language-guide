@@ -1,0 +1,4 @@
+// `->` on @bash is a compile error: bash has no value marshaling.
+@bash -> x {
+x=1
+}

@@ -1,0 +1,12 @@
+// while, with continue (next iteration) and break (leave the loop).
+let i = 0
+while true {
+    i = i + 1
+    if i == 2 {
+        continue
+    }
+    if i > 3 {
+        break
+    }
+    print(i)
+}

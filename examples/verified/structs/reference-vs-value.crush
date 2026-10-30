@@ -1,0 +1,25 @@
+// By default a struct is a reference: assignment and argument passing share
+// one instance. @kind(semantics: value(copy)) makes it a value that is copied.
+// x.clone() deep-copies either kind.
+@kind(semantics: value(copy))
+struct V { x: Int }
+struct R { x: Int }
+fn bump(v) {
+    v.x = v.x + 1
+    return v
+}
+let a = V { x: 1 }
+let b = a
+b.x = 2
+print(a.x)
+let r = R { x: 1 }
+let s = r
+s.x = 2
+print(r.x)
+bump(a)
+print(a.x)
+bump(r)
+print(r.x)
+let t = r.clone()
+t.x = 99
+print(r.x)

@@ -1,0 +1,6 @@
+// A block without `->` still exports its last top-level assignment, with a
+// compile-time warning on stderr. This transition rule is going away: declare outputs.
+@python {
+result = 6 * 7
+}
+print(result)

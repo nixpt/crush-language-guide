@@ -1,0 +1,6 @@
+// `await` on a value that is not a task handle gives the value back, as in
+// JavaScript (`await 5` is 5). Fixed in crush-ast #265; earlier builds gave null (#251).
+fn main() {
+    let v = await 5
+    print(v)
+}

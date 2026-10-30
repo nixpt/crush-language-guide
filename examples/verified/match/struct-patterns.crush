@@ -1,0 +1,19 @@
+// A struct pattern tests the value's Kind, then binds or compares fields.
+// Patterns nest. (Write `field: name`; there is no `{ x }` shorthand.)
+struct P { x: Int }
+struct Q { x: Int }
+struct Wrap { inner: Int }
+fn describe(v) {
+    match v {
+        Wrap { inner: P { x: a } } => { return "wrap of P " + a }
+        P { x: 1 } => { return "P one" }
+        P { x: a } => { return "P " + a }
+        Q { x: b } => { return "Q " + b }
+        _ => { return "something else" }
+    }
+}
+print(describe(P { x: 1 }))
+print(describe(P { x: 5 }))
+print(describe(Q { x: 5 }))
+print(describe(Wrap { inner: P { x: 2 } }))
+print(describe(42))
