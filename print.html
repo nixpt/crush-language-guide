@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0243d589.js";
+            window.path_to_searchindex_js = "searchindex-7bc81275.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d1d19af1.js"></script>
@@ -653,22 +653,20 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, the clock, the (empty) environment</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
-<tr><td><code>@python</code>/<code>@bash</code>, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, <code>@python</code>, the filesystem (an empty in-memory directory), the clock, the (empty) environment</td><td><code>print</code>, the standard library, <code>caison.parse</code>: what <code>crush run</code> grants with no flags</td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td><code>@python</code>/<code>@javascript</code>, filesystem</td><td>when the example’s label grants them</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td><code>@bash</code>, processes, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
 </div>
-<blockquote>
-<p><strong>Kernel lag.</strong> The published <code>crush-notebook-kernel</code> (0.1.1) is built on
-crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
-declared polyglot outputs and the default-on standard library. Cells using those
-fail in the kernel even though the page (verified against crush-ast <code>c1cc21fb</code>)
-shows them working. Use <code>crush run</code>, or the page’s Run button, for those until a
-kernel built on a newer crush-ast is published.</p>
-</blockquote>
-<p>So the examples marked <strong>needs the host</strong> are refused in the notebook too: the
-kernel grants what <code>crush run</code> grants with no flags. Run those with <code>crush-run</code>
+<p>The kernel is <code>crush-notebook-kernel</code> 0.2.0, built on crush-ast 0.8.0 (the
+commit this guide is verified against, released): every chapter notebook runs
+in it as the page says (the guide’s CI checks each cell).</p>
+<p>The examples marked <strong>needs the host</strong> are refused in the notebook too, and so
+are the ones the page runs only because it grants them something (<code>@python</code>,
+<code>@javascript</code>, the filesystem, the clock): the kernel grants what <code>crush run</code>
+grants with no flags. Run those with <code>crush-run</code>
 and the flags their page shows (see <a href="#getting-started">Getting Started</a>).</p>
 <p>In a notebook, cells share a session: a cell’s top-level <code>let</code>s, functions and
 structs are visible to the cells after it, which makes a notebook a good place to
@@ -1928,8 +1926,8 @@ top-level variables: it captures them (see <a href="#closures-and-function-value
 <div class="crush-block" data-crush="run" data-src="crush/variables.md:175" data-expect="running in production
 ">
 <pre><code class="language-crush">let level = "production"
-let describe = || "running in " + level
-print(describe())
+let report = || "running in " + level
+print(report())
 </code></pre>
 </div>
 

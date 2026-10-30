@@ -402,7 +402,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "let level = \"production\"\nlet describe = || \"running in \" + level\nprint(describe())\n",
+   "source": "let level = \"production\"\nlet report = || \"running in \" + level\nprint(report())\n",
    "state": {
     "status": "pending"
    },

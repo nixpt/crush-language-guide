@@ -121,12 +121,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "examples/imports.md:46",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "126\n"
      }
     }

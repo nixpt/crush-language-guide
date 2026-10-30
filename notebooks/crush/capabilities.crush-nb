@@ -183,12 +183,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:135",
       "browser": "run",
+      "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "0\n"
      }
     }
@@ -219,12 +220,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:153",
       "browser": "run",
+      "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "hello\n[a.txt]\n"
      }
     }
@@ -292,12 +294,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:203",
       "browser": "run",
+      "why": "needs time, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "true\n"
      }
     }

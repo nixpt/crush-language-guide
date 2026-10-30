@@ -529,12 +529,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/syntax.md:346",
-      "browser": "run"
+      "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)"
      }
     }
    },

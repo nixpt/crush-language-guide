@@ -111,12 +111,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:81",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "one\ntwothree\n"
      }
     }
@@ -147,12 +148,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:112",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "30\n10\n"
      }
     }
@@ -183,12 +185,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:134",
       "browser": "run",
+      "why": "needs polyglot.javascript, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "[10, 2, a+b]\n"
      }
     }
@@ -219,12 +222,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:151",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "5.0\n7\n"
      }
     }
@@ -291,12 +295,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:211",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "[10, 2, 1, null, true]\n"
      }
     }
@@ -364,12 +369,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:243",
       "browser": "run",
+      "why": "needs polyglot.javascript, polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "21\n"
      }
     }
@@ -400,12 +406,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:265",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "5\n"
      }
     }
@@ -436,12 +443,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:286",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "1\nfalse\n"
      }
     }
@@ -472,12 +480,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/polyglot.md:311",
       "browser": "run",
+      "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "120\n{\"a\": 1}\n"
      }
     }

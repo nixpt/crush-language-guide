@@ -217,12 +217,13 @@
    "meta": {
     "tags": [
      "guide",
-     "runnable"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "appendix/quick_reference.md:176",
       "browser": "run",
+      "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "no notes\n"
      }
     }
