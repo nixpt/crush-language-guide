@@ -118,14 +118,11 @@ jobs:
     # Every chapter notebook: valid against crush-notebook's schema, and run
     # through the published notebook kernel (each runnable cell prints what the
     # page shows, each expected failure fails, each host-only cell is refused).
-    # Non-blocking: crush-notebook-kernel 0.1.1 is built on crush-ast 0.3.x, so
-    # cells using closures, struct methods, green tasks or `-> outputs` (verified
-    # against the pinned crush-ast by the `verify` job) fail in it. Make this
-    # blocking again once a kernel on the pinned crush-ast is published.
+    # crush-notebook-kernel 0.2.0 is built on crush-ast 0.8.0, the release of
+    # the pinned commit; bump it with CRUSH_AST_COMMIT.
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
-      KERNEL_VERSION: 0.1.1
+      KERNEL_VERSION: 0.2.0
     steps:
       - uses: actions/checkout@v4
 

@@ -174,8 +174,8 @@ top-level variables: it captures them (see [Closures](closures.md)).
 
 ```crush
 let level = "production"
-let describe = || "running in " + level
-print(describe())
+let report = || "running in " + level
+print(report())
 ```
 
 <!-- check: output -->
