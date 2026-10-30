@@ -103,8 +103,12 @@ def lang_bodies(code, lang):
         bodies.append(code[m.end():i - 1])
     return bodies
 # Host flags whose capabilities the browser can grant a run too: the clock (from
-# JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
-BROWSER_FLAGS = {"--time": "time", "--env": "env"}
+# JavaScript's Date), the environment (empty in a browser, as under `env -i`) and
+# the filesystem (an empty in-memory directory of the run's own, answering as an
+# empty --fs-root does; the guide's --fs examples all start from one).
+BROWSER_FLAGS = {"--time": "time", "--env": "env", "--fs": "fs"}
+# Namespaces each browser grant covers, as its crush-run flag does.
+GRANT_NAMESPACES = {"time": {"time"}, "env": {"env"}, "fs": {"fs", "file", "text"}}
 # Calls that report facts about the machine running the program. In a browser they
 # describe the browser (wasm32, an empty environment), so a block that prints them
 # cannot match the output the guide shows: it stays labelled as needing the host.
@@ -130,7 +134,7 @@ def host_needs(d, code):
     for ns, fn in CALL.findall(code):
         if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
             calls.setdefault(ns, []).append(f"{ns}.{fn}")
-    browser_ns = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
+    browser_ns = {ns for f in flags if f in BROWSER_FLAGS for ns in GRANT_NAMESPACES[BROWSER_FLAGS[f]]}
     host_ns = [ns for ns in calls if ns in HOST_CAPS and ns not in browser_ns]
     granted = {f for f in flags if f in FLAG_WHY} | {"--fs" for f in flags if f.startswith("fs.")}
     if host_ns:

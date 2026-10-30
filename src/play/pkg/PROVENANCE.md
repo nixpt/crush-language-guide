@@ -8,10 +8,11 @@ crate:
 - source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at `d04bc60a`
   (2026-10-29), the commit the guide's examples are verified against, **plus
   crush-ast [#314](https://github.com/nixpt/crush-ast/pull/314)** (`e6294310`:
-  `Session`'s `deferLang`, so the page runs a `@javascript` block asynchronously).
-  #314 changes crush-web's `Session` and `PortableVm`'s `@lang` hand-off only;
-  no Crush source compiles differently. Rebuild from the commit that merges it,
-  and drop this note, once it is on `main`.
+  `Session`'s `deferLang`, so the page runs a `@javascript` block asynchronously)
+  **and [#315](https://github.com/nixpt/crush-ast/pull/315)** (`4a23ca80`: the
+  `--fs` sandbox over a storage backend, so `fs` is grantable as an in-memory
+  directory), merged locally (`e8401f10`, not pushed). Neither changes how Crush
+  source compiles. Rebuild from `main`, and drop this note, once both are merged.
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**
   and **`polyglot-python`**, so a granted `@javascript` / `@python` block gets
   Crush variables in and a typed value out, as with `crush-run --polyglot` (the
@@ -26,8 +27,8 @@ crate:
   the checkout's location into symbol names, so a build from a checkout elsewhere
   has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 6,834,952 bytes (2,176,635 gzipped; 6,819,694 at
-  `d04bc60a` alone, #314 adds 15 KB);
+- size: `crush_web_bg.wasm` is 6,872,071 bytes (2,189,355 gzipped; 6,819,694 at
+  `d04bc60a` alone: #314 adds 15 KB, #315's file caps and in-memory tree 37 KB);
   `polyglot-python` (rustpython's parser, for the marshaling) is 1,826,542 bytes
   of it (664,316 gzipped): with only `polyglot-javascript` the same commit is
   4,993,152 (1,509,307). Pyodide itself is not part of this build: the page
@@ -42,7 +43,7 @@ crate:
   lowered-block output capture to the VM, 5.7 KB.) `crush_web.js` gains
   `Session.provide_lang` / `fail_lang` from #314.
 - sha256:
-  - `crush_web_bg.wasm` `730ef977044b2781fff3bea7e2cd06214772ab98ca49fbfe9a37eac79691d8d9`
+  - `crush_web_bg.wasm` `14202d69dbece5c55831bd736f5cafc53fbbb4eb8d1c07da9757e40f13e64097`
   - `crush_web.js` `3f4c724d6ff16488d12b9ee2416fe4eb2164ed534eed2dd0817d3776bbcbd3be`
 
 The book serves its own copy: the page fetches these files and hands them to the

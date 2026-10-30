@@ -14,7 +14,8 @@ checks that keep the guide's code honest (nothing is labelled by hand):
 An example whose `crush-run` flags the browser can honour carries a **grants**
 label saying what its runs are granted, and nothing else is: **@javascript** and
 **@python** (`--polyglot` with only `@javascript` / `@python` blocks), **the
-clock** (`--time`) or **the environment** (`--env`). Edited code keeps the example's grants.
+clock** (`--time`), **the environment** (`--env`) or **the filesystem** (`--fs`).
+Edited code keeps the example's grants.
 
 ## What runs in the browser
 
@@ -117,12 +118,23 @@ behaves like that `python3 -c` run:
   that never finishes is stopped at the time limit the same way; the next
   `@python` run loads Python again from the downloaded files.
 
-## Why not `@bash` or the filesystem
+## The filesystem
+
+Natively, `crush-run --fs` works on real files under `--fs-root`, and the guide's
+`--fs` examples are checked in an empty one. In the browser, a run granted the
+filesystem gets an **empty directory of its own, in memory**, which disappears
+when the run ends. The `fs.*` and `text.*` capabilities are the same code as
+natively, over that directory instead of the disk. They give the same results
+and the same errors (`No such file or directory (os error 2)`), and they keep
+the same sandbox: a path that leaves the directory, with `..` or as an absolute
+path, is refused. Nothing is saved between runs, and nothing on your computer is
+reachable.
+
+## Why not `@bash`, processes or the network
 
 - **`@bash`** has no browser equivalent, and `crush-run` never sandboxes it either.
-- **The filesystem**: `crush-run --fs` works on real files under `--fs-root`. A
-  per-run in-memory filesystem would need crush's file capabilities to work over
-  something other than the disk, which they do not yet.
+- **Processes** (`process.exec`) run programs on the host, and **the network**
+  (`net.*`) reaches the host's network; a browser page has neither to give.
 
 
 Ungranted capabilities are *refused*, not ignored: that is the
