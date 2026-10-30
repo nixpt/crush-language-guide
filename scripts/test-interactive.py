@@ -12,6 +12,14 @@ Serves book/ on a local port and drives it with Playwright:
     report "matches the guide's output" when the page shows output, expected
     failures "fails as the guide says";
   * Edit → change the code → Run runs the edited code; Reset restores the original;
+  * output printed before a run-time error is shown above the error;
+  * io.read asks for a line under the block: the guide's input matches its output,
+    End input gives "", time spent waiting is not running time, and the instruction
+    quota covers the whole run;
+  * a granted @javascript block matches its page output, has no page DOM, storage or
+    network, is refused when the browser can't reproduce node, and times out;
+  * an ungranted capability is refused before anything prints; a --time block is
+    granted the clock and nothing else;
   * a documented refusal shows the refusal verdict; host-only labels name the reason;
   * with JavaScript disabled the page has plain code blocks and no controls;
   * a narrow (mobile) viewport has no horizontal overflow; a dark theme renders;
@@ -29,6 +37,14 @@ ROOT = Path(__file__).resolve().parent.parent
 BOOK = ROOT / "book"
 PAGES = ["crush/types.html", "crush/control_flow.html", "crush/capabilities.html", "crush/polyglot.html"]
 failures = []
+MANIFEST = []
+
+
+def block_src(page, needle):
+    """The data-src of the block on `page` (e.g. crush/capabilities.md) whose code contains `needle`."""
+    found = [b["src"] for b in MANIFEST if b["src"].split(":")[0] == page and needle in b["code"]]
+    assert len(found) == 1, f"{page}: {len(found)} blocks contain {needle!r}"
+    return found[0]
 
 
 def check(cond, what):
@@ -58,11 +74,21 @@ def launch(p):
         raise
 
 
-def run_block(page, block):
+def run_block(page, block, stdin=None):
+    """Run a block; when it asks for input, type the lines of `stdin` (its `check: stdin`), then End input."""
+    lines = [] if stdin is None else stdin.rstrip("\n").split("\n")
     block.locator("button.crush-run").click()
-    page.wait_for_function("b => b.querySelector('.crush-out .crush-status') && !b.querySelector('button.crush-run').disabled",
-                           arg=block.element_handle(), timeout=30000)
-    return block.locator(".crush-out .crush-status").inner_text()
+    done = "b => b.querySelector('.crush-out .crush-status') && !b.querySelector('button.crush-run').disabled"
+    asking = "b => !!b.querySelector('input.crush-input-line')"
+    while True:
+        page.wait_for_function(f"b => ({done})(b) || ({asking})(b)", arg=block.element_handle(), timeout=30000)
+        if page.evaluate(f"({done})", block.element_handle()):
+            return block.locator(".crush-out .crush-status").inner_text()
+        if lines:
+            block.locator("input.crush-input-line").fill(lines.pop(0))
+            block.locator("input.crush-input-line").press("Enter")
+        else:
+            block.locator("button.crush-eof").click()
 
 
 def main():
@@ -73,7 +99,7 @@ def main():
         sys.exit("book/ not built: run `mdbook build` first")
     if not (BOOK / "notebooks").is_dir():
         sys.exit("no book/notebooks: run `scripts/build-notebooks.py --out book/notebooks` after `mdbook build`")
-    manifest = json.loads(subprocess.check_output([sys.executable, str(ROOT / "scripts" / "mdbook-crush-run.py"), "--manifest"]))
+    MANIFEST[:] = manifest = json.loads(subprocess.check_output([sys.executable, str(ROOT / "scripts" / "mdbook-crush-run.py"), "--manifest"]))
     by_page = {}
     for b in manifest:
         by_page.setdefault(b["src"].split(":")[0].replace(".md", ".html").replace("README.html", "index.html"), []).append(b)
@@ -109,7 +135,7 @@ def main():
                 for i, b in enumerate(want):
                     if b["kind"] not in ("run", "fail"):
                         continue
-                    status = run_block(page, blocks.nth(i))
+                    status = run_block(page, blocks.nth(i), b["stdin"])
                     if b["kind"] == "fail":
                         check("fails as the guide says" in status, f"{b['src']} [fail]: {status}")
                         ran["matches"] += 1
@@ -132,6 +158,11 @@ def main():
             status = run_block(page, blk)
             out = blk.locator(".crush-out pre.crush-output").inner_text()
             check(out.strip() == "edited 42" and "edited" in status and "matches" not in status, f"Run runs the edited code (output {out.strip()!r}, status {status!r})")
+            ed.fill('print("before")\nlet xs = [1]\nprint(xs[5])\n')
+            status = run_block(page, blk)
+            outs = [o.inner_text().strip() for o in blk.locator(".crush-out pre.crush-output").all()]
+            check("failed" in status and outs[:1] == ["before"] and "out of range" in outs[-1],
+                  f"output printed before a run-time error is shown with the error ({outs!r})")
             ed.fill("print(\n")
             status = run_block(page, blk)
             check("failed" in status and blk.locator(".crush-verdict-error").count() == 1, f"an edited compile error is explained ({status!r})")
@@ -143,17 +174,110 @@ def main():
 
             # 4. a refusal is shown as one, host labels name the reason
             page.goto(base + "crush/capabilities.html")
-            refusal = page.locator('div.crush-block[data-src="crush/capabilities.md:102"]')
+            refusal_src = block_src("crush/capabilities.md", 'fs.read("data.txt")')
+            refusal = page.locator(f'div.crush-block[data-src="{refusal_src}"]')
             run_block(page, refusal)
-            check("Refused: capability fs.read was not granted" in refusal.locator(".crush-verdict").inner_text(), "fs.read refusal shows the refusal verdict")
-            host = page.locator('div.crush-block[data-src="crush/capabilities.md:165"]')
-            check("env.get" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
+            outs = [o.inner_text().strip() for o in refusal.locator(".crush-out pre.crush-output").all()]
+            check("Refused before running" in refusal.locator(".crush-verdict").inner_text() and len(outs) == 1
+                  and outs[0].endswith("--fs: fs.read"),
+                  f"fs.read is refused before anything prints, as crush-run does ({outs!r})")
+            host = page.locator(f'div.crush-block[data-src="{block_src("crush/capabilities.md", "CRUSH_GUIDE_DEMO_UNSET")}"]')
+            check("process.exec" in host.locator(".crush-why").inner_text() and host.locator("button.crush-run").count() == 0,
                   "host-only block names its capabilities and has no Run")
             page.goto(base + "crush/polyglot.html")
-            check("@python" in page.locator('div.crush-block[data-src="crush/polyglot.md:81"] .crush-why').inner_text(), "polyglot block says it uses @python")
+            check("@python" in page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "print(\"two\")")}"] .crush-why').inner_text(),
+                  "polyglot block says it uses @python")
             check(not errors, f"no page errors ({errors[:2]})")
 
-            # 5. no JavaScript: plain code blocks
+            # 5. standard input: io.read asks for a line under the block
+            page.goto(base + "crush/capabilities.html")
+            blk = page.locator(f'div.crush-block[data-src="{block_src("crush/capabilities.md", "io.read()")}"]')
+            field = blk.locator("input.crush-input-line")
+            blk.locator("button.crush-run").click()
+            field.wait_for(timeout=30000)
+            check(field.get_attribute("placeholder") == "the guide types: Ada", f"io.read shows an input line with the guide's input as a hint ({field.get_attribute('placeholder')!r})")
+            field.fill("Ada")
+            field.press("Enter")
+            page.wait_for_function("b => !b.querySelector('button.crush-run').disabled", arg=blk.element_handle(), timeout=30000)
+            status = blk.locator(".crush-out .crush-status").inner_text()
+            term = blk.locator(".crush-out pre.crush-output").inner_text()
+            check("matches the guide's output" in status and term.strip() == "Ada\nHello, Ada", f"typing the guide's input matches its output ({status!r}, transcript {term!r})")
+
+            def interactive(code, lines, wait_ms=0):
+                blk.locator("button.crush-reset").click() if blk.locator("button.crush-reset").is_visible() else None
+                blk.locator("button.crush-edit").click()
+                blk.locator("textarea.crush-editor").fill(code)
+                blk.locator("button.crush-run").click()
+                for line in lines:
+                    field.wait_for(timeout=30000)
+                    page.wait_for_timeout(wait_ms)
+                    if line is None:
+                        blk.locator("button.crush-eof").click()
+                    else:
+                        field.fill(line)
+                        field.press("Enter")
+                page.wait_for_function("b => !b.querySelector('button.crush-run').disabled", arg=blk.element_handle(), timeout=60000)
+                outs = [o.inner_text() for o in blk.locator(".crush-out pre.crush-output").all()]
+                return blk.locator(".crush-out .crush-status").inner_text(), outs
+
+            status, outs = interactive('let a = io.read()\nlet b = io.read()\nprint(a + "|" + b + "|" + str.len(b))\n', ["x", None])
+            check(status.startswith("ok") and outs[0].strip().endswith("x||0"), f"End input: io.read returns \"\" ({status!r}, {outs!r})")
+            status, outs = interactive('let a = io.read()\nprint("got " + a)\n', ["late"], wait_ms=9000)
+            check(status.startswith("ok") and "got late" in outs[0], f"waiting 9 s for input does not count against the 8 s limit ({status!r})")
+            status, outs = interactive('let a = io.read()\nlet i = 0\nwhile i < 70000 { i = i + 1 }\nprint("half")\n'
+                                       'let b = io.read()\nwhile i < 140000 { i = i + 1 }\nprint(i)\n', ["x", "y"])
+            check("failed" in status and "instruction quota exceeded" in outs[-1] and "half" in outs[0],
+                  f"the instruction quota covers the whole interactive run ({status!r}, {outs[-1]!r})")
+            blk.locator("button.crush-reset").click()
+
+            # 6. granted @javascript runs isolated: no page, storage or network
+            page.goto(base + "crush/polyglot.html")
+            js = page.locator(f'div.crush-block[data-src="{block_src("crush/polyglot.md", "tags.join")}"]')
+            check("grants @javascript" in js.locator(".crush-badge-grant").inner_text(), "a granted block shows its grant")
+            check("matches the guide's output" in run_block(page, js), "the @javascript example matches the guide's output")
+
+            def edited_run(blk, code, timeout=30000):
+                if blk.locator("button.crush-reset").is_visible():
+                    blk.locator("button.crush-reset").click()
+                blk.locator("button.crush-edit").click()
+                blk.locator("textarea.crush-editor").fill(code)
+                status = run_block(page, blk)
+                return status, [o.inner_text().strip() for o in blk.locator(".crush-out pre.crush-output").all()]
+
+            probe = (
+                '@javascript -> r {\n'
+                'var idb = (() => { try { indexedDB.open("x"); return "opened" } catch (e) { return e.name } })()\n'
+                'var xhr = (() => { try { var x = new self["XMLHttp" + "Request"](); x.open("GET", "' + base + 'index.html", false); x.send(); return "sent " + x.status } catch (e) { return e.name } })()\n'
+                'var r = [typeof document, typeof window, typeof parent, typeof localStorage, self.origin, idb, xhr]\n'
+                '}\nprint(r)\n')
+            status, outs = edited_run(js, probe)
+            check(status.startswith("ok") and outs[0] == "[undefined, undefined, undefined, undefined, null, SecurityError, NetworkError]",
+                  f"a @javascript block sees no page, storage or network ({outs!r})")
+            status, outs = edited_run(js, '@javascript {\nconsole.log(new Map())\n}\n')
+            check("failed" in status and "not supported by the in-browser JavaScript runtime" in outs[-1],
+                  f"what the browser cannot reproduce exactly is refused ({outs[-1][:90]!r})")
+            status, outs = edited_run(js, 'print("start")\n@javascript {\nwhile (true) {}\n}\n')
+            # The worker is stopped mid-step, so output from that step ("start") is lost; the page says so.
+            check(status.startswith("timed out") and outs == ["Stopped after 8 s of running time. Output printed before the stop is lost with the stopped runtime."],
+                  f"a runaway @javascript block is stopped at the time limit ({status!r}, {outs!r})")
+            status, outs = edited_run(js, '@javascript -> v {\nconst v = 6 * 7\n}\nprint(v)\n')
+            check(status.startswith("ok") and outs[0] == "42", f"the runtime restarts after a timeout ({status!r}, {outs!r})")
+            js.locator("button.crush-reset").click()
+            check(not errors, f"no page errors ({errors[:2]})")
+
+            # 7. the clock and the environment, granted like --time / --env
+            page.goto(base + "crush/capabilities.html")
+            clock = page.locator(f'div.crush-block[data-src="{block_src("crush/capabilities.md", "let t = time.now_ms()")}"]')
+            check("grants the clock" in clock.locator(".crush-badge-grant").inner_text(), "a --time block shows its grant")
+            check("matches the guide's output" in run_block(page, clock), "the --time example matches the guide's output")
+            status, outs = edited_run(clock, 'print(env.get("HOME"))\nprint(env.all())\nprint(str.len(time.now_iso()) > 20)\n')
+            check("failed" in status and outs[-1].endswith("--env: env.all, env.get"),
+                  f"a block granted only the clock is refused the environment before running ({outs!r})")
+            status, outs = edited_run(clock, 'let t = time.now_ms()\ntime.sleep(30)\nprint(time.elapsed(t) >= 30)\nprint(time.now() > 1700000000)\n')
+            check(status.startswith("ok") and outs[0] == "true\ntrue", f"time.sleep and the clock work in the browser ({status!r}, {outs!r})")
+            clock.locator("button.crush-reset").click()
+
+            # 8. no JavaScript: plain code blocks
             ctx = browser.new_context(java_script_enabled=False)
             nojs = ctx.new_page()
             nojs.goto(base + "crush/types.html")
@@ -174,7 +298,7 @@ def main():
                 pg = browser.new_page(viewport={"width": 1200, "height": 900})
                 pg.add_init_script(f"localStorage.setItem('mdbook-theme', '{theme}')")
                 pg.goto(base + "crush/capabilities.html")
-                blk = pg.locator('div.crush-block[data-src="crush/capabilities.md:102"]')
+                blk = pg.locator(f'div.crush-block[data-src="{refusal_src}"]')
                 run_block(pg, blk)
                 fg = pg.evaluate("getComputedStyle(document.querySelector('.crush-run')).color")
                 bg = pg.evaluate("getComputedStyle(document.body).backgroundColor")

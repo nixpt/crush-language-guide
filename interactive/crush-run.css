@@ -42,6 +42,7 @@ a.crush-btn, a.crush-btn:visited { color: var(--fg); }
 .crush-badge-fail { color: var(--blockquote-warning-color); }
 .crush-badge-host { color: var(--blockquote-note-color); }
 .crush-badge-none { color: var(--icons); }
+.crush-badge-grant { color: var(--blockquote-important-color); }
 .crush-why { color: var(--icons); flex: 1 1 18em; }
 .crush-why code { font-size: 0.95em; }
 
@@ -79,6 +80,32 @@ a.crush-btn, a.crush-btn:visited { color: var(--fg); }
     font-size: var(--code-font-size);
 }
 .crush-out pre.crush-error { border-left-color: var(--blockquote-caution-color); }
+.crush-typed { color: var(--links); }
+
+/* the input line under a program waiting in io.read */
+.crush-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.4em 1em;
+    border-left: 3px solid var(--links);
+    background: var(--quote-bg);
+    font-size: 0.85em;
+}
+.crush-prompt { font-family: var(--mono-font); color: var(--links); font-weight: 600; }
+.crush-input-line {
+    flex: 1 1 12em;
+    min-width: 0;
+    font-family: var(--mono-font);
+    font-size: var(--code-font-size);
+    padding: 0.15em 0.4em;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--table-border-color);
+    border-radius: 4px;
+}
+.crush-input-line:focus { outline: 2px solid var(--links); outline-offset: 0; }
 .crush-status { font-size: 0.8em; color: var(--icons); margin-top: 0.3em; }
 .crush-matches { color: var(--blockquote-tip-color); font-weight: 600; }
 .crush-differs { color: var(--blockquote-caution-color); font-weight: 600; }

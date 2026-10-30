@@ -6,7 +6,7 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
-> Verified against crush-ast `cb655f3` (the commit in the repository's
+> Verified against crush-ast `aa07413` (the commit in the repository's
 > `CRUSH_AST_COMMIT` file). 123 programs.
 
 | Area | Programs | Covers |

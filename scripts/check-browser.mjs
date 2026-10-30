@@ -21,16 +21,36 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = path.join(root, 'src', 'play', 'pkg');
 const verbose = process.argv.includes('-v');
-const { initSync, execute } = await import(path.join(pkg, 'crush_web.js'));
+const { initSync, Session, set_lang_executor } = await import(path.join(pkg, 'crush_web.js'));
 initSync({ module: fs.readFileSync(path.join(pkg, 'crush_web_bg.wasm')) });
+// Granted @javascript blocks run through the page's own executor (worker.js does the same).
+await import(path.join(root, 'src', 'play', 'guest-js.js'));
+set_lang_executor((lang, code, env) => {
+    if (lang === 'javascript' || lang === 'js') return globalThis.crushGuestJs.run(code, env);
+    throw new Error(`@${lang} blocks cannot run in the browser`);
+});
+
+// What the page's Run does (interactive/crush-run.js): a Session with the block's
+// grants (data-grants: polyglot.javascript, time, env); each io.read gets
+// the next line of the block's `check: stdin` text (what a reader following the
+// guide types), then end of input. A non-zero sys.exit status is a failure.
+function run(code, stdin, grants) {
+    const s = new Session(code, { grants });
+    const lines = stdin == null ? [] : stdin.replace(/\n$/, '').split('\n');
+    let r = s.run(), out = r.output;
+    while (r.status === 'need_input') { r = lines.length ? s.provide(lines.shift()) : s.close(); out += r.output; }
+    s.free();
+    const exited = r.exit_code != null && r.exit_code !== 0;
+    if (r.status === 'done' && !exited) return { ok: true, out };
+    return { ok: false, out, err: r.error || `exited with status ${r.exit_code}` };
+}
 
 const blocks = JSON.parse(execFileSync('python3', [path.join(root, 'scripts', 'mdbook-crush-run.py'), '--manifest'], { maxBuffer: 1 << 26 }));
 const counts = {}, bad = [];
 for (const b of blocks) {
     counts[b.kind] = (counts[b.kind] || 0) + 1;
     if (b.kind === 'none') continue;
-    let r;
-    try { r = { ok: true, out: execute(b.code).output }; } catch (e) { r = { ok: false, err: String(e) }; }
+    const r = run(b.code, b.stdin, b.grants);
     let problem = null;
     if (b.kind === 'run') {
         if (!r.ok) problem = 'labelled runnable, but fails in the browser: ' + r.err.split('\n')[0];

@@ -1,6 +1,6 @@
 # Polyglot Programming
 
-> Verified against crush-ast `cb655f3` (2026-10-16), with Python 3.14, Node 26 and
+> Verified against crush-ast `aa07413` (2026-10-16), with Python 3.14, Node 26 and
 > bash 5.3 on the host.
 
 A Crush program can embed code from other languages with `@language { ... }`
@@ -127,7 +127,25 @@ print(count)
 ```
 
 Here `base` goes in, `total` comes out, and `tmp` stays inside the block (using it
-afterwards is a compile error, `Undefined variable`). Several outputs:
+afterwards is a compile error, `Undefined variable`). JavaScript works the same
+way; values travel as JSON:
+
+<!-- check: flags --polyglot -->
+```crush
+let n = 5
+let tags = ["a", "b"]
+@javascript -> out {
+const out = [n * 2, tags.length, tags.join("+")]
+}
+print(out)
+```
+
+<!-- check: output -->
+```text
+[10, 2, a+b]
+```
+
+Several outputs:
 
 <!-- check: flags --polyglot -->
 ```crush

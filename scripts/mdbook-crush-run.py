@@ -2,16 +2,16 @@
 """mdBook preprocessor: mark every ```crush block with what the browser can do with it.
 
 The book's Run / Edit buttons (interactive/crush-run.js) need to know, per block,
-whether it can run in the browser (crush-web: a fresh VM per run, only `print`
-granted, no stdlib modules, no stdin), whether it is *meant* to fail, or whether
-it needs the host. That is derived here, at build time, from the same directives
+whether it can run in the browser (crush-web: a fresh VM per run with what
+`crush-run` grants without flags; `io.read` asks the reader for a line), whether
+it is *meant* to fail, or whether it needs the host. That is derived here, at build time, from the same directives
 and block contents scripts/check-examples.py uses — nothing is hand-labelled, and
 the Markdown stays the only source.
 
 Each ```crush block is wrapped in
 
     <div class="crush-block" data-crush="run|fail|host|none" data-why="..."
-         data-expect="..." data-expect-error="..." data-src="crush/types.md:91">
+         data-expect="..." data-expect-error="..." data-stdin="..." data-src="crush/types.md:91">
 
 which is invisible without JavaScript (the code block renders exactly as before).
 
@@ -19,11 +19,14 @@ A page with at least one ```crush block also gets an "Open as a notebook" link
 under its title, to the chapter notebook scripts/build-notebooks.py writes to
 book/notebooks/ (notebook_path(); the explainer page is notebooks.md).
 
-    data-crush=run    runs in the browser; data-expect is the checker-verified output
+    data-crush=run    runs in the browser; data-expect is the checker-verified output,
+                      data-stdin the input it was verified with (`check: stdin`)
+    data-grants       capabilities the page grants the block's runs (polyglot.javascript,
+                      time, env), from the block's `check: flags`
     data-crush=fail   meant to fail (compile error, documented refusal, not yet
                       implemented); Run demonstrates the failure
-    data-crush=host   needs something the browser does not grant (polyglot, fs, net,
-                      env, time, process, stdlib modules, stdin); labelled, no Run
+    data-crush=host   needs something the browser does not grant (@python/@bash, fs, net,
+                      process); labelled, no Run
     data-crush=none   not a standalone program (fragment, needs special setup)
 
 Usage:
@@ -40,11 +43,10 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast cb655f3, src/play/pkg) handles itself: crush_vm::run's
+# What crush-web (crush-ast aa07413, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
-# collections.*, json.*, ...: on by default since CRUSH-113), and sys.args/sys.exit.
-# `io.read` is there but always returns "" (no stdin in a browser), so it is
-# treated as a host need below.
+# collections.*, json.*, ...: on by default since CRUSH-113), sys.args/sys.exit,
+# and io.read (the page asks the reader for each line).
 BROWSER_CAPS = {"io.print", "str.concat", "str.contains", "str.join", "str.len",
                 "str.replace", "str.split", "conv.chr", "conv.ord"}
 # Capability namespaces that need a host grant (`crush-run` flags). The
@@ -61,6 +63,17 @@ HOST_CAPS = {
 STDLIB = ()
 CALL = re.compile(r"(?<![\w.])([a-z_]+)\.([a-z_][a-z_0-9]*)\s*\(")
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
+# Polyglot languages the browser runs when the block is granted (`--polyglot` on
+# the host): the page grants the matching capability for that run only, and
+# crush-web hands the block to src/play/guest-js.js inside the sandboxed worker.
+BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript"}
+# Host flags whose capabilities the browser can grant a run too: the clock (from
+# JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
+BROWSER_FLAGS = {"--time": "time", "--env": "env"}
+# Calls that report facts about the machine running the program. In a browser they
+# describe the browser (wasm32, an empty environment), so a block that prints them
+# cannot match the output the guide shows: it stays labelled as needing the host.
+MACHINE_FACTS = {"env.os", "env.arch", "env.home_dir", "env.all"}
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",
             "--env": "the environment", "--time": "the clock", "--process": "processes"}
 
@@ -69,29 +82,38 @@ def host_needs(d, code):
     """What this block needs from the host that the browser cannot give, as short phrases."""
     needs, flags = [], d.get("flags", "").split()
     langs = sorted(set(POLYGLOT.findall(code)))
-    if "--polyglot" in flags and langs:
-        needs.append("uses " + ", ".join(f"`@{l}`" for l in langs) + " blocks (polyglot)")
+    host_langs = [l for l in langs if l not in BROWSER_LANGS]
+    if "--polyglot" in flags and host_langs:
+        needs.append("uses " + ", ".join(f"`@{l}`" for l in host_langs) + " blocks (polyglot)")
     calls = {}
     for ns, fn in CALL.findall(code):
-        if ns == "io" and fn == "read":
-            calls.setdefault("stdin", []).append("io.read")
-        elif (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
+        if (ns in HOST_CAPS or ns in STDLIB) and f"{ns}.{fn}" not in BROWSER_CAPS:
             calls.setdefault(ns, []).append(f"{ns}.{fn}")
-    if "stdin" in d and "stdin" not in calls:
-        calls["stdin"] = ["io.read"]
-    host_ns = [ns for ns in calls if ns in HOST_CAPS]
+    browser_ns = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
+    host_ns = [ns for ns in calls if ns in HOST_CAPS and ns not in browser_ns]
     granted = {f for f in flags if f in FLAG_WHY} | {"--fs" for f in flags if f.startswith("fs.")}
     if host_ns:
         uniq = sorted({c for ns in host_ns for c in calls[ns]})
         needs.append("uses " + ", ".join(f"`{c}`" for c in uniq[:4]) + (" …" if len(uniq) > 4 else ""))
-    elif granted - {"--polyglot"} or ("--polyglot" in flags and not langs):
-        needs.append("needs " + ", ".join(sorted(FLAG_WHY[f] for f in granted)))
+    elif granted - {"--polyglot"} - set(BROWSER_FLAGS) or ("--polyglot" in flags and not langs):
+        needs.append("needs " + ", ".join(sorted(FLAG_WHY[f] for f in granted - set(BROWSER_FLAGS))))
+    facts = sorted({c for cs in calls.values() for c in cs if c in MACHINE_FACTS})
+    if facts and not host_ns:
+        needs.append("reports the machine it runs on (" + ", ".join(f"`{c}`" for c in facts) + ")")
     lib = sorted({c for ns in calls if ns in STDLIB for c in calls[ns]})
     if lib:
         needs.append("uses the standard library (" + ", ".join(f"`{c}`" for c in lib[:3]) + (" …" if len(lib) > 3 else "") + ")")
-    if "stdin" in calls:
-        needs.append("reads standard input (`io.read`)")
     return needs
+
+
+def grants(d, code):
+    """The capabilities the page grants this block's runs: what its host flags grant
+    that the browser can provide (@javascript under --polyglot, --time, --env)."""
+    flags = d.get("flags", "").split()
+    out = {BROWSER_FLAGS[f] for f in flags if f in BROWSER_FLAGS}
+    if "--polyglot" in flags:
+        out |= {BROWSER_LANGS[l] for l in POLYGLOT.findall(code) if l in BROWSER_LANGS}
+    return sorted(out)
 
 
 def classify(block):
@@ -112,6 +134,8 @@ def classify(block):
     needs = host_needs(d, code)
     if needs:
         return "host", "; ".join(needs) + ", which the in-browser runtime does not provide"
+    if "runfail" in d:
+        return "fail", "this example shows a run-time error"
     if "nyi" in d:
         return "fail", f"not implemented yet ({d['nyi']}); Run shows what happens today"
     return "run", ""
@@ -126,7 +150,8 @@ def blocks_of(text, rel):
         kind, why = classify(b)
         yield {"src": f"{rel}:{b['line'] - 1}", "fence": b["line"] - 2, "end": b["line"] - 1 + b["code"].count("\n"),
                "kind": kind, "why": why, "code": b["code"], "expect": b["expect"],
-               "expect_error": b["d"].get("runfail"), "directives": b["d"]}
+               "expect_error": b["d"].get("runfail"), "stdin": b["d"].get("stdin"),
+               "grants": grants(b["d"], b["code"]) if kind in ("run", "fail") else [], "directives": b["d"]}
 
 
 def has_notebook(text, rel):
@@ -191,6 +216,10 @@ def annotate(text, rel):
             a.append(f'data-why="{attr(b["why"])}"')
         if b["expect"] is not None and b["kind"] == "run":
             a.append(f'data-expect="{attr(b["expect"])}"')
+        if b["grants"]:
+            a.append(f'data-grants="{attr(" ".join(b["grants"]))}"')
+        if b["stdin"] is not None and b["kind"] in ("run", "fail"):
+            a.append(f'data-stdin="{attr(b["stdin"])}"')
         if b["expect_error"] and b["kind"] == "fail":
             a.append(f'data-expect-error="{attr(b["expect_error"])}"')
         lines[b["end"] + 1 : b["end"] + 1] = ["", "</div>", ""]

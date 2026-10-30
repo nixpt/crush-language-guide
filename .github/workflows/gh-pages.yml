@@ -66,6 +66,7 @@ jobs:
           mdbook build
           python scripts/build-notebooks.py --out book/notebooks
           python scripts/test-interactive.py
+          python scripts/check-corpus-browser.py
 
   verify:
     # The examples against the real toolchain: build crush-ast at the commit in

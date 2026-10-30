@@ -1,6 +1,6 @@
 # Concurrency
 
-> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line
+> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line
 > (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).
 
 Crush has two kinds of concurrency:

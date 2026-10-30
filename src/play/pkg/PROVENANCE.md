@@ -5,21 +5,34 @@ Generated files. Do not edit by hand.
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
 crate:
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `cb655f3`
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `aa07413`
   (2026-10-16), the same commit the guide's examples are verified against
-- toolchain: rustc 1.96.0, `cargo build --release --target wasm32-unknown-unknown`
-  in `crates/crush-web` (with `buckets` checked out beside crush-ast), then
-  `wasm-bindgen 0.2.126 --target web` (the version in crush-web's `Cargo.lock`)
-- no `wasm-opt` pass (that is why it is larger than the earlier 4e9c388 build,
-  which also lacked the standard library)
+- features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**,
+  so a granted `@javascript` block gets Crush variables in and a typed value out,
+  as with `crush-run --polyglot` (the page runs the block with
+  `src/play/guest-js.js`; see `src/play/worker.js`)
+- toolchain: rustc 1.96.0 for `wasm32-unknown-unknown`, then `wasm-bindgen 0.2.126
+  --target web` (the version in crush-web's `Cargo.lock`), built by
+  `scripts/build-play-pkg` with local paths remapped, so the file names no local
+  directory (cargo still hashes the checkout's location into symbol names, so a
+  build from a checkout elsewhere has other hashes; the program is the same)
+- no `wasm-opt` pass
+- size: `crush_web_bg.wasm` is 6,856,830 bytes (1,966,985 gzipped). The
+  previous build (`cb655f3`, default features, no `polyglot-javascript`) was
+  5,001,948 bytes (1,439,176 gzipped): +1.85 MB raw, +0.53 MB over the wire, almost
+  all of it `@javascript` marshaling (the same commit with only that feature added
+  is 6,835,626 bytes).
 - sha256:
-  - `crush_web_bg.wasm` `d31fa7b09840fa943604468d736f0c4b77d9c0d5b692ac331ea5b45c83a0042a`
-  - `crush_web.js` `e6eaba3a29c62ac8a06584f3a93b666ce75a4bb99b001ad9790c5707ecce4643`
+  - `crush_web_bg.wasm` `a43860c32a4a7aa9b8e53933a5a38f5851423515c60458c4491bf13cae8f992f`
+  - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
 
-The book serves its own copy because module workers must be same-origin.
+The book serves its own copy: the page fetches these files and hands them to the
+worker in its sandboxed iframe, which has no network of its own.
 
-To refresh: rebuild as above at the crush-ast commit the guide is verified
-against, update the commit and hashes here, update `BROWSER_CAPS` / `HOST_CAPS` in
-`scripts/mdbook-crush-run.py` if crush-web's capabilities changed, then run
-`node scripts/check-browser.mjs`: it runs every guide block through this build and
-fails if any block's Run/label would now be wrong.
+To refresh: run `scripts/build-play-pkg ../crush-ast` with crush-ast at the commit
+the guide is verified against, update the commit, sizes and hashes here, update
+`BROWSER_CAPS` / `HOST_CAPS` / `BROWSER_LANGS` / `BROWSER_FLAGS` in `scripts/mdbook-crush-run.py` if
+crush-web's capabilities changed, then run `node scripts/check-browser.mjs`: it
+runs every guide block through this build and fails if any block's Run/label
+would now be wrong. After `mdbook build`, `scripts/check-corpus-browser.py` runs
+the verified corpus through it in headless Chromium.

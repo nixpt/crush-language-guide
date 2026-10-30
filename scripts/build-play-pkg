@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Rebuild src/play/pkg (the crush-web build behind the book's Run buttons).
+#
+#   scripts/build-play-pkg CRUSH_AST_CHECKOUT
+#
+# The checkout must be at the commit in CRUSH_AST_COMMIT, with buckets beside it
+# (as for scripts/verify-examples). Needs the wasm32-unknown-unknown target and
+# wasm-bindgen-cli at the version in crates/crush-web/Cargo.lock on PATH.
+#
+# Local paths are remapped (--remap-path-prefix), so the .wasm names no local
+# directory. Its sha256 still depends on where crush-ast is checked out (cargo
+# hashes the location into symbol names): rebuilding from another path gives a
+# file that differs only in those. Prints the sizes and hashes for PROVENANCE.md.
+set -euo pipefail
+
+guide=$(cd "$(dirname "$0")/.." && pwd)
+src=$(cd "${1:?usage: scripts/build-play-pkg CRUSH_AST_CHECKOUT}" && pwd)
+want=$(tr -d '[:space:]' < "$guide/CRUSH_AST_COMMIT")
+have=$(git -C "$src" rev-parse HEAD)
+if [[ "$have" != "$want" && -z "${ALLOW_OTHER_COMMIT:-}" ]]; then
+    echo "crush-ast is at $have, but CRUSH_AST_COMMIT is $want (set ALLOW_OTHER_COMMIT=1 to build anyway)" >&2
+    exit 1
+fi
+
+# polyglot-javascript: a granted @javascript block gets Crush variables in and a
+# typed value out (src/play/guest-js.js runs it), as with crush-run --polyglot.
+features=polyglot-javascript
+need=$(grep -A1 '^name = "wasm-bindgen"$' "$src/crates/crush-web/Cargo.lock" | sed -n 's/^version = "\(.*\)"/\1/p')
+got=$(wasm-bindgen --version | awk '{print $2}')
+[[ "$got" == "$need" ]] || { echo "wasm-bindgen $got on PATH, crush-web needs $need" >&2; exit 1; }
+
+target=${CARGO_TARGET_DIR:-$src/target}
+export CARGO_TARGET_DIR=$target
+export RUSTFLAGS="--remap-path-prefix=$src=crush-ast --remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}/registry/src=registry --remap-path-prefix=$(rustc --print sysroot)=rust"
+(cd "$src/crates/crush-web" && cargo build --release --target wasm32-unknown-unknown --features "$features")
+out=$(mktemp -d)
+wasm-bindgen --target web --out-dir "$out" "$target/wasm32-unknown-unknown/release/crush_web.wasm"
+cp "$out/crush_web_bg.wasm" "$out/crush_web.js" "$guide/src/play/pkg/"
+rm -rf "$out"
+
+cd "$guide/src/play/pkg"
+echo "crush-ast $(git -C "$src" rev-parse --short HEAD), $(rustc --version | cut -d' ' -f1-2), wasm-bindgen $got, features: $features"
+for f in crush_web_bg.wasm crush_web.js; do
+    echo "$f: $(stat -c%s "$f") bytes, $(gzip -9c "$f" | wc -c) gzipped, sha256 $(sha256sum "$f" | cut -d' ' -f1)"
+done
