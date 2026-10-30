@@ -39,9 +39,10 @@ onmessage = (e) => {
             if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`);
             return r[how]();
         });
-        return Promise.all([get('play/guest-js.js', 'text'), get('play/guest-py.js', 'text'), get('play/worker.js', 'text'),
-            get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
-            .then(([guestJs, guestPy, work, glue, wasm]) => ({ worker: guestJs + '\n' + guestPy + '\n' + work, glue, wasm }));
+        return Promise.all([get('play/node-inspect.js', 'text'), get('play/guest-js.js', 'text'), get('play/guest-py.js', 'text'),
+            get('play/worker.js', 'text'), get('play/pkg/crush_web.js', 'text'), get('play/pkg/crush_web_bg.wasm', 'arrayBuffer')])
+            .then(([inspect, guestJs, guestPy, work, glue, wasm]) =>
+                ({ worker: [inspect, guestJs, guestPy, work].join('\n'), glue, wasm }));
     }
 
     // ── Python: Pyodide, fetched on the first granted @python run ─────────────
@@ -241,8 +242,9 @@ onmessage = (e) => {
         }
         if (/not supported by the in-browser JavaScript runtime/.test(error)) {
             return { kind: 'refused', title: 'Refused: this @javascript block needs node',
-                body: 'The browser runs a granted @javascript block only where it can reproduce node exactly, ' +
-                    'and refuses the rest rather than approximate it. Run the program with crush-run --polyglot.' };
+                body: 'The browser runs a granted @javascript block as node runs it (promises, timers, node\'s own ' +
+                    'formatting) and refuses what only node can do (node modules other than util, the network, ' +
+                    'process details) rather than approximate it. Run the program with crush-run --polyglot.' };
         }
         m = error.match(/unknown capability: ([\w.]+)/);
         if (m) {
@@ -292,12 +294,13 @@ onmessage = (e) => {
     }
 
     const LABELS = { fail: 'expected to fail', host: 'needs the host', none: 'not runnable' };
-    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', 'polyglot.python': '@python', time: 'the clock', env: 'the environment' };
+    const GRANT_NAMES = { 'polyglot.javascript': '@javascript', 'polyglot.python': '@python', time: 'the clock', env: 'the environment', fs: 'the filesystem' };
     const GRANT_WHY = {
         'polyglot.javascript': '@javascript blocks (--polyglot), run in an isolated worker with no network, storage or access to this page',
         'polyglot.python': '@python blocks (--polyglot), run in Pyodide (CPython 3.14 compiled to WebAssembly, downloaded the first ' +
             'time, about 6 MB) in an isolated worker with no network, storage or access to this page',
         time: 'the clock (--time), read from your browser',
+        fs: 'the filesystem (--fs): an empty directory of this run\'s own, in memory, that disappears with the run',
         env: 'the environment (--env), which in a browser is empty',
     };
 
@@ -328,11 +331,13 @@ onmessage = (e) => {
         play.title = 'Open this example on crushlang.org/playground';
         reset.hidden = true;
         bar.prepend(run, edit, reset, play);
+        // Grants this browser does not give pages (a native host such as surfer):
+        // runs are refused before they start, by the browser, not by the example.
+        const withheld = host ? grants.filter((g) => host.grantable.indexOf(g) < 0) : [];
         if (grants.length) {
             const chip = el('span', 'crush-badge crush-badge-grant', 'grants ' + grants.map((g) => GRANT_NAMES[g] || g).join(', '));
             chip.title = 'Runs of this example are granted ' + grants.map((g) => GRANT_WHY[g] || g).join('; ') +
                 ', as the guide runs it with crush-run. Nothing else is granted.';
-            const withheld = host ? grants.filter((g) => host.grantable.indexOf(g) < 0) : [];
             if (withheld.length) {
                 chip.textContent += ' (not in this browser)';
                 chip.title = 'This browser does not grant ' + withheld.map((g) => GRANT_NAMES[g] || g).join(', ') +
@@ -437,7 +442,7 @@ onmessage = (e) => {
             run.disabled = true;
             run.textContent = 'Running…';
             out.hidden = false;
-            const loading = !worker ? 'loading the Crush runtime…' : '';
+            const loading = !worker && !host ? 'loading the Crush runtime…' : '';
             const python = needsPython(grants) && !host && pythonGen !== generation
                 ? 'loading Python (Pyodide, about 6 MB the first time)…' : '';
             out.replaceChildren(el('div', 'crush-status', python || loading || 'running…'));
@@ -503,7 +508,12 @@ onmessage = (e) => {
                 if (pre) parts.push(pre);
                 parts.push(el('pre', 'crush-output crush-error', r.error));
                 status = (r.timeout ? 'timed out' : r.loadError ? 'runtime unavailable' : r.lost ? 'interrupted' : 'failed') + ms;
-                if (!wasEdited && kind === 'fail' && !r.loadError && !r.timeout && !r.lost) {
+                if (withheld.length && c && c.kind === 'refused') {
+                    // Not the example's failure: this browser does not grant what it needs.
+                    status = 'not run' + ms;
+                    verdict = { cls: 'withheld', text: 'this browser does not grant ' +
+                        withheld.map((g) => GRANT_NAMES[g] || g).join(', ') + '; run it with crush-run' };
+                } else if (!wasEdited && kind === 'fail' && !r.loadError && !r.timeout && !r.lost) {
                     const want = block.dataset.expectError;
                     verdict = !want || r.error.includes(want)
                         ? { cls: 'matches', text: '✓ fails as the guide says' }

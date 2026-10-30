@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Variables and Scoping\n\n> Verified against crush-ast `d04bc60a` (2026-10-29).\n\nThis chapter covers declaration, assignment, and the scoping rules the compiler\nenforces today.\n\n## Declaration\n\nEvery variable is introduced with `let` and **must be initialised**:\n",
+   "source": "# Variables and Scoping\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30).\n\nThis chapter covers declaration, assignment, and the scoping rules the compiler\nenforces today.\n\n## Declaration\n\nEvery variable is introduced with `let` and **must be initialised**:\n",
    "state": {
     "status": "done"
    },

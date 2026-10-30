@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Functions\n\n> Verified against crush-ast `d04bc60a` (2026-10-29).\n\nThis chapter covers defining and calling functions. Named functions are\ntop-level declarations, and they are also **values**: you can store one in a\nvariable, pass it as an argument and return it. Lambdas and closures have their\nown chapter, [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n\n## Defining functions\n",
+   "source": "# Functions\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30).\n\nThis chapter covers defining and calling functions. Named functions are\ntop-level declarations, and they are also **values**: you can store one in a\nvariable, pass it as an argument and return it. Lambdas and closures have their\nown chapter, [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n\n## Defining functions\n",
    "state": {
     "status": "done"
    },

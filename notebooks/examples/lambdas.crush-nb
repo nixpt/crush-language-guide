@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Lambdas & the Pipeline Operator\n\n> Verified against crush-ast `d04bc60a` (2026-10-29).\n\n## The pipeline operator\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and\nbind more loosely than any other operator. The right-hand side must be a function\nname, or a variable holding a function value.\n",
+   "source": "# Lambdas & the Pipeline Operator\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30).\n\n## The pipeline operator\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and\nbind more loosely than any other operator. The right-hand side must be a function\nname, or a variable holding a function value.\n",
    "state": {
     "status": "done"
    },
