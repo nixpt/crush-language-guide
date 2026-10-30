@@ -7,10 +7,11 @@ crate:
 
 - source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) at commit `d04bc60a`
   (2026-10-29), the same commit the guide's examples are verified against
-- features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**,
-  so a granted `@javascript` block gets Crush variables in and a typed value out,
-  as with `crush-run --polyglot` (the page runs the block with
-  `src/play/guest-js.js`; see `src/play/worker.js`)
+- features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**
+  and **`polyglot-python`**, so a granted `@javascript` / `@python` block gets
+  Crush variables in and a typed value out, as with `crush-run --polyglot` (the
+  page runs the block with `src/play/guest-js.js`, or `src/play/guest-py.js` in
+  Pyodide, `src/play/pyodide.json`; see `src/play/worker.js`)
 - toolchain: rustc 1.96.0 for `wasm32-unknown-unknown` with crush-web's own
   release profile (#311: `opt-level = "s"`, LTO, one codegen unit, debug info
   stripped), then `wasm-bindgen 0.2.126 --target web --remove-name-section` (the
@@ -19,7 +20,11 @@ crate:
   the checkout's location into symbol names, so a build from a checkout elsewhere
   has other hashes; the program is the same)
 - no `wasm-opt` pass
-- size: `crush_web_bg.wasm` is 4,993,152 bytes (1,509,307 gzipped). Built from
+- size: `crush_web_bg.wasm` is 6,819,694 bytes (2,173,623 gzipped);
+  `polyglot-python` (rustpython's parser, for the marshaling) is 1,826,542 bytes
+  of it (664,316 gzipped): with only `polyglot-javascript` the same commit is
+  4,993,152 (1,509,307). Pyodide itself is not part of this build: the page
+  downloads it on the first `@python` run (`src/play/pyodide.json`). Built from
   `b1791d8e` (before #311) it was 9,786,136 (2,656,656 gzipped), and from
   `aa07413` 6,856,830 (1,966,985). The JS support itself was not the cause:
   `polyglot-javascript` also linked swc, a second JavaScript parser that only
@@ -30,7 +35,7 @@ crate:
   `aa07413` and `b1791d8e` builds. (#313, also in `d04bc60a`, adds the
   lowered-block output capture to the VM, 5.7 KB.)
 - sha256:
-  - `crush_web_bg.wasm` `9c8483311b0f3751b8782d02f59527b04c34205edaecb4b8aa87bd9400cfe7aa`
+  - `crush_web_bg.wasm` `09cb18c7bdc72d4057a9a21b18d2a8b427678a59739e955d1668f7f1398783c9`
   - `crush_web.js` `384bf65ce36b1834c63b995fb9e0607579c3cd96f00fb1bef0fa2c9b63f9e8a9`
 
 The book serves its own copy: the page fetches these files and hands them to the

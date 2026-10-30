@@ -8,13 +8,13 @@ checks that keep the guide's code honest (nothing is labelled by hand):
 |---|---|
 | **Run** · **Edit** · **Playground ↗** | The example runs in your browser. Run shows its output under the block and, where the guide prints the expected output, whether yours *matches the guide's output*. Edit turns the block into an editor (Ctrl+Enter runs it); Reset puts the original back. Playground opens it on [crushlang.org/playground](https://crushlang.org/playground/). |
 | **expected to fail** | The example is *meant* to fail: a compile error, a refused capability, or a feature that is not implemented yet. Run demonstrates the failure and says whether it *fails as the guide says*. |
-| **needs the host** | The example uses something the browser cannot give it; the label says what (a `@python` block, `fs.read`, the clock). Run it with `crush-run` and the flags shown on the page; see [Getting Started](getting-started.md). |
+| **needs the host** | The example uses something the browser cannot give it; the label says what (a `@bash` block, `fs.read`, an `@python` block that reads files). Run it with `crush-run` and the flags shown on the page; see [Getting Started](getting-started.md). |
 | **not runnable** | A fragment or a program that needs special setup; the label says which. |
 
 An example whose `crush-run` flags the browser can honour carries a **grants**
-label saying what its runs are granted, and nothing else is: **@javascript**
-(`--polyglot` with only `@javascript` blocks), **the clock** (`--time`) or **the
-environment** (`--env`). Edited code keeps the example's grants.
+label saying what its runs are granted, and nothing else is: **@javascript** and
+**@python** (`--polyglot` with only `@javascript` / `@python` blocks), **the
+clock** (`--time`) or **the environment** (`--env`). Edited code keeps the example's grants.
 
 ## What runs in the browser
 
@@ -80,15 +80,38 @@ isolated worker as the VM, and behaves like that `node -e` run:
 - A block that never finishes is stopped with the run at the time limit; what the
   run printed before the stop is lost with the stopped runtime.
 
-## Why not `@python`, `@bash` or the filesystem
+## `@python` blocks
 
-- **`@python`** would need a Python in the browser and, before that, crush's
-  marshaling of Crush variables into and out of the block, which is compiled by an
-  analyzer that does not build for WebAssembly yet. Without it, only blocks that
-  neither read Crush variables nor return values could run. A Python in the
-  browser ([Pyodide](https://pyodide.org) 0.27) is also a 5.6 MB download, about
-  three times this whole runtime, before the first block runs. So `@python` blocks
-  are refused, as `crush-run` refuses them without `--polyglot`.
+Natively, `crush-run --polyglot` runs a `@python` block with `python3 -c`. In the
+browser, a block granted `polyglot.python` runs in [Pyodide](https://pyodide.org)
+314.0.7, which is CPython 3.14 (the Python this guide's examples were checked
+with) compiled to WebAssembly, inside the same isolated worker as the VM, and
+behaves like that `python3 -c` run:
+
+- **Downloaded on first use.** The first time you run a `@python` example on a
+  page, the page downloads Pyodide from its CDN (about 6.3 MB compressed) and
+  checks every file against the sha256 the guide pins
+  ([`play/pyodide.json`](play/pyodide.json)) before using it. Pages without a
+  `@python` run never download it, and a page loads it once however many examples
+  you run.
+- Crush variables go in and `->` outputs come back as JSON, as natively. Every
+  block starts in a fresh `__main__`; modules it imports and changes it makes to
+  `os.environ` are undone afterwards.
+- What it prints is its output; standard input is empty (natively it is
+  `/dev/null`, so `input()` raises `EOFError`). A block that raises fails the run
+  with the traceback `python3` prints, at the block's `.crush` line.
+- Where only the host can answer, the block is **refused**, never answered
+  differently: opening files and `os` file and directory calls, running processes
+  (`subprocess`, `os.system`, ...) and the network (`socket`, `urllib.request`,
+  `http.client`, ...). Pyodide's own bridges to JavaScript (`import js`,
+  `import pyodide`) do not exist, as in `python3`. Packages (`pypi:`) need the
+  host. Run such a program with `crush-run --polyglot`.
+- The block has the same lack of authority as a `@javascript` block, and a block
+  that never finishes is stopped at the time limit the same way; the next
+  `@python` run loads Python again from the downloaded files.
+
+## Why not `@bash` or the filesystem
+
 - **`@bash`** has no browser equivalent, and `crush-run` never sandboxes it either.
 - **The filesystem**: `crush-run --fs` works on real files under `--fs-root`. A
   per-run in-memory filesystem would need crush's file capabilities to work over

@@ -12,7 +12,9 @@
 //   host  must fail here too (else the label hides a block the browser could run)
 //   none  not run
 //
-// Needs only node and python3, so it runs in CI next to `mdbook build`.
+// Needs node, python3 and the page's Pyodide release, which `scripts/fetch-pyodide`
+// downloads into .pyodide/ (or set PYODIDE_DIR), so it runs in CI next to
+// `mdbook build`.
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,10 +25,21 @@ const pkg = path.join(root, 'src', 'play', 'pkg');
 const verbose = process.argv.includes('-v');
 const { initSync, Session, set_lang_executor } = await import(path.join(pkg, 'crush_web.js'));
 initSync({ module: fs.readFileSync(path.join(pkg, 'crush_web_bg.wasm')) });
-// Granted @javascript blocks run through the page's own executor (worker.js does the same).
+// Granted @javascript / @python blocks run through the page's own executors
+// (worker.js does the same); @python in the same Pyodide release the page loads.
 await import(path.join(root, 'src', 'play', 'guest-js.js'));
+await import(path.join(root, 'src', 'play', 'guest-py.js'));
+const pin = JSON.parse(fs.readFileSync(path.join(root, 'src', 'play', 'pyodide.json'), 'utf8'));
+const pyodideDir = process.env.PYODIDE_DIR || path.join(root, '.pyodide', pin.version);
+if (!fs.existsSync(path.join(pyodideDir, 'pyodide.mjs'))) {
+    console.error(`no Pyodide ${pin.version} in ${pyodideDir}: run scripts/fetch-pyodide (or set PYODIDE_DIR)`);
+    process.exit(2);
+}
+const { loadPyodide } = await import(path.join(pyodideDir, 'pyodide.mjs'));
+globalThis.crushGuestPy.init(await loadPyodide({ indexURL: pyodideDir + path.sep }));
 set_lang_executor((lang, code, env) => {
     if (lang === 'javascript' || lang === 'js') return globalThis.crushGuestJs.run(code, env);
+    if (lang === 'python') return globalThis.crushGuestPy.run(code, env);
     throw new Error(`@${lang} blocks cannot run in the browser`);
 });
 

@@ -2,11 +2,13 @@
 //
 // This is a classic worker started from a blob inside a sandboxed iframe that
 // has an opaque origin and the CSP `default-src 'none'`. It has no page DOM,
-// no cookies, no storage and no network, so a granted @javascript block (which
-// runs right here, synchronously, inside the VM's call) has none of them
-// either. The page fetches this file with play/guest-js.js prepended, the
-// crush-web glue and the .wasm, and sends them in the first message along
-// with the MessagePort it talks to us on.
+// no cookies, no storage and no network, so a granted @javascript or @python
+// block (which runs right here, synchronously, inside the VM's call) has none
+// of them either. The page fetches this file with play/guest-js.js and
+// play/guest-py.js prepended, the crush-web glue and the .wasm, and sends them
+// in the first message along with the MessagePort it talks to us on. Before
+// the first run granted @python it sends Pyodide's files too:
+//   { id: 'python', op: 'python', files }  load Python; answered { ready } or { loadError }
 //
 // Every run is a crush-web Session, so a program that calls io.read pauses
 // until the page sends a line (or EOF). Messages on the port:
@@ -23,7 +25,35 @@ const sessions = new Map();
 
 function executor(lang, code, env) {
     if (lang === 'javascript' || lang === 'js') return self.crushGuestJs.run(code, env);
+    if (lang === 'python') return self.crushGuestPy.run(code, env);
     throw new Error(`@${lang} blocks cannot run in the browser`);
+}
+
+// Load Pyodide from the files the page fetched and checked (play/pyodide.json):
+// this worker has no network, so its loader's requests for the wasm and the
+// standard library are answered from those bytes, under a made-up indexURL,
+// and its main module is imported from a blob instead of from indexURL.
+const PYODIDE_URL = 'https://pyodide.invalid/';
+
+async function loadPython(files) {
+    if (self.crushGuestPy.pyodide) return;
+    const blobModule = (name) => import(URL.createObjectURL(new Blob([files[name]], { type: 'text/javascript' })));
+    const realFetch = self.fetch;
+    self.fetch = (url, init) => {
+        const u = String(url instanceof Request ? url.url : url);
+        if (!u.startsWith(PYODIDE_URL)) return realFetch.call(self, url, init);
+        const name = u.slice(PYODIDE_URL.length);
+        if (!files[name]) return Promise.reject(new Error(`Pyodide asked for ${name}, which the page did not provide`));
+        const type = name.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream';
+        return Promise.resolve(new Response(files[name], { headers: { 'Content-Type': type } }));
+    };
+    const [loader, asm] = await Promise.all([blobModule('pyodide.mjs'), blobModule('pyodide.asm.mjs')]);
+    const pyodide = await loader.loadPyodide({
+        indexURL: PYODIDE_URL,
+        createPyodideModule: asm.default,
+        lockFileContents: new TextDecoder().decode(files['pyodide-lock.json']),
+    });
+    self.crushGuestPy.init(pyodide);
 }
 
 function step(m) {
@@ -64,6 +94,11 @@ self.onmessage = async ({ data }) => {
         return;
     }
     port.onmessage = ({ data: m }) => {
+        if (m.op === 'python') {
+            loadPython(m.files).then(() => port.postMessage({ id: m.id, ready: true }),
+                (e) => port.postMessage({ id: m.id, loadError: String((e && e.message) || e) }));
+            return;
+        }
         const started = performance.now();
         const r = step(m);
         port.postMessage(Object.assign({ id: m.id, ms: performance.now() - started }, r));

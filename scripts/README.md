@@ -58,10 +58,11 @@ page for an update.
 |---|---|
 | `mdbook-crush-run.py` | mdBook preprocessor (wired in `book.toml`): wraps each ```` ```crush ```` block in a `<div class="crush-block" data-crush=run\|fail\|host\|none>` derived from the directives above plus the block's capability calls. `--manifest` prints every block's classification as JSON. |
 | `../interactive/crush-run.{js,css}` | The Run / Edit / Reset controls (mdBook `additional-js` / `additional-css`). |
-| `../src/play/` | `worker.js`, `guest-js.js` (runs granted `@javascript` blocks) + the vendored crush-web build (`pkg/`, provenance in `pkg/PROVENANCE.md`). |
+| `../src/play/` | `worker.js`, `guest-js.js` (runs granted `@javascript` blocks), `guest-py.js` (runs granted `@python` blocks in Pyodide), `pyodide.json` (the pinned Pyodide release the page downloads on the first `@python` run, with each file's sha256) + the vendored crush-web build (`pkg/`, provenance in `pkg/PROVENANCE.md`). |
+| `fetch-pyodide` | `scripts/fetch-pyodide`: downloads the release in `src/play/pyodide.json` into `.pyodide/` (gitignored), checking each sha256, for `check-browser.mjs`; `--update` re-pins the hashes after a version change. |
 | `check-corpus-browser.py` | `mdbook build && scripts/check-corpus-browser.py [--markdown]`: runs the verified corpus through the built book's Run-button runtime in headless Chromium and compares with each `.out`/`.err`, like `verify-examples` does for `crush-run` (each program is a match, a loud refusal, or a listed known difference). Runs in CI. |
 | `build-play-pkg` | `scripts/build-play-pkg ../crush-ast`: rebuilds `src/play/pkg` reproducibly at the pinned commit and prints its sizes and hashes. |
-| `check-browser.mjs` | `node scripts/check-browser.mjs`: runs every block through `src/play/pkg` and fails if a label is wrong (a "runnable" block that fails, a "needs the host" block that would run, an output that differs from the page). Runs in CI. |
+| `check-browser.mjs` | `scripts/fetch-pyodide && node scripts/check-browser.mjs`: runs every block through `src/play/pkg` (`@python` in the pinned Pyodide) and fails if a label is wrong (a "runnable" block that fails, a "needs the host" block that would run, an output that differs from the page). Runs in CI. |
 | `test-interactive.py` | `mdbook build && scripts/test-interactive.py`: headless Chromium (Playwright) clicks Run on every runnable / expected-failure block, exercises Edit / Reset, no-JS, mobile width and a dark theme. Runs in CI. |
 
 When crush-web is rebuilt with more capabilities, update `BROWSER_CAPS` in

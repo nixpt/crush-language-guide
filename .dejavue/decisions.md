@@ -40,3 +40,18 @@ crush-notebook-kernel 0.1.1 (latest on crates.io) depends on crush-* ^0.3.9, so 
 Reason:
 Browser classification must match the commit the guide documents. crush-web at 3ae0b4a registers the default-on stdlib, so STDLIB host-needs is empty; crypto and file text.* are host caps. check-browser.mjs proves every label (129 run, 24 host, 36 fail).
 
+
+## 2026-10-29T22:31:04-05:00 — Run @python on the page in Pyodide (exec mode), not through crush-web's lower mode
+
+Reason:
+Exact semantics: Pyodide 314.0.7 is CPython 3.14, the Python the guide verifies with natively; guest-py.js matches python3 -c byte for byte on output, tracebacks, exit codes, stdin and imports, and refuses (loudly) only what needs the host: files, processes, network, packages. Lower mode ran 5 of the guide's Python blocks, refused 8, and needs walker work for the rest. Cost: ~6.3 MB compressed, fetched from jsDelivr only on a page's first @python run, each file checked against src/play/pyodide.json; +0.66 MB gzipped for crush-web's polyglot-python marshaling, on every page.
+
+Artifacts: src/play/guest-py.js, src/play/pyodide.json
+
+Rejected alternatives:
+- **crush-web polyglot**: lower (Python walker)
+- **vendoring Pyodide into the repo (13 MB of binaries per version)**
+
+Outcome:
+11 more guide blocks runnable; whole verified corpus and the UI test pass in headless Chrome
+
