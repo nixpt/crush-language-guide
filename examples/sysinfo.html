@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,8 +186,8 @@
 
 <p>Crush as a <em>conductor</em>: gather facts from the host through capability calls, then
 assemble them. The program needs three capability groups, so it is run with
-<code>crush run --stdlib --env --time sysinfo.crush</code>; with any flag missing, the
-corresponding call fails with <code>unknown capability</code>.</p>
+<code>crush run --env --time sysinfo.crush</code>; with either flag missing, the program is
+refused before it runs, with the flag it needs (<code>--env: env.get</code>).</p>
 <!-- check: flags --env --time -->
 <div class="crush-block" data-crush="host" data-src="examples/sysinfo.md:9" data-why="uses `env.arch`, `env.get`, `env.os`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Gather host facts through capabilities and render a small report.
@@ -214,7 +214,7 @@ clock ok: true
 <p>(The <code>os</code> and <code>arch</code> lines depend on the machine that runs the example.)</p>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>env.os()</code> / <code>env.arch()</code> (<code>--stdlib</code>), <code>env.get(name)</code> (<code>--env</code>, returns <code>null</code>
+<li><code>env.os()</code> / <code>env.arch()</code> (standard library, no flag), <code>env.get(name)</code> (<code>--env</code>, returns <code>null</code>
 when the variable is unset), <code>time.now()</code> (<code>--time</code>) — each group is
 deny-by-default</li>
 <li><code>str.join(array, delimiter)</code> to assemble text</li>

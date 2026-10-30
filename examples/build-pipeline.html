@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,9 +188,9 @@
 decides what runs and in what order, while capability calls do the work. Here each
 step is a real process started through <code>process.exec</code>, and the pipeline stops at
 the first failure.</p>
-<p>Run it with <code>crush run --stdlib --process build.crush</code>.</p>
+<p>Run it with <code>crush run --process build.crush</code>.</p>
 <!-- check: flags --process -->
-<div class="crush-block" data-crush="host" data-src="examples/build-pipeline.md:11" data-why="uses `process.exec`; uses the standard library (`json.parse`), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="examples/build-pipeline.md:11" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// A tiny build pipeline: run each step as a process, stop at the first failure.
 fn run_tool(cmd: String, arg: String) -&gt; Int {
     let raw = process.exec(cmd, arg)

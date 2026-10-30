@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,46 +189,53 @@ variables as the glue. This replaces an earlier “Async LLM Dashboard” page w
 <code>dom.*</code>, <code>seahorse</code> and <code>async</code>/<code>await</code> calls do not run in the current
 toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
-on <code>PATH</code>).</p>
+on <code>PATH</code>; <code>crush doctor</code> checks).</p>
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:12" data-why="uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="examples/async-dom.md:14" data-why="uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">// Three languages, one program. Values flow through Crush variables.
 let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
 
-@python {
+@python -&gt; mean {
 import statistics
 mean = statistics.mean(numbers)
 }
 
-@javascript {
+@javascript -&gt; spread {
 const spread = Math.max(...numbers) - Math.min(...numbers)
 }
 
-let m = mean
-let s = spread
+@python -&gt; line {
+line = f"mean={mean} spread={spread}"
+}
+print(line)
+
 @bash {
-echo "mean=$m spread=$s"
+echo "bash: $(echo done)"
 }
 print("")
-print("done")
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">mean=3.875 spread=8
-done
+bash: done
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>@python</code>: reads the Crush variable <code>numbers</code>, and its last top-level binding,
-<code>mean</code>, becomes a Crush variable</li>
-<li><code>@javascript</code>: the same protocol; <code>spread</code> comes back as a number</li>
-<li><code>@bash</code>: receives the <code>let</code> variables declared before it as environment
-variables. Results of earlier blocks are not passed automatically, so they are
-copied into <code>let m = mean</code> / <code>let s = spread</code> first</li>
-<li>Block output is trimmed and has no trailing newline, which is why <code>print("")</code>
+<li><code>@python -&gt; mean</code>: the block reads the Crush variable <code>numbers</code> (inputs are
+automatic) and declares <code>mean</code> as its output, which becomes a Crush variable</li>
+<li><code>@javascript -&gt; spread</code>: the same protocol; <code>spread</code> comes back as a number</li>
+<li>the second <code>@python</code> block reads both earlier outputs, because they are Crush
+variables now</li>
+<li><code>@bash</code>: only its printed output comes back. It does <strong>not</strong> see Crush
+variables today (crush-ast <a href="https://github.com/nixpt/crush-ast/issues/255">#255</a>),
+which is why the formatting is done in Python</li>
+<li>block output is trimmed and has no trailing newline, which is why <code>print("")</code>
 is used to finish the line</li>
-<li>All three run as ordinary subprocesses with your user’s authority — see
+<li>all three run as ordinary subprocesses with your user’s authority — see
 <a href="../crush/polyglot.html#sandbox-and-authority">Polyglot Programming</a></li>
 </ul>
 
@@ -240,7 +247,7 @@ is used to finish the line</li>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../cast/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../examples/awesome-crush.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -254,7 +261,7 @@ is used to finish the line</li>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../cast/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../examples/awesome-crush.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

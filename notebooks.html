@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-7647b030.js"></script>
+        <script src="toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -231,12 +231,20 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code> and the VM’s built-in string helpers</td><td>the same, plus <code>cson.parse</code></td><td>whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, <code>--stdlib</code>, …)</td></tr>
-<tr><td>Polyglot, filesystem, network, stdlib modules</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
+<tr><td>Granted</td><td><code>print</code> and the standard library</td><td><code>print</code>, the VM’s built-in string helpers, <code>cson.parse</code></td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td>Polyglot, filesystem, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
 </div>
+<blockquote>
+<p><strong>Kernel lag.</strong> The published <code>crush-notebook-kernel</code> (0.1.1) is built on
+crush-ast 0.3.x, so it predates closures, struct methods and Kinds, green tasks,
+declared polyglot outputs and the default-on standard library. Cells using those
+fail in the kernel even though the page (verified against crush-ast <code>cb655f3</code>)
+shows them working. Use <code>crush run</code>, or the page’s Run button, for those until a
+kernel built on a newer crush-ast is published.</p>
+</blockquote>
 <p>So the examples marked <strong>needs the host</strong> are refused in the notebook too: the
 kernel grants what <code>crush run</code> grants with no flags. Run those with <code>crush-run</code>
 and the flags their page shows (see <a href="getting-started.html">Getting Started</a>).</p>
@@ -257,13 +265,18 @@ and each host-only cell has to be refused.</p>
 <li><a href="notebooks/appendix/quick_reference.crush-nb" download=""><code>appendix/quick_reference.crush-nb</code></a>, from <a href="appendix/quick_reference.html">Quick Reference</a></li>
 <li><a href="notebooks/casm/index.crush-nb" download=""><code>casm/index.crush-nb</code></a>, from <a href="casm/index.html">Overview</a></li>
 <li><a href="notebooks/casm/examples.crush-nb" download=""><code>casm/examples.crush-nb</code></a>, from <a href="casm/examples.html">Examples</a></li>
+<li><a href="notebooks/casm/instructions.crush-nb" download=""><code>casm/instructions.crush-nb</code></a>, from <a href="casm/instructions.html">Instruction Reference</a></li>
 <li><a href="notebooks/crush/index.crush-nb" download=""><code>crush/index.crush-nb</code></a>, from <a href="crush/index.html">Overview</a></li>
+<li><a href="notebooks/crush/annotations.crush-nb" download=""><code>crush/annotations.crush-nb</code></a>, from <a href="crush/annotations.html">Annotations</a></li>
 <li><a href="notebooks/crush/capabilities.crush-nb" download=""><code>crush/capabilities.crush-nb</code></a>, from <a href="crush/capabilities.html">Capability System</a></li>
+<li><a href="notebooks/crush/closures.crush-nb" download=""><code>crush/closures.crush-nb</code></a>, from <a href="crush/closures.html">Closures and Function Values</a></li>
+<li><a href="notebooks/crush/concurrency.crush-nb" download=""><code>crush/concurrency.crush-nb</code></a>, from <a href="crush/concurrency.html">Concurrency</a></li>
 <li><a href="notebooks/crush/control_flow.crush-nb" download=""><code>crush/control_flow.crush-nb</code></a>, from <a href="crush/control_flow.html">Control Flow</a></li>
 <li><a href="notebooks/crush/functions.crush-nb" download=""><code>crush/functions.crush-nb</code></a>, from <a href="crush/functions.html">Functions</a></li>
 <li><a href="notebooks/crush/operators.crush-nb" download=""><code>crush/operators.crush-nb</code></a>, from <a href="crush/operators.html">Operators</a></li>
 <li><a href="notebooks/crush/polyglot.crush-nb" download=""><code>crush/polyglot.crush-nb</code></a>, from <a href="crush/polyglot.html">Polyglot Programming</a></li>
 <li><a href="notebooks/crush/stdlib.crush-nb" download=""><code>crush/stdlib.crush-nb</code></a>, from <a href="crush/stdlib.html">Standard Library</a></li>
+<li><a href="notebooks/crush/structs.crush-nb" download=""><code>crush/structs.crush-nb</code></a>, from <a href="crush/structs.html">Structs, Methods and Kinds</a></li>
 <li><a href="notebooks/crush/syntax.crush-nb" download=""><code>crush/syntax.crush-nb</code></a>, from <a href="crush/syntax.html">Syntax &amp; Grammar</a></li>
 <li><a href="notebooks/crush/types.crush-nb" download=""><code>crush/types.crush-nb</code></a>, from <a href="crush/types.html">Types</a></li>
 <li><a href="notebooks/crush/variables.crush-nb" download=""><code>crush/variables.crush-nb</code></a>, from <a href="crush/variables.html">Variables &amp; Scoping</a></li>
@@ -287,7 +300,7 @@ and each host-only cell has to be refused.</p>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="crush/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="verified-corpus.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -301,7 +314,7 @@ and each host-only cell has to be refused.</p>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="crush/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="verified-corpus.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

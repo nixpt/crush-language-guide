@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Structs (and Concurrency)\n\nA struct is declared once, created with `new Name()`, and filled in by assigning\nfields. Structs are passed by reference.\n",
+   "source": "# Structs (and Concurrency)\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n\nA struct is declared once (on one line), built with a literal, and given methods\nin an `impl` block. Structs are passed by reference.\n",
    "state": {
     "status": "done"
    },
@@ -30,7 +30,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "struct Point { x: Float, y: Float }\n\nfn dist2(a, b) {\n    let dx = a.x - b.x\n    let dy = a.y - b.y\n    return dx * dx + dy * dy\n}\n\nlet p = new Point()\np.x = 1.0\np.y = 2.0\nlet q = new Point()\nq.x = 4.0\nq.y = 6.0\n\nprint(\"p = (\" + p.x + \", \" + p.y + \")\")\nprint(\"squared distance: \" + dist2(p, q))\n",
+   "source": "struct Point { x: Float, y: Float }\nimpl Point {\n    fn new(x, y) { return Point { x: x, y: y } }\n    fn dist2(self, other) {\n        let dx = self.x - other.x\n        let dy = self.y - other.y\n        return dx * dx + dy * dy\n    }\n    fn label(self) { return \"(\" + self.x + \", \" + self.y + \")\" }\n}\n\nlet p = Point::new(1.0, 2.0)\nlet q = Point { x: 4.0, y: 6.0 }\n\nprint(\"p = \" + p.label())\nprint(\"squared distance: \" + p.dist2(q))\n",
    "state": {
     "status": "pending"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/concurrency-structs.md:6",
+      "src": "examples/concurrency-structs.md:8",
       "browser": "run",
       "expect_output": "p = (1.0, 2.0)\nsquared distance: 25.0\n"
      }
@@ -54,7 +54,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "**What this shows:**\n\n- `struct Point { x: Float, y: Float }` — declare it on **one line**; the parser\n  does not yet accept a struct body that spans lines\n- `new Point()` takes no arguments; set each field with `p.x = ...`\n- Field access works inside functions, including on parameters (`a.x`)\n- `Float` arithmetic: `3.0 * 3.0 + 4.0 * 4.0` is `25.0`\n\n## Concurrency\n\nEarlier revisions of this guide demonstrated `spawn worker()` with cooperative\n`yield`. That does **not** run today: the compiler emits a `SPAWN` instruction\nwithout its operand and the assembler rejects the program\n(`SPAWN takes 1 operand(s), got 0`). The scheduler for green threads exists in\n`crush-vm`, but the source-level path is unfinished — crush-ast **CRUSH-34**\n(spawn/await/yield execution) is open. A bare `yield` statement compiles and is a\nno-op.\n",
+   "source": "**What this shows:**\n\n- `struct Point { x: Float, y: Float }`: declare it on **one line**; the parser\n  does not yet accept a struct body that spans lines\n- `Point { x: 4.0, y: 6.0 }` names every field; `Point::new(...)` is a method\n  without `self`, called through the type\n- `p.dist2(q)` resolves `dist2` on `p`'s struct; `self` is `p`\n- `Float` arithmetic: `3.0 * 3.0 + 4.0 * 4.0` is `25.0`\n\nMore in [Structs, Methods and Kinds](https://docs.crushlang.org/crush/structs.html).\n\n## Concurrency\n\n`spawn` starts a green task; tasks take turns at `yield`, and `await` collects a\ntask's result. The workers below share one captured counter:\n",
    "state": {
     "status": "done"
    },
@@ -66,23 +66,35 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn worker() {\n    print(\"worker running\")\n    yield\n    print(\"worker finishing\")\n}\n\nfn main() {\n    spawn worker()\n    print(\"main\")\n    yield\n    print(\"main again\")\n}\n",
+   "source": "fn main() {\n    let done = 0\n    let worker = |name| {\n        print(name + \" running\")\n        yield\n        print(name + \" finishing\")\n        done = done + 1\n        return name\n    }\n    let a = spawn worker(\"a\")\n    let b = spawn worker(\"b\")\n    print(\"main\")\n    print(await a)\n    print(await b)\n    print(\"finished: \" + done)\n}\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "examples/concurrency-structs.md:51",
-      "browser": "fail",
-      "why": "not implemented yet (CRUSH-34); Run shows what happens today"
+      "src": "examples/concurrency-structs.md:49",
+      "browser": "run",
+      "expect_output": "main\na running\nb running\na finishing\nb finishing\na\nb\nfinished: 2\n"
      }
     }
    },
+   "outputs": []
+  },
+  {
+   "id": "examples-concurrency-structs-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "More in [Concurrency](https://docs.crushlang.org/crush/concurrency.html).\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
    "outputs": []
   }
  ]

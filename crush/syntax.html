@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +184,10 @@
                         <h1 id="syntax-and-grammar"><a class="header" href="#syntax-and-grammar">Syntax and Grammar</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16): every runnable block on this
+page was compiled and run with that build.</p>
+</blockquote>
 <p>This chapter covers the lexical structure and grammar that the Crush parser
 (<code>crush-frontend</code>) accepts today. Every <code>crush</code> example in this guide is run
 through the real toolchain by <code>scripts/check-examples.py</code>; where something is
@@ -202,7 +206,7 @@ mixed:</p>
 </ul>
 <p>When a file has both, the top-level statements run first and then <code>main</code>’s body
 runs.</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:23" data-expect="top-level runs first
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:26" data-expect="top-level runs first
 then main
 ">
 <pre><code class="language-crush">print("top-level runs first")
@@ -218,7 +222,7 @@ fn main() {
 then main
 </code></pre>
 <p>Functions can be called before they are defined:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:39" data-expect="7
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:42" data-expect="7
 ">
 <pre><code class="language-crush">print(seven())
 
@@ -234,7 +238,7 @@ fn seven() {
 <h2 id="comments"><a class="header" href="#comments">Comments</a></h2>
 <p>Single-line comments start with <code>//</code> or <code>#</code>. There are no block comments —
 <code>/* ... */</code> is a parse error.</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:57" data-expect="hello
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:60" data-expect="hello
 ">
 <pre><code class="language-crush">// a slash comment
 # a hash comment
@@ -248,7 +252,7 @@ print("hello") // trailing comments work too
 <h2 id="identifiers"><a class="header" href="#identifiers">Identifiers</a></h2>
 <p>Identifiers start with a letter or underscore and continue with letters, digits
 and underscores. Hyphens are not allowed, and a name can’t be a keyword.</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:73" data-expect="6
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:76" data-expect="6
 ">
 <pre><code class="language-crush">let counter1 = 1
 let _private = 2
@@ -265,16 +269,19 @@ print(counter1 + _private + my_variable)
 return break  continue struct  new     try     catch
 throw  match  use      import  export  capability
 async  await  spawn    yield   lang    mut
-true   false  null
+and    or     not      true    false   null
 </code></pre>
-<p><code>mut</code> and <code>capability</code> are reserved, but <code>let mut x = ...</code> is <strong>not</strong> accepted
-(see <a href="variables.html">Variables</a>), and <code>capability</code> has no usable statement form
-yet. <code>and</code>, <code>or</code> and <code>not</code> are <strong>not</strong> keywords — logic uses <code>&amp;&amp;</code>, <code>||</code> and <code>!</code>.</p>
+<p><code>and</code>, <code>or</code> and <code>not</code> are keyword spellings of <code>&amp;&amp;</code>, <code>||</code> and <code>!</code>. <code>mut</code> and
+<code>capability</code> are reserved, but <code>let mut x = ...</code> is <strong>not</strong> accepted (see
+<a href="variables.html">Variables</a>), and <code>capability</code> has no usable statement form yet.</p>
+<p><code>impl</code> and <code>trait</code> are <strong>contextual</strong> keywords: they start a declaration only at
+the top level of a file (see <a href="structs.html">Structs, Methods and Kinds</a>), so a
+variable may still be called <code>impl</code>.</p>
 <p>The lexer also recognises a handful of localised keyword aliases —
 <code>karya</code>/<code>manau</code>/<code>yadi</code>/<code>natra</code>/<code>farkau</code>/<code>jaba_samma</code>/<code>sahi</code>/<code>galat</code> (Nepali) plus a
 few Chinese and Japanese forms — which map to <code>fn</code>/<code>let</code>/<code>if</code>/<code>else</code>/<code>return</code>/
 <code>while</code>/<code>true</code>/<code>false</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:104" data-expect="positive
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:111" data-expect="positive
 ">
 <pre><code class="language-crush">karya sign(x) {
     yadi x &gt; 0 { farkau "positive" } natra { farkau "not positive" }
@@ -294,9 +301,9 @@ print(r)
 <tr><th>Kind</th><th>Examples</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td>Integer</td><td><code>42</code>, <code>-7</code></td><td>decimal only — <code>0x2A</code>, <code>0b101</code> and <code>1_000</code> are not lexed</td></tr>
+<tr><td>Integer</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>hex and binary prefixes lex; <code>0o17</code> and <code>1_000</code> do not</td></tr>
 <tr><td>Float</td><td><code>3.14</code>, <code>0.5</code></td><td>no exponent form (<code>1.5e3</code> is rejected)</td></tr>
-<tr><td>String</td><td><code>"hello"</code></td><td><strong>double quotes only</strong>; escapes <code>\n \t \" \\</code></td></tr>
+<tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td>single or double quotes; escapes <code>\n \t \" \\</code></td></tr>
 <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
 <tr><td>Null</td><td><code>null</code></td><td></td></tr>
 <tr><td>Array</td><td><code>[1, 2, 3]</code></td><td>see <a href="types.html">Types</a></td></tr>
@@ -304,11 +311,14 @@ print(r)
 </tbody>
 </table>
 </div>
-<p>Single-quoted and triple-quoted strings are parse errors; a string literal may
+<p>Triple-quoted strings are parse errors, and bytes literals (<code>b"..."</code>) are refused
+with <code>bytes literals (b"...") are not supported yet</code>. A string literal may
 contain a raw newline.</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:132" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:140" data-expect="42
 3.14
 tab:	here
+47
+single &quot;quotes&quot; work too
 ">
 <pre><code class="language-crush">let n = 42
 let pi = 3.14
@@ -316,6 +326,8 @@ let s = "tab:\there"
 print(n)
 print(pi)
 print(s)
+print(0x2A + 0b101)
+print('single "quotes" work too')
 </code></pre>
 </div>
 
@@ -323,11 +335,13 @@ print(s)
 <pre><code class="language-text">42
 3.14
 tab:	here
+47
+single "quotes" work too
 </code></pre>
 <h2 id="statements-and-semicolons"><a class="header" href="#statements-and-semicolons">Statements and semicolons</a></h2>
 <p>Semicolons are <strong>optional</strong>. A statement ends at a newline, or you may write <code>;</code>
 (and <code>a; b</code> on one line) if you prefer. Both of these are the same program:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:153" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:165" data-expect="3
 ">
 <pre><code class="language-crush">let a = 1; let b = 2;
 print(a + b);
@@ -337,7 +351,7 @@ print(a + b);
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:163" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:175" data-expect="3
 ">
 <pre><code class="language-crush">let a = 1
 let b = 2
@@ -348,10 +362,23 @@ print(a + b)
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
+<p>An expression cannot continue onto the next line, <strong>even inside <code>()</code>, <code>[]</code> or
+<code>{}</code></strong>: the newline ends it, so a multi-line array, map or argument list is a parse
+error (<code>unexpected token in expression: newline</code>). Keep such expressions on one
+line, or build them with several statements. Blocks (<code>fn</code>/<code>if</code>/<code>while</code> bodies,
+lambda bodies, <code>match</code> arms) do span lines.</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:193" data-why="this example shows a compile error">
+<pre><code class="language-crush">let a = [1,
+  2]
+print(a)
+</code></pre>
+</div>
+
 <h3 id="return-values"><a class="header" href="#return-values">Return values</a></h3>
 <p>A function returns a value only through an explicit <code>return</code>. A bare final
 expression is <strong>not</strong> an implicit return — it yields <code>null</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:179" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:204" data-expect="5
 null
 ">
 <pre><code class="language-crush">fn explicit() { return 5 }
@@ -369,11 +396,12 @@ null
 <p>Blocks are delimited by <code>{ }</code> and are used by functions, <code>if</code>, loops and
 <code>try</code>/<code>catch</code>. A bare block as a statement is not supported; use <code>if true { ... }</code>
 if you need one.</p>
-<p>Crush has <strong>function-level scope</strong>, not block scope: a <code>let</code> inside an <code>if</code> or
-loop body that reuses an existing name rebinds the same variable (see
-<a href="variables.html">Variables</a>).</p>
+<p>Names resolve at <strong>function level</strong>, not per block: after a <code>let</code> inside an <code>if</code>
+or loop body, the name refers to that binding for the rest of the function (see
+<a href="variables.html">Variables</a>). Each execution of a <code>let</code> does create a fresh
+binding, which is what a <a href="closures.html">closure</a> captures.</p>
 <h2 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:204" data-expect="43
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:230" data-expect="43
 Alice
 ">
 <pre><code class="language-crush">let x = 42
@@ -396,8 +424,8 @@ Alice
 compile time — see <a href="types.html">Types</a>.</p>
 <h2 id="operators"><a class="header" href="#operators">Operators</a></h2>
 <p>Full tables are in <a href="operators.html">Operators</a>. In short: <code>+ - * / %</code>,
-<code>== != &lt; &gt; &lt;= &gt;=</code>, <code>&amp;&amp; || !</code>, unary <code>-</code>, and the pipeline <code>|&gt;</code>. There is no <code>**</code>,
-<code>//</code>, <code>+=</code>/<code>-=</code>, <code>and</code>/<code>or</code>/<code>not</code>, or ternary <code>? :</code>.</p>
+<code>== != &lt; &gt; &lt;= &gt;=</code>, <code>&amp;&amp; || !</code> (also spelled <code>and</code>, <code>or</code>, <code>not</code>), unary <code>-</code>, and the
+pipeline <code>|&gt;</code>. There is no <code>**</code>, <code>//</code>, <code>+=</code>/<code>-=</code>, or ternary <code>? :</code>.</p>
 <h3 id="precedence-high--low"><a class="header" href="#precedence-high--low">Precedence (high → low)</a></h3>
 <ol>
 <li>Calls, field access, indexing: <code>f()</code>, <code>obj.field</code>, <code>a[i]</code></li>
@@ -410,7 +438,7 @@ compile time — see <a href="types.html">Types</a>.</p>
 <li>Logical OR: <code>||</code></li>
 <li>Pipeline: <code>|&gt;</code></li>
 </ol>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:243" data-expect="7
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:269" data-expect="7
 9
 true
 ">
@@ -426,11 +454,13 @@ print(1 &lt; 2 &amp;&amp; 2 &lt; 3)
 true
 </code></pre>
 <h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:258" data-expect="big
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:284" data-expect="big
 3
 0
 1
 2
+10
+20
 ">
 <pre><code class="language-crush">let x = 5
 if x &gt; 3 {
@@ -450,6 +480,9 @@ print(i)
 for n in 0..3 {
     print(n)
 }
+for n in 1..=2 {
+    print(n * 10)
+}
 </code></pre>
 </div>
 
@@ -459,11 +492,13 @@ for n in 0..3 {
 0
 1
 2
+10
+20
 </code></pre>
 <p><code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>. See <a href="control_flow.html">Control Flow</a>.</p>
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability calls</a></h2>
 <p>A capability call looks like an ordinary dotted call — <strong>no <code>@</code> prefix</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:294" data-expect="Hello, Crush
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:325" data-expect="Hello, Crush
 ">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 </code></pre>
@@ -481,25 +516,29 @@ and which command-line flags grant them, is covered in
 required; it is what introduces the block. Polyglot execution is <strong>off by
 default</strong> and needs <code>--polyglot</code>:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/syntax.md:315" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/syntax.md:346" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 print("Hello from Python")
 }
 </code></pre>
 </div>
 
+<p>A block that sends values back to Crush names them after <code>-&gt;</code>:
+<code>@python -&gt; total { ... }</code>.</p>
 <!-- check: output -->
 <pre><code class="language-text">Hello from Python
 </code></pre>
 <p>See <a href="polyglot.html">Polyglot Programming</a> for the supported languages, how
 variables cross the boundary, and the (important) security caveats.</p>
 <h2 id="imports-and-exports"><a class="header" href="#imports-and-exports">Imports and exports</a></h2>
-<p><code>import a.b</code> and <code>use @lang ...</code> <strong>parse</strong>, but importing does not load anything
-yet: <code>import</code> is lowered to a <code>module.load</code> capability that nothing registers, so
-a program containing one fails at run time with <code>unknown capability: module.load</code> (crush-ast <strong>CRUSH-110</strong>). Every program is currently a single
-file. There is no <code>std.*</code> module tree.</p>
+<p><code>import a.b</code> <strong>parses</strong>, but importing does not load anything yet: <code>import</code> is
+lowered to a <code>module.load</code> capability that nothing registers, so a program
+containing one is refused before it runs (<code>not available in this host: module.load</code>, crush-ast <strong>CRUSH-110</strong>). Every program is currently a single file.
+There is no <code>std.*</code> module tree.</p>
+<p><code>use @lang python "math"</code> is different and does work: it writes <code>import math</code> into
+every later <code>@python</code> block (see <a href="polyglot.html#imports-for-blocks-use-lang">Polyglot</a>).</p>
 <!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:338" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:375" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
@@ -507,7 +546,7 @@ print("never reached")
 
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:346" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:383" data-expect="42
 ">
 <pre><code class="language-crush">let result = 6 * 7
 export result
@@ -520,11 +559,16 @@ print(result)
 </code></pre>
 <p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors.</p>
 <h2 id="annotations"><a class="header" href="#annotations">Annotations</a></h2>
-<p><code>@name</code> also introduces compiler/AI annotations such as <code>@invariant</code> and
-<code>@decision</code>, attached to the next declaration. These are metadata for tooling,
-not runtime behaviour; see the note at the end of the
-<a href="capabilities.html">Capability System</a> chapter and the <a href="../cast/ai-native.html">AI-Native CAST</a>
-chapter.</p>
+<p><code>@name</code> also introduces annotations:</p>
+<ul>
+<li><code>@capabilities [fs.read, time.now_ms]</code> declares what the program may use, and
+the compiler enforces it (<a href="capabilities.html#declaring-what-a-program-uses-capabilities">Capability System</a>).</li>
+<li><code>@kind(...)</code> before a <code>struct</code> chooses its object semantics
+(<a href="structs.html#kind-choosing-object-semantics">Structs, Methods and Kinds</a>).</li>
+<li><code>@module</code>, <code>@decision</code>, <code>@invariant</code>, <code>@wip</code>, <code>@temporary</code>, <code>@errors</code> are
+metadata for tools and agents, attached to the next declaration; they don’t
+change what the program does (<a href="annotations.html">Annotations</a>).</li>
+</ul>
 <h2 id="style"><a class="header" href="#style">Style</a></h2>
 <ul>
 <li><code>snake_case</code> for functions and variables, <code>PascalCase</code> for structs.</li>
@@ -534,33 +578,46 @@ chapter.</p>
 <h2 id="grammar-summary"><a class="header" href="#grammar-summary">Grammar summary</a></h2>
 <p>This is the grammar the parser implements, simplified (from
 <code>crates/crush-frontend/src/parser/mod.rs</code>):</p>
-<pre><code class="language-ebnf">program     = statement* ;
+<pre><code class="language-ebnf">program     = ( statement | impl_block | trait_def | annotation )* ;
 
 statement   = let_stmt | fn_def | struct_def | if_stmt | while_stmt
             | for_stmt | return_stmt | break | continue
-            | try_stmt | throw_stmt | export_stmt | import_stmt
-            | lang_block | expr_stmt ;
+            | try_stmt | throw_stmt | export_stmt | import_stmt | use_stmt
+            | lang_block | match_expr | expr_stmt ;
 
 let_stmt    = "let" IDENT ( ":" type )? "=" expression ";"? ;
 fn_def      = "async"? "fn" IDENT "(" params? ")" ( "-&gt;" type )? block ;
-struct_def  = "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;
+struct_def  = kind_annot? "struct" IDENT "{" ( IDENT ( ":" type )? ","? )* "}" ;  (* one line *)
+kind_annot  = "@kind" "(" IDENT ":" value ( "," IDENT ":" value )* ")" ;
+impl_block  = "impl" ( IDENT "for" )? IDENT "{" fn_def* "}" ;
+trait_def   = "trait" IDENT "{" ( "fn" IDENT "(" params ")" ( ";" | block ) )* "}" ;
 if_stmt     = "if" expression block ( "else" ( if_stmt | block ) )? ;
 while_stmt  = "while" expression block ;
-for_stmt    = "for" IDENT "in" expression block ;
+for_stmt    = "for" IDENT "in" expression block ;           (* a..b, a..=b, arrays, strings, maps *)
 try_stmt    = "try" block "catch" IDENT block ;
 throw_stmt  = "throw" expression ;
 export_stmt = "export" IDENT ;
-lang_block  = "@" IDENT ( "[" deps "]" )? "{" raw source "}" ;
+use_stmt    = "use" "@lang" IDENT STRING ( "as" IDENT )? ;
+lang_block  = "@" IDENT ( "[" deps "]" )? ( "-&gt;" ( IDENT | "(" IDENT ( "," IDENT )* ")" ) )?
+              "{" raw source "}" ;
 block       = "{" statement* "}" ;
 
 expression  = literal | IDENT | expression binop expression
-            | unop expression | call | field | index
-            | "new" IDENT "(" ")" | "match" expression "{" arms "}" ;
-call        = expression "(" args? ")" ;
+            | unop expression | call | field | index | slice
+            | lambda | struct_lit | "new" IDENT "(" ")" | IDENT "::" IDENT
+            | match_expr | "spawn" call | "await" expression ;
+lambda      = "|" params? "|" ( expression | block ) ;
+struct_lit  = IDENT "{" ( IDENT ":" expression ","? )* "}" ;
+match_expr  = "match" expression "{" ( pattern ( "=&gt;" | "-&gt;" ) ( expression | block ) ","? )* "}" ;
+pattern     = literal | IDENT | "_" | IDENT "{" ( IDENT ":" pattern ","? )* "}" ;
+call        = IDENT "(" args? ")" | expression "." IDENT "(" args? ")" ;
 </code></pre>
+<p>A call’s callee must be a name (or <code>value.method</code>): <code>fs[0](1)</code> and <code>f()(x)</code> are
+parse errors today (crush-ast CRUSH-zorro-24).</p>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
 <li><strong><a href="types.html">Data Types</a></strong>: the type system and collections</li>
+<li><strong><a href="closures.html">Closures</a></strong> and <strong><a href="structs.html">Structs, Methods and Kinds</a></strong></li>
 <li><strong><a href="variables.html">Variables</a></strong>: declaration and scope</li>
 <li><strong><a href="control_flow.html">Control Flow</a></strong>: loops, <code>match</code>, errors</li>
 <li><strong><a href="functions.html">Functions</a></strong>: parameters, returns, recursion</li>

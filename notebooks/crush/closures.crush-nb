@@ -1,0 +1,461 @@
+{
+ "meta": {
+  "title": "Closures and Function Values — The Crush Language Guide",
+  "description": "Generated from crush/closures.md of The Crush Language Guide (https://docs.crushlang.org/crush/closures.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/closures.md",
+   "guide_url": "https://docs.crushlang.org/crush/closures.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-closures-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Closures and Function Values\n\n> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn double(n) { return n * 2 }\nfn apply(f, x) { return f(x) }\nfn twice(f) {\n    return |x| f(f(x))\n}\n\nlet g = double\nprint(g(5))\nprint(apply(double, 21))\nlet quad = twice(double)\nprint(quad(3))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:14",
+      "browser": "run",
+      "expect_output": "10\n42\n12\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Function values go in arrays and maps like anything else, and they print as\n`<fn name>`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn double(n) { return n * 2 }\nlet fs = [double, |n| n - 1]\nlet first = fs[0]\nlet second = fs[1]\nprint(first(10))\nprint(second(10))\nprint(first)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:38",
+      "browser": "run",
+      "expect_output": "20\n9\n<fn double>\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Lambdas\n\nA lambda is `|params| expression`, or `|params| { ... }` with a block that uses\n`return`. `||` is a lambda with no parameters.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let sq = |x| x * x\nlet add = |a, b| a + b\nlet clamp = |v| {\n    if v > 10 {\n        return 10\n    }\n    return v\n}\nlet hello = || \"no params\"\nprint(sq(4))\nprint(add(2, 3))\nprint(clamp(42))\nprint(hello())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:60",
+      "browser": "run",
+      "expect_output": "16\n5\n10\nno params\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "A `let`-bound lambda can call itself by name:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let fact = |n| {\n    if n <= 1 {\n        return 1\n    }\n    return n * fact(n - 1)\n}\nprint(fact(6))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:86",
+      "browser": "run",
+      "expect_output": "720\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Capture\n\nA lambda captures the variables it uses from the function (or top-level script)\naround it. Capture is **by reference**: the closure and its surroundings share\nthe variable.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn make_adder(a) {\n    return |b| a + b\n}\nlet add3 = make_adder(3)\nlet add10 = make_adder(10)\nprint(add3(4))\nprint(add10(4))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:107",
+      "browser": "run",
+      "expect_output": "7\n14\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Because the variable is shared, a closure can keep state, and each call of the\nfactory makes a new variable:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn make_counter() {\n    let c = 0\n    return || {\n        c = c + 1\n        return c\n    }\n}\nlet a = make_counter()\nlet b = make_counter()\nprint(a())\nprint(a())\nprint(b())\nprint(a())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:126",
+      "browser": "run",
+      "expect_output": "1\n2\n1\n3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Writes go both ways: the function sees what the closure wrote, and the closure\nsees later writes by the function.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let x = 1\n    let get = || x\n    let set = |v| {\n        x = v\n    }\n    x = 5\n    print(get())\n    set(9)\n    print(x)\n    print(get())\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:153",
+      "browser": "run",
+      "expect_output": "5\n9\n9\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "A top-level lambda captures top-level variables the same way. (A *named*\nfunction can't see top-level variables at all; see\n[Variables](https://docs.crushlang.org/crush/variables.html#module-level-variables-are-not-visible-inside-functions).)\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let k = 3\nlet mul = |x| x * k\nprint(mul(2))\nk = 10\nprint(mul(2))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:179",
+      "browser": "run",
+      "expect_output": "6\n20\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-17",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Closures made in a loop\n\nA loop variable is **one** variable, so closures that capture it all see its last\nvalue (Python's late binding). A `let` in the loop body is a fresh binding each\ntime round, so capture that when you want each closure to keep its own value:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let late = []\n    let fresh = []\n    let i = 0\n    while i < 3 {\n        late.push(|| i)\n        let j = i\n        fresh.push(|| j)\n        i = i + 1\n    }\n    let l0 = late[0]\n    let f0 = fresh[0]\n    let f2 = fresh[2]\n    print(l0())\n    print(f0())\n    print(f2())\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:199",
+      "browser": "run",
+      "expect_output": "3\n0\n2\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-19",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Calling a function value\n\nOnly a **name** can be called. `fs[0](1)` and `make()(2)` are parse errors today\n(crush-ast CRUSH-zorro-24); bind the value to a name first, as the examples above\ndo.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let fs = [|x| x + 1]\n    print(fs[0](1))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:233",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function\n```\n\nThe built-ins `print` and `len` are not function values: `let g = len` compiles\nbut fails when it runs (`load from uninitialised slot`, crush-ast\n[#257](https://github.com/nixpt/crush-ast/issues/257)). Wrap them in a lambda:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let size = |x| len(x)\nprint(size([1, 2, 3]))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:246",
+      "browser": "run",
+      "expect_output": "3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-23",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## With the pipeline, `spawn` and `parallel_map`\n\nThe pipeline operator takes any function value bound to a name, and so do\n[`spawn` and `parallel_map`](https://docs.crushlang.org/crush/concurrency.html):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let inc = |n| n + 1\nprint(3 |> inc |> inc)\nprint(parallel_map([1, 2, 3], |n| n * n))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/closures.md:261",
+      "browser": "run",
+      "expect_output": "5\n[1, 4, 9]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-closures-md-25",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Engines\n\nClosures run on the CVM1 VM (`crush run`) and in the browser build. The AOT\nbackends refuse them by name rather than miscompiling them: `crush-aotc` reports\n`` the Rust AOT backend cannot compile: `make_closure` ``. See\n[Engines and AOT](https://docs.crushlang.org/crush/engines.html).\n\n## Next Steps\n\n- **[Structs, Methods and Kinds](https://docs.crushlang.org/crush/structs.html)**: methods as values (`bound_self`)\n- **[Concurrency](https://docs.crushlang.org/crush/concurrency.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

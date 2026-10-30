@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,11 +184,14 @@
                         <h1 id="lambdas--the-pipeline-operator"><a class="header" href="#lambdas--the-pipeline-operator">Lambdas &amp; the Pipeline Operator</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/examples/lambdas.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <h2 id="the-pipeline-operator"><a class="header" href="#the-pipeline-operator">The pipeline operator</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
-bind more loosely than any other operator. The right-hand side must be a
-user-defined function (or a call to one).</p>
-<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:9" data-expect="9
+bind more loosely than any other operator. The right-hand side must be a function
+name, or a variable holding a function value.</p>
+<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:11" data-expect="9
 16
 70
 ">
@@ -216,31 +219,66 @@ print(result)
 </code></pre>
 <p><code>add(1, 2) |&gt; mul(3)</code> is <code>mul(add(1, 2), 3)</code>, i.e. <code>mul(3, 3)</code> = 9.</p>
 <h2 id="lambdas"><a class="header" href="#lambdas">Lambdas</a></h2>
-<blockquote>
-<p><strong>Not yet implemented.</strong> Anonymous functions, functions as values, and closures
-all fail to compile today. The lexer reads a bare <code>|</code> as an identifier, so the
-<code>|params| body</code> parser is unreachable — crush-ast <strong>CRUSH-75</strong>, open (the same
-bug is GitHub issue #78). The forms below are what the design intends; they are
-kept here, marked, so they can be switched on when CRUSH-75 lands.</p>
-</blockquote>
-<!-- check: nyi CRUSH-75 -->
-<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:44" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
+<p>A lambda is <code>|params| expression</code> or <code>|params| { block }</code>:</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:42" data-why="this example shows a compile error">
 <pre><code class="language-crush">let add = |a, b| {
     return a + b
 }
+let mul = |x, y| x * y
 print(add(1, 2))
-</code></pre>
-</div>
-
-<!-- check: nyi CRUSH-75 -->
-<div class="crush-block" data-crush="fail" data-src="examples/lambdas.md:52" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
-<pre><code class="language-crush">let mul = |x, y| =&gt; x * y
 print(mul(4, 5))
+print(6 |&gt; |n| n)
 </code></pre>
 </div>
 
-<p>Passing a function by name (<code>apply(double, 21)</code>) fails for the same reason: a
-function name is not a value. Until then, use named functions and <code>|&gt;</code>.</p>
+<p>That program fails to compile because of its last line: an inline lambda on the
+right of <code>|&gt;</code> is a parse error (<code>Pipeline right side must be function</code>). Bind it
+first:</p>
+<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:56" data-expect="3
+20
+6
+">
+<pre><code class="language-crush">let add = |a, b| {
+    return a + b
+}
+let mul = |x, y| x * y
+let ident = |n| n
+print(add(1, 2))
+print(mul(4, 5))
+print(6 |&gt; ident)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">3
+20
+6
+</code></pre>
+<h2 id="functions-as-values-and-closures"><a class="header" href="#functions-as-values-and-closures">Functions as values, and closures</a></h2>
+<p>A function name is a value, and a lambda captures the variables around it:</p>
+<div class="crush-block" data-crush="run" data-src="examples/lambdas.md:78" data-expect="16
+[3, 6, 9]
+">
+<pre><code class="language-crush">fn compose(f, g) {
+    return |x| g(f(x))
+}
+fn make_scaler(k) {
+    return |x| x * k
+}
+let triple = make_scaler(3)
+let inc = |x| x + 1
+let triple_then_inc = compose(triple, inc)
+print(triple_then_inc(5))
+print(parallel_map([1, 2, 3], triple))
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">16
+[3, 6, 9]
+</code></pre>
+<p>More in <a href="../crush/closures.html">Closures and Function Values</a>.</p>
 
                     </main>
 

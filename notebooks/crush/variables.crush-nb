@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Variables and Scoping\n\nThis chapter covers declaration, assignment, and the scoping rules the compiler\nenforces today.\n\n## Declaration\n\nEvery variable is introduced with `let` and **must be initialised**:\n",
+   "source": "# Variables and Scoping\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n\nThis chapter covers declaration, assignment, and the scoping rules the compiler\nenforces today.\n\n## Declaration\n\nEvery variable is introduced with `let` and **must be initialised**:\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:10",
+      "src": "crush/variables.md:12",
       "browser": "run",
       "expect_output": "42\n"
      }
@@ -77,7 +77,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:27",
+      "src": "crush/variables.md:29",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -101,7 +101,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:32",
+      "src": "crush/variables.md:34",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -137,7 +137,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:38",
+      "src": "crush/variables.md:40",
       "browser": "run",
       "expect_output": "30\n"
      }
@@ -173,7 +173,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:59",
+      "src": "crush/variables.md:61",
       "browser": "run",
       "expect_output": "2\n"
      }
@@ -209,7 +209,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:76",
+      "src": "crush/variables.md:78",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -245,7 +245,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:90",
+      "src": "crush/variables.md:92",
       "browser": "run",
       "expect_output": "2\n1\n"
      }
@@ -281,7 +281,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:110",
+      "src": "crush/variables.md:112",
       "browser": "run",
       "expect_output": "[1, 9]\n"
      }
@@ -317,7 +317,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:128",
+      "src": "crush/variables.md:130",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -353,7 +353,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:144",
+      "src": "crush/variables.md:146",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -377,7 +377,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:153",
+      "src": "crush/variables.md:155",
       "browser": "run",
       "expect_output": "running in production\n"
      }
@@ -390,7 +390,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "(If you need shared state across functions today, thread it through parameters,\nor keep it in an object/array you pass around.)\n\n### Block scope\n\nA name first declared inside an `if`, `while` or `for` body is not visible after\nthe block ends. A `for` loop variable is likewise local to the loop:\n",
+   "source": "(If you need shared state across functions today, thread it through parameters,\nor keep it in an object/array you pass around.)\n\nThis applies to **named** functions. A lambda written at the top level does see\ntop-level variables: it captures them (see [Closures](https://docs.crushlang.org/crush/closures.html)).\n",
    "state": {
     "status": "done"
    },
@@ -399,6 +399,42 @@
   },
   {
    "id": "crush-variables-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let level = \"production\"\nlet describe = || \"running in \" + level\nprint(describe())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:175",
+      "browser": "run",
+      "expect_output": "running in production\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-23",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Block scope\n\nA name first declared inside an `if`, `while` or `for` body is not visible after\nthe block ends. A `for` loop variable is likewise local to the loop:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-13",
    "kind": {
     "type": "crush"
    },
@@ -413,7 +449,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:176",
+      "src": "crush/variables.md:192",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -422,7 +458,7 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-13",
+   "id": "crush-variables-14",
    "kind": {
     "type": "crush"
    },
@@ -437,7 +473,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:184",
+      "src": "crush/variables.md:200",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -446,7 +482,7 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-md-24",
+   "id": "crush-variables-md-26",
    "kind": {
     "type": "markdown"
    },
@@ -458,7 +494,7 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-14",
+   "id": "crush-variables-15",
    "kind": {
     "type": "crush"
    },
@@ -473,7 +509,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:196",
+      "src": "crush/variables.md:212",
       "browser": "run",
       "expect_output": "20\n10\n"
      }
@@ -482,11 +518,11 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-md-26",
+   "id": "crush-variables-md-28",
    "kind": {
     "type": "markdown"
    },
-   "source": "**Within one function**, re-declaring an outer name in an inner block does *not*\ncreate a new shadowing variable; it assigns to the outer one. After this program\nthe outer `x` is `2`:\n",
+   "source": "**Within one function**, re-declaring an *outer* name inside a block is not a\nshadow limited to that block: after the block, the name `x` means the new\nbinding for the rest of the function. So this program prints `2`:\n",
    "state": {
     "status": "done"
    },
@@ -494,7 +530,7 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-15",
+   "id": "crush-variables-16",
    "kind": {
     "type": "crush"
    },
@@ -509,7 +545,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/variables.md:218",
+      "src": "crush/variables.md:234",
       "browser": "run",
       "expect_output": "2\n"
      }
@@ -518,7 +554,43 @@
    "outputs": []
   },
   {
-   "id": "crush-variables-md-28",
+   "id": "crush-variables-md-30",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Each `let` still creates a *fresh* binding, which only shows when a closure\ncaptured the earlier one: it keeps seeing the old variable.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-17",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let x = 1\nlet get = || x\nif true {\n    let x = 2\n}\nprint(x)\nprint(get())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/variables.md:250",
+      "browser": "run",
+      "expect_output": "2\n1\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-variables-md-32",
    "kind": {
     "type": "markdown"
    },

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,12 +184,15 @@
                         <h1 id="functions"><a class="header" href="#functions">Functions</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/functions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
-<p>This chapter covers defining and calling functions. Crush functions are named,
-top-level declarations. <strong>Functions are not first-class values yet</strong> — you can
-call one by name, but you can’t store it in a variable or pass it as an argument
-(see <a href="#higher-order-functions-and-lambdas">Higher-order functions</a>).</p>
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
+<p>This chapter covers defining and calling functions. Named functions are
+top-level declarations, and they are also <strong>values</strong>: you can store one in a
+variable, pass it as an argument and return it. Lambdas and closures have their
+own chapter, <a href="closures.html">Closures and Function Values</a>.</p>
 <h2 id="defining-functions"><a class="header" href="#defining-functions">Defining functions</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:10" data-expect="Hello, Alice!
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:12" data-expect="Hello, Alice!
 8
 ">
 <pre><code class="language-crush">fn greet(name: String) {
@@ -221,7 +224,7 @@ variadic parameters.</li>
 <h2 id="returning-values"><a class="header" href="#returning-values">Returning values</a></h2>
 <p>Return with <code>return</code>. A function that falls off the end — or uses a bare
 <code>return</code> — yields <code>null</code>. A final expression is <strong>not</strong> an implicit return:</p>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:42" data-expect="positive
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:44" data-expect="positive
 negative
 zero
 [LOG] done
@@ -260,7 +263,7 @@ null
 <p>The return-type hint is not checked against what the body actually returns
 today: <code>fn f() -&gt; Int { return "s" }</code> compiles.</p>
 <h2 id="recursion"><a class="header" href="#recursion">Recursion</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:78" data-expect="120
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:80" data-expect="120
 610
 ">
 <pre><code class="language-crush">fn factorial(n: Int) -&gt; Int {
@@ -292,7 +295,7 @@ it ends the program with <code>call depth quota exceeded</code>. The other defau
 1,000,000 instructions (<code>--max-steps</code>), a 4096-slot stack (<code>--max-stack</code>), 1 MiB of
 output (<code>--max-output</code>), and a 30-second wall-clock limit per polyglot block.</p>
 <!-- check: runfail call depth quota exceeded -->
-<div class="crush-block" data-crush="fail" data-src="crush/functions.md:110" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:112" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
 <pre><code class="language-crush">fn d(n) {
     return d(n - 1)
 }
@@ -301,33 +304,48 @@ print(d(1))
 </div>
 
 <h2 id="higher-order-functions-and-lambdas"><a class="header" href="#higher-order-functions-and-lambdas">Higher-order functions and lambdas</a></h2>
-<blockquote>
-<p><strong>Not yet implemented.</strong> Passing a function by name (<code>apply(double, 21)</code>),
-storing one in a variable (<code>let f = double</code>), and anonymous functions
-(<code>|x| { ... }</code>, <code>|x| =&gt; x * 2</code>) all fail to compile. The lexer reads a bare <code>|</code>
-as an identifier, so the lambda parser is unreachable (crush-ast <strong>CRUSH-75</strong>,
-open); closures that capture variables are a separate, larger gap. Until then,
-write ordinary named functions and call them directly, or use the
-pipeline operator (<code>x |&gt; f</code>), which does accept a function <strong>name</strong>:</p>
-</blockquote>
-<!-- check: nyi CRUSH-75 -->
-<div class="crush-block" data-crush="fail" data-src="crush/functions.md:128" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
+<p>A function name is a value. Store it, pass it, call it through the variable:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:123" data-expect="42
+8
+">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
 }
+fn apply(f, x) {
+    return f(x)
+}
 let f = double
 print(f(21))
+print(apply(double, 4))
 </code></pre>
 </div>
 
-<!-- check: nyi CRUSH-75 -->
-<div class="crush-block" data-crush="fail" data-src="crush/functions.md:137" data-why="not implemented yet (CRUSH-75); Run shows what happens today">
+<!-- check: output -->
+<pre><code class="language-text">42
+8
+</code></pre>
+<p>Anonymous functions are written <code>|params| expression</code> or <code>|params| { block }</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:143" data-expect="42
+5
+">
 <pre><code class="language-crush">let double = |x| { return x * 2 }
+let add = |a, b| a + b
 print(double(21))
+print(add(2, 3))
 </code></pre>
 </div>
 
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:142" data-expect="11
+<!-- check: output -->
+<pre><code class="language-text">42
+5
+</code></pre>
+<p>They capture variables from where they are written; that, and the rules for
+calling function values, is in <a href="closures.html">Closures and Function Values</a>. The
+built-ins <code>print</code> and <code>len</code> are not values (<code>let g = len</code> compiles but fails at run
+time, crush-ast <a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>); wrap them:
+<code>|x| len(x)</code>.</p>
+<p>The pipeline operator (<code>x |&gt; f</code>) takes a function name or a variable holding one:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:164" data-expect="11
 ">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
@@ -343,13 +361,12 @@ print(5 |&gt; double |&gt; inc)
 <pre><code class="language-text">11
 </code></pre>
 <h2 id="concurrency-spawn-yield-async-await"><a class="header" href="#concurrency-spawn-yield-async-await">Concurrency: <code>spawn</code>, <code>yield</code>, <code>async</code>, <code>await</code></a></h2>
-<p>These keywords are in the grammar, but the end-to-end path is incomplete: a
-program that contains <code>spawn f()</code>, <code>async fn</code>, or <code>await</code> is rejected by the
-assembler (<code>SPAWN takes 1 operand(s), got 0</code>). The AI/concurrency opcodes are
-tracked under crush-ast <strong>CRUSH-1</strong> / <strong>CRUSH-34</strong>. A bare <code>yield</code> statement
-compiles and runs (it is a no-op without a spawned task).</p>
-<!-- check: nyi CRUSH-34 -->
-<div class="crush-block" data-crush="fail" data-src="crush/functions.md:166" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
+<p><code>spawn f(args)</code> starts a green task, <code>yield</code> lets other tasks run, and <code>await h</code>
+waits for a task and returns its result. They are covered in
+<a href="concurrency.html">Concurrency</a>. In short:</p>
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:185" data-expect="worker
+main
+">
 <pre><code class="language-crush">fn worker() {
     print("worker")
 }
@@ -359,16 +376,22 @@ print("main")
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">worker
+main
+</code></pre>
 <h2 id="best-practices"><a class="header" href="#best-practices">Best practices</a></h2>
 <ul>
 <li>Keep functions small and give parameters type hints — they document the
 interface and catch mistakes at compile time.</li>
-<li>Pass data in as parameters: functions cannot see top-level variables
-(<a href="variables.html#module-level-variables-are-not-visible-inside-functions">Variables</a>).</li>
+<li>Pass data in as parameters: named functions cannot see top-level variables
+(<a href="variables.html#module-level-variables-are-not-visible-inside-functions">Variables</a>);
+a top-level lambda can.</li>
 <li>Prefer descriptive names (<code>calculate_total_price</code>, not <code>calc</code>).</li>
 </ul>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
+<li><strong><a href="closures.html">Closures and Function Values</a></strong></li>
 <li><strong><a href="capabilities.html">Capability System</a></strong></li>
 <li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
@@ -381,7 +404,7 @@ interface and catch mistakes at compile time.</li>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../crush/capabilities.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../crush/closures.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -395,7 +418,7 @@ interface and catch mistakes at compile time.</li>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../crush/capabilities.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../crush/closures.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

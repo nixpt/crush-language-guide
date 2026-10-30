@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,9 @@
 <h3 id="aot-ahead-of-time-backends"><a class="header" href="#aot-ahead-of-time-backends">AOT (ahead-of-time) backends</a></h3>
 <p><code>crush-aot</code> and <code>crush-aotc</code> translate CASM to Rust or C source for native
 compilation. They live in the crush-ast repository and are not published to
-crates.io. They reject programs that use CASM instructions they do not support.</p>
+crates.io. They refuse, by name, programs that use instructions they do not support
+(closures, method calls, <code>spawn</code>, <code>@lang</code> blocks, most standard-library calls). See
+<a href="../crush/engines.html">Engines, AOT and Walkers</a>.</p>
 <h3 id="capability"><a class="header" href="#capability">Capability</a></h3>
 <p>A named host function that a Crush program may call, written as a dotted call
 (<code>fs.read(path)</code>, <code>io.print(x)</code>). A capability exists only if the host registered it
@@ -237,18 +239,24 @@ host process’s full authority.</p>
 <p>The Rust crate to embed Crush: <code>Runtime</code>, <code>HostCapsBuilder</code>, <code>ProgramBuilder</code>, and the
 <code>compile</code> module. It also provides the <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>,
 <code>crush-repl</code> and <code>crush-diff</code> binaries.</p>
+<h3 id="kind-cosm"><a class="header" href="#kind-cosm">Kind (COSM)</a></h3>
+<p>The run-time type of a struct instance (a <strong>Record</strong>): its fields, methods and the
+object semantics <code>@kind(...)</code> chose (reference or value, receiver, lookup, …). COSM,
+the Crush Object Semantic Model, is how crush-ast describes every language’s objects.
+See <a href="../crush/structs.html">Structs, Methods and Kinds</a>.</p>
 <h3 id="slot"><a class="header" href="#slot">Slot</a></h3>
 <p>A numbered local variable in a CVM1 call frame (<code>LOAD 3</code>, <code>STORE 3</code>). The IR names
 variables; lowering assigns slots.</p>
 <h3 id="stub"><a class="header" href="#stub">Stub</a></h3>
-<p>An implemented interface with placeholder behaviour. The <code>ai_*</code>, <code>dom_*</code> and
-<code>spawn</code>/<code>yield</code>/<code>await</code> instructions are stubs today. See
+<p>An implemented interface with placeholder behaviour. The <code>ai_*</code> and <code>dom_*</code>
+instructions are stubs today. See
 <a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a>.</p>
 <h3 id="walker"><a class="header" href="#walker">Walker</a></h3>
 <p>A front end that translates source in some language into CAST (Python, JavaScript,
-Bash and others, in <code>crush-lang-*</code> crates). Coverage varies by language; walkers are
-not the same thing as <code>@lang</code> execution — only Python, JavaScript and Bash blocks can
-actually run.</p>
+Rust, Bash and others, in <code>crush-lang-*</code> crates); <code>crush-walk-run FILE</code> runs the
+result. Coverage varies by language and untranslatable constructs are refused. Walkers
+are not the same thing as <code>@lang</code> execution, which runs a real interpreter (only
+Python, JavaScript and Bash blocks). See <a href="../crush/engines.html">Engines, AOT and Walkers</a>.</p>
 
                     </main>
 

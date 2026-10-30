@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,11 +185,14 @@
 <p class="crush-notebook-link"><a href="../notebooks/examples/imports.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
+<blockquote>
 <p><strong>Not yet implemented.</strong> Every form of <code>import</code> parses, but <strong>none of them load
 anything</strong> — the compiler lowers each to a capability that the runtime does not
-provide. The only import form that runs is <code>use @lang</code>, which only declares
-that a polyglot block will use a module. This is crush-ast <strong>CRUSH-110</strong> (open):
-today there is no way to share code between files.</p>
+provide, so the program is refused before it runs. The only import form that
+works is <code>use @lang</code>, which declares a module for polyglot blocks. This is
+crush-ast <strong>CRUSH-110</strong> (open): today there is no way to share code between files.</p>
 </blockquote>
 <div class="table-wrapper">
 <table>
@@ -197,55 +200,53 @@ today there is no way to share code between files.</p>
 <tr><th>Form</th><th style="text-align: center">Parses</th><th>Runs</th></tr>
 </thead>
 <tbody>
-<tr><td><code>import io</code> / <code>import fs as files</code> / <code>import net { a, b }</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: module.load</code></td></tr>
-<tr><td><code>use @mcp "url" { tools } as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: mcp.connect</code></td></tr>
-<tr><td><code>use @cap "cap.path" { names } as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: cap.acquire</code></td></tr>
-<tr><td><code>import @git "url" as alias</code>, <code>import @http "url" as alias</code></td><td style="text-align: center">yes</td><td>fails: <code>unknown capability: external.load</code></td></tr>
-<tr><td><code>use @lang python "math" as math</code></td><td style="text-align: center">yes</td><td>runs; see below</td></tr>
+<tr><td><code>import io</code> / <code>import fs as files</code> / <code>import net { a, b }</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: module.load</code></td></tr>
+<tr><td><code>use @mcp "url" { tools } as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: mcp.connect, mcp.get_tool</code></td></tr>
+<tr><td><code>use @cap "cap.path" { names } as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: cap.acquire</code></td></tr>
+<tr><td><code>import @git "url" as alias</code>, <code>import @http "url" as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: external.load</code></td></tr>
+<tr><td><code>use @lang python "math" [as m]</code></td><td style="text-align: center">yes</td><td>runs; see below</td></tr>
 </tbody>
 </table>
 </div>
 <p>Each failing form is checked below, so this page will say so the day one starts
 working:</p>
 <!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:21" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:23" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import fs as files
 print("loaded")
 </code></pre>
 </div>
 
 <!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:27" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:29" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
 print("loaded")
 </code></pre>
 </div>
 
 <!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:33" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:35" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import @http "https://example.com/data.json" as data
 print("loaded")
 </code></pre>
 </div>
 
 <h2 id="use-lang"><a class="header" href="#use-lang"><code>use @lang</code></a></h2>
-<p><code>use @lang &lt;language&gt; "&lt;module&gt;" as &lt;alias&gt;</code> declares a module for a polyglot
-block. It is accepted and runs, but the alias is not wired to the block’s
-variables — the block still has to <code>import</code> the module itself:</p>
+<p><code>use @lang &lt;language&gt; "&lt;module&gt;" [as &lt;alias&gt;]</code> writes the import into every later
+block of that language, under the module’s own name and the alias:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="examples/imports.md:45" data-why="uses `@python` blocks (polyglot); uses the standard library (`math.factorial`), which the in-browser runtime does not provide">
-<pre><code class="language-crush">use @lang python "math" as math
+<div class="crush-block" data-crush="host" data-src="examples/imports.md:46" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">use @lang python "math" as m
 
-@python {
-import math
-v = math.factorial(5)
+@python -&gt; v {
+v = m.factorial(5) + math.factorial(3)
 }
 print(v)
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">120
+<pre><code class="language-text">126
 </code></pre>
 <h2 id="sharing-code-today"><a class="header" href="#sharing-code-today">Sharing code today</a></h2>
 <p>Put helper functions in the same file, or do the work in a polyglot block. The

@@ -1,0 +1,535 @@
+{
+ "meta": {
+  "title": "Structs, Methods and Kinds — The Crush Language Guide",
+  "description": "Generated from crush/structs.md of The Crush Language Guide (https://docs.crushlang.org/crush/structs.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/structs.md",
+   "guide_url": "https://docs.crushlang.org/crush/structs.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-structs-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Structs, Methods and Kinds\n\n> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line:\n> `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the\n> COSM object model).\n\nA `struct` declares a record type. `impl` blocks give it methods, `trait`s give\nseveral structs a shared interface with default methods, and `@kind(...)`\nchooses its object semantics (reference or value, how `self` is bound, how\nlookup works). Under the hood each struct is a **Kind** of COSM, the Crush Object\nSemantic Model that crush-ast also uses to lower other languages' classes; see\ncrush-ast's `docs/design/object-model.md`.\n\n## Declaring and building\n\nWrite the fields on **one line** (a struct body spread over several lines is a\nparse error today, gap `GAP-STRUCT-MULTILINE`). Build one with a literal that\nnames **every** field, or with `new Name()` and assign the fields later:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Int, y: Int }\nlet p = Point { y: 2, x: 1 }\nprint(p)\nprint(p.x + p.y)\np.x = 10\nprint(p)\nlet q = new Point()\nprint(q)\nq.y = 5\nprint(q)\nprint(q.x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:20",
+      "browser": "run",
+      "expect_output": "{y: 2, x: 1}\n3\n{y: 2, x: 10}\n{}\n{y: 5}\nnull\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "An instance prints like a map, its fields in the order they were first set. A\nfield not yet set reads as `null`. Field type hints are not checked at run time.\n\nA literal that misses a field or names an unknown one is a compile error:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Int, y: Int }\n\nfn main() {\n    let p = Point { x: 1, z: 2 }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:50",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[compile] Parse errors: Unexpected token at line 2, column 15: struct Point has no field `z` (fields: x, y), Unexpected token at line 2, column 15: missing field(s) `y` in Point { ... }\n```\n\n## Structs are sealed\n\nWriting a field the struct does not declare stops the program, on every engine:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct P { x: Int }\n\nfn main() {\n    let p = P { x: 1 }\n    print(p)\n    p.z = 2\n    print(\"not reached\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:64",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
+      "expect_error": "`P` is sealed: it has no field `z` (fields: x)"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n{x: 1}\n[runtime] `P` is sealed: it has no field `z` (fields: x)\n```\n\n(`@kind(storage: open_dict)` makes a struct that accepts extra fields; see\n[the table below](#kind-choosing-object-semantics).)\n\n## Methods: `impl`\n\nAn `impl` block attaches methods. `self` is an explicit first parameter. A\nmethod without `self` is called through the type, `Type::name(...)`, which is the\nconvention for constructors; `Type::method(value)` also calls an instance method\nas a plain function.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Point { x: Int, y: Int }\nimpl Point {\n    fn new(x, y) { return Point { x: x, y: y } }\n    fn norm2(self) { return self.x * self.x + self.y * self.y }\n    fn shift(self, d) {\n        self.x = self.x + d\n        return self\n    }\n}\nlet p = Point::new(3, 4)\nprint(p.norm2())\np.shift(1)\nprint(p.x)\nprint(Point::norm2(p))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:87",
+      "browser": "run",
+      "expect_output": "25\n4\n32\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`p.shift(1)` changed `p` itself: by default `self` is the instance, not a copy.\n\n`value.method(...)` always resolves on the receiver's struct, never on a global\nfunction or capability. Calling a method the struct doesn't have is a run-time\nerror:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct S { n: Int }\nstruct T { n: Int }\n\nfn main() {\n    impl S { fn size(self) { return self.n } }\n    let s = S { n: 3 }\n    print(s.size())\n    let t = T { n: 1 }\n    print(t.size())\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:118",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
+      "expect_error": "`T` has no method `size`"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n3\n[runtime] `T` has no method `size`\n```\n\nTwo current limits:\n\n- The receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call\n  non-function`); bind the value with `let` first.\n- A method call on a **`for` loop variable** is mistaken for a capability call\n  and the program is refused (`not available in this host: s.area`; crush-ast\n  [#256](https://github.com/nixpt/crush-ast/issues/256)). Loop over indexes and\n  bind `let s = items[i]`.\n\n## Traits\n\nA `trait` lists method signatures, and may give some of them a default body.\n`impl Trait for Struct` supplies the rest:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct Square { side: Int }\nstruct Circle { r: Int }\ntrait Shape {\n    fn area(self);\n    fn describe(self) { return \"a shape with area \" + self.area() }\n}\nimpl Shape for Square { fn area(self) { return self.side * self.side } }\nimpl Shape for Circle {\n    fn area(self) { return 3 * self.r * self.r }\n    fn describe(self) { return \"a circle\" }\n}\nlet sq = Square { side: 2 }\nlet c = Circle { r: 1 }\nprint(sq.describe())\nprint(c.describe())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:147",
+      "browser": "run",
+      "expect_output": "a shape with area 4\na circle\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Leaving out a method that has no default is a compile error:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct S { }\n\nfn main() {\n    trait T { fn need(self); }\n    impl T for S { }\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:174",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[compile] line 3, col 1: `impl T for S` is missing `need`: trait `T` declares it without a default body\n```\n\n`impl` and `trait` are only allowed at the top level of a file.\n\n## Equality\n\n`==` on structs compares **fields** (structural equality). It does not compare\nthe struct type: two different structs with equal fields are `==`, and so is a\nplain map with the same entries. `@kind(equality: identity)` makes `==` mean \"the\nsame instance\".\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct A { x: Int }\nstruct B { x: Int }\nlet a = A { x: 1 }\nprint(a == A { x: 1 })\nprint(a == A { x: 2 })\nprint(a == B { x: 1 })\nprint(a == {\"x\": 1})\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:193",
+      "browser": "run",
+      "expect_output": "true\nfalse\ntrue\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-17",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "To ask *which* struct a value is, use a [struct pattern](#struct-patterns-in-match).\n(`conv.type_of` reports `map` for any struct instance.)\n\n## Reference and value semantics\n\nBy default a struct is a **reference**: assignment and argument passing share one\ninstance. `@kind(semantics: value(copy))` makes a value type that is copied on\nassignment, argument passing and return. `x.clone()` deep-copies either kind.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@kind(semantics: value(copy))\nstruct V { x: Int }\nstruct R { x: Int }\nfn bump(v) {\n    v.x = v.x + 1\n    return v\n}\nlet a = V { x: 1 }\nlet b = a\nb.x = 2\nprint(a.x)\nlet r = R { x: 1 }\nlet s = r\ns.x = 2\nprint(r.x)\nbump(a)\nprint(a.x)\nbump(r)\nprint(r.x)\nlet t = r.clone()\nt.x = 99\nprint(r.x)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:220",
+      "browser": "run",
+      "expect_output": "1\n2\n1\n3\n3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-19",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Struct patterns in `match`\n\nA struct pattern tests the value's struct type first, then compares or binds its\nfields. Write `field: pattern` (there is no `{ x }` shorthand); patterns nest:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "struct P { x: Int }\nstruct Q { x: Int }\nstruct Wrap { inner: Int }\nfn describe(v) {\n    match v {\n        Wrap { inner: P { x: a } } => { return \"wrap of P \" + a }\n        P { x: 1 } => { return \"P one\" }\n        P { x: a } => { return \"P \" + a }\n        Q { x: b } => { return \"Q \" + b }\n        _ => { return \"something else\" }\n    }\n}\nprint(describe(P { x: 1 }))\nprint(describe(P { x: 5 }))\nprint(describe(Q { x: 5 }))\nprint(describe(Wrap { inner: P { x: 2 } }))\nprint(describe(42))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:259",
+      "browser": "run",
+      "expect_output": "P one\nP 5\nQ 5\nwrap of P 2\nsomething else\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "So unlike `==`, a pattern does distinguish `P { x: 5 }` from `Q { x: 5 }`. A\npattern naming a struct that isn't declared is a compile error (`no struct `Nope`\nis declared, so no value can match it`).\n\n## `@kind`: choosing object semantics\n\n`@kind(key: value, ...)` written directly before a `struct` picks a strategy for\neach aspect of the type. Unset keys keep Crush's defaults (in bold). An unknown\nkey or value is a compile error that lists the valid ones.\n\n| Key | Values | What it controls |\n|---|---|---|\n| `storage` | **`sealed`**, `open_dict`, `open_dict_with_slots` | whether undeclared fields may be added |\n| `semantics` | **`reference`**, `value(copy)`, `value(move)`, `value(clone_explicit)` | sharing vs copying on assignment |\n| `receiver` | `dynamic_this`, `bound_self`, `bound_cls`, `explicit_value`, **`explicit_ref`**, `explicit_ref_mut` | what `self` is, and what `obj.method` (unbound) gives |\n| `construct` | **`literal`**, `ctor(f)`, `js_new(f)`, `py_new_init(init)` / `py_new_init(new, init)` | what `Name(args)` does |\n| `resolution` | **`none`**, `single`, `c3`, `prototype_chain`, `embedding_promotion` | how methods are looked up through `parents` |\n| `parents` | a list of structs, `[Base, Mixin]` | the inheritance graph for `resolution` |\n| `equality` | `identity`, **`structural`** | what `==` compares |\n\nThese are the object models of the languages crush-ast lowers (Python classes,\nJS objects, Rust and Go values), which Crush can write directly. Strategies no\nengine runs yet are refused at compile time rather than half-implemented:\n`resolution: prototype_chain` gives `` struct `Z` declares\n`@kind(resolution: prototype_chain)`, which no engine runs yet ``.\n\nA constructor (`construct: ctor(init)`) runs `init` on a new instance when the\nstruct is called like a function. (`crush run` handles this; `crushc` and\n`crush build` wrongly reject it with `Undefined function: Acc`, crush-ast\n[#260](https://github.com/nixpt/crush-ast/issues/260).)\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@kind(construct: ctor(init))\nstruct Acc { total: Int }\nimpl Acc {\n    fn init(self, start) { self.total = start }\n    fn add(self, n) {\n        self.total = self.total + n\n        return self\n    }\n}\nlet a = Acc(10)\na.add(5)\nprint(a.total)\nprint(a)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:320",
+      "browser": "run",
+      "expect_output": "15\n{total: 15}\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-23",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Multiple inheritance with a C3 method resolution order (Python's):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@kind(resolution: c3)\nstruct Base { }\nimpl Base {\n    fn who(self) { return \"base\" }\n    fn hello(self) { return \"hello from base\" }\n}\n@kind(resolution: c3, parents: [Base])\nstruct Left { }\nimpl Left { fn who(self) { return \"left\" } }\n@kind(resolution: c3, parents: [Base])\nstruct Right { }\nimpl Right {\n    fn who(self) { return \"right\" }\n    fn only_right(self) { return \"right only\" }\n}\n@kind(resolution: c3, parents: [Left, Right])\nstruct Bottom { }\nlet b = Bottom { }\nprint(b.who())\nprint(b.only_right())\nprint(b.hello())\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:344",
+      "browser": "run",
+      "expect_output": "left\nright only\nhello from base\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-25",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Bound methods: with `receiver: bound_self`, reading `c.inc` (without calling it)\ngives a function value bound to `c`. With the default receiver it gives the plain\nfunction, which takes the instance as its first argument:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@kind(receiver: bound_self)\nstruct Counter { n: Int }\nimpl Counter {\n    fn inc(self) {\n        self.n = self.n + 1\n        return self.n\n    }\n}\nstruct P { x: Int }\nimpl P { fn get(self) { return self.x } }\nlet c = Counter { n: 0 }\nlet f = c.inc\nprint(f())\nprint(f())\nprint(c.n)\nlet p = P { x: 7 }\nlet g = p.get\nprint(g(p))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:379",
+      "browser": "run",
+      "expect_output": "1\n2\n2\n7\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-27",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Open storage accepts fields the struct doesn't declare:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-14",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@kind(storage: open_dict)\nstruct O { x: Int }\nlet o = O { x: 1 }\no.extra = 2\nprint(o)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/structs.md:410",
+      "browser": "run",
+      "expect_output": "{x: 1, extra: 2}\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-structs-md-29",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Engines\n\nStructs, `impl`, traits and every `@kind` above run on the CVM1 VM (`crush run`,\nthe portable VM and the browser build). The AOT backends build sealed structs\n(and enforce the seal) but refuse method calls by name, e.g. `` the Rust AOT\nbackend cannot compile: `call_member` ``; see [Engines and AOT](https://docs.crushlang.org/crush/engines.html).\n\n## Next Steps\n\n- **[Control Flow](https://docs.crushlang.org/crush/control_flow.html)**: `match`\n- **[Closures and Function Values](https://docs.crushlang.org/crush/closures.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,7 +186,7 @@
 
 <p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
 with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
-guide’s checker against crush-ast <code>v0.3.9</code>, with the output shown. The JSON IR is
+guide’s checker against crush-ast <code>cb655f3</code>, with the output shown. The JSON IR is
 covered in <a href="structure.html">Program Structure</a> and
 <a href="serialization.html">Serialization</a>. Opcode details are in the
 <a href="instructions.html">Instruction Reference</a>.</p>
@@ -391,10 +391,11 @@ this one as <code>crush-run run prog.casm --cap io.print --cap fs.exists --fs</c
 <!-- check: output -->
 <pre><code class="language-text">0
 </code></pre>
-<p>The manifest is checked first. Leave out <code>--cap fs.exists</code> and the VM stops with
-<code>capability not declared in manifest: fs.exists</code>; pass <code>--cap fs.exists</code> but leave out
-<code>--fs</code> and it stops with <code>unknown capability: fs.exists</code> (declared, but the host never
-registered it).</p>
+<p>Two separate checks apply. The host’s grants come first: leave out <code>--fs</code> and
+nothing runs (<code>needs capabilities this run does not grant; nothing was run: --fs: fs.exists</code>). With <code>--fs</code> but without <code>--cap fs.exists</code>, the program starts, and
+the VM stops at the call with <code>capability not declared in manifest: fs.exists</code>
+(the host registered it, but the program’s manifest doesn’t list it):</p>
+<!-- check: flags --fs -->
 <!-- check: runfail capability not declared in manifest: fs.exists -->
 <pre><code class="language-casm">.func main
     PUSH_STR "no-such-file.txt"
@@ -406,7 +407,7 @@ registered it).</p>
 <p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
 Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
 <p><strong><code>if</code> / <code>else</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:285" data-expect="big
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:287" data-expect="big
 ">
 <pre><code class="language-crush">let n = 3
 if n &gt; 2 {
@@ -438,7 +439,7 @@ L49:
     RET
 </code></pre>
 <p><strong><code>try</code> / <code>catch</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:320" data-expect="caught bad
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:322" data-expect="caught bad
 ">
 <pre><code class="language-crush">try {
     throw "bad"
@@ -468,7 +469,7 @@ L28:
 </code></pre>
 <p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
 slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:353" data-expect="6
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:355" data-expect="6
 ">
 <pre><code class="language-crush">let t = 0
 for x in [1, 2, 3] { t = t + x }

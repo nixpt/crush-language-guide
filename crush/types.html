@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +184,9 @@
                         <h1 id="data-types"><a class="header" href="#data-types">Data Types</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
 covers the values you can build today.</p>
@@ -194,15 +197,15 @@ covers the values you can build today.</p>
 <tr><th>Type</th><th>Literal</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td>Int</td><td><code>42</code>, <code>-7</code></td><td>64-bit signed. Decimal literals only</td></tr>
+<tr><td>Int</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>64-bit signed; overflow is a runtime error</td></tr>
 <tr><td>Float</td><td><code>3.14</code></td><td>64-bit IEEE 754. No exponent literals (<code>1.5e3</code> is a parse error)</td></tr>
-<tr><td>String</td><td><code>"hello"</code></td><td>double quotes only; <code>len</code> counts <strong>bytes</strong></td></tr>
+<tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td><code>len</code> counts <strong>bytes</strong></td></tr>
 <tr><td>Bool</td><td><code>true</code>, <code>false</code></td><td></td></tr>
 <tr><td>Null</td><td><code>null</code></td><td>absence of a value</td></tr>
 </tbody>
 </table>
 </div>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:17" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/types.md:19" data-expect="42
 3.14
 Alice
 true
@@ -231,7 +234,7 @@ null
 <h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
 <p><code>+ - * / %</code> work on <code>Int</code> and <code>Float</code>. Mixing the two promotes to <code>Float</code>.
 <code>/</code> on two <code>Int</code>s is <strong>integer division</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:44" data-expect="2
+<div class="crush-block" data-crush="run" data-src="crush/types.md:46" data-expect="2
 2.5
 3.5
 1
@@ -249,17 +252,21 @@ print(7 % 3)
 3.5
 1
 </code></pre>
-<p>Dividing by zero is a <strong>runtime error</strong> (<code>[runtime] division by zero</code>). It is
-raised by the VM rather than thrown as a Crush value, so <code>try</code>/<code>catch</code> does not
-intercept it.</p>
-<blockquote>
-<p><strong>Alpha caveat.</strong> Integer arithmetic that overflows <code>i64</code> in a <em>constant
-expression</em> currently panics the compiler’s optimizer instead of reporting an
-error. Keep literals within range.</p>
-</blockquote>
+<p>Dividing by zero is a <strong>runtime error</strong> (<code>[runtime] division by zero</code>), for
+<code>Float</code> too (there is no <code>inf</code> or <code>NaN</code>). It is raised by the VM rather than thrown
+as a Crush value, so <code>try</code>/<code>catch</code> does not intercept it.</p>
+<p><code>Int</code> arithmetic is checked: a result outside <code>i64</code> stops the program with
+<code>[runtime] arithmetic overflow</code>. It never wraps.</p>
+<!-- check: runfail arithmetic overflow -->
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:69" data-why="this example shows a run-time error" data-expect-error="arithmetic overflow">
+<pre><code class="language-crush">let big = 9223372036854775807
+print(big + 1)
+</code></pre>
+</div>
+
 <h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
 <p>Concatenate with <code>+</code>. Adding a number to a string converts the number:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:71" data-expect="Ada Lovelace
+<div class="crush-block" data-crush="run" data-src="crush/types.md:78" data-expect="Ada Lovelace
 Count: 42
 Pi is 3.14
 ">
@@ -276,26 +283,39 @@ print("Pi is " + 3.14)
 Count: 42
 Pi is 3.14
 </code></pre>
-<p><code>len(s)</code> is the byte length and <code>s[i]</code> yields a one-character string. With
-<code>--stdlib</code>, the <code>str.*</code> capabilities add <code>str.split</code>, <code>str.trim</code>,
-<code>str.to_upper</code>, <code>str.substring</code> and friends — see <a href="stdlib.html">Standard Library</a>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/types.md:90" data-why="uses the standard library (`str.to_upper`), which the in-browser runtime does not provide">
+<p><code>len(s)</code> is the byte length and <code>s[i]</code> yields a one-character string (a negative
+index counts from the end). The standard library’s <code>str.*</code> capabilities add
+<code>str.split</code>, <code>str.trim</code>, <code>str.to_upper</code>, <code>str.substring</code> and friends — see
+<a href="stdlib.html">Standard Library</a>. Strings have no methods: <code>s.to_upper()</code> is refused
+(<code>not available in this host: to_upper</code>); call <code>str.to_upper(s)</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:99" data-expect="5
+e
+o
+HELLO
+el
+">
 <pre><code class="language-crush">let s = "hello"
 print(len(s))
 print(s[1])
+print(s[-1])
 print(str.to_upper(s))
+print(str.substring(s, 1, 3))
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">5
 e
+o
 HELLO
+el
 </code></pre>
+<p>The slice syntax <code>s[1:3]</code> is for arrays only; on a string it compiles but fails
+at run time (<code>expected array, got str</code>). Use <code>str.substring</code>.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <h3 id="arrays"><a class="header" href="#arrays">Arrays</a></h3>
 <p>Ordered, mixed-type, zero-indexed. Index, assign by index, and <code>len</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:110" data-expect="10
+<div class="crush-block" data-crush="run" data-src="crush/types.md:126" data-expect="10
 [10, 99, 30]
 3
 2
@@ -319,7 +339,7 @@ print(nested[0][1])
 </code></pre>
 <p>Append with <code>array.push(arr, value)</code> or the method form <code>arr.push(value)</code>; <code>+</code>
 joins two arrays:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:132" data-expect="[1, 2, 3, 4]
+<div class="crush-block" data-crush="run" data-src="crush/types.md:148" data-expect="[1, 2, 3, 4]
 [1, 2]
 ">
 <pre><code class="language-crush">let a = [1, 2]
@@ -335,7 +355,7 @@ print([1] + [2])
 [1, 2]
 </code></pre>
 <p>Iterate with <code>for</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:148" data-expect="a
+<div class="crush-block" data-crush="run" data-src="crush/types.md:164" data-expect="a
 b
 ">
 <pre><code class="language-crush">for item in ["a", "b"] {
@@ -349,8 +369,8 @@ b
 b
 </code></pre>
 <p><code>array.pop(a)</code> removes and returns the last element, <code>a.append(v)</code> is an alias for
-<code>push</code>, and slices work:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:163" data-expect="4
+<code>push</code>, and slices <code>a[start:end]</code> work (end exclusive):</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:179" data-expect="4
 [1, 2, 3]
 [1, 2]
 ">
@@ -367,13 +387,19 @@ print(a[0:2])
 [1, 2, 3]
 [1, 2]
 </code></pre>
-<p>Reading past the end is a runtime error (<code>array index out of range</code>). The
-method form <code>a.pop()</code> is <strong>not</strong> available (<code>unknown capability: pop</code>); call
-<code>array.pop(a)</code>. Array mutation still has open gaps — see crush-ast <strong>CRUSH-7</strong>.</p>
+<p>Reading past the end is a runtime error (<code>array index out of range</code>), and so is
+<code>a[-1]</code> on an empty array; <code>a[-1]</code> on a non-empty one is the last element. The
+method form <code>a.pop()</code> is <strong>not</strong> available (the program is refused with <code>not available in this host: pop</code>); call <code>array.pop(a)</code>.</p>
+<blockquote>
+<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/254">crush-ast #254</a>).</strong>
+Negative slice bounds are silently wrong: <code>[1, 2, 3, 4][1:-1]</code> gives <code>[]</code> and
+<code>[1, 2, 3, 4][-3:]</code> gives the whole array. Compute positive bounds
+(<code>a[1:len(a) - 1]</code>) until it is fixed.</p>
+</blockquote>
 <h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
 <p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
-strings. Read and write fields with <strong>dot notation</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:187" data-expect="Alice
+strings. Read and write fields with <strong>dot notation</strong> or a <strong>string subscript</strong>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:209" data-expect="Alice
 31
 alice@example.com
 ">
@@ -392,7 +418,7 @@ print(person.email)
 alice@example.com
 </code></pre>
 <p>Nested objects chain:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:205" data-expect="5432
+<div class="crush-block" data-crush="run" data-src="crush/types.md:227" data-expect="5432
 5433
 ">
 <pre><code class="language-crush">let cfg = {"db": {"port": 5432}}
@@ -406,50 +432,64 @@ print(cfg.db.port)
 <pre><code class="language-text">5432
 5433
 </code></pre>
-<p>Printing an object lists its keys in an <strong>unspecified order that can differ
-between runs</strong>; to walk an object deterministically use <code>collections.keys(obj)</code>
-(sorted) with <code>--stdlib</code> — see <a href="stdlib.html#collections--collections">Standard Library</a>.</p>
-<blockquote>
-<p><strong>Not yet implemented.</strong> String-key subscripts (<code>person["name"]</code>) fail at run
-time with <code>array index must be int, got str</code>, and <code>len(obj)</code> and <code>for k in obj</code>
-are rejected (<code>expected array or string, got map</code>). Use dot access, and
-<code>collections.keys(obj)</code> to enumerate. (crush-ast gap <code>GAP-MAP-SUBSCRIPT</code>.)</p>
-</blockquote>
-<!-- check: nyi GAP-MAP-SUBSCRIPT -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:228" data-why="not implemented yet (GAP-MAP-SUBSCRIPT); Run shows what happens today">
+<p>Objects keep <strong>insertion order</strong>: printing, <code>for k in obj</code> and
+<code>collections.keys(obj)</code> all list keys in the order they were first set.</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:243" data-expect="Alice
+{name: Alice, age: 30}
+name
+age
+">
 <pre><code class="language-crush">let person = {"name": "Alice"}
-print(person["name"])
+person["age"] = 30
+let field = "name"
+print(person[field])
+print(person)
+for k in person {
+    print(k)
+}
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">Alice
+{name: Alice, age: 30}
+name
+age
+</code></pre>
+<p>Reading a key that isn’t there is a runtime error (<code>expected present map key, got absent key</code>), not <code>null</code>. <code>len(obj)</code> is rejected (<code>expected array or string, got map</code>); count <code>collections.keys(obj)</code> instead.</p>
 <h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
-<p>Declare a struct with its field names (optionally with type hints) <strong>on one line</strong>,
-create it
-with <code>new Name()</code> — <strong>no constructor arguments</strong> — and assign fields
-individually:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:240" data-expect="4.0
+<p>Declare a struct with its field names (optionally with type hints) <strong>on one
+line</strong>, then build one with a literal that names every field, or with
+<code>new Name()</code> and assign fields individually:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:272" data-expect="{x: 1.0, y: 2.0}
+4.0
 ">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
 
+let a = Point { x: 1.0, y: 2.0 }
 let p = new Point()
 p.x = 1.5
 p.y = 2.5
+print(a)
 print(p.x + p.y)
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">4.0
+<pre><code class="language-text">{x: 1.0, y: 2.0}
+4.0
 </code></pre>
-<p>Assigning to a field the struct doesn’t declare is a compile error
-(<code>Struct 'Point' has no field 'z'</code>). Field type hints are <strong>not enforced</strong> at
-run time today, and an unassigned field reads as <code>null</code>.</p>
-<p><code>Point { x: 1.0, y: 2.0 }</code> literals and <code>new Point(1.0, 2.0)</code> are rejected by the
-parser. A struct body that spans several lines is also rejected today — the parser
-doesn’t skip newlines inside <code>struct { ... }</code> (see the GUIDE-3 ticket, gap
-<code>GAP-STRUCT-MULTILINE</code>):</p>
+<p>Structs are <strong>sealed</strong>: writing a field the struct doesn’t declare stops the
+program (<code>`Point` is sealed: it has no field `z` (fields: x, y)</code>), and a
+literal with a missing or unknown field is a compile error. Field type hints are
+<strong>not enforced</strong> at run time today, and an unassigned field reads as <code>null</code>.
+Methods, traits, value semantics and <code>@kind</code> are in
+<a href="structs.html">Structs, Methods and Kinds</a>.</p>
+<p>A struct body that spans several lines is still rejected: the parser doesn’t skip
+newlines inside <code>struct { ... }</code> (gap <code>GAP-STRUCT-MULTILINE</code>, listed in crush-ast’s
+CRUSH-192 ticket):</p>
 <!-- check: nyi GAP-STRUCT-MULTILINE -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:264" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:301" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
 <pre><code class="language-crush">struct Point {
     x: Float,
     y: Float
@@ -460,7 +500,7 @@ doesn’t skip newlines inside <code>struct { ... }</code> (see the GUIDE-3 tick
 <h2 id="type-annotations"><a class="header" href="#type-annotations">Type annotations</a></h2>
 <p>You may annotate variables, parameters and return types with <code>Int</code>, <code>Float</code>,
 <code>String</code>, <code>Bool</code>, or <code>Any</code>. The compiler checks them statically:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:276" data-expect="answer
+<div class="crush-block" data-crush="run" data-src="crush/types.md:313" data-expect="answer
 42
 ">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
@@ -478,13 +518,13 @@ print(double(21))
 </code></pre>
 <p>Mismatches are rejected at compile time:</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:294" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:331" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x: Int = "not a number"
 </code></pre>
 </div>
 
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:299" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:336" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
     return n * 2
 }
@@ -496,9 +536,14 @@ print(double("seven"))
 shorthand (<code>Int[]</code>), nullable <code>T?</code>, and <code>Function</code>/<code>Array</code>/<code>Map</code> as hint names —
 all fail with a parse or <code>Unknown type</code> error.</p>
 <h2 id="conversion-and-inspection"><a class="header" href="#conversion-and-inspection">Conversion and inspection</a></h2>
-<p>With <code>--stdlib</code>, the <code>conv.*</code> capabilities convert between types and report
+<p>The standard library’s <code>conv.*</code> capabilities convert between types and report
 them:</p>
-<div class="crush-block" data-crush="host" data-src="crush/types.md:315" data-why="uses the standard library (`conv.to_float`, `conv.to_int`, `conv.to_str` …), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/types.md:352" data-expect="43
+5x
+2.0
+array
+null
+">
 <pre><code class="language-crush">print(conv.to_int("42") + 1)
 print(conv.to_str(5) + "x")
 print(conv.to_float(2))
@@ -520,7 +565,7 @@ null
 <p><code>if</code> and <code>while</code> conditions are type-checked: an <code>Int</code> or <code>String</code> is <strong>not</strong>
 silently truthy. Compare explicitly (<code>x != 0</code>, <code>s != ""</code>).</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:341" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:378" data-why="this example shows a compile error">
 <pre><code class="language-crush">if 1 {
     print("yes")
 }
@@ -537,10 +582,11 @@ compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0
 <tr><th>Feature</th><th>Status</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Bytes</code> literals (<code>b"..."</code>), <code>Error(...)</code> values</td><td>not parsed / undefined</td></tr>
+<tr><td><code>Bytes</code> literals (<code>b"..."</code>)</td><td>refused: <code>bytes literals (b"...") are not supported yet</code></td></tr>
+<tr><td><code>Error(...)</code> values</td><td>undefined</td></tr>
 <tr><td>Optional types <code>T?</code>, <code>??</code></td><td>not parsed</td></tr>
 <tr><td>Enums, type aliases, generics</td><td>not in the grammar</td></tr>
-<tr><td>Lambdas / <code>Function</code> values</td><td>crush-ast <strong>CRUSH-75</strong> (open) — see <a href="functions.html">Functions</a></td></tr>
+<tr><td><code>Function</code> as a type hint</td><td><code>Unknown type</code> (function values themselves work: <a href="closures.html">Closures</a>)</td></tr>
 </tbody>
 </table>
 </div>

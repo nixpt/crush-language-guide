@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +184,9 @@
                         <h1 id="crush-overview"><a class="header" href="#crush-overview">Crush Overview</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
 and an intermediate representation (CAST) that other languages can be translated
@@ -191,23 +194,25 @@ into. It is <strong>alpha software</strong> — this guide documents what runs t
 when something doesn’t.</p>
 <h2 id="what-crush-is"><a class="header" href="#what-crush-is">What Crush is</a></h2>
 <ul>
-<li><strong>A language.</strong> <code>let</code>, <code>fn</code>, <code>if</code>/<code>while</code>/<code>for</code>, structs, <code>match</code>, <code>try</code>/<code>catch</code>,
-arrays and objects, a pipeline operator. Dynamically typed at run time with
+<li><strong>A language.</strong> <code>let</code>, <code>fn</code>, <code>if</code>/<code>while</code>/<code>for</code>, <code>match</code>, <code>try</code>/<code>catch</code>,
+arrays and objects, closures and function values, structs with <code>impl</code> methods
+and <code>trait</code>s, green tasks, a pipeline operator. Dynamically typed at run time with
 optional compile-time type hints. See <a href="syntax.html">Syntax</a>.</li>
 <li><strong>Capability-gated.</strong> A program can’t print files, open sockets or start
 processes unless the host turns the matching capability on. Capability calls
 are ordinary dotted calls — <code>fs.read("x")</code>, <code>io.print("y")</code>. See
 <a href="capabilities.html">Capability System</a>.</li>
-<li><strong>Polyglot.</strong> <code>@python { }</code>, <code>@javascript { }</code> and <code>@bash { }</code> blocks run
-other languages and exchange variables with Crush. They currently run as
+<li><strong>Polyglot.</strong> <code>@python -&gt; out { }</code>, <code>@javascript { }</code> and <code>@bash { }</code> blocks
+run other languages and exchange variables with Crush. They currently run as
 ordinary subprocesses <strong>outside</strong> the capability model unless you build the
 optional sandbox. See <a href="polyglot.html">Polyglot Programming</a>.</li>
 <li><strong>A pipeline.</strong> Source becomes CAST (an AST in JSON), then CASM (bytecode), then
 runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time backends
-also in the repository.</li>
+also in the repository (<a href="engines.html">Engines, AOT and Walkers</a>). Walkers
+translate Python, JavaScript, Rust and other languages into the same CAST.</li>
 </ul>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:28" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="crush/README.md:32" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">print("Hello, Crush!")
 </code></pre>
@@ -221,23 +226,28 @@ also in the repository.</li>
 <pre><code class="language-sh">crush run hello.crush
 </code></pre>
 <h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:46" data-expect="25
+<div class="crush-block" data-crush="run" data-src="crush/README.md:50" data-expect="far: 25
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
-
-fn distance_sq(p) {
-    return p.x * p.x + p.y * p.y
+impl Point {
+    fn distance_sq(self) { return self.x * self.x + self.y * self.y }
 }
 
-let p = new Point()
-p.x = 3
-p.y = 4
-print(distance_sq(p))
+let points = [Point { x: 3, y: 4 }, Point { x: 1, y: 1 }]
+let far = |p| p.distance_sq() &gt; 10
+let i = 0
+while i &lt; len(points) {
+    let p = points[i]
+    if far(p) {
+        print("far: " + p.distance_sq())
+    }
+    i = i + 1
+}
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">25
+<pre><code class="language-text">far: 25
 </code></pre>
 <h2 id="security-model-in-short"><a class="header" href="#security-model-in-short">Security model, in short</a></h2>
 <ol>
@@ -258,10 +268,13 @@ enforced.</li>
 <tr><th>Area</th><th>Status</th></tr>
 </thead>
 <tbody>
-<tr><td>Core language (functions, loops, structs, <code>try</code>/<code>catch</code>, <code>match</code> expressions)</td><td>works</td></tr>
-<tr><td>Lambdas and closures, <code>import</code>, <code>spawn</code>/<code>async</code>/<code>await</code></td><td>not yet — see the chapters for ticket links</td></tr>
-<tr><td>Capabilities and <code>--stdlib</code></td><td>works; small</td></tr>
-<tr><td>Polyglot: Python, JavaScript, Bash</td><td>works (host authority by default)</td></tr>
+<tr><td>Core language (functions, loops, <code>try</code>/<code>catch</code>, <code>match</code>)</td><td>works</td></tr>
+<tr><td>Closures and function values</td><td>works on the VM; AOT refuses them by name</td></tr>
+<tr><td>Structs, <code>impl</code>, <code>trait</code>, <code>@kind</code>, struct patterns</td><td>works on the VM; AOT refuses method calls by name</td></tr>
+<tr><td><code>spawn</code> / <code>yield</code> / <code>await</code>, <code>parallel_map</code></td><td>works on the VM</td></tr>
+<tr><td><code>import</code> (multi-file programs)</td><td>not yet: CRUSH-110</td></tr>
+<tr><td>Capabilities, <code>@capabilities</code>, the standard library</td><td>works; the standard library is on by default</td></tr>
+<tr><td>Polyglot: Python, JavaScript (declared <code>-&gt;</code> outputs), Bash</td><td>works (host authority by default); <code>@bash</code> sees no Crush variables today (#255)</td></tr>
 <tr><td>Polyglot sandbox</td><td>opt-in build, verified on Linux with <code>bwrap</code></td></tr>
 <tr><td>CAST / CASM formats</td><td>documented in their own sections</td></tr>
 </tbody>
@@ -271,6 +284,7 @@ enforced.</li>
 <ul>
 <li><strong><a href="syntax.html">Syntax &amp; Grammar</a></strong></li>
 <li><strong><a href="types.html">Types</a></strong></li>
+<li><strong><a href="closures.html">Closures</a></strong> and <strong><a href="structs.html">Structs, Methods and Kinds</a></strong></li>
 <li><strong><a href="capabilities.html">Capability System</a></strong></li>
 <li><strong><a href="polyglot.html">Polyglot Programming</a></strong></li>
 </ul>
@@ -279,7 +293,7 @@ enforced.</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../notebooks.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../verified-corpus.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -293,7 +307,7 @@ enforced.</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../notebooks.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../verified-corpus.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

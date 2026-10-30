@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,8 +186,8 @@
 
 <p>How Crush relates to the languages people usually compare it with. Crush is <strong>alpha</strong>:
 the language is small, the standard library is a set of host capabilities, and several
-features in its design (lambdas, imports, an executing AI layer) are not implemented
-yet. The comparisons below are about what is real today.</p>
+features in its design (imports, an executing AI layer) are not implemented yet. The
+comparisons below are about what is real today (verified against crush-ast <code>cb655f3</code>).</p>
 <h2 id="what-crush-is-for"><a class="header" href="#what-crush-is-for">What Crush is for</a></h2>
 <ul>
 <li><strong>Running untrusted or semi-trusted scripts with explicit authority.</strong> A program can
@@ -201,7 +201,7 @@ subprocesses, so they are gated by <code>--polyglot</code> and carry the host’
 unless you use the opt-in sandbox lane. See <a href="../crush/polyglot.html">Polyglot</a>.</li>
 </ul>
 <p>It is <strong>not</strong> a general-purpose replacement for Python or JavaScript: there is no
-package ecosystem, no lambdas, no working <code>import</code>, and a small standard library.</p>
+package ecosystem, no working <code>import</code>, and a small standard library.</p>
 <h2 id="crush-vs-python"><a class="header" href="#crush-vs-python">Crush vs Python</a></h2>
 <div class="table-wrapper">
 <table>
@@ -212,13 +212,14 @@ package ecosystem, no lambdas, no working <code>import</code>, and a small stand
 <tr><td>Typing</td><td>dynamic; annotations (<code>x: Int</code>) are optional and checked at compile time</td><td>dynamic; hints are not enforced</td></tr>
 <tr><td>Ambient authority</td><td>none — files, network, processes need a capability flag</td><td>everything the OS user can do</td></tr>
 <tr><td>Execution</td><td>compiled to CVM1 bytecode, run by a Rust VM with quotas</td><td>compiled to bytecode, run by CPython</td></tr>
-<tr><td>Functions</td><td><code>fn</code>, named only (no lambdas yet)</td><td><code>def</code>, <code>lambda</code></td></tr>
+<tr><td>Functions</td><td><code>fn</code> and <code>|x| …</code> lambdas; values and closures</td><td><code>def</code>, <code>lambda</code></td></tr>
+<tr><td>Classes</td><td><code>struct</code> + <code>impl</code> + <code>trait</code>; <code>@kind(resolution: c3, …)</code> gives Python’s MRO</td><td><code>class</code></td></tr>
 <tr><td>Ecosystem</td><td>tiny; reach Python through <code>@python { }</code></td><td>huge</td></tr>
 </tbody>
 </table>
 </div>
 <!-- check: output -->
-<div class="crush-block" data-crush="run" data-src="appendix/comparison.md:34">
+<div class="crush-block" data-crush="run" data-src="appendix/comparison.md:35">
 <pre><code class="language-crush">fn greet(name) {
     print("Hello, " + name + "!")
 }
@@ -239,9 +240,9 @@ interpolation in Crush, so concatenate with <code>+</code>.</p>
 </thead>
 <tbody>
 <tr><td>Authority</td><td>capability-gated</td><td>Node has full OS access; browsers are sandboxed by the platform</td></tr>
-<tr><td>Functions</td><td><code>fn</code>, no closures or lambdas yet</td><td>first-class, closures</td></tr>
-<tr><td>Async</td><td><code>async</code>/<code>await</code>/<code>spawn</code> are parsed but not scheduled — treat them as unimplemented</td><td>native promises and an event loop</td></tr>
-<tr><td>Syntax</td><td>braces, optional semicolons, <code>let</code>, double-quoted strings only</td><td>similar, single quotes allowed</td></tr>
+<tr><td>Functions</td><td>first-class, closures (capture by reference)</td><td>first-class, closures</td></tr>
+<tr><td>Async</td><td>green tasks: <code>spawn</code>/<code>yield</code>/<code>await</code>, <code>async fn</code>; <code>parallel_map</code> for threads</td><td>native promises and an event loop</td></tr>
+<tr><td>Syntax</td><td>braces, optional semicolons, <code>let</code>, <code>"…"</code> or <code>'…'</code> strings</td><td>similar</td></tr>
 </tbody>
 </table>
 </div>
@@ -303,7 +304,7 @@ rather than as source text.</li>
 <p>❌ <strong>Look elsewhere when:</strong></p>
 <ul>
 <li>You need a mature ecosystem, libraries or tooling — use Python or JavaScript.</li>
-<li>You need closures, modules or imports today.</li>
+<li>You need modules or imports today.</li>
 <li>You need hardened isolation of <em>foreign-language</em> code: polyglot blocks run as host
 processes unless you build the optional bubblewrap sandbox lane, which is Linux-only.</li>
 </ul>

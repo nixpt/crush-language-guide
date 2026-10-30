@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -220,20 +220,21 @@ capability that the host did not register <em>or</em> that the program’s manif
 not list.</li>
 <li><strong>The IR has more instructions than the VM bytecode.</strong> The <code>casm</code> crate’s
 <code>OpCode</code> enum is a superset; <code>casm_to_vm</code> lowers only part of it (see the
-<a href="instructions.html#what-lowers-to-cvm1">Instruction Reference</a>). Some IR
-instructions lower to a <code>NOP</code>; some are rejected with <code>Unsupported CVM1 opcode</code>.</li>
-<li><strong>The <code>ai_*</code>, <code>dom_*</code>, <code>spawn</code>/<code>yield</code>/<code>await</code> instructions are stubs.</strong> In the
-IR→CVM1 lowering the <code>ai_*</code> and <code>dom_*</code> instructions become <code>NOP</code>s; a hand-written
-CVM1 <code>AI_QUERY</code> reaches an <code>ai_native.query</code> capability that returns
-<code>{ok: true, kind: "query", echo: []}</code> and does nothing else. See
-<a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a>.</li>
+<a href="instructions.html#what-lowers-to-cvm1">Instruction Reference</a>). A few IR
+instructions lower to a <code>NOP</code>; a few are rejected with <code>Unsupported CVM1 opcode</code>.</li>
+<li><strong>The <code>ai_*</code> and <code>dom_*</code> instructions are hooks, not features.</strong> An <code>AI_QUERY</code>
+(and the other AI opcodes) calls an <code>ai_native.query</code> capability that no CLI
+provides; an embedder’s stub returns <code>{kind: query, echo: [...], ok: true}</code> and
+does nothing else. The <code>dom_*</code> IR instructions lower to <code>NOP</code>. See
+<a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a>. (<code>spawn</code>/<code>yield</code>/<code>await</code>
+are real: <a href="../crush/concurrency.html">Concurrency</a>.)</li>
 <li><strong>Source mapping</strong> is carried in each IR instruction’s <code>meta</code> (<code>line</code>, <code>col</code>);
 the CVM1 binary does not store it (the text assembler keeps a line→offset map for
 debuggers only).</li>
 </ul>
 <h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
 <p>Compile a small program to text assembly:</p>
-<div class="crush-block" data-crush="run" data-src="casm/README.md:54" data-expect="x = 5
+<div class="crush-block" data-crush="run" data-src="casm/README.md:55" data-expect="x = 5
 ">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b

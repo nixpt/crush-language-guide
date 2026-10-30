@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +184,10 @@
                         <h1 id="polyglot-programming"><a class="header" href="#polyglot-programming">Polyglot Programming</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16), with Python 3.14, Node 26 and
+bash 5.3 on the host.</p>
+</blockquote>
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
 blocks. This chapter describes what actually happens when you run one today —
 which languages work, how values cross the boundary, how errors and timeouts
@@ -198,7 +202,7 @@ not enabled by any command-line flag. See <a href="#sandbox-and-authority">Sandb
 <p>A block’s source text is handed to a real interpreter — <code>python3 -c</code>, <code>node -e</code>,
 or <code>bash -c</code> — as a <strong>child process</strong>. Crush marshals some variables in, runs the
 interpreter, captures its standard output, and (for Python and JavaScript)
-marshals one result variable back. There is no embedded WebAssembly runtime, no
+marshals back the variables the block <strong>declares</strong> with <code>-&gt; names</code>. There is no embedded WebAssembly runtime, no
 WASI capability bridge, and no in-process interpreter.</p>
 <h2 id="languages"><a class="header" href="#languages">Languages</a></h2>
 <div class="table-wrapper">
@@ -213,11 +217,12 @@ WASI capability bridge, and no in-process interpreter.</p>
 </tbody>
 </table>
 </div>
-<p>The interpreter must be on <code>PATH</code>. Any other tag (<code>@rust</code>, <code>@go</code>, <code>@c</code>, …) fails
-at run time with <code>unknown capability: no executor registered for language 'rust'</code>.</p>
-<!-- check: runfail no executor registered for language 'rust' -->
+<p>The interpreter must be on <code>PATH</code>; <code>crush doctor</code> checks which ones it finds. Any
+other tag (<code>@rust</code>, <code>@go</code>, <code>@c</code>, …) parses, but the program is refused before it
+runs (<code>not available in this host: polyglot.rust</code>).</p>
+<!-- check: runfail not available in this host: polyglot.rust -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:35" data-why="uses `@rust` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:38" data-why="uses `@rust` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@rust {
     fn main() {}
 }
@@ -233,9 +238,9 @@ block does.)</p>
 ambient authority. Turn it on per run:</p>
 <pre><code class="language-sh">crush run --polyglot program.crush        # same flag on crush-run
 </code></pre>
-<p>Without it the block is refused:</p>
-<!-- check: runfail requires the 'polyglot.python' capability -->
-<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:58" data-why="this example shows a refusal" data-expect-error="requires the &#39;polyglot.python&#39; capability">
+<p>Without it the program is refused before anything runs (<code>--polyglot: polyglot.python</code>):</p>
+<!-- check: runfail polyglot.python -->
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:62" data-why="this example shows a refusal" data-expect-error="polyglot.python">
 <pre><code class="language-crush">@python {
 print("hi")
 }
@@ -252,7 +257,7 @@ order. Two details to know: the block’s output is <strong>trimmed</strong> (so
 trailing newline), and anything written to standard error is discarded when the
 block succeeds.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:77" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:81" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print("one")
 @python {
 print("two")
@@ -269,33 +274,75 @@ twothree
 explicit blank line (<code>print()</code>), or print from Crush.</p>
 <h2 id="passing-values-in-and-out"><a class="header" href="#passing-values-in-and-out">Passing values in and out</a></h2>
 <h3 id="python-and-javascript"><a class="header" href="#python-and-javascript">Python and JavaScript</a></h3>
-<p>For <code>@python</code> and <code>@javascript</code> blocks, Crush analyses the block’s own source:</p>
+<p>For <code>@python</code> and <code>@javascript</code> blocks:</p>
 <ul>
-<li><strong>In:</strong> every name the block <em>reads</em> that is a Crush variable already in scope
-(a <code>let</code>, a parameter, a loop variable, or an earlier block’s result) is
-injected, with its type preserved.</li>
-<li><strong>Out:</strong> the <strong>last name bound at the top level of the block</strong> is marshaled
-back and becomes a Crush variable of that name. Earlier assignments in the same
-block do not escape.</li>
+<li><strong>In (automatic):</strong> every name the block <em>reads</em> that is a Crush variable
+already in scope (a <code>let</code>, a parameter, a loop variable, or an earlier block’s
+output) is injected as a variable of that name, with its type preserved.</li>
+<li><strong>Out (declared):</strong> the names after <code>-&gt;</code> in the block header are marshaled back
+and become (or assign) Crush variables at that line. Nothing else leaves the
+block. Use <code>-&gt; name</code> for one and <code>-&gt; (a, b)</code> for several.</li>
 </ul>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:108" data-why="uses `@python` blocks (polyglot); uses the standard library (`math.pow`), which the in-browser runtime does not provide">
-<pre><code class="language-crush">let base = 5
-@python {
-import math
-doubled = base * 2
-result = math.pow(base, 3)
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:112" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">let count = 10
+let base = 5
+@python -&gt; total {
+tmp = base * 3
+total = tmp * 2
 }
-print(result)
+print(total)
+print(count)
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">125.0
+<pre><code class="language-text">30
+10
 </code></pre>
-<p>Here <code>base</code> goes in, <code>result</code> (the last top-level binding) comes out, and
-<code>doubled</code> is local to the block — using it afterwards is a compile error
-(<code>Undefined variable</code>).</p>
+<p>Here <code>base</code> goes in, <code>total</code> comes out, and <code>tmp</code> stays inside the block (using it
+afterwards is a compile error, <code>Undefined variable</code>). Several outputs:</p>
+<!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:133" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">let xs = [2, 4, 4, 4, 5, 5, 7, 9]
+@python -&gt; (mean, spread) {
+mean = sum(xs) / len(xs)
+spread = max(xs) - min(xs)
+}
+print(mean)
+print(spread)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">5.0
+7
+</code></pre>
+<p>Listing a name the block never binds is a compile error; a name bound only on
+some paths is a run-time error naming it (<code>output variable 'r' was not bound by the block</code>), never a silent <code>null</code>:</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:154" data-why="this example shows a compile error">
+<pre><code class="language-crush">@python -&gt; missing {
+x = 1
+}
+print(missing)
+</code></pre>
+</div>
+
+<pre><code class="language-text">[compile] @python block declares output `missing` but never binds it; add `missing = …` at the block's top level, or drop it from `-&gt;`
+</code></pre>
+<p>Everything after the opening <code>{</code> is the guest’s source, including the rest of
+the header line, so a Crush <code>//</code> comment there is Python code. With an output list
+that syntax error is currently reported as <code>[compile] Undefined variable: m</code>
+(crush-ast <a href="https://github.com/nixpt/crush-ast/issues/266">#266</a>). Put comments
+above the block, or use the guest’s own comment syntax inside it.</p>
+<p><strong>Blocks without <code>-&gt;</code> (being phased out).</strong> A block with no output list still
+exports its <em>last top-level assignment</em>, as in earlier releases, but the compiler
+now warns on standard error, and warns again if that overwrites an existing Crush
+variable. The next release drops the implicit export, so declare your outputs:</p>
+<pre><code class="language-text">warning: @python block exports `count` implicitly; add `-&gt; count` to declare it
+warning: @python block overwrites the existing Crush variable `count`; declare `-&gt; count` to make the overwrite explicit
+</code></pre>
 <p>Values travel as JSON, so the shareable types are exactly these:</p>
 <div class="table-wrapper">
 <table>
@@ -313,11 +360,11 @@ print(result)
 </table>
 </div>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:139" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:193" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let n = 5
 let tags = ["a", "b"]
 let cfg = {"k": 1}
-@python {
+@python -&gt; out {
 out = [n * 2, len(tags), cfg["k"], None, True]
 }
 print(out)
@@ -329,10 +376,10 @@ print(out)
 </code></pre>
 <p>An output variable that can’t be serialised to JSON (a class instance, an open
 file, a function) fails the block with a clear error rather than being dropped:</p>
-<!-- check: runfail cannot marshal output variable 'obj' -->
+<!-- check: runfail cannot marshal output variable(s) obj -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:159" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
-<pre><code class="language-crush">@python {
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:213" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">@python -&gt; obj {
 class C:
     pass
 obj = C()
@@ -343,15 +390,15 @@ print(1)
 
 <p>Blocks compose through Crush variables, across languages:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:171" data-why="uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:225" data-why="uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let x = 1
-@python {
+@python -&gt; y {
 y = x + 1
 }
-@javascript {
+@javascript -&gt; z {
 const z = y * 10
 }
-@python {
+@python -&gt; w {
 w = z + 1
 }
 print(w)
@@ -363,10 +410,10 @@ print(w)
 </code></pre>
 <p>Blocks inside functions and loops see the enclosing scope:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:193" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:247" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let total = 0
 for i in 0..3 {
-    @python {
+    @python -&gt; sq {
 sq = i * i
     }
     total = total + sq
@@ -379,47 +426,72 @@ print(total)
 <pre><code class="language-text">5
 </code></pre>
 <p>Python and JavaScript state does <strong>not</strong> persist between blocks: each block is a
-fresh interpreter, and only the marshaled result variable carries over. You
-cannot define a function in one block and call it from Crush or from another
-block.</p>
-<h3 id="bash"><a class="header" href="#bash">Bash</a></h3>
-<p><code>@bash</code> blocks have no marshaling analysis. They receive the <code>let</code> variables
-declared <strong>earlier at the top level of the same function body</strong> as environment
-variables (stringified — an array arrives as <code>[1, 2]</code>), and nothing comes back
-except the printed output:</p>
+fresh interpreter, and only the declared outputs carry over. You cannot define a
+function in one block and call it from Crush or from another block.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:222" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:268" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">@python -&gt; a {
+a = 1
+hidden = 2
+}
+@python -&gt; r {
+r = "hidden" in globals()
+}
+print(a)
+print(r)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">1
+false
+</code></pre>
+<h3 id="imports-for-blocks-use-lang"><a class="header" href="#imports-for-blocks-use-lang">Imports for blocks: <code>use @lang</code></a></h3>
+<p><code>use @lang python "module"</code> (optionally <code>as alias</code>) writes the import into every
+later <code>@python</code> block, so each block doesn’t have to repeat it. Each block is
+still its own process:</p>
+<!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:293" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<pre><code class="language-crush">use @lang python "math"
+use @lang python "json" as j
+@python -&gt; (val, text) {
+val = math.factorial(5)
+text = j.dumps({"a": 1})
+}
+print(val)
+print(text)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">120
+{"a": 1}
+</code></pre>
+<h3 id="bash"><a class="header" href="#bash">Bash</a></h3>
+<p><code>@bash</code> blocks have no value marshaling: only their printed output comes back,
+and <code>-&gt;</code> on a <code>@bash</code> block is a compile error (<code>`-&gt;` output lists are not supported for @bash: it has no value marshaling</code>).</p>
+<blockquote>
+<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/255">crush-ast #255</a>).</strong>
+Earlier releases passed the function’s top-level <code>let</code>s to a <code>@bash</code> block as
+environment variables. Since explicit outputs landed (CRUSH-270) a <code>@bash</code> block
+receives <strong>no</strong> Crush variables, and <code>$name</code> silently expands to the empty
+string:</p>
+</blockquote>
+<!-- check: flags --polyglot -->
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:323" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let name = "crush"
 @bash {
-echo "hello $name"
+echo "hello [$name]"
 }
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">hello crush
+<pre><code class="language-text">hello []
 </code></pre>
-<p>Two surprises: function <strong>parameters</strong> are not passed to a <code>@bash</code> block, and
-neither is the result of an earlier <code>@python</code>/<code>@javascript</code> block — copy it into
-a <code>let</code> first:</p>
-<!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:239" data-why="uses `@bash`, `@python` blocks (polyglot), which the in-browser runtime does not provide">
-<pre><code class="language-crush">@python {
-m = 7
-}
-let n = m
-@bash {
-echo "n=$n"
-}
-</code></pre>
-</div>
-
-<!-- check: output -->
-<pre><code class="language-text">n=7
-</code></pre>
-<p>Bash also inherits the host environment (<code>$HOME</code>, <code>$PATH</code>, …) in the default,
-unsandboxed lane, so don’t keep secrets in Crush variables around a <code>@bash</code> block
-you don’t control.</p>
+<p>Until that is fixed, compute the value in a <code>@python</code> block and print it, or
+write it to a file the <code>@bash</code> block reads. Bash inherits the host environment
+(<code>$HOME</code>, <code>$PATH</code>, …) in the default, unsandboxed lane.</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <p>If the interpreter exits non-zero, the program stops with a
 <code>LangRuntimeError</code>. The message is the guest’s own stderr, prefixed with the
@@ -427,7 +499,7 @@ you don’t control.</p>
 right place in your <code>.crush</code> file:</p>
 <!-- check: runfail at .crush line 3 -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:267" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:348" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">print("a")
 print("b")
 @python {
@@ -466,7 +538,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:315" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:396" data-why="uses `@python` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -506,8 +578,8 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
-<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:354" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
-<pre><code class="language-crush">@python[pypi:six] {
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:435" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
+<pre><code class="language-crush">@python[pypi:six] -&gt; v {
 import six
 v = six.__version__
 }
@@ -519,15 +591,16 @@ print(v)
 </code></pre>
 <p>The first run prints buckets’ progress lines (<code>resolved python.org@^3.11 → …</code>) to
 standard error while it downloads. In a default build the <code>[...]</code> part still
-parses, but the dependencies are <strong>silently ignored</strong>, so <code>import six</code> then fails
-with <code>ModuleNotFoundError</code>. An unknown package fails with
+parses, but the dependencies are <strong>silently ignored</strong>: <code>import six</code> then works
+only if the host’s own Python happens to have <code>six</code>, and an unresolvable
+<code>[pypi:nothing_here_xyz]</code> is not reported at all. An unknown package fails with
 <code>@python block sandbox setup failed: Failed to resolve version for 'pypi:…'</code>.</p>
 <p>Even the sandboxed lane is a first cut: the working directory is writable, memory
 is not limited, and only <code>python</code>, <code>javascript</code> and <code>bash</code> are wired up.</p>
 <h2 id="limitations-summary"><a class="header" href="#limitations-summary">Limitations summary</a></h2>
 <ul>
 <li>Languages: Python, JavaScript (Node), Bash. Nothing else executes.</li>
-<li>Value passing is JSON-only, one output variable, Python/JS only.</li>
+<li>Value passing is JSON-only, Python/JS only, and outputs are declared with <code>-&gt;</code>.</li>
 <li>No shared interpreter state or cross-block function calls.</li>
 <li>Guest errors and timeouts abort the program; they can’t be caught from Crush.</li>
 <li>Default execution is <strong>unsandboxed</strong>; the sandbox is a build-time opt-in.</li>

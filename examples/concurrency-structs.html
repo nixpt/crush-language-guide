@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,28 +184,30 @@
                         <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/examples/concurrency-structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
-<p>A struct is declared once, created with <code>new Name()</code>, and filled in by assigning
-fields. Structs are passed by reference.</p>
-<div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:6" data-expect="p = (1.0, 2.0)
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
+<p>A struct is declared once (on one line), built with a literal, and given methods
+in an <code>impl</code> block. Structs are passed by reference.</p>
+<div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:8" data-expect="p = (1.0, 2.0)
 squared distance: 25.0
 ">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
-
-fn dist2(a, b) {
-    let dx = a.x - b.x
-    let dy = a.y - b.y
-    return dx * dx + dy * dy
+impl Point {
+    fn new(x, y) { return Point { x: x, y: y } }
+    fn dist2(self, other) {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        return dx * dx + dy * dy
+    }
+    fn label(self) { return "(" + self.x + ", " + self.y + ")" }
 }
 
-let p = new Point()
-p.x = 1.0
-p.y = 2.0
-let q = new Point()
-q.x = 4.0
-q.y = 6.0
+let p = Point::new(1.0, 2.0)
+let q = Point { x: 4.0, y: 6.0 }
 
-print("p = (" + p.x + ", " + p.y + ")")
-print("squared distance: " + dist2(p, q))
+print("p = " + p.label())
+print("squared distance: " + p.dist2(q))
 </code></pre>
 </div>
 
@@ -215,35 +217,56 @@ squared distance: 25.0
 </code></pre>
 <p><strong>What this shows:</strong></p>
 <ul>
-<li><code>struct Point { x: Float, y: Float }</code> — declare it on <strong>one line</strong>; the parser
+<li><code>struct Point { x: Float, y: Float }</code>: declare it on <strong>one line</strong>; the parser
 does not yet accept a struct body that spans lines</li>
-<li><code>new Point()</code> takes no arguments; set each field with <code>p.x = ...</code></li>
-<li>Field access works inside functions, including on parameters (<code>a.x</code>)</li>
+<li><code>Point { x: 4.0, y: 6.0 }</code> names every field; <code>Point::new(...)</code> is a method
+without <code>self</code>, called through the type</li>
+<li><code>p.dist2(q)</code> resolves <code>dist2</code> on <code>p</code>’s struct; <code>self</code> is <code>p</code></li>
 <li><code>Float</code> arithmetic: <code>3.0 * 3.0 + 4.0 * 4.0</code> is <code>25.0</code></li>
 </ul>
+<p>More in <a href="../crush/structs.html">Structs, Methods and Kinds</a>.</p>
 <h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
-<p>Earlier revisions of this guide demonstrated <code>spawn worker()</code> with cooperative
-<code>yield</code>. That does <strong>not</strong> run today: the compiler emits a <code>SPAWN</code> instruction
-without its operand and the assembler rejects the program
-(<code>SPAWN takes 1 operand(s), got 0</code>). The scheduler for green threads exists in
-<code>crush-vm</code>, but the source-level path is unfinished — crush-ast <strong>CRUSH-34</strong>
-(spawn/await/yield execution) is open. A bare <code>yield</code> statement compiles and is a
-no-op.</p>
-<!-- check: nyi CRUSH-34 -->
-<div class="crush-block" data-crush="fail" data-src="examples/concurrency-structs.md:51" data-why="not implemented yet (CRUSH-34); Run shows what happens today">
-<pre><code class="language-crush">fn worker() {
-    print("worker running")
-    yield
-    print("worker finishing")
+<p><code>spawn</code> starts a green task; tasks take turns at <code>yield</code>, and <code>await</code> collects a
+task’s result. The workers below share one captured counter:</p>
+<div class="crush-block" data-crush="run" data-src="examples/concurrency-structs.md:49" data-expect="main
+a running
+b running
+a finishing
+b finishing
+a
+b
+finished: 2
+">
+<pre><code class="language-crush">fn main() {
+    let done = 0
+    let worker = |name| {
+        print(name + " running")
+        yield
+        print(name + " finishing")
+        done = done + 1
+        return name
+    }
+    let a = spawn worker("a")
+    let b = spawn worker("b")
+    print("main")
+    print(await a)
+    print(await b)
+    print("finished: " + done)
 }
-
-spawn worker()
-print("main")
-yield
-print("main again")
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">main
+a running
+b running
+a finishing
+b finishing
+a
+b
+finished: 2
+</code></pre>
+<p>More in <a href="../crush/concurrency.html">Concurrency</a>.</p>
 
                     </main>
 

@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Polyglot Programming\n\nA Crush program can embed code from other languages with `@language { ... }`\nblocks. This chapter describes what actually happens when you run one today —\nwhich languages work, how values cross the boundary, how errors and timeouts\nbehave, and, importantly, **how much isolation you do and don't get**.\n\n> **Status: alpha, and the security story is the part to read carefully.** By\n> default a polyglot block is an ordinary subprocess running with *your* user's\n> authority. An optional bubblewrap sandbox exists but is **off by default** and\n> not enabled by any command-line flag. See [Sandbox and authority](#sandbox-and-authority).\n\n## The model in one paragraph\n\nA block's source text is handed to a real interpreter — `python3 -c`, `node -e`,\nor `bash -c` — as a **child process**. Crush marshals some variables in, runs the\ninterpreter, captures its standard output, and (for Python and JavaScript)\nmarshals one result variable back. There is no embedded WebAssembly runtime, no\nWASI capability bridge, and no in-process interpreter.\n\n## Languages\n\n| Block | Runs | Aliases |\n|---|---|---|\n| `@python { }` | `python3 -c` | `@python3`, `@py` |\n| `@javascript { }` | `node -e` | `@js`, `@node`, `@es6`, `@ecmascript` |\n| `@bash { }` | `bash -c` | `@sh` |\n\nThe interpreter must be on `PATH`. Any other tag (`@rust`, `@go`, `@c`, …) fails\nat run time with `unknown capability: no executor registered for language\n'rust'`.\n",
+   "source": "# Polyglot Programming\n\n> Verified against crush-ast `cb655f3` (2026-10-16), with Python 3.14, Node 26 and\n> bash 5.3 on the host.\n\nA Crush program can embed code from other languages with `@language { ... }`\nblocks. This chapter describes what actually happens when you run one today —\nwhich languages work, how values cross the boundary, how errors and timeouts\nbehave, and, importantly, **how much isolation you do and don't get**.\n\n> **Status: alpha, and the security story is the part to read carefully.** By\n> default a polyglot block is an ordinary subprocess running with *your* user's\n> authority. An optional bubblewrap sandbox exists but is **off by default** and\n> not enabled by any command-line flag. See [Sandbox and authority](#sandbox-and-authority).\n\n## The model in one paragraph\n\nA block's source text is handed to a real interpreter — `python3 -c`, `node -e`,\nor `bash -c` — as a **child process**. Crush marshals some variables in, runs the\ninterpreter, captures its standard output, and (for Python and JavaScript)\nmarshals back the variables the block **declares** with `-> names`. There is no embedded WebAssembly runtime, no\nWASI capability bridge, and no in-process interpreter.\n\n## Languages\n\n| Block | Runs | Aliases |\n|---|---|---|\n| `@python { }` | `python3 -c` | `@python3`, `@py` |\n| `@javascript { }` | `node -e` | `@js`, `@node`, `@es6`, `@ecmascript` |\n| `@bash { }` | `bash -c` | `@sh` |\n\nThe interpreter must be on `PATH`; `crush doctor` checks which ones it finds. Any\nother tag (`@rust`, `@go`, `@c`, …) parses, but the program is refused before it\nruns (`not available in this host: polyglot.rust`).\n",
    "state": {
     "status": "done"
    },
@@ -41,10 +41,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:35",
+      "src": "crush/polyglot.md:38",
       "browser": "host",
       "why": "uses `@rust` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_error": "no executor registered for language 'rust'"
+      "expect_error": "not available in this host: polyglot.rust"
      }
     }
    },
@@ -55,7 +55,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "(crush-ast also ships **walkers** for Rust, Go, C, Zig, Wasm and others. A walker\ntranslates a *source file* into CAST for compilation — it is a separate\nmechanism, driven by the `crush-walker` tool, and is not what an `@lang { }`\nblock does.)\n\n## Enabling polyglot execution\n\nPolyglot is **off by default**, because running another interpreter is full\nambient authority. Turn it on per run:\n\n```sh\ncrush run --polyglot program.crush        # same flag on crush-run\n```\n\nWithout it the block is refused:\n",
+   "source": "(crush-ast also ships **walkers** for Rust, Go, C, Zig, Wasm and others. A walker\ntranslates a *source file* into CAST for compilation — it is a separate\nmechanism, driven by the `crush-walker` tool, and is not what an `@lang { }`\nblock does.)\n\n## Enabling polyglot execution\n\nPolyglot is **off by default**, because running another interpreter is full\nambient authority. Turn it on per run:\n\n```sh\ncrush run --polyglot program.crush        # same flag on crush-run\n```\n\nWithout it the program is refused before anything runs (`--polyglot:\npolyglot.python`):\n",
    "state": {
     "status": "done"
    },
@@ -78,10 +78,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:58",
+      "src": "crush/polyglot.md:62",
       "browser": "fail",
       "why": "this example shows a refusal",
-      "expect_error": "requires the 'polyglot.python' capability"
+      "expect_error": "polyglot.python"
      }
     }
    },
@@ -115,7 +115,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:77",
+      "src": "crush/polyglot.md:81",
       "browser": "host",
       "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
       "expect_output": "one\ntwothree\n"
@@ -129,7 +129,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "If you want the following output on a new line, end the block's output with an\nexplicit blank line (`print()`), or print from Crush.\n\n## Passing values in and out\n\n### Python and JavaScript\n\nFor `@python` and `@javascript` blocks, Crush analyses the block's own source:\n\n- **In:** every name the block *reads* that is a Crush variable already in scope\n  (a `let`, a parameter, a loop variable, or an earlier block's result) is\n  injected, with its type preserved.\n- **Out:** the **last name bound at the top level of the block** is marshaled\n  back and becomes a Crush variable of that name. Earlier assignments in the same\n  block do not escape.\n",
+   "source": "If you want the following output on a new line, end the block's output with an\nexplicit blank line (`print()`), or print from Crush.\n\n## Passing values in and out\n\n### Python and JavaScript\n\nFor `@python` and `@javascript` blocks:\n\n- **In (automatic):** every name the block *reads* that is a Crush variable\n  already in scope (a `let`, a parameter, a loop variable, or an earlier block's\n  output) is injected as a variable of that name, with its type preserved.\n- **Out (declared):** the names after `->` in the block header are marshaled back\n  and become (or assign) Crush variables at that line. Nothing else leaves the\n  block. Use `-> name` for one and `-> (a, b)` for several.\n",
    "state": {
     "status": "done"
    },
@@ -141,7 +141,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "let base = 5\n@python {\nimport math\ndoubled = base * 2\nresult = math.pow(base, 3)\n}\nprint(result)\n",
+   "source": "let count = 10\nlet base = 5\n@python -> total {\ntmp = base * 3\ntotal = tmp * 2\n}\nprint(total)\nprint(count)\n",
    "state": {
     "status": "pending"
    },
@@ -152,10 +152,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:108",
+      "src": "crush/polyglot.md:112",
       "browser": "host",
-      "why": "uses `@python` blocks (polyglot); uses the standard library (`math.pow`), which the in-browser runtime does not provide",
-      "expect_output": "125.0\n"
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "30\n10\n"
      }
     }
    },
@@ -166,7 +166,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Here `base` goes in, `result` (the last top-level binding) comes out, and\n`doubled` is local to the block — using it afterwards is a compile error\n(`Undefined variable`).\n\nValues travel as JSON, so the shareable types are exactly these:\n\n| Crush | Python | JavaScript |\n|---|---|---|\n| Int, Float | `int`, `float` | `number` |\n| String | `str` | `string` |\n| Bool | `bool` | `boolean` |\n| Null | `None` | `null` |\n| Array | `list` | `Array` |\n| Object | `dict` | `Object` |\n",
+   "source": "Here `base` goes in, `total` comes out, and `tmp` stays inside the block (using it\nafterwards is a compile error, `Undefined variable`). Several outputs:\n",
    "state": {
     "status": "done"
    },
@@ -178,7 +178,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "let n = 5\nlet tags = [\"a\", \"b\"]\nlet cfg = {\"k\": 1}\n@python {\nout = [n * 2, len(tags), cfg[\"k\"], None, True]\n}\nprint(out)\n",
+   "source": "let xs = [2, 4, 4, 4, 5, 5, 7, 9]\n@python -> (mean, spread) {\nmean = sum(xs) / len(xs)\nspread = max(xs) - min(xs)\n}\nprint(mean)\nprint(spread)\n",
    "state": {
     "status": "pending"
    },
@@ -189,10 +189,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:139",
+      "src": "crush/polyglot.md:133",
       "browser": "host",
       "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "[10, 2, 1, null, true]\n"
+      "expect_output": "5.0\n7\n"
      }
     }
    },
@@ -203,7 +203,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "An output variable that can't be serialised to JSON (a class instance, an open\nfile, a function) fails the block with a clear error rather than being dropped:\n",
+   "source": "Listing a name the block never binds is a compile error; a name bound only on\nsome paths is a run-time error naming it (`output variable 'r' was not bound by\nthe block`), never a silent `null`:\n",
    "state": {
     "status": "done"
    },
@@ -215,21 +215,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "@python {\nclass C:\n    pass\nobj = C()\n}\nprint(1)\n",
+   "source": "fn main() {\n    @python -> missing {\n    x = 1\n    }\n    print(missing)\n}\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "needs-host"
+     "expected-failure"
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:159",
-      "browser": "host",
-      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_error": "cannot marshal output variable 'obj'"
+      "src": "crush/polyglot.md:154",
+      "browser": "fail",
+      "why": "this example shows a compile error"
      }
     }
    },
@@ -240,7 +239,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Blocks compose through Crush variables, across languages:\n",
+   "source": "```text\n[compile] @python block declares output `missing` but never binds it; add `missing = …` at the block's top level, or drop it from `->`\n```\n\nEverything after the opening `{` is the guest's source, including the rest of\nthe header line, so a Crush `//` comment there is Python code. With an output list\nthat syntax error is currently reported as `[compile] Undefined variable: m`\n(crush-ast [#266](https://github.com/nixpt/crush-ast/issues/266)). Put comments\nabove the block, or use the guest's own comment syntax inside it.\n\n**Blocks without `->` (being phased out).** A block with no output list still\nexports its *last top-level assignment*, as in earlier releases, but the compiler\nnow warns on standard error, and warns again if that overwrites an existing Crush\nvariable. The next release drops the implicit export, so declare your outputs:\n\n```text\nwarning: @python block exports `count` implicitly; add `-> count` to declare it\nwarning: @python block overwrites the existing Crush variable `count`; declare `-> count` to make the overwrite explicit\n```\n\nValues travel as JSON, so the shareable types are exactly these:\n\n| Crush | Python | JavaScript |\n|---|---|---|\n| Int, Float | `int`, `float` | `number` |\n| String | `str` | `string` |\n| Bool | `bool` | `boolean` |\n| Null | `None` | `null` |\n| Array | `list` | `Array` |\n| Object | `dict` | `Object` |\n",
    "state": {
     "status": "done"
    },
@@ -252,44 +251,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "let x = 1\n@python {\ny = x + 1\n}\n@javascript {\nconst z = y * 10\n}\n@python {\nw = z + 1\n}\nprint(w)\n",
-   "state": {
-    "status": "pending"
-   },
-   "meta": {
-    "tags": [
-     "guide",
-     "needs-host"
-    ],
-    "extra": {
-     "guide": {
-      "src": "crush/polyglot.md:171",
-      "browser": "host",
-      "why": "uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "21\n"
-     }
-    }
-   },
-   "outputs": []
-  },
-  {
-   "id": "crush-polyglot-md-15",
-   "kind": {
-    "type": "markdown"
-   },
-   "source": "Blocks inside functions and loops see the enclosing scope:\n",
-   "state": {
-    "status": "done"
-   },
-   "meta": {},
-   "outputs": []
-  },
-  {
-   "id": "crush-polyglot-8",
-   "kind": {
-    "type": "crush"
-   },
-   "source": "let total = 0\nfor i in 0..3 {\n    @python {\nsq = i * i\n    }\n    total = total + sq\n}\nprint(total)\n",
+   "source": "let n = 5\nlet tags = [\"a\", \"b\"]\nlet cfg = {\"k\": 1}\n@python -> out {\nout = [n * 2, len(tags), cfg[\"k\"], None, True]\n}\nprint(out)\n",
    "state": {
     "status": "pending"
    },
@@ -303,7 +265,44 @@
       "src": "crush/polyglot.md:193",
       "browser": "host",
       "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "5\n"
+      "expect_output": "[10, 2, 1, null, true]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "An output variable that can't be serialised to JSON (a class instance, an open\nfile, a function) fails the block with a clear error rather than being dropped:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-8",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@python -> obj {\nclass C:\n    pass\nobj = C()\n}\nprint(1)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/polyglot.md:213",
+      "browser": "host",
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_error": "cannot marshal output variable(s) obj"
      }
     }
    },
@@ -314,7 +313,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Python and JavaScript state does **not** persist between blocks: each block is a\nfresh interpreter, and only the marshaled result variable carries over. You\ncannot define a function in one block and call it from Crush or from another\nblock.\n\n### Bash\n\n`@bash` blocks have no marshaling analysis. They receive the `let` variables\ndeclared **earlier at the top level of the same function body** as environment\nvariables (stringified — an array arrives as `[1, 2]`), and nothing comes back\nexcept the printed output:\n",
+   "source": "Blocks compose through Crush variables, across languages:\n",
    "state": {
     "status": "done"
    },
@@ -326,7 +325,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "let name = \"crush\"\n@bash {\necho \"hello $name\"\n}\n",
+   "source": "let x = 1\n@python -> y {\ny = x + 1\n}\n@javascript -> z {\nconst z = y * 10\n}\n@python -> w {\nw = z + 1\n}\nprint(w)\n",
    "state": {
     "status": "pending"
    },
@@ -337,10 +336,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:222",
+      "src": "crush/polyglot.md:225",
       "browser": "host",
-      "why": "uses `@bash` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "hello crush\n"
+      "why": "uses `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "21\n"
      }
     }
    },
@@ -351,7 +350,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Two surprises: function **parameters** are not passed to a `@bash` block, and\nneither is the result of an earlier `@python`/`@javascript` block — copy it into\na `let` first:\n",
+   "source": "Blocks inside functions and loops see the enclosing scope:\n",
    "state": {
     "status": "done"
    },
@@ -363,7 +362,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "@python {\nm = 7\n}\nlet n = m\n@bash {\necho \"n=$n\"\n}\n",
+   "source": "let total = 0\nfor i in 0..3 {\n    @python -> sq {\nsq = i * i\n    }\n    total = total + sq\n}\nprint(total)\n",
    "state": {
     "status": "pending"
    },
@@ -374,10 +373,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:239",
+      "src": "crush/polyglot.md:247",
       "browser": "host",
-      "why": "uses `@bash`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "n=7\n"
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "5\n"
      }
     }
    },
@@ -388,7 +387,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Bash also inherits the host environment (`$HOME`, `$PATH`, …) in the default,\nunsandboxed lane, so don't keep secrets in Crush variables around a `@bash` block\nyou don't control.\n\n## Errors\n\nIf the interpreter exits non-zero, the program stops with a\n`LangRuntimeError`. The message is the guest's own stderr, prefixed with the\n**Crush source line of the block**, so a Python traceback is attributed to the\nright place in your `.crush` file:\n",
+   "source": "Python and JavaScript state does **not** persist between blocks: each block is a\nfresh interpreter, and only the declared outputs carry over. You cannot define a\nfunction in one block and call it from Crush or from another block.\n",
    "state": {
     "status": "done"
    },
@@ -397,6 +396,117 @@
   },
   {
    "id": "crush-polyglot-11",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "@python -> a {\na = 1\nhidden = 2\n}\n@python -> r {\nr = \"hidden\" in globals()\n}\nprint(a)\nprint(r)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/polyglot.md:268",
+      "browser": "host",
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "1\nfalse\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-md-23",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Imports for blocks: `use @lang`\n\n`use @lang python \"module\"` (optionally `as alias`) writes the import into every\nlater `@python` block, so each block doesn't have to repeat it. Each block is\nstill its own process:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-12",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "use @lang python \"math\"\nuse @lang python \"json\" as j\n@python -> (val, text) {\nval = math.factorial(5)\ntext = j.dumps({\"a\": 1})\n}\nprint(val)\nprint(text)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/polyglot.md:293",
+      "browser": "host",
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "120\n{\"a\": 1}\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-md-25",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Bash\n\n`@bash` blocks have no value marshaling: only their printed output comes back,\nand `->` on a `@bash` block is a compile error (`` `->` output lists are not\nsupported for @bash: it has no value marshaling ``).\n\n> **Known bug ([crush-ast #255](https://github.com/nixpt/crush-ast/issues/255)).**\n> Earlier releases passed the function's top-level `let`s to a `@bash` block as\n> environment variables. Since explicit outputs landed (CRUSH-270) a `@bash` block\n> receives **no** Crush variables, and `$name` silently expands to the empty\n> string:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let name = \"crush\"\n@bash {\necho \"hello [$name]\"\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/polyglot.md:323",
+      "browser": "host",
+      "why": "uses `@bash` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "hello []\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-md-27",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Until that is fixed, compute the value in a `@python` block and print it, or\nwrite it to a file the `@bash` block reads. Bash inherits the host environment\n(`$HOME`, `$PATH`, …) in the default, unsandboxed lane.\n\n## Errors\n\nIf the interpreter exits non-zero, the program stops with a\n`LangRuntimeError`. The message is the guest's own stderr, prefixed with the\n**Crush source line of the block**, so a Python traceback is attributed to the\nright place in your `.crush` file:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-polyglot-14",
    "kind": {
     "type": "crush"
    },
@@ -411,7 +521,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:267",
+      "src": "crush/polyglot.md:348",
       "browser": "host",
       "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
       "expect_error": "at .crush line 3"
@@ -421,7 +531,7 @@
    "outputs": []
   },
   {
-   "id": "crush-polyglot-md-23",
+   "id": "crush-polyglot-md-29",
    "kind": {
     "type": "markdown"
    },
@@ -433,7 +543,7 @@
    "outputs": []
   },
   {
-   "id": "crush-polyglot-12",
+   "id": "crush-polyglot-15",
    "kind": {
     "type": "crush"
    },
@@ -448,7 +558,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/polyglot.md:315",
+      "src": "crush/polyglot.md:396",
       "browser": "host",
       "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
       "expect_output": "true\n"
@@ -458,11 +568,11 @@
    "outputs": []
   },
   {
-   "id": "crush-polyglot-md-25",
+   "id": "crush-polyglot-md-31",
    "kind": {
     "type": "markdown"
    },
-   "source": "Only use `--polyglot` on programs you trust, in an environment you are prepared\nto lose.\n\n**Sandboxed lane (opt-in at build time).** crush-ast can instead provision the\nlanguage runtime with [`buckets`](https://github.com/nixpt/buckets) and run the\nblock under `bwrap` (bubblewrap) — CRUSH-20, with registry dependencies added in\nCRUSH-66. It is gated behind the `sandboxed-polyglot` Cargo feature of `crush-vm`,\nwhich is **off by default** and **not re-exported as a `crush-lang-sdk` feature**\n(so there is no `--features` shortcut and no CLI flag). You enable it by building\nthe workspace with `--features crush-vm/sandboxed-polyglot`. It needs `bwrap`\ninstalled and, on first use, network access to download the runtime.\n\nWhat that lane does (verified against crush-ast `4e9c388`):\n\n| | Default | Sandboxed |\n|---|---|---|\n| interpreter | host's `python3` / `node` / `bash` | pinned `python@3.11`, `node@20`, `bash@5` from buckets |\n| host files (`/etc/hostname`) | readable | not visible (`FileNotFoundError`) |\n| network | inherited | **blocked** (`allow_network: false`) |\n| working directory | inherited | bound **read-write** |\n| `@lang[deps]` | ignored | resolved and bound read-only |\n\nDependencies go in square brackets after the language tag. Registry specs are\nprefixed `pypi:` or `npm:`; bare names are buckets package aliases. A bare\n`numpy` is **not** assumed to mean PyPI.\n\n```crush\n@python[pypi:six] {\nimport six\nv = six.__version__\n}\nprint(v)\n```\n\n```text\n1.17.0\n```\n\nThe first run prints buckets' progress lines (`resolved python.org@^3.11 → …`) to\nstandard error while it downloads. In a default build the `[...]` part still\nparses, but the dependencies are **silently ignored**, so `import six` then fails\nwith `ModuleNotFoundError`. An unknown package fails with\n`@python block sandbox setup failed: Failed to resolve version for 'pypi:…'`.\n\nEven the sandboxed lane is a first cut: the working directory is writable, memory\nis not limited, and only `python`, `javascript` and `bash` are wired up.\n\n## Limitations summary\n\n- Languages: Python, JavaScript (Node), Bash. Nothing else executes.\n- Value passing is JSON-only, one output variable, Python/JS only.\n- No shared interpreter state or cross-block function calls.\n- Guest errors and timeouts abort the program; they can't be caught from Crush.\n- Default execution is **unsandboxed**; the sandbox is a build-time opt-in.\n\n## Next Steps\n\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**: what the flags do and don't confine\n- **[Standard Library](https://docs.crushlang.org/crush/stdlib.html)**\n- **[CAST Specification](https://docs.crushlang.org/cast/index.html)**\n",
+   "source": "Only use `--polyglot` on programs you trust, in an environment you are prepared\nto lose.\n\n**Sandboxed lane (opt-in at build time).** crush-ast can instead provision the\nlanguage runtime with [`buckets`](https://github.com/nixpt/buckets) and run the\nblock under `bwrap` (bubblewrap) — CRUSH-20, with registry dependencies added in\nCRUSH-66. It is gated behind the `sandboxed-polyglot` Cargo feature of `crush-vm`,\nwhich is **off by default** and **not re-exported as a `crush-lang-sdk` feature**\n(so there is no `--features` shortcut and no CLI flag). You enable it by building\nthe workspace with `--features crush-vm/sandboxed-polyglot`. It needs `bwrap`\ninstalled and, on first use, network access to download the runtime.\n\nWhat that lane does (verified against crush-ast `4e9c388`):\n\n| | Default | Sandboxed |\n|---|---|---|\n| interpreter | host's `python3` / `node` / `bash` | pinned `python@3.11`, `node@20`, `bash@5` from buckets |\n| host files (`/etc/hostname`) | readable | not visible (`FileNotFoundError`) |\n| network | inherited | **blocked** (`allow_network: false`) |\n| working directory | inherited | bound **read-write** |\n| `@lang[deps]` | ignored | resolved and bound read-only |\n\nDependencies go in square brackets after the language tag. Registry specs are\nprefixed `pypi:` or `npm:`; bare names are buckets package aliases. A bare\n`numpy` is **not** assumed to mean PyPI.\n\n```crush\n@python[pypi:six] -> v {\nimport six\nv = six.__version__\n}\nprint(v)\n```\n\n```text\n1.17.0\n```\n\nThe first run prints buckets' progress lines (`resolved python.org@^3.11 → …`) to\nstandard error while it downloads. In a default build the `[...]` part still\nparses, but the dependencies are **silently ignored**: `import six` then works\nonly if the host's own Python happens to have `six`, and an unresolvable\n`[pypi:nothing_here_xyz]` is not reported at all. An unknown package fails with\n`@python block sandbox setup failed: Failed to resolve version for 'pypi:…'`.\n\nEven the sandboxed lane is a first cut: the working directory is writable, memory\nis not limited, and only `python`, `javascript` and `bash` are wired up.\n\n## Limitations summary\n\n- Languages: Python, JavaScript (Node), Bash. Nothing else executes.\n- Value passing is JSON-only, Python/JS only, and outputs are declared with `->`.\n- No shared interpreter state or cross-block function calls.\n- Guest errors and timeouts abort the program; they can't be caught from Crush.\n- Default execution is **unsandboxed**; the sandbox is a build-time opt-in.\n\n## Next Steps\n\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**: what the flags do and don't confine\n- **[Standard Library](https://docs.crushlang.org/crush/stdlib.html)**\n- **[CAST Specification](https://docs.crushlang.org/cast/index.html)**\n",
    "state": {
     "status": "done"
    },

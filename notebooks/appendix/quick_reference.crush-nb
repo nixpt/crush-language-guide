@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `v0.3.9`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps` | list the capabilities of your build |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush-repl` | interactive REPL |\n\nCapability flags (everything is **off** unless you pass it): `--stdlib` `--fs`\n`--fs-root DIR` `--env` `--time` `--net` `--process` `--crypto` `--db PATH`\n`--graphics` `--bus` `--task` `--akg` `--polyglot` `--cap NAME`. Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
+   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `cb655f3`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |\n| `crush doctor` | which polyglot interpreters are on `PATH` |\n| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |\n| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |\n\nCapability flags (everything is **off** unless you pass it, except the standard\nlibrary, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`\n`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`\n`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused\nbefore it runs. Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:29",
+      "src": "appendix/quick_reference.md:34",
       "browser": "run",
       "expect_output": "Hello, Alice\n43\n"
      }
@@ -54,7 +54,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "- Semicolons are optional. Comments are `//` and `#`. Strings use double quotes only.\n- A function returns a value only with `return`; falling off the end yields `null`.\n- `print(x)` takes exactly one argument; `io.print(a, b, …)` takes any number.\n- No `let mut`, no `T?` types, no lambdas (CRUSH-75), no working `import` (CRUSH-110).\n\n### Control flow ([Control Flow](https://docs.crushlang.org/crush/control_flow.html))\n",
+   "source": "- Semicolons are optional. Comments are `//` and `#`. Strings use `\"…\"` or `'…'`.\n- A function returns a value only with `return`; falling off the end yields `null`.\n- `print(x)` takes exactly one argument; `io.print(a, b, …)` takes any number.\n- No `let mut`, no `T?` types, no working `import` (CRUSH-110).\n\n### Closures ([Closures](https://docs.crushlang.org/crush/closures.html))\n",
    "state": {
     "status": "done"
    },
@@ -63,6 +63,42 @@
   },
   {
    "id": "appendix-quick-reference-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn make_counter() {\n    let c = 0\n    return || {\n        c = c + 1\n        return c\n    }\n}\nlet next = make_counter()\nnext()\nprint(next())\nlet sq = |x| x * x\nprint(5 |> sq)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "appendix/quick_reference.md:63",
+      "browser": "run",
+      "expect_output": "2\n25\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "appendix-quick-reference-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "### Control flow ([Control Flow](https://docs.crushlang.org/crush/control_flow.html))\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "appendix-quick-reference-3",
    "kind": {
     "type": "crush"
    },
@@ -77,7 +113,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:58",
+      "src": "appendix/quick_reference.md:86",
       "browser": "run",
       "expect_output": "medium\n0\n1\n2\na\nb\n"
      }
@@ -86,11 +122,11 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-md-5",
+   "id": "appendix-quick-reference-md-7",
    "kind": {
     "type": "markdown"
    },
-   "source": "`0..3` excludes the end. `break` and `continue` work in `while` and `for`.\n\n### Operators ([Operators](https://docs.crushlang.org/crush/operators.html))\n\n`+ - * / %` · `== != < > <= >=` · `&& || !` (short-circuit) · unary `-` · pipeline `|>`.\nThere is no `and`/`or`/`not`, `**`, `//`, `+=` or ternary.\n\n### Errors\n",
+   "source": "`0..3` excludes the end, `0..=3` includes it. `for` also walks a string's\ncharacters and a map's keys. `break` and `continue` work in `while` and `for`.\n`match v { 1 => \"one\", P { x: a } => a, _ => \"other\" }` matches literals,\nbindings and struct patterns (bind it with `let`; `return match …` returns `null`\ntoday, #253).\n\n### Operators ([Operators](https://docs.crushlang.org/crush/operators.html))\n\n`+ - * / %` · `== != < > <= >=` · `&& || !` or `and or not` (short-circuit) · unary\n`-` · pipeline `|>` · ranges `a..b`, `a..=b`. There is no `**`, `//`, `+=`, bitwise\noperator or ternary. `Int` overflow and division by zero are run-time errors.\n\n### Errors\n",
    "state": {
     "status": "done"
    },
@@ -98,7 +134,7 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-3",
+   "id": "appendix-quick-reference-4",
    "kind": {
     "type": "crush"
    },
@@ -113,7 +149,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:101",
+      "src": "appendix/quick_reference.md:134",
       "browser": "run",
       "expect_output": "caught: disk full\n"
      }
@@ -122,7 +158,7 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-md-7",
+   "id": "appendix-quick-reference-md-9",
    "kind": {
     "type": "markdown"
    },
@@ -134,11 +170,11 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-4",
+   "id": "appendix-quick-reference-5",
    "kind": {
     "type": "crush"
    },
-   "source": "struct Point { x, y }\nlet p = new Point()\np.x = 3\np.y = 4\nlet o = {\"name\": \"crush\"}\nprint(p.x + p.y)\nprint(o.name)\n",
+   "source": "struct Point { x: Int, y: Int }\nimpl Point {\n    fn sum(self) { return self.x + self.y }\n}\nlet p = Point { x: 3, y: 4 }\nlet o = {\"name\": \"crush\"}\no[\"lang\"] = \"en\"\nprint(p.sum())\nprint(o.name + \"/\" + o[\"lang\"])\n",
    "state": {
     "status": "pending"
    },
@@ -149,20 +185,20 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:116",
+      "src": "appendix/quick_reference.md:149",
       "browser": "run",
-      "expect_output": "7\ncrush\n"
+      "expect_output": "7\ncrush/en\n"
      }
     }
    },
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-md-9",
+   "id": "appendix-quick-reference-md-11",
    "kind": {
     "type": "markdown"
    },
-   "source": "### Capabilities ([Capabilities](https://docs.crushlang.org/crush/capabilities.html))\n\nCapability calls are dotted and have **no `@`**. They exist only if you enabled\nthem:\n",
+   "source": "Structs are sealed (no undeclared fields), references by default\n(`@kind(semantics: value(copy))` for values), and `==` compares fields. See\n[Structs, Methods and Kinds](https://docs.crushlang.org/crush/structs.html).\n\n### Capabilities ([Capabilities](https://docs.crushlang.org/crush/capabilities.html))\n\nCapability calls are dotted and have **no `@`**. They exist only if you enabled\nthem:\n",
    "state": {
     "status": "done"
    },
@@ -170,7 +206,7 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-5",
+   "id": "appendix-quick-reference-6",
    "kind": {
     "type": "crush"
    },
@@ -185,7 +221,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:138",
+      "src": "appendix/quick_reference.md:177",
       "browser": "host",
       "why": "uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide",
       "expect_output": "no notes\n"
@@ -195,7 +231,7 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-6",
+   "id": "appendix-quick-reference-7",
    "kind": {
     "type": "crush"
    },
@@ -210,7 +246,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:151",
+      "src": "appendix/quick_reference.md:190",
       "browser": "run",
       "expect_output": "ab3\n6\n"
      }
@@ -219,11 +255,11 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-md-12",
+   "id": "appendix-quick-reference-md-14",
    "kind": {
     "type": "markdown"
    },
-   "source": "### Polyglot blocks ([Polyglot](https://docs.crushlang.org/crush/polyglot.html))\n\n`@python { }`, `@javascript { }` and `@bash { }` run as host subprocesses, only with\n`--polyglot`, and with the host's full authority (no sandbox by default). Without the\nflag they are refused:\n",
+   "source": "### Polyglot blocks ([Polyglot](https://docs.crushlang.org/crush/polyglot.html))\n\n`@python -> out { }`, `@javascript -> out { }` and `@bash { }` run as host\nsubprocesses, only with `--polyglot`, and with the host's full authority (no sandbox\nby default). Names a block reads are passed in; the names after `->` come back.\nWithout the flag the program is refused:\n",
    "state": {
     "status": "done"
    },
@@ -231,7 +267,7 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-7",
+   "id": "appendix-quick-reference-8",
    "kind": {
     "type": "crush"
    },
@@ -246,7 +282,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:169",
+      "src": "appendix/quick_reference.md:209",
       "browser": "fail",
       "why": "this example shows a refusal",
       "expect_error": "--polyglot"
@@ -256,11 +292,11 @@
    "outputs": []
   },
   {
-   "id": "appendix-quick-reference-md-14",
+   "id": "appendix-quick-reference-md-16",
    "kind": {
     "type": "markdown"
    },
-   "source": "## Types ([Types](https://docs.crushlang.org/crush/types.html))\n\n| Type | Example | Notes |\n|---|---|---|\n| `Int` | `42` | 64-bit, decimal only |\n| `Float` | `3.14` | no exponent form |\n| `String` | `\"hello\"` | UTF-8, double quotes |\n| `Bool` | `true` | |\n| `Null` | `null` | |\n| array | `[1, 2, 3]` | |\n| object | `{\"key\": \"value\"}` | |\n| struct | `struct P { x, y }` | |\n\nAnnotations (`: Int`, `-> Int`) are checked at compile time and are optional.\n\n## Capabilities at a glance\n\n| Always on | `io.print` `io.read` `str.concat` `str.len` `conv.chr` `conv.ord` |\n|---|---|\n| `--stdlib` | `str.*` `math.*` `conv.*` `collections.*` `json.*` `path.*` `regex.*` … |\n| `--fs` | `fs.read` `fs.write` `fs.exists` `fs.list` |\n| `--env` | `env.get` |\n| `--time` | `time.now` `time.now_ms` `time.now_iso` `time.elapsed` `time.sleep` |\n| `--net` | `net.http_get` `net.http_post` |\n| `--process` | `process.exec` |\n| `--crypto` | `crypto.sha256` `crypto.random` |\n| `--db PATH` | `db.query` `db.execute` |\n| `--polyglot` | `@python` `@javascript` `@bash` |\n\n## CASM text assembly ([CASM](https://docs.crushlang.org/casm/index.html))\n\n```casm\n.func main\n    PUSH 40\n    PUSH 2\n    ADD\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n```text\n42\n```\n\n| Group | Mnemonics |\n|---|---|\n| Stack | `PUSH n` `PUSH_F64 x` `PUSH_STR \"s\"` `PUSH_BOOL 0\\|1` `PUSH_NULL` `POP` `DUP` `SWAP` `ROT` `PICK n` `ROLL n` |\n| Variables | `LOAD slot` `STORE slot` |\n| Arithmetic | `ADD` `SUB` `MUL` `DIV` `MOD` `NEG` |\n| Compare / logic | `EQ` `NE` `LT` `GT` `LE` `GE` `AND` `OR` `NOT` |\n| Bits | `BITAND` `BITOR` `BITXOR` `BITNOT` `SHL` `SHR` |\n| Control | `JMP label` `JZ label` `JNZ label` `CALL name` `RET` `HALT` `ENTER_TRY label` `EXIT_TRY` `THROW` |\n| Capabilities | `CAP_CALL \"name\" argc` |\n| Collections | `NEW_ARRAY n` `ARR_GET` `ARR_SET` `ARR_LEN` `ARR_PUSH` `ARR_POP` `NEW_OBJ` `GET_FIELD \"f\"` `SET_FIELD \"f\"` |\n| Strings / math | `STR_CONTAINS` `STR_SPLIT` `STR_REPLACE` `STR_JOIN` `STR_TRIM` `STR_TO_UPPER` `MATH_POW` `MATH_SQRT` … |\n\nStack effects and the JSON-IR names are in the\n[Instruction Reference](https://docs.crushlang.org/casm/instructions.html). Remember: arguments are pushed\n**last first**, and a `.casm` file needs `--cap` for every capability it calls.\n",
+   "source": "## Types ([Types](https://docs.crushlang.org/crush/types.html))\n\n| Type | Example | Notes |\n|---|---|---|\n| `Int` | `42`, `0x2A`, `0b101` | 64-bit, checked overflow |\n| `Float` | `3.14` | no exponent form |\n| `String` | `\"hello\"`, `'hello'` | UTF-8; `len` counts bytes |\n| `Bool` | `true` | |\n| `Null` | `null` | |\n| array | `[1, 2, 3]` | |\n| object | `{\"key\": \"value\"}` | insertion-ordered |\n| struct | `struct P { x, y }` | one line; `P { x: 1, y: 2 }` |\n| function | `\\|x\\| x + 1`, `fn` names | values; closures capture by reference |\n\nAnnotations (`: Int`, `-> Int`) are checked at compile time and are optional.\n\n## Capabilities at a glance\n\n| Always on | `io.print` `io.read` `str.concat` `str.len` `conv.chr` `conv.ord` |\n|---|---|\n| Standard library (default) | `str.*` `math.*` `conv.*` `collections.*` `json.*` `path.*` `regex.*` `sys.args` … |\n| `--fs` | `fs.read` `fs.write` `fs.exists` `fs.list` `fs.mkdir` … |\n| `--env` | `env.get` `env.all` `env.home_dir` |\n| `--time` | `time.now` `time.now_ms` `time.now_iso` `time.elapsed` `time.sleep` |\n| `--net` | `net.http_get` `net.http_post` |\n| `--process` | `process.exec` |\n| `--crypto` | `crypto.sha256` `crypto.random` |\n| `--db PATH` | `db.query` `db.execute` |\n| `--polyglot` | `@python` `@javascript` `@bash` |\n\n## CASM text assembly ([CASM](https://docs.crushlang.org/casm/index.html))\n\n```casm\n.func main\n    PUSH 40\n    PUSH 2\n    ADD\n    CAP_CALL \"io.print\" 1\n    HALT\n```\n\n```text\n42\n```\n\n| Group | Mnemonics |\n|---|---|\n| Stack | `PUSH n` `PUSH_F64 x` `PUSH_STR \"s\"` `PUSH_BOOL 0\\|1` `PUSH_NULL` `POP` `DUP` `SWAP` `ROT` `PICK n` `ROLL n` |\n| Variables | `LOAD slot` `STORE slot` |\n| Arithmetic | `ADD` `SUB` `MUL` `DIV` `MOD` `NEG` |\n| Compare / logic | `EQ` `NE` `LT` `GT` `LE` `GE` `AND` `OR` `NOT` |\n| Bits | `BITAND` `BITOR` `BITXOR` `BITNOT` `SHL` `SHR` |\n| Control | `JMP label` `JZ label` `JNZ label` `CALL name` `RET` `HALT` `ENTER_TRY label` `EXIT_TRY` `THROW` |\n| Capabilities | `CAP_CALL \"name\" argc` |\n| Collections | `NEW_ARRAY n` `ARR_GET` `ARR_SET` `ARR_LEN` `ARR_PUSH` `ARR_POP` `NEW_OBJ` `GET_FIELD \"f\"` `SET_FIELD \"f\"` |\n| Strings / math | `STR_CONTAINS` `STR_SPLIT` `STR_REPLACE` `STR_JOIN` `STR_TRIM` `STR_TO_UPPER` `MATH_POW` `MATH_SQRT` … |\n\nStack effects and the JSON-IR names are in the\n[Instruction Reference](https://docs.crushlang.org/casm/instructions.html). Remember: arguments are pushed\n**first argument first** (`PUSH_STR \"a\"`, `PUSH_STR \"b\"`, `CAP_CALL \"io.print\" 2`\nprints `ab`), and a `.casm` file needs `--cap` for every capability it calls.\n",
    "state": {
     "status": "done"
    },

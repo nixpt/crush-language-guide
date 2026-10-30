@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,6 +184,9 @@
                         <h1 id="capability-system"><a class="header" href="#capability-system">Capability System</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
 running another language — is a <strong>capability call</strong>, and a capability only exists
@@ -198,7 +201,7 @@ isolation.</p>
 </blockquote>
 <h2 id="calling-a-capability"><a class="header" href="#calling-a-capability">Calling a capability</a></h2>
 <p>A capability call looks like an ordinary dotted function call — <strong>no <code>@</code> prefix</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:19" data-expect="Hello, Crush
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:21" data-expect="Hello, Crush
 ab
 ">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
@@ -230,7 +233,7 @@ annotations, never capability calls — see <a href="syntax.html#language-blocks
 </tbody>
 </table>
 </div>
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:47" data-expect="A
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:49" data-expect="A
 65
 6
 ">
@@ -248,7 +251,7 @@ print(str.len("héllo"))
 <p><code>io.read</code> reads from standard input:</p>
 <!-- check: stdin Ada -->
 <!-- check: compile -->
-<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:64" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:66" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
 <pre><code class="language-crush">let name = io.read()
 io.print("Hello, " + name)
 </code></pre>
@@ -257,18 +260,20 @@ io.print("Hello, " + name)
 <h2 id="enabling-more-capabilities"><a class="header" href="#enabling-more-capabilities">Enabling more capabilities</a></h2>
 <p>With the CLI, each <em>group</em> of capabilities is switched on by a flag on
 <code>crush-run run</code> (or <code>crush run</code>). Anything not switched on is simply <strong>not
-registered</strong>, and calling it fails at run time with <code>unknown capability</code>:</p>
+registered</strong>. Before running anything, <code>crush-run</code> works out every capability the
+compiled program can reach and refuses the whole run if one isn’t granted, listing
+the flag that would grant each:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Flag</th><th>Capabilities enabled</th></tr>
 </thead>
 <tbody>
-<tr><td><code>--stdlib</code></td><td><code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>, <code>path.*</code>, <code>regex.*</code>, <code>bytes.*</code>, <code>buffer.*</code>, <code>binary.*</code>, <code>result.*</code>, <code>time.format/parse</code>, <code>env.os/arch</code>, <code>system.*</code> — pure computation, see <a href="stdlib.html">Standard Library</a></td></tr>
-<tr><td><code>--fs</code></td><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code>, <code>text.head/tail/wc/cut/grep</code></td></tr>
-<tr><td><code>--env</code></td><td><code>env.get</code></td></tr>
-<tr><td><code>--time</code></td><td><code>time.now</code>, <code>time.now_ms</code>, <code>time.now_iso</code>, <code>time.elapsed</code>, <code>time.sleep</code></td></tr>
-<tr><td><code>--net</code></td><td><code>net.http_get</code>, <code>net.http_post</code></td></tr>
+<tr><td>(none: on by default)</td><td>the standard library: <code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>, <code>path.*</code>, <code>regex.*</code>, <code>bytes.*</code>, <code>buffer.*</code>, <code>binary.*</code>, <code>result.*</code>, <code>time.format/parse</code>, <code>env.os/arch</code>, <code>system.*</code>, plus <code>sys.args()</code> / <code>sys.exit(code)</code>; pure computation, see <a href="stdlib.html">Standard Library</a>. <code>--no-stdlib</code> removes it</td></tr>
+<tr><td><code>--fs</code></td><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code>, <code>fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find</code>, <code>text.head/tail/wc/cut/grep</code></td></tr>
+<tr><td><code>--env</code></td><td><code>env.get</code>, <code>env.all</code>, <code>env.home_dir</code></td></tr>
+<tr><td><code>--time</code></td><td><code>time.now</code>, <code>time.now_ms</code>, <code>time.now_iso</code>, <code>time.elapsed</code>, <code>time.sleep</code>, <code>async.sleep</code></td></tr>
+<tr><td><code>--net</code></td><td><code>net.http_get</code>, <code>net.http_post</code>, <code>net.http_put</code>, <code>net.http_delete</code>, <code>net.http_request</code></td></tr>
 <tr><td><code>--process</code></td><td><code>process.exec</code></td></tr>
 <tr><td><code>--crypto</code></td><td><code>crypto.sha256</code>, <code>crypto.random</code></td></tr>
 <tr><td><code>--db PATH</code></td><td><code>db.query</code>, <code>db.execute</code> on that SQLite file</td></tr>
@@ -280,21 +285,26 @@ registered</strong>, and calling it fails at run time with <code>unknown capabil
 </tbody>
 </table>
 </div>
-<p><code>crush-run caps</code> prints the list for your build. Some groups (<code>--stdlib</code>,
-<code>--net</code>, <code>--db</code>, <code>--graphics</code>) are Cargo features of <code>crush-lang-sdk</code>; if your binary was
-built without one, its flag prints <code>warning: --… requires the '…' feature (not enabled in this build)</code> and the group stays absent. Note that <strong><code>stdlib</code> is off by
-default</strong> (crush-ast CRUSH-113); build with <code>--features stdlib</code>.</p>
-<p>Without the flag, the call fails:</p>
-<!-- check: runfail unknown capability: fs.read -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:100" data-why="this example shows a refusal" data-expect-error="unknown capability: fs.read">
-<pre><code class="language-crush">print(fs.read("data.txt"))
+<p><code>crush-run caps</code> prints the list for your build. Some groups (<code>--net</code>, <code>--db</code>,
+<code>--graphics</code>, <code>--gpu</code>) are Cargo features of <code>crush-lang-sdk</code> that a default build
+leaves out; the standard library is a default feature.</p>
+<p>Without the flag, nothing runs, not even the first line:</p>
+<!-- check: runfail fs.read -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:102" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<pre><code class="language-crush">print("first line")
+print(fs.read("data.txt"))
 </code></pre>
 </div>
 
+<pre><code class="language-text">[capabilities] block.crush needs capabilities this run does not grant; nothing was run:
+  --fs: fs.read
+</code></pre>
+<p><code>crush-run caps FILE</code> answers the same question without running: what the
+program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:108" data-why="uses `fs.read`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -304,7 +314,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:119" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:130" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
 </div>
@@ -321,28 +331,28 @@ has a scope.</p>
 <tr><td><code>fs.read</code></td><td><code>path</code></td><td>file contents (string)</td></tr>
 <tr><td><code>fs.exists</code></td><td><code>path</code></td><td><code>1</code> / <code>0</code></td></tr>
 <tr><td><code>fs.list</code></td><td><code>dir</code></td><td>array of names</td></tr>
-<tr><td><code>fs.write</code></td><td><code>path, data</code></td><td>nothing — <strong>see the note below</strong></td></tr>
+<tr><td><code>fs.write</code></td><td><code>path, data</code></td><td>nothing</td></tr>
+<tr><td><code>fs.mkdir</code></td><td><code>path</code></td><td>nothing</td></tr>
 </tbody>
 </table>
 </div>
-<blockquote>
-<p><strong>Known bug — <code>fs.write</code>.</strong> It declares no return value, and the compiler emits
-a <code>pop</code> after a call used as a statement, so any program that calls it ends with
-<code>[runtime] stack underflow</code> (the write itself may still happen). Treat <code>fs.write</code>
-as not usable from <code>.crush</code> source until this is fixed. Capabilities that
-return nothing share the problem; <code>io.print</code> and <code>time.sleep</code> are unaffected.</p>
-</blockquote>
-<!-- check: nyi GAP-VOID-CAP-STATEMENT -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:143" data-why="uses `fs.read`, `fs.write`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:148" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
+fs.mkdir("sub")
+fs.write("sub/a.txt", "a")
+print(fs.list("sub"))
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">hello
+[a.txt]
+</code></pre>
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:151" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:165" data-why="uses `env.get`, `process.exec`, `time.now`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
@@ -368,6 +378,50 @@ size capped by <code>--net-max-response-bytes</code> (default 1 MiB).</li>
 aborts the program with <code>[runtime] unknown capability: &lt;name&gt;: &lt;reason&gt;</code> — the
 “unknown capability” wording is misleading there, and the error is not
 catchable by <a href="control_flow.html#what-catch-does-not-catch"><code>try</code>/<code>catch</code></a>.</p>
+<h2 id="declaring-what-a-program-uses-capabilities"><a class="header" href="#declaring-what-a-program-uses-capabilities">Declaring what a program uses: <code>@capabilities</code></a></h2>
+<p>A program can say up front which capabilities it may use beyond the ambient,
+effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
+<!-- check: flags --time -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:198" data-why="uses `time.now_ms`, which the in-browser runtime does not provide">
+<pre><code class="language-crush">@capabilities [time.now_ms]
+let t = time.now_ms()
+print(t &gt; 0)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">true
+</code></pre>
+<p>Entries can be exact names (<code>fs.cat</code>), families (<code>fs</code>, <code>fs.*</code>) or scoped names
+(<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
+has to read that one line to know what the program can touch:</p>
+<!-- check: runfail not declared in @capabilities: env.get -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:214" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<pre><code class="language-crush">@capabilities [time.now_ms]
+print(env.get("HOME"))
+</code></pre>
+</div>
+
+<pre><code class="language-text">[compile] the program uses a capability not declared in @capabilities: env.get
+  add it to @capabilities, or stop using it
+</code></pre>
+<p>The declaration limits what the program <em>may</em> use; the run’s flags still decide
+what it <em>gets</em>. <code>crush-run caps prog.crush</code> prints both:</p>
+<pre><code class="language-text">prog.crush
+  declares: time.now_ms
+  needs these grants to run:
+    --time: time.now_ms
+  also uses (ambient): io.print
+</code></pre>
+<p>A program without <code>@capabilities</code> compiles as before.</p>
+<blockquote>
+<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/258">crush-ast #258</a>).</strong>
+The check runs when <code>crush-run run</code> / <code>crush run</code> compiles a <code>.crush</code> file. <code>crushc</code>
+and <code>crush build</code> don’t apply it yet, and the <code>.cvm1</code> they write drops the
+declaration, so review the source, not just the bytecode. (The
+<a href="https://github.com/nixpt/awesome-crush">awesome-crush</a> <code>agents/log-triage</code>
+entry walks through this with an agent-written tool.)</p>
+</blockquote>
 <h2 id="resource-limits"><a class="header" href="#resource-limits">Resource limits</a></h2>
 <p>Separately from capabilities, the VM enforces <strong>quotas</strong>; exceeding one ends the
 program with a <code>[runtime]</code> error:</p>
@@ -385,8 +439,8 @@ program with a <code>[runtime]</code> error:</p>
 </tbody>
 </table>
 </div>
-<p>Output is buffered: if a program fails at run time, anything it printed before
-the failure is <strong>not</strong> shown.</p>
+<p>Output printed before a run-time failure is kept: the program’s earlier lines
+appear, then the <code>[runtime]</code> error on standard error.</p>
 <h2 id="embedding-declaring-permissions"><a class="header" href="#embedding-declaring-permissions">Embedding: declaring permissions</a></h2>
 <p>When you embed the VM from Rust you choose the capability set yourself
 (<code>crush_lang_sdk::HostCaps</code>, <code>Runtime</code>, <code>ProgramBuilder</code>), and a CASM program
@@ -418,11 +472,12 @@ you trust.</li>
 </ul>
 <h2 id="not-implemented"><a class="header" href="#not-implemented">Not implemented</a></h2>
 <p>The following capabilities appeared in earlier revisions of this guide but do not
-exist in the runtime: <code>io.eprint</code>, <code>fs.delete</code>, <code>sys.exec</code>, <code>sys.env</code>, <code>sys.args</code>,
-<code>sys.exit</code>, <code>net.get</code>, <code>net.post</code>, <code>net.http</code>, <code>type.of</code>, <code>console.print</code>,
+exist in the runtime: <code>io.eprint</code>, <code>fs.delete</code>, <code>sys.exec</code>, <code>sys.env</code>,
+<code>net.get</code>, <code>net.post</code>, <code>net.http</code>, <code>type.of</code>, <code>console.print</code>,
 <code>array.length</code>, <code>map.keys</code>, <code>map.has_key</code>, and <code>module.load</code> (what <code>import</code>
 lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
-(<code>env.get</code>, <code>net.http_get</code>, <code>conv.type_of</code>, <code>len</code>, …).</p>
+(<code>fs.rm</code>, <code>env.get</code>, <code>net.http_get</code>, <code>conv.type_of</code>, <code>len</code>, …). <code>sys.args()</code> and
+<code>sys.exit(code)</code> do exist now (ambient).</p>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
 <li><strong><a href="stdlib.html">Standard Library</a></strong></li>
@@ -433,7 +488,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../crush/functions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../crush/concurrency.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -447,7 +502,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../crush/functions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../crush/concurrency.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

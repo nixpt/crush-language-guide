@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# System Info Report\n\nCrush as a *conductor*: gather facts from the host through capability calls, then\nassemble them. The program needs three capability groups, so it is run with\n`crush run --stdlib --env --time sysinfo.crush`; with any flag missing, the\ncorresponding call fails with `unknown capability`.\n",
+   "source": "# System Info Report\n\nCrush as a *conductor*: gather facts from the host through capability calls, then\nassemble them. The program needs three capability groups, so it is run with\n`crush run --env --time sysinfo.crush`; with either flag missing, the program is\nrefused before it runs, with the flag it needs (`--env: env.get`).\n",
    "state": {
     "status": "done"
    },
@@ -55,7 +55,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "(The `os` and `arch` lines depend on the machine that runs the example.)\n\n**What this shows:**\n\n- `env.os()` / `env.arch()` (`--stdlib`), `env.get(name)` (`--env`, returns `null`\n  when the variable is unset), `time.now()` (`--time`) — each group is\n  deny-by-default\n- `str.join(array, delimiter)` to assemble text\n- `\"label\" + (expression)` concatenation with a `Bool` result\n- Calls that don't exist yet: this page used to show `sys.hostname()`,\n  `sys.cpu_usage()`, `sys.memory_info()` and a `capability system readonly`\n  declaration. None of those exist in the runtime today; host metrics beyond\n  `env.*` and `time.*` have to come from `process.exec` (see\n  [Build Pipeline](https://docs.crushlang.org/examples/build-pipeline.html)) or a polyglot block.\n",
+   "source": "(The `os` and `arch` lines depend on the machine that runs the example.)\n\n**What this shows:**\n\n- `env.os()` / `env.arch()` (standard library, no flag), `env.get(name)` (`--env`, returns `null`\n  when the variable is unset), `time.now()` (`--time`) — each group is\n  deny-by-default\n- `str.join(array, delimiter)` to assemble text\n- `\"label\" + (expression)` concatenation with a `Bool` result\n- Calls that don't exist yet: this page used to show `sys.hostname()`,\n  `sys.cpu_usage()`, `sys.memory_info()` and a `capability system readonly`\n  declaration. None of those exist in the runtime today; host metrics beyond\n  `env.*` and `time.*` have to come from `process.exec` (see\n  [Build Pipeline](https://docs.crushlang.org/examples/build-pipeline.html)) or a polyglot block.\n",
    "state": {
     "status": "done"
    },

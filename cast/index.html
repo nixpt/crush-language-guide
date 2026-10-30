@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,7 +191,7 @@ produce it from other languages, and an AI agent can write it directly (see
  an agent's JSON ──────┘
 </code></pre>
 <p>This page is the schema reference. It is derived from <code>crates/crush-cast/src/lib.rs</code>
-in crush-ast (<code>v0.3.9</code>); the examples are accepted by <code>crush_cast::validate_json</code>,
+in crush-ast (verified against <code>cb655f3</code>, 2026-10-16); the examples are accepted by <code>crush_cast::validate_json</code>,
 compiled and run by this guide’s checker.</p>
 <h2 id="document-structure"><a class="header" href="#document-structure">Document structure</a></h2>
 <pre><code class="language-json">{
@@ -311,8 +311,10 @@ node (it defaults to <code>{}</code>), with one exception: <strong><code>Capabil
 <tr><td><code>TryCatch</code></td><td><code>body</code>, <code>error_var</code>, <code>handler</code></td><td></td></tr>
 <tr><td><code>Throw</code></td><td><code>value</code></td><td></td></tr>
 <tr><td><code>FunctionDef</code></td><td><code>name</code>, <code>params</code>, <code>body</code></td><td>nested function definition</td></tr>
-<tr><td><code>StructDef</code></td><td><code>name</code>, <code>fields</code></td><td><code>fields</code> is <code>[[name, type], …]</code></td></tr>
-<tr><td><code>LangBlock</code></td><td><code>lang</code>, <code>code</code>, <code>variables</code>, <code>imports</code>, <code>deps</code></td><td>a polyglot <code>@lang { }</code> block; <code>variables</code> are marshalled in, <code>meta.polyglot_output</code> names the variable marshalled out</td></tr>
+<tr><td><code>StructDef</code></td><td><code>name</code>, <code>fields</code>, <code>kind</code></td><td><code>fields</code> is <code>[[name, type], …]</code>; <code>kind</code> is the <code>@kind(…)</code> annotation as written (<code>{"args": [{"key", "value"}]}</code>, values <code>Name</code> / <code>Apply</code> / <code>List</code>), or absent</td></tr>
+<tr><td><code>ImplBlock</code></td><td><code>type_name</code>, <code>trait_name</code> (optional), <code>methods</code></td><td><code>impl P { … }</code> / <code>impl T for P { … }</code>; each method is <code>{name, params, body}</code>, <code>self</code> is an ordinary first parameter</td></tr>
+<tr><td><code>TraitDef</code></td><td><code>name</code>, <code>methods</code></td><td>a method without <code>body</code> is a required signature</td></tr>
+<tr><td><code>LangBlock</code></td><td><code>lang</code>, <code>code</code>, <code>variables</code>, <code>outputs</code>, <code>imports</code>, <code>deps</code></td><td>a polyglot <code>@lang { }</code> block; <code>variables</code> are marshalled in, <code>outputs</code> (the <code>-&gt; names</code>, mirrored in <code>meta.polyglot_outputs</code>) are marshalled out. After <code>prepare_polyglot_blocks</code>, <code>code</code> carries the generated marshalling prologue/epilogue</td></tr>
 <tr><td><code>Import</code></td><td><code>import</code></td><td>an <code>ImportStatement</code> — parsed, but <strong>not executed</strong>: see below</td></tr>
 <tr><td><code>DomMutate</code>, <code>DomEventListener</code></td><td></td><td>DOM nodes; compile to <code>NOP</code> today</td></tr>
 <tr><td><code>AI</code></td><td><code>ai_type</code>, …</td><td>AI statements — see <a href="ai-native.html">AI-Native CAST</a></td></tr>
@@ -345,8 +347,8 @@ imports are not implemented yet (CRUSH-110).</p>
 <tr><td><code>Range</code></td><td><code>start</code>, <code>end</code></td></tr>
 <tr><td><code>Match</code></td><td><code>expression</code>, <code>arms</code> (<code>{pattern, body}</code> pairs)</td></tr>
 <tr><td><code>Pipeline</code></td><td><code>segments</code> — <code>a |&gt; b |&gt; c</code></td></tr>
-<tr><td><code>Spawn</code>, <code>Await</code>, <code>Yield</code></td><td>task / async forms (stubs, see <a href="../casm/instructions.html#polyglot-concurrency-ai-and-dom">CASM</a>)</td></tr>
-<tr><td><code>Lambda</code></td><td><code>params</code>, <code>body</code> — the node exists, but the Crush parser cannot produce it: lambdas are not implemented (CRUSH-75)</td></tr>
+<tr><td><code>Spawn</code>, <code>Await</code>, <code>Yield</code></td><td>green tasks: <code>Spawn</code> is <code>{function, args}</code> (see <a href="../crush/concurrency.html">Concurrency</a>)</td></tr>
+<tr><td><code>Lambda</code></td><td><code>params</code> (<code>[name, type]</code> pairs), <code>body</code> — what <code>|x| x + k</code> parses to; captures are worked out by the compiler, not stored in CAST (see <a href="../crush/closures.html">Closures</a>)</td></tr>
 <tr><td><code>VectorMath</code></td><td><code>operator</code>, <code>args</code></td></tr>
 <tr><td><code>DomQuery</code></td><td><code>query_type</code>, <code>selector</code></td></tr>
 <tr><td><code>AI</code></td><td><code>ai_type</code>, … — see <a href="ai-native.html">AI-Native CAST</a></td></tr>
@@ -453,7 +455,7 @@ CBOR:</p>
 <p><code>Program::deserialize</code> / <code>load</code> check <code>cast_version</code> and refuse a different <strong>major</strong>
 than <code>CAST_VERSION</code> (<code>"0.1"</code>): <code>version mismatch at cast boundary: expected 0.1, found …</code>. The corpus in <code>examples/cast/</code> uses <code>"0.1"</code> / <code>"0.1.0"</code>.</p>
 <blockquote>
-<p><strong>Known inconsistency (crush-ast <code>v0.3.9</code>).</strong> The Crush front end stamps the trees
+<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>cb655f3</code>).</strong> The Crush front end stamps the trees
 it produces <code>cast_version: "1.0.0"</code>, which the versioned loader then rejects — so a
 CAST dump from the compiler cannot be re-loaded with <code>Program::load</code>, though
 <code>serde_json</code> and <code>validate_json</code> accept it. When you write CAST by hand or from an
@@ -483,7 +485,7 @@ when the call is a statement and the capability returns a value).</li>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../examples/async-dom.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../examples/awesome-crush.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -497,7 +499,7 @@ when the call is a statement and the capability returns a value).</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../examples/async-dom.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../examples/awesome-crush.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

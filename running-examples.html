@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-7647b030.js"></script>
+        <script src="toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -201,15 +201,15 @@ checks that keep the guide’s code honest (nothing is labelled by hand):</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
-and VM as <code>crush-run</code>, with a different set of grants:</p>
+and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>cb655f3</code>, the commit
+this guide is verified against), with a different set of grants:</p>
 <ul>
-<li><strong>Granted:</strong> <code>print</code> / <code>io.print</code>, and the VM’s built-in string helpers
-(<code>str.len</code>, <code>str.concat</code>, <code>str.contains</code>, <code>str.split</code>, <code>str.join</code>, <code>str.replace</code>,
-<code>conv.chr</code>, <code>conv.ord</code>).</li>
+<li><strong>Granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> / <code>io.print</code>, the
+whole standard library (<code>str.*</code>, <code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code>,
+<code>regex.*</code>, …), and <code>sys.args()</code> (empty).</li>
 <li><strong>Not available:</strong> polyglot blocks (<code>@python</code>, <code>@javascript</code>, <code>@bash</code>: there is no
-host process to run them in), the filesystem, network, environment, clock and
-processes, the standard-library modules (<code>math.*</code>, <code>conv.to_int</code>, <code>json.*</code>, …),
-and standard input (<code>io.read</code> returns <code>""</code>).</li>
+host process to run them in), the filesystem, network, environment, clock,
+processes and cryptography, and standard input (<code>io.read</code> returns <code>""</code>).</li>
 <li><strong>Every run starts fresh.</strong> Examples do not share variables, even on the same
 page. To build on one example in the next, open the chapter as a notebook (see
 <a href="notebooks.html">Chapters as Notebooks</a>).</li>

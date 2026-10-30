@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,25 +184,30 @@
                         <h1 id="standard-library"><a class="header" href="#standard-library">Standard Library</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/stdlib.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
 as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
 system: there is no <code>import std.io</code>, and <code>import</code> does not load anything yet
 (crush-ast <strong>CRUSH-110</strong>). You call these functions by their full dotted name.</p>
 <h2 id="turning-it-on"><a class="header" href="#turning-it-on">Turning it on</a></h2>
-<p>Almost all of the library lives behind a Cargo feature <strong>and</strong> a CLI flag:</p>
-<ol>
-<li>Build the toolchain with the <code>stdlib</code> feature of <code>crush-lang-sdk</code>
-(<code>cargo build -p crush-lang-sdk --features stdlib</code>). It is <strong>off by default</strong>
-(crush-ast <strong>CRUSH-113</strong>); on a build without it, <code>--stdlib</code> only prints
-<code>warning: --stdlib requires the 'stdlib' feature</code>.</li>
-<li>Run with <code>--stdlib</code>: <code>crush run --stdlib prog.crush</code>.</li>
-</ol>
-<p>The examples in this chapter are all executed with <code>--stdlib</code>. These are
-pure-computation capabilities — they do no I/O. For files, network, time and
-processes see <a href="capabilities.html">Capability System</a>.</p>
+<p>It is <strong>on by default</strong> (crush-ast CRUSH-113): the <code>stdlib</code> Cargo feature of
+<code>crush-lang-sdk</code> is a default feature, and <code>crush-run</code>/<code>crush run</code> register the
+library without a flag, because these capabilities confer no authority. They are
+pure computation and do no I/O; for files, network, time and processes see
+<a href="capabilities.html">Capability System</a>.</p>
+<ul>
+<li><code>--stdlib</code> is still accepted, for compatibility, and changes nothing.</li>
+<li><code>--no-stdlib</code> leaves the library out. A program that uses it is then refused
+before it runs, with <code>stdlib (default; --no-stdlib): str.to_upper</code>.</li>
+<li>A build with <code>default-features = false</code> (an embedder can choose that) has no
+library; <code>--stdlib</code> is then an error.</li>
+</ul>
 <p>Arguments are positional and the arity is checked (<code>[runtime] str.replace takes 3 arg(s), got 2</code>). Note that some predicates return <code>1</code>/<code>0</code> rather than
-<code>true</code>/<code>false</code> (for example <code>str.starts_with</code>, <code>regex.test</code>,
-<code>collections.includes</code>), so compare with <code>== 1</code> rather than assuming a <code>Bool</code>.</p>
+<code>true</code>/<code>false</code> (for example <code>str.starts_with</code>, <code>str.ends_with</code>, <code>regex.test</code>,
+<code>collections.includes</code>), while <code>str.contains</code> returns a <code>Bool</code>, so compare with
+<code>== 1</code> rather than assuming a <code>Bool</code>.</p>
 <h2 id="strings--str"><a class="header" href="#strings--str">Strings — <code>str.*</code></a></h2>
 <div class="table-wrapper">
 <table>
@@ -220,12 +225,22 @@ processes see <a href="capabilities.html">Capability System</a>.</p>
 <tr><td><code>str.repeat(s, n)</code></td><td>string</td></tr>
 <tr><td><code>str.substring(s, start, end)</code></td><td>string (<code>end</code> exclusive)</td></tr>
 <tr><td><code>str.char_at(s, i)</code>, <code>str.index_of(s, sub)</code></td><td>one-char string / index</td></tr>
+<tr><td><code>str.format(template, value)</code></td><td>the first <code>{}</code> replaced by <code>value</code> (exactly two arguments)</td></tr>
 <tr><td><code>str.format(template, args)</code></td><td><code>{}</code> placeholders filled from <code>args</code></td></tr>
 </tbody>
 </table>
 </div>
-<p><code>str.concat(...)</code> and <code>str.len(s)</code> are always available, even without <code>--stdlib</code>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:45" data-why="uses the standard library (`str.index_of`, `str.pad_left`, `str.repeat` …), which the in-browser runtime does not provide">
+<p><code>str.concat(...)</code> and <code>str.len(s)</code> are always available, even with <code>--no-stdlib</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:49" data-expect="[a, b, c]
+a-b
+[x]
+hello crush
+ABC
+007
+ababab
+el
+2
+">
 <pre><code class="language-crush">print(str.split("a,b,c", ","))
 print(str.join(["a", "b"], "-"))
 print("[" + str.trim("  x  ") + "]")
@@ -256,7 +271,12 @@ el
 <code>math.pi()</code>. Results are <code>Float</code>. <code>math.random()</code>, <code>math.random_int(lo, hi)</code>
 (requires <code>lo &lt; hi</code>) and <code>math.seed(n)</code> use a deterministic built-in generator
 (crush-ast CRUSH-116), so seeded runs are reproducible.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:80" data-why="uses the standard library (`math.floor`, `math.max`, `math.pow` …), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:84" data-expect="4.0
+1024.0
+-2.0
+4.0
+2.5
+">
 <pre><code class="language-crush">print(math.sqrt(16))
 print(math.pow(2, 10))
 print(math.floor(-1.5))
@@ -276,7 +296,13 @@ print(math.max(2.5, 1))
 <p><code>conv.to_int</code>, <code>conv.to_float</code>, <code>conv.to_str</code>, <code>conv.to_bool</code>,
 <code>conv.parse_int(text, radix)</code>, <code>conv.parse_float</code>, <code>conv.type_of</code>, plus the
 always-on <code>conv.chr</code> / <code>conv.ord</code>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:103" data-why="uses the standard library (`conv.parse_int`, `conv.to_float`, `conv.to_int` …), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:107" data-expect="43
+3
+255
+5
+2.0
+float
+">
 <pre><code class="language-crush">print(conv.to_int("42") + 1)
 print(conv.to_int(3.9))
 print(conv.parse_int("ff", 16))
@@ -298,7 +324,13 @@ float
 <p><code>collections.len</code>, <code>reverse</code>, <code>includes</code>, <code>flatten</code>, <code>chunk(array, n)</code>, <code>zip</code>,
 <code>unique</code>, <code>all</code>, <code>any</code>, <code>find</code>, <code>sort_by(array, key)</code>, <code>pluck(array, key)</code>,
 and for objects: <code>keys</code>, <code>values</code>, <code>entries</code>, <code>merge</code>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:128" data-why="uses the standard library (`collections.chunk`, `collections.keys`, `collections.merge` …), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:132" data-expect="[ada, grace]
+[3, 5]
+[ada, grace, linus]
+[3, 2, 1]
+[[1, 2], [3, 4]]
+[1, 2, 3]
+">
 <pre><code class="language-crush">let scores = {"ada": 3, "grace": 5}
 print(collections.keys(scores))
 print(collections.values(scores))
@@ -317,25 +349,33 @@ print(collections.unique([1, 1, 2, 2, 3]))
 [[1, 2], [3, 4]]
 [1, 2, 3]
 </code></pre>
-<p><code>collections.keys(obj)</code> returns the keys <strong>sorted</strong>, and is how you iterate an
-object deterministically — <code>for k in obj</code> isn’t supported, and printing an object
-directly lists its keys in an unspecified (per-run) order:</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:152" data-why="uses the standard library (`collections.keys`), which the in-browser runtime does not provide">
-<pre><code class="language-crush">let m = {"a": 1, "b": 2}
+<p>Objects keep their keys in <strong>insertion order</strong>: <code>collections.keys(obj)</code>,
+<code>collections.values(obj)</code>, <code>collections.entries(obj)</code>, <code>for k in obj</code> and printing
+all walk the keys in the order they were first set (not sorted):</p>
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:156" data-expect="b
+a
+[[b, 2], [a, 1]]
+">
+<pre><code class="language-crush">let m = {"b": 2, "a": 1}
 for k in collections.keys(m) {
     print(k)
 }
+print(collections.entries(m))
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">a
-b
+<pre><code class="language-text">b
+a
+[[b, 2], [a, 1]]
 </code></pre>
 <h2 id="json--json"><a class="header" href="#json--json">JSON — <code>json.*</code></a></h2>
 <p><code>json.parse(text)</code> → object/array/scalar; <code>json.stringify(value)</code>;
 <code>json.stringify_pretty(value)</code>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:170" data-why="uses the standard library (`json.parse`, `json.stringify`), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:176" data-expect="Ada
+4
+{&quot;x&quot;:1}
+">
 <pre><code class="language-crush">let o = json.parse("{\"name\": \"Ada\", \"n\": 3}")
 print(o.name)
 print(o.n + 1)
@@ -351,7 +391,12 @@ print(json.stringify({"x": 1}))
 <h2 id="paths--path"><a class="header" href="#paths--path">Paths — <code>path.*</code></a></h2>
 <p><code>path.join(a, b)</code>, <code>dirname</code>, <code>basename</code>, <code>extension</code>, <code>stem</code>, <code>is_absolute</code>,
 <code>normalize</code> — pure string manipulation, no filesystem access.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:189" data-why="uses the standard library (`path.basename`, `path.dirname`, `path.join` …), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:195" data-expect="a/b.txt
+/x/y
+z.txt
+z.tar
+a/c
+">
 <pre><code class="language-crush">print(path.join("a", "b.txt"))
 print(path.dirname("/x/y/z.txt"))
 print(path.basename("/x/y/z.txt"))
@@ -371,7 +416,10 @@ a/c
 <p><strong>The pattern comes first</strong>, then the text: <code>regex.test(pattern, text)</code>,
 <code>regex.find_all(pattern, text)</code>, <code>regex.replace(pattern, text, replacement)</code>,
 <code>regex.split(pattern, text)</code>.</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:212" data-why="uses the standard library (`regex.find_all`, `regex.replace`, `regex.split`), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:218" data-expect="[1, 22]
+a#b#
+[a, b, c]
+">
 <pre><code class="language-crush">print(regex.find_all("[0-9]+", "a1b22"))
 print(regex.replace("[0-9]", "a1b2", "#"))
 print(regex.split("[,;] *", "a, b;c"))
@@ -388,33 +436,44 @@ a#b#
 <code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
 </blockquote>
 <!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:230" data-why="uses the standard library (`regex.match`), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="fail" data-src="crush/stdlib.md:236" data-why="not implemented yet (GAP-KEYWORD-FIELD-NAMES); Run shows what happens today">
 <pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 </code></pre>
 </div>
 
 <h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
-<p>Also registered under <code>--stdlib</code>: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
+<p>Also in the standard library: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
 <code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
 <code>binary.write_*</code> (u16/u32/u64, big/little endian), <code>result.*</code> (<code>ok</code>, <code>err</code>,
 <code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
 <code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
 helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
-<div class="crush-block" data-crush="host" data-src="crush/stdlib.md:243" data-why="uses `env.os`; uses the standard library (`result.ok`, `result.unwrap`), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:249" data-expect="5
+{ok: true, value: 5}
+false
+Hello World!
+">
 <pre><code class="language-crush">print(result.unwrap(result.ok(5)))
-print(env.os())
+print(result.ok(5))
+print(result.is_ok(result.err("no")))
+print(str.format("Hello {}!", "World"))
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">5
-linux
+{ok: true, value: 5}
+false
+Hello World!
 </code></pre>
-<p>(The second line depends on the machine running the example.)</p>
+<p><code>env.os()</code> and <code>env.arch()</code> return the host’s OS and CPU names (<code>linux</code>,
+<code>x86_64</code>), so their output depends on the machine.</p>
 <h2 id="not-in-the-library"><a class="header" href="#not-in-the-library">Not in the library</a></h2>
-<p>There is no <code>std.*</code> module tree, <code>io.eprint</code>, <code>sys.*</code>, <code>array.length</code> or
-<code>map.*</code>. For output use <code>print</code>/<code>io.print</code>; for the process environment use
-<code>env.get</code> (<code>--env</code>); for arguments, there is currently no accessor.</p>
+<p>There is no <code>std.*</code> module tree, <code>io.eprint</code>, <code>array.length</code> or <code>map.*</code>. For
+output use <code>print</code>/<code>io.print</code>; for the process environment use <code>env.get</code>
+(<code>--env</code>). Program arguments are <code>sys.args()</code>, an array of what follows the file
+name on the command line (<code>crush run prog.crush a b</code> → <code>[a, b]</code>), and
+<code>sys.exit(code)</code> stops the program with that exit status.</p>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
 <li><strong><a href="capabilities.html">Capability System</a></strong></li>
@@ -429,7 +488,7 @@ linux
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../examples/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../crush/annotations.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -443,7 +502,7 @@ linux
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../examples/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../crush/annotations.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

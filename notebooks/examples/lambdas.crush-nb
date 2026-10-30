@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Lambdas & the Pipeline Operator\n\n## The pipeline operator\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and\nbind more loosely than any other operator. The right-hand side must be a\nuser-defined function (or a call to one).\n",
+   "source": "# Lambdas & the Pipeline Operator\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n\n## The pipeline operator\n\n`x |> f` calls `f(x)`; `x |> f(y)` calls `f(x, y)`. Chains read left to right and\nbind more loosely than any other operator. The right-hand side must be a function\nname, or a variable holding a function value.\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/lambdas.md:9",
+      "src": "examples/lambdas.md:11",
       "browser": "run",
       "expect_output": "9\n16\n70\n"
      }
@@ -54,7 +54,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "`add(1, 2) |> mul(3)` is `mul(add(1, 2), 3)`, i.e. `mul(3, 3)` = 9.\n\n## Lambdas\n\n> **Not yet implemented.** Anonymous functions, functions as values, and closures\n> all fail to compile today. The lexer reads a bare `|` as an identifier, so the\n> `|params| body` parser is unreachable — crush-ast **CRUSH-75**, open (the same\n> bug is GitHub issue #78). The forms below are what the design intends; they are\n> kept here, marked, so they can be switched on when CRUSH-75 lands.\n",
+   "source": "`add(1, 2) |> mul(3)` is `mul(add(1, 2), 3)`, i.e. `mul(3, 3)` = 9.\n\n## Lambdas\n\nA lambda is `|params| expression` or `|params| { block }`:\n",
    "state": {
     "status": "done"
    },
@@ -66,7 +66,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    let add = |a, b| {\n        return a + b\n    }\n    print(add(1, 2))\n}\n",
+   "source": "fn main() {\n    let add = |a, b| {\n        return a + b\n    }\n    let mul = |x, y| x * y\n    print(add(1, 2))\n    print(mul(4, 5))\n    print(6 |> |n| n)\n}\n",
    "state": {
     "status": "pending"
    },
@@ -77,12 +77,24 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/lambdas.md:44",
+      "src": "examples/lambdas.md:42",
       "browser": "fail",
-      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+      "why": "this example shows a compile error"
      }
     }
    },
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "That program fails to compile because of its last line: an inline lambda on the\nright of `|>` is a parse error (`Pipeline right side must be function`). Bind it\nfirst:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
    "outputs": []
   },
   {
@@ -90,31 +102,67 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    let mul = |x, y| => x * y\n    print(mul(4, 5))\n}\n",
+   "source": "let add = |a, b| {\n    return a + b\n}\nlet mul = |x, y| x * y\nlet ident = |n| n\nprint(add(1, 2))\nprint(mul(4, 5))\nprint(6 |> ident)\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "examples/lambdas.md:52",
-      "browser": "fail",
-      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+      "src": "examples/lambdas.md:56",
+      "browser": "run",
+      "expect_output": "3\n20\n6\n"
      }
     }
    },
    "outputs": []
   },
   {
-   "id": "examples-lambdas-md-6",
+   "id": "examples-lambdas-md-7",
    "kind": {
     "type": "markdown"
    },
-   "source": "Passing a function by name (`apply(double, 21)`) fails for the same reason: a\nfunction name is not a value. Until then, use named functions and `|>`.\n",
+   "source": "## Functions as values, and closures\n\nA function name is a value, and a lambda captures the variables around it:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn compose(f, g) {\n    return |x| g(f(x))\n}\nfn make_scaler(k) {\n    return |x| x * k\n}\nlet triple = make_scaler(3)\nlet inc = |x| x + 1\nlet triple_then_inc = compose(triple, inc)\nprint(triple_then_inc(5))\nprint(parallel_map([1, 2, 3], triple))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "examples/lambdas.md:78",
+      "browser": "run",
+      "expect_output": "16\n[3, 6, 9]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "examples-lambdas-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "More in [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n",
    "state": {
     "status": "done"
    },

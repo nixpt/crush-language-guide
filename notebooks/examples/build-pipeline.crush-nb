@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Build Pipeline\n\nCrush's intended role is a small, auditable *conductor* for other tools: it\ndecides what runs and in what order, while capability calls do the work. Here each\nstep is a real process started through `process.exec`, and the pipeline stops at\nthe first failure.\n\nRun it with `crush run --stdlib --process build.crush`.\n",
+   "source": "# Build Pipeline\n\nCrush's intended role is a small, auditable *conductor* for other tools: it\ndecides what runs and in what order, while capability calls do the work. Here each\nstep is a real process started through `process.exec`, and the pipeline stops at\nthe first failure.\n\nRun it with `crush run --process build.crush`.\n",
    "state": {
     "status": "done"
    },
@@ -43,7 +43,7 @@
      "guide": {
       "src": "examples/build-pipeline.md:11",
       "browser": "host",
-      "why": "uses `process.exec`; uses the standard library (`json.parse`), which the in-browser runtime does not provide",
+      "why": "uses `process.exec`, which the in-browser runtime does not provide",
       "expect_output": "[start] configure\n[ok] configure\n[start] compile\n[ok] compile\n[start] test\n[failed] test (exit 1)\npipeline stopped\n"
      }
     }

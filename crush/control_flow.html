@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,10 +184,13 @@
                         <h1 id="control-flow"><a class="header" href="#control-flow">Control Flow</a></h1>
 <p class="crush-notebook-link"><a href="../notebooks/crush/control_flow.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
+<blockquote>
+<p>Verified against crush-ast <code>cb655f3</code> (2026-10-16).</p>
+</blockquote>
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
 <h2 id="if"><a class="header" href="#if">If</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:8" data-expect="B
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:10" data-expect="B
 ">
 <pre><code class="language-crush">let score = 85
 
@@ -207,7 +210,7 @@ if score &gt;= 90 {
 <p><code>if</code> is a statement, not an expression: <code>let y = if c { 1 } else { 2 }</code> is a
 parse error. Use a function or <code>match</code> to select a value.</p>
 <h2 id="while"><a class="header" href="#while">While</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:30" data-expect="0
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:32" data-expect="0
 1
 2
 ">
@@ -225,7 +228,7 @@ while i &lt; 3 {
 2
 </code></pre>
 <h3 id="loop-with-break"><a class="header" href="#loop-with-break">Loop with <code>break</code></a></h3>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:47" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:49" data-expect="3
 ">
 <pre><code class="language-crush">let counter = 0
 while true {
@@ -243,7 +246,7 @@ print(counter)
 </code></pre>
 <h2 id="for"><a class="header" href="#for">For</a></h2>
 <h3 id="over-an-array"><a class="header" href="#over-an-array">Over an array</a></h3>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:67" data-expect="10
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:69" data-expect="10
 20
 30
 ">
@@ -259,9 +262,9 @@ print(counter)
 30
 </code></pre>
 <h3 id="over-a-range"><a class="header" href="#over-a-range">Over a range</a></h3>
-<p><code>a..b</code> is half-open (excludes <code>b</code>). There is no inclusive <code>..=</code> and no <code>range()</code>
+<p><code>a..b</code> is half-open (excludes <code>b</code>); <code>a..=b</code> includes <code>b</code>. There is no <code>range()</code>
 function:</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:85" data-expect="0
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:87" data-expect="0
 1
 2
 x
@@ -285,19 +288,56 @@ for i in 0..len(items) {
 x
 y
 </code></pre>
-<!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:106" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:107" data-expect="1
+2
+3
+">
 <pre><code class="language-crush">for i in 1..=3 {
     print(i)
 }
 </code></pre>
 </div>
 
-<p>Iterating directly over a map (<code>for k in obj</code>) is not supported — see
-<a href="types.html#objects-maps">Types</a>.</p>
+<!-- check: output -->
+<pre><code class="language-text">1
+2
+3
+</code></pre>
+<h3 id="over-a-string-or-a-map"><a class="header" href="#over-a-string-or-a-map">Over a string or a map</a></h3>
+<p>A string yields its characters; a map yields its keys, in insertion order:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:124" data-expect="a
+b
+c
+ada is 36
+alan is 41
+">
+<pre><code class="language-crush">for c in "abc" {
+    print(c)
+}
+let ages = {"ada": 36, "alan": 41}
+for name in ages {
+    print(name + " is " + ages[name])
+}
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">a
+b
+c
+ada is 36
+alan is 41
+</code></pre>
+<blockquote>
+<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/256">crush-ast #256</a>).</strong>
+Calling a method on the loop variable (<code>for s in shapes { s.area() }</code>, or
+<code>a.push(x)</code> on an array element) is compiled as a capability named <code>s.area</code>, and
+the program is refused. Bind the element with <code>let</code> first (iterate an index and
+write <code>let s = shapes[i]</code>).</p>
+</blockquote>
 <h2 id="break-and-continue"><a class="header" href="#break-and-continue">Break and continue</a></h2>
 <p><code>continue</code> skips to the next iteration; <code>break</code> leaves the innermost loop:</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:119" data-expect="1
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:153" data-expect="1
 3
 ">
 <pre><code class="language-crush">for i in 0..5 {
@@ -322,7 +362,7 @@ for i in 0..10 {
 <h2 id="match"><a class="header" href="#match">Match</a></h2>
 <p><code>match</code> selects among arms by comparing a value to literal patterns, with <code>_</code> as
 the wildcard. It is an <strong>expression</strong>: bind its result with <code>let</code>.</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:145" data-expect="two
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:179" data-expect="two
 ">
 <pre><code class="language-crush">let v = 2
 let word = match v {
@@ -337,10 +377,12 @@ print(word)
 <!-- check: output -->
 <pre><code class="language-text">two
 </code></pre>
-<p>Supported patterns: integer, string and bool literals, <code>_</code>, and a bare
-identifier that binds the scrutinee (<code>n =&gt; "got " + n</code>). Arm bodies can be an
-expression or a <code>{ ... }</code> block whose last expression is the value:</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:164" data-expect="got 5
+<p>Supported patterns: integer, string and bool literals, <code>_</code>, a bare identifier
+that binds the scrutinee (<code>n =&gt; "got " + n</code>), and <strong>struct patterns</strong> that test a
+value’s struct type and bind or compare its fields (<code>Point { x: 0, y: y } =&gt; ...</code>,
+see <a href="structs.html#struct-patterns-in-match">Structs, Methods and Kinds</a>). Arm bodies
+can be an expression or a <code>{ ... }</code> block whose last expression is the value:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:200" data-expect="got 5
 ">
 <pre><code class="language-crush">let n = 5
 let msg = match n {
@@ -354,14 +396,30 @@ print(msg)
 <!-- check: output -->
 <pre><code class="language-text">got 5
 </code></pre>
+<p><code>match</code> also works as a statement, with arms that only have side effects:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:216" data-expect="two
+still two
+">
+<pre><code class="language-crush">let v = 2
+match v {
+    1 =&gt; print("one")
+    2 =&gt; { print("two"); print("still two") }
+    _ =&gt; print("other")
+}
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">two
+still two
+</code></pre>
 <p>Current limitations (alpha):</p>
 <ul>
-<li><strong>Not used as a statement.</strong> <code>match v { 1 =&gt; print("one"), _ =&gt; print("other") }</code>
-on its own fails at run time with <code>stack underflow</code>; the arms must produce
-values and the result must be bound with <code>let</code> (or use <code>if</code> for side effects).</li>
-<li><strong><code>return match ...</code> returns <code>null</code>.</strong> Bind first, then return:</li>
+<li><strong><code>return match ...</code> returns <code>null</code></strong> (silently: crush-ast
+<a href="https://github.com/nixpt/crush-ast/issues/253">#253</a>). The parser takes the
+<code>return</code> as a bare return. Bind first, then return:</li>
 </ul>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:185" data-expect="zero
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:237" data-expect="zero
 other
 ">
 <pre><code class="language-crush">fn name(v) {
@@ -381,16 +439,17 @@ print(name(3))
 other
 </code></pre>
 <ul>
-<li>A <code>match</code> with no matching arm evaluates to <code>null</code> — there is no
+<li>A <code>match</code> with no matching arm evaluates to <code>null</code>; there is no
 exhaustiveness error.</li>
-<li>No guards (<code>x if x &gt; 3 =&gt; ...</code>) and no range patterns (<code>0..3 =&gt; ...</code>).</li>
+<li>No guards (<code>x if x &gt; 3 =&gt; ...</code>), no range patterns (<code>0..3 =&gt; ...</code>), no
+alternatives (<code>1 | 2 =&gt; ...</code>), no negative or float literal patterns, and no
+comma after a <code>{ ... }</code> arm body (<code>2 =&gt; { 7 }, _ =&gt; 0</code> is a parse error; the
+last three are listed in crush-ast’s CRUSH-192 ticket).</li>
 </ul>
-<p>(These are crush-ast gaps without a ticket yet; see <code>GAP-MATCH-STATEMENT</code> and
-<code>GAP-MATCH-RETURN</code> in the GUIDE-3 notes.)</p>
 <h2 id="errors-try--catch--throw"><a class="header" href="#errors-try--catch--throw">Errors: <code>try</code> / <code>catch</code> / <code>throw</code></a></h2>
 <p><code>throw</code> raises any value; <code>catch name { ... }</code> receives it. There is no
 <code>finally</code>, and the parenthesised form <code>catch (e)</code> is not accepted.</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:215" data-expect="2
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:267" data-expect="2
 Error: division by zero
 done
 ">
@@ -419,7 +478,7 @@ done
 </code></pre>
 <p>A <code>throw</code> crosses function-call boundaries (fixed in crush-ast <strong>CRUSH-126</strong>),
 <code>catch</code> can rethrow, and thrown values can be any type:</p>
-<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:243" data-expect="re-inner
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:295" data-expect="re-inner
 7
 ">
 <pre><code class="language-crush">try {
@@ -451,7 +510,7 @@ a host capability are not catchable</strong>: division by zero, an out-of-range 
 index, a failing <code>fs.read</code>, or a polyglot block that raises all abort the
 program with a <code>[runtime]</code> error instead of reaching your <code>catch</code>.</p>
 <!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
-<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:277" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:329" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
 <pre><code class="language-crush">try {
     print(1 / 0)
 } catch e {

@@ -1,0 +1,283 @@
+{
+ "meta": {
+  "title": "Concurrency — The Crush Language Guide",
+  "description": "Generated from crush/concurrency.md of The Crush Language Guide (https://docs.crushlang.org/crush/concurrency.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/concurrency.md",
+   "guide_url": "https://docs.crushlang.org/crush/concurrency.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-concurrency-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Concurrency\n\n> Verified against crush-ast `cb655f3` (2026-10-16). New since the 0.3 line\n> (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).\n\nCrush has two kinds of concurrency:\n\n- **Green tasks**: `spawn`, `yield`, `await` and `async fn`. Tasks run inside one\n  VM, take turns at `yield` / `await`, and share the variables they capture.\n- **`parallel_map(items, f)`**: real parallelism for pure computation. Each item\n  runs in its own share-nothing VM (a thread on the native VM).\n\n## `spawn`, `yield`, `await`\n\n`spawn f(args)` starts a task and returns a handle; `await h` waits for the task\nand gives its return value; `yield` lets the other tasks run.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn worker(name, n) {\n    let i = 0\n    while i < n {\n        print(name + \" step \" + i)\n        yield\n        i = i + 1\n    }\n    return name + \" done\"\n}\nfn main() {\n    let a = spawn worker(\"a\", 2)\n    let b = spawn worker(\"b\", 2)\n    print(await a)\n    print(await b)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:18",
+      "browser": "run",
+      "expect_output": "a step 0\nb step 0\na step 1\nb step 1\na done\nb done\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`spawn` takes any function value, including a closure. A spawned closure shares\nthe variables it captured with the function that made it, so the main task sees\nits writes:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let n = 0\n    let inc = || {\n        n = n + 1\n        return n\n    }\n    let h = spawn inc()\n    await h\n    print(n)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:50",
+      "browser": "run",
+      "expect_output": "1\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "An `async fn` runs as a task when called; `await` its result:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "async fn sub(a, b) {\n    return a - b\n}\nfn main() {\n    let r = await sub(10, 3)\n    print(r)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:70",
+      "browser": "run",
+      "expect_output": "7\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Calling it without `await` gives the handle itself (it prints as `<handle 1>`).\n\n### When the program ends\n\nThe program ends when the main task ends, as in Go: a spawned task that has not\nrun by then is abandoned. Give it a chance with `yield`, or `await` it.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-4",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn worker() {\n    print(\"worker\")\n}\nfn main() {\n    spawn worker()\n    print(\"main ends\")\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:92",
+      "browser": "run",
+      "expect_output": "main ends\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-9",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "`await` on a value that is not a task handle gives the value back, as in JavaScript:\n`let v = await 5` sets `v` to `5`. (crush-ast builds before\n[#265](https://github.com/nixpt/crush-ast/pull/265) gave `null`; see\n[#251](https://github.com/nixpt/crush-ast/issues/251).)\n\n## `parallel_map`\n\n`parallel_map(items, f)` calls `f` on every item, each in its own VM, and returns\nthe results in input order. Anything the workers print also comes out in input\norder:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-5",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn fib(n) {\n    if n < 2 {\n        return n\n    }\n    return fib(n - 1) + fib(n - 2)\n}\nfn main() {\n    print(parallel_map([1, 2, 3, 4], |n| n * n))\n    print(parallel_map([10, 15, 20], fib))\n    let k = 10\n    let r = parallel_map([3, 1, 2], |x| {\n        print(\"item \" + x)\n        return x * k\n    })\n    print(r)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:118",
+      "browser": "run",
+      "expect_output": "[1, 4, 9, 16]\n[55, 610, 6765]\nitem 3\nitem 1\nitem 2\n[30, 10, 20]\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Workers **share nothing**: each gets its own copy of the item and of anything it\ncaptured. A worker may read a captured variable but not change it, because the\nchange would be lost, so that is an error:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let total = 0\n    parallel_map([1, 2], |x| {\n        total = total + x\n        return x\n    })\n    print(total)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:152",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
+      "expect_error": "the function changed something it captured"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[runtime] parallel_map: item 0: parallel_map: the function changed something it captured (a variable it or a function it calls captured, or a captured array/map); a parallel_map worker shares nothing, so the change would be lost — return the value instead\n```\n\nIf several items fail, the first failing item *in input order* is reported:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-7",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    print(parallel_map([2, 0, 1, 0], |x| 10 / x))\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/concurrency.md:170",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
+      "expect_error": "parallel_map: item 1: division by zero"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-concurrency-md-15",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "## Engines\n\nThe native VM (`crush run`) runs tasks and `parallel_map` workers; the portable\nVM (the browser build) runs the same programs with the same output, running\n`parallel_map` items one after another. The AOT backends refuse `spawn` by name\ninstead of dropping it: `` `spawn` (green tasks) isn't supported on the Rust AOT\nbackend yet (#161) ``. See [Engines and AOT](https://docs.crushlang.org/crush/engines.html).\n\n## Next Steps\n\n- **[Closures and Function Values](https://docs.crushlang.org/crush/closures.html)**\n- **[Engines and AOT](https://docs.crushlang.org/crush/engines.html)**\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/appendix/quick_reference.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <p>Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide’s checker against crush-ast <code>v0.3.9</code>. Details live in
+can run is run by the guide’s checker against crush-ast <code>cb655f3</code>. Details live in
 the chapters linked from each heading.</p>
 <h2 id="command-line-getting-started"><a class="header" href="#command-line-getting-started">Command line (<a href="../getting-started.html">Getting Started</a>)</a></h2>
 <div class="table-wrapper">
@@ -197,21 +197,26 @@ the chapters linked from each heading.</p>
 <tr><td><code>crush run FILE [flags]</code></td><td>run a <code>.crush</code>, <code>.casm</code> (text) or <code>.cvm1</code> file</td></tr>
 <tr><td><code>crush build FILE.crush</code></td><td>compile to <code>.cvm1</code></td></tr>
 <tr><td><code>crush-run run FILE [flags]</code></td><td>same as <code>crush run</code>; all the capability flags live here</td></tr>
-<tr><td><code>crush-run caps</code></td><td>list the capabilities of your build</td></tr>
+<tr><td><code>crush-run caps [FILE]</code></td><td>list the capabilities of your build, or what FILE needs (runs nothing)</td></tr>
 <tr><td><code>crushc FILE.crush -o OUT.cvm1</code></td><td>compile; <code>--emit casm|ast|types</code> prints a layer; <code>-C</code> only checks</td></tr>
 <tr><td><code>crush-compile FILE.casm -o OUT.cvm1 --cap NAME</code></td><td>assemble CASM text</td></tr>
-<tr><td><code>crush-repl</code></td><td>interactive REPL</td></tr>
+<tr><td><code>crush repl</code> / <code>crush-repl</code></td><td>interactive REPL (<code>.help</code>, <code>.quit</code>)</td></tr>
+<tr><td><code>crush doctor</code></td><td>which polyglot interpreters are on <code>PATH</code></td></tr>
+<tr><td><code>crush-aotc run FILE.crush</code></td><td>ahead-of-time compile via rustc (<code>--backend gcc</code>) and run</td></tr>
+<tr><td><code>crush-walk-run FILE.py</code></td><td>walk a Python/JS/Rust/… file to CAST and run it</td></tr>
 </tbody>
 </table>
 </div>
-<p>Capability flags (everything is <strong>off</strong> unless you pass it): <code>--stdlib</code> <code>--fs</code>
-<code>--fs-root DIR</code> <code>--env</code> <code>--time</code> <code>--net</code> <code>--process</code> <code>--crypto</code> <code>--db PATH</code>
-<code>--graphics</code> <code>--bus</code> <code>--task</code> <code>--akg</code> <code>--polyglot</code> <code>--cap NAME</code>. Quotas:
+<p>Capability flags (everything is <strong>off</strong> unless you pass it, except the standard
+library, which <code>--no-stdlib</code> removes): <code>--fs</code> <code>--fs-root DIR</code> <code>--env</code> <code>--time</code>
+<code>--net</code> <code>--process</code> <code>--crypto</code> <code>--db PATH</code> <code>--graphics</code> <code>--bus</code> <code>--task</code> <code>--akg</code>
+<code>--polyglot</code> <code>--cap NAME</code>. A program that needs an ungranted capability is refused
+before it runs. Quotas:
 <code>--max-steps</code> (default 1,000,000), <code>--max-stack</code> (4,096), <code>--max-output</code> (1 MiB),
 <code>--max-call-depth</code> (256).</p>
 <h2 id="language-syntax"><a class="header" href="#language-syntax">Language (<a href="../crush/syntax.html">Syntax</a>)</a></h2>
 <h3 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:29" data-expect="Hello, Alice
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:34" data-expect="Hello, Alice
 43
 ">
 <pre><code class="language-crush">let x = 42
@@ -235,13 +240,36 @@ print(add(x, 1))
 43
 </code></pre>
 <ul>
-<li>Semicolons are optional. Comments are <code>//</code> and <code>#</code>. Strings use double quotes only.</li>
+<li>Semicolons are optional. Comments are <code>//</code> and <code>#</code>. Strings use <code>"…"</code> or <code>'…'</code>.</li>
 <li>A function returns a value only with <code>return</code>; falling off the end yields <code>null</code>.</li>
 <li><code>print(x)</code> takes exactly one argument; <code>io.print(a, b, …)</code> takes any number.</li>
-<li>No <code>let mut</code>, no <code>T?</code> types, no lambdas (CRUSH-75), no working <code>import</code> (CRUSH-110).</li>
+<li>No <code>let mut</code>, no <code>T?</code> types, no working <code>import</code> (CRUSH-110).</li>
 </ul>
+<h3 id="closures-closures"><a class="header" href="#closures-closures">Closures (<a href="../crush/closures.html">Closures</a>)</a></h3>
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:63" data-expect="2
+25
+">
+<pre><code class="language-crush">fn make_counter() {
+    let c = 0
+    return || {
+        c = c + 1
+        return c
+    }
+}
+let next = make_counter()
+next()
+print(next())
+let sq = |x| x * x
+print(5 |&gt; sq)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">2
+25
+</code></pre>
 <h3 id="control-flow-control-flow"><a class="header" href="#control-flow-control-flow">Control flow (<a href="../crush/control_flow.html">Control Flow</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:58" data-expect="medium
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:86" data-expect="medium
 0
 1
 2
@@ -280,12 +308,17 @@ for item in ["a", "b"] {
 a
 b
 </code></pre>
-<p><code>0..3</code> excludes the end. <code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>.</p>
+<p><code>0..3</code> excludes the end, <code>0..=3</code> includes it. <code>for</code> also walks a string’s
+characters and a map’s keys. <code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>.
+<code>match v { 1 =&gt; "one", P { x: a } =&gt; a, _ =&gt; "other" }</code> matches literals,
+bindings and struct patterns (bind it with <code>let</code>; <code>return match …</code> returns <code>null</code>
+today, #253).</p>
 <h3 id="operators-operators"><a class="header" href="#operators-operators">Operators (<a href="../crush/operators.html">Operators</a>)</a></h3>
-<p><code>+ - * / %</code> · <code>== != &lt; &gt; &lt;= &gt;=</code> · <code>&amp;&amp; || !</code> (short-circuit) · unary <code>-</code> · pipeline <code>|&gt;</code>.
-There is no <code>and</code>/<code>or</code>/<code>not</code>, <code>**</code>, <code>//</code>, <code>+=</code> or ternary.</p>
+<p><code>+ - * / %</code> · <code>== != &lt; &gt; &lt;= &gt;=</code> · <code>&amp;&amp; || !</code> or <code>and or not</code> (short-circuit) · unary
+<code>-</code> · pipeline <code>|&gt;</code> · ranges <code>a..b</code>, <code>a..=b</code>. There is no <code>**</code>, <code>//</code>, <code>+=</code>, bitwise
+operator or ternary. <code>Int</code> overflow and division by zero are run-time errors.</p>
 <h3 id="errors"><a class="header" href="#errors">Errors</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:101" data-expect="caught: disk full
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:134" data-expect="caught: disk full
 ">
 <pre><code class="language-crush">try {
     throw "disk full"
@@ -299,28 +332,33 @@ There is no <code>and</code>/<code>or</code>/<code>not</code>, <code>**</code>, 
 <pre><code class="language-text">caught: disk full
 </code></pre>
 <h3 id="structs-and-objects-types"><a class="header" href="#structs-and-objects-types">Structs and objects (<a href="../crush/types.html">Types</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:116" data-expect="7
-crush
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:149" data-expect="7
+crush/en
 ">
-<pre><code class="language-crush">struct Point { x, y }
-let p = new Point()
-p.x = 3
-p.y = 4
+<pre><code class="language-crush">struct Point { x: Int, y: Int }
+impl Point {
+    fn sum(self) { return self.x + self.y }
+}
+let p = Point { x: 3, y: 4 }
 let o = {"name": "crush"}
-print(p.x + p.y)
-print(o.name)
+o["lang"] = "en"
+print(p.sum())
+print(o.name + "/" + o["lang"])
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">7
-crush
+crush/en
 </code></pre>
+<p>Structs are sealed (no undeclared fields), references by default
+(<code>@kind(semantics: value(copy))</code> for values), and <code>==</code> compares fields. See
+<a href="../crush/structs.html">Structs, Methods and Kinds</a>.</p>
 <h3 id="capabilities-capabilities"><a class="header" href="#capabilities-capabilities">Capabilities (<a href="../crush/capabilities.html">Capabilities</a>)</a></h3>
 <p>Capability calls are dotted and have <strong>no <code>@</code></strong>. They exist only if you enabled
 them:</p>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:138" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:177" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">if fs.exists("notes.txt") {
     print(fs.read("notes.txt"))
 } else {
@@ -332,7 +370,7 @@ them:</p>
 <!-- check: output -->
 <pre><code class="language-text">no notes
 </code></pre>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:151" data-expect="ab3
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:190" data-expect="ab3
 6
 ">
 <pre><code class="language-crush">io.print("a", "b", 3)
@@ -345,11 +383,12 @@ print(str.len("héllo"))
 6
 </code></pre>
 <h3 id="polyglot-blocks-polyglot"><a class="header" href="#polyglot-blocks-polyglot">Polyglot blocks (<a href="../crush/polyglot.html">Polyglot</a>)</a></h3>
-<p><code>@python { }</code>, <code>@javascript { }</code> and <code>@bash { }</code> run as host subprocesses, only with
-<code>--polyglot</code>, and with the host’s full authority (no sandbox by default). Without the
-flag they are refused:</p>
+<p><code>@python -&gt; out { }</code>, <code>@javascript -&gt; out { }</code> and <code>@bash { }</code> run as host
+subprocesses, only with <code>--polyglot</code>, and with the host’s full authority (no sandbox
+by default). Names a block reads are passed in; the names after <code>-&gt;</code> come back.
+Without the flag the program is refused:</p>
 <!-- check: runfail --polyglot -->
-<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:169" data-why="this example shows a refusal" data-expect-error="--polyglot">
+<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:209" data-why="this example shows a refusal" data-expect-error="--polyglot">
 <pre><code class="language-crush">@python {
     print("hello from python")
 }
@@ -363,14 +402,15 @@ flag they are refused:</p>
 <tr><th>Type</th><th>Example</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Int</code></td><td><code>42</code></td><td>64-bit, decimal only</td></tr>
+<tr><td><code>Int</code></td><td><code>42</code>, <code>0x2A</code>, <code>0b101</code></td><td>64-bit, checked overflow</td></tr>
 <tr><td><code>Float</code></td><td><code>3.14</code></td><td>no exponent form</td></tr>
-<tr><td><code>String</code></td><td><code>"hello"</code></td><td>UTF-8, double quotes</td></tr>
+<tr><td><code>String</code></td><td><code>"hello"</code>, <code>'hello'</code></td><td>UTF-8; <code>len</code> counts bytes</td></tr>
 <tr><td><code>Bool</code></td><td><code>true</code></td><td></td></tr>
 <tr><td><code>Null</code></td><td><code>null</code></td><td></td></tr>
 <tr><td>array</td><td><code>[1, 2, 3]</code></td><td></td></tr>
-<tr><td>object</td><td><code>{"key": "value"}</code></td><td></td></tr>
-<tr><td>struct</td><td><code>struct P { x, y }</code></td><td></td></tr>
+<tr><td>object</td><td><code>{"key": "value"}</code></td><td>insertion-ordered</td></tr>
+<tr><td>struct</td><td><code>struct P { x, y }</code></td><td>one line; <code>P { x: 1, y: 2 }</code></td></tr>
+<tr><td>function</td><td><code>|x| x + 1</code>, <code>fn</code> names</td><td>values; closures capture by reference</td></tr>
 </tbody>
 </table>
 </div>
@@ -382,9 +422,9 @@ flag they are refused:</p>
 <tr><th>Always on</th><th><code>io.print</code> <code>io.read</code> <code>str.concat</code> <code>str.len</code> <code>conv.chr</code> <code>conv.ord</code></th></tr>
 </thead>
 <tbody>
-<tr><td><code>--stdlib</code></td><td><code>str.*</code> <code>math.*</code> <code>conv.*</code> <code>collections.*</code> <code>json.*</code> <code>path.*</code> <code>regex.*</code> …</td></tr>
-<tr><td><code>--fs</code></td><td><code>fs.read</code> <code>fs.write</code> <code>fs.exists</code> <code>fs.list</code></td></tr>
-<tr><td><code>--env</code></td><td><code>env.get</code></td></tr>
+<tr><td>Standard library (default)</td><td><code>str.*</code> <code>math.*</code> <code>conv.*</code> <code>collections.*</code> <code>json.*</code> <code>path.*</code> <code>regex.*</code> <code>sys.args</code> …</td></tr>
+<tr><td><code>--fs</code></td><td><code>fs.read</code> <code>fs.write</code> <code>fs.exists</code> <code>fs.list</code> <code>fs.mkdir</code> …</td></tr>
+<tr><td><code>--env</code></td><td><code>env.get</code> <code>env.all</code> <code>env.home_dir</code></td></tr>
 <tr><td><code>--time</code></td><td><code>time.now</code> <code>time.now_ms</code> <code>time.now_iso</code> <code>time.elapsed</code> <code>time.sleep</code></td></tr>
 <tr><td><code>--net</code></td><td><code>net.http_get</code> <code>net.http_post</code></td></tr>
 <tr><td><code>--process</code></td><td><code>process.exec</code></td></tr>
@@ -425,7 +465,8 @@ flag they are refused:</p>
 </div>
 <p>Stack effects and the JSON-IR names are in the
 <a href="../casm/instructions.html">Instruction Reference</a>. Remember: arguments are pushed
-<strong>last first</strong>, and a <code>.casm</code> file needs <code>--cap</code> for every capability it calls.</p>
+<strong>first argument first</strong> (<code>PUSH_STR "a"</code>, <code>PUSH_STR "b"</code>, <code>CAP_CALL "io.print" 2</code>
+prints <code>ab</code>), and a <code>.casm</code> file needs <code>--cap</code> for every capability it calls.</p>
 
                     </main>
 

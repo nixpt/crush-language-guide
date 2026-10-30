@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Functions\n\nThis chapter covers defining and calling functions. Crush functions are named,\ntop-level declarations. **Functions are not first-class values yet** — you can\ncall one by name, but you can't store it in a variable or pass it as an argument\n(see [Higher-order functions](#higher-order-functions-and-lambdas)).\n\n## Defining functions\n",
+   "source": "# Functions\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n\nThis chapter covers defining and calling functions. Named functions are\ntop-level declarations, and they are also **values**: you can store one in a\nvariable, pass it as an argument and return it. Lambdas and closures have their\nown chapter, [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n\n## Defining functions\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:10",
+      "src": "crush/functions.md:12",
       "browser": "run",
       "expect_output": "Hello, Alice!\n8\n"
      }
@@ -77,7 +77,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:42",
+      "src": "crush/functions.md:44",
       "browser": "run",
       "expect_output": "positive\nnegative\nzero\n[LOG] done\n[LOG] again\nnull\n"
      }
@@ -113,7 +113,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:78",
+      "src": "crush/functions.md:80",
       "browser": "run",
       "expect_output": "120\n610\n"
      }
@@ -149,7 +149,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:110",
+      "src": "crush/functions.md:112",
       "browser": "fail",
       "why": "this example shows a run-time error",
       "expect_error": "call depth quota exceeded"
@@ -163,7 +163,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "## Higher-order functions and lambdas\n\n> **Not yet implemented.** Passing a function by name (`apply(double, 21)`),\n> storing one in a variable (`let f = double`), and anonymous functions\n> (`|x| { ... }`, `|x| => x * 2`) all fail to compile. The lexer reads a bare `|`\n> as an identifier, so the lambda parser is unreachable (crush-ast **CRUSH-75**,\n> open); closures that capture variables are a separate, larger gap. Until then,\n> write ordinary named functions and call them directly, or use the\n> pipeline operator (`x |> f`), which does accept a function **name**:\n",
+   "source": "## Higher-order functions and lambdas\n\nA function name is a value. Store it, pass it, call it through the variable:\n",
    "state": {
     "status": "done"
    },
@@ -175,23 +175,35 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn double(n) {\n    return n * 2\n}\n\nfn main() {\n    let f = double\n    print(f(21))\n}\n",
+   "source": "fn double(n) {\n    return n * 2\n}\nfn apply(f, x) {\n    return f(x)\n}\nlet f = double\nprint(f(21))\nprint(apply(double, 4))\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:128",
-      "browser": "fail",
-      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+      "src": "crush/functions.md:123",
+      "browser": "run",
+      "expect_output": "42\n8\n"
      }
     }
    },
+   "outputs": []
+  },
+  {
+   "id": "crush-functions-md-11",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Anonymous functions are written `|params| expression` or `|params| { block }`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
    "outputs": []
   },
   {
@@ -199,23 +211,35 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    let double = |x| { return x * 2 }\n    print(double(21))\n}\n",
+   "source": "let double = |x| { return x * 2 }\nlet add = |a, b| a + b\nprint(double(21))\nprint(add(2, 3))\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:137",
-      "browser": "fail",
-      "why": "not implemented yet (CRUSH-75); Run shows what happens today"
+      "src": "crush/functions.md:143",
+      "browser": "run",
+      "expect_output": "42\n5\n"
      }
     }
    },
+   "outputs": []
+  },
+  {
+   "id": "crush-functions-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "They capture variables from where they are written; that, and the rules for\ncalling function values, is in [Closures and Function Values](https://docs.crushlang.org/crush/closures.html). The\nbuilt-ins `print` and `len` are not values (`let g = len` compiles but fails at run\ntime, crush-ast [#257](https://github.com/nixpt/crush-ast/issues/257)); wrap them:\n`|x| len(x)`.\n\nThe pipeline operator (`x |> f`) takes a function name or a variable holding one:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
    "outputs": []
   },
   {
@@ -234,7 +258,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:142",
+      "src": "crush/functions.md:164",
       "browser": "run",
       "expect_output": "11\n"
      }
@@ -243,11 +267,11 @@
    "outputs": []
   },
   {
-   "id": "crush-functions-md-13",
+   "id": "crush-functions-md-15",
    "kind": {
     "type": "markdown"
    },
-   "source": "## Concurrency: `spawn`, `yield`, `async`, `await`\n\nThese keywords are in the grammar, but the end-to-end path is incomplete: a\nprogram that contains `spawn f()`, `async fn`, or `await` is rejected by the\nassembler (`SPAWN takes 1 operand(s), got 0`). The AI/concurrency opcodes are\ntracked under crush-ast **CRUSH-1** / **CRUSH-34**. A bare `yield` statement\ncompiles and runs (it is a no-op without a spawned task).\n",
+   "source": "## Concurrency: `spawn`, `yield`, `async`, `await`\n\n`spawn f(args)` starts a green task, `yield` lets other tasks run, and `await h`\nwaits for a task and returns its result. They are covered in\n[Concurrency](https://docs.crushlang.org/crush/concurrency.html). In short:\n",
    "state": {
     "status": "done"
    },
@@ -259,31 +283,31 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn worker() {\n    print(\"worker\")\n}\n\nfn main() {\n    spawn worker()\n    yield\n    print(\"main\")\n}\n",
+   "source": "fn worker() {\n    print(\"worker\")\n}\nspawn worker()\nyield\nprint(\"main\")\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:166",
-      "browser": "fail",
-      "why": "not implemented yet (CRUSH-34); Run shows what happens today"
+      "src": "crush/functions.md:185",
+      "browser": "run",
+      "expect_output": "worker\nmain\n"
      }
     }
    },
    "outputs": []
   },
   {
-   "id": "crush-functions-md-15",
+   "id": "crush-functions-md-17",
    "kind": {
     "type": "markdown"
    },
-   "source": "## Best practices\n\n- Keep functions small and give parameters type hints — they document the\n  interface and catch mistakes at compile time.\n- Pass data in as parameters: functions cannot see top-level variables\n  ([Variables](https://docs.crushlang.org/crush/variables.html#module-level-variables-are-not-visible-inside-functions)).\n- Prefer descriptive names (`calculate_total_price`, not `calc`).\n\n## Next Steps\n\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
+   "source": "## Best practices\n\n- Keep functions small and give parameters type hints — they document the\n  interface and catch mistakes at compile time.\n- Pass data in as parameters: named functions cannot see top-level variables\n  ([Variables](https://docs.crushlang.org/crush/variables.html#module-level-variables-are-not-visible-inside-functions));\n  a top-level lambda can.\n- Prefer descriptive names (`calculate_total_price`, not `calc`).\n\n## Next Steps\n\n- **[Closures and Function Values](https://docs.crushlang.org/crush/closures.html)**\n- **[Capability System](https://docs.crushlang.org/crush/capabilities.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
    "state": {
     "status": "done"
    },

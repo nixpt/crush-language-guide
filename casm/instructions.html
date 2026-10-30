@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f8c67f28.js";
+            window.path_to_searchindex_js = "../searchindex-a59f5634.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-7647b030.js"></script>
+        <script src="../toc-d1d19af1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,11 +182,13 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="instruction-set-reference"><a class="header" href="#instruction-set-reference">Instruction Set Reference</a></h1>
+<p class="crush-notebook-link"><a href="../notebooks/casm/instructions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
+
 <p>Every instruction has two spellings: the <strong>JSON name</strong> used in the CASM IR
 (<code>"op": "push_int"</code>) and the <strong>CVM1 mnemonic</strong> used in the text assembly and the
 binary (<code>PUSH</code>). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against the crush-ast <code>v0.3.9</code> VM; the examples at the end of
-each section are run by this guide’s checker.</p>
+Behaviour was checked against crush-ast <code>cb655f3</code> (2026-10-16); the examples at the
+end of each section are run by this guide’s checker.</p>
 <h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading stack effects</a></h2>
 <p><code>a b → c</code> means: pop <code>b</code> (the <strong>top</strong>), pop <code>a</code>, push <code>c</code>. The rightmost value is
 always the top of the stack. <code>…</code> is “whatever was below”.</p>
@@ -214,7 +216,7 @@ section</a> lists exactly which IR ops reach the VM.</p>
 <tr><td><code>pop</code></td><td><code>POP</code></td><td>—</td><td><code>a →</code></td><td></td></tr>
 <tr><td><code>dup</code></td><td><code>DUP</code></td><td>—</td><td><code>a → a a</code></td><td></td></tr>
 <tr><td><code>swap</code></td><td><code>SWAP</code></td><td>—</td><td><code>a b → b a</code></td><td></td></tr>
-<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>v0.3.9</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
+<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>cb655f3</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
 <tr><td><code>pick</code></td><td><code>PICK n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td>copy the item <code>n</code> below the top (<code>PICK 2</code> copies the third)</td></tr>
 <tr><td><code>roll</code></td><td><code>ROLL n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td><em>move</em> the item <code>n</code> below the top to the top</td></tr>
 <tr><td>—</td><td><code>NOP</code></td><td>—</td><td>—</td><td>text/binary only</td></tr>
@@ -467,7 +469,7 @@ end:
 1024.0
 13
 </code></pre>
-<p>(The Crush-level equivalents of these live in the <code>--stdlib</code> capabilities —
+<p>(The Crush-level equivalents of these live in the standard-library capabilities —
 <code>str.*</code>, <code>math.*</code>, <code>conv.*</code> — and compile to <code>CAP_CALL</code>s, not to these opcodes. See
 the <a href="../crush/stdlib.html">standard library</a>.)</p>
 <h2 id="capabilities"><a class="header" href="#capabilities">Capabilities</a></h2>
@@ -490,6 +492,60 @@ knows this and drops the <code>pop</code> it would otherwise emit after a statem
 call. If the capability is not registered by the host the VM stops with <code>unknown capability: NAME</code>; if it is registered but missing from the manifest, with
 <code>capability not declared in manifest: NAME</code>. See the
 <a href="../crush/capabilities.html">capability chapter</a>.</p>
+<h2 id="records-and-kinds-cosm"><a class="header" href="#records-and-kinds-cosm">Records and Kinds (COSM)</a></h2>
+<p>Structs compile to <strong>Records</strong> of a <strong>Kind</strong> (crush-ast CRUSH-zorro-43). The
+program carries a kind table, written in text assembly as one <code>.cosm</code> line of
+JSON (<code>crushc --emit casm</code> prints a readable summary above it as <code>;</code> comments),
+and functions that need their arity for bound methods are written <code>.func name N</code>.
+For this source:</p>
+<div class="crush-block" data-crush="run" data-src="casm/instructions.md:320" data-expect="7
+7
+">
+<pre><code class="language-crush">struct P { x: Int }
+impl P { fn get(self) { return self.x } }
+let p = P { x: 7 }
+print(p.get())
+print(p.x)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">7
+7
+</code></pre>
+<p><code>crushc --emit casm</code> writes:</p>
+<!-- check: output -->
+<pre><code class="language-casm">; kind table (COSM): 1 Kind, 0 interfaces
+;   kind P (crush): fields [x], members [get]
+.cosm {"kinds":[{"name":"P","home_lang":"crush","span":{"line":1,"col":1},"storage":{"sealed":{"fields":[{"name":"x","type":"Int"}]}},"semantics":"reference","resolution":"none","receiver":"explicit_ref","construct":"literal","members":[{"name":"get","span":{"line":2,"col":10},"kind":"method","fn":"P::get"}],"equality":"structural"}],"interfaces":[]}
+.func main 0
+    NEW_RECORD "P"
+    PUSH 7
+    SET_FIELD "x"
+    STORE 0
+    LOAD 0
+    CALL_MEMBER "get" 0
+    CAP_CALL "io.print" 1
+    LOAD 0
+    GET_FIELD "x"
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
+.func P::get 1
+    STORE 0
+    LOAD 0
+    GET_FIELD "x"
+    RET
+</code></pre>
+<pre><code class="language-text">7
+7
+</code></pre>
+<p>The member opcodes are <code>GET_MEMBER</code>, <code>SET_MEMBER</code>, <code>HAS_MEMBER</code>, <code>DEL_MEMBER</code>,
+<code>CALL_MEMBER name argc</code>, <code>CONSTRUCT kind argc</code>, <code>GET_SLOT</code>, <code>SET_SLOT</code>, <code>IS_KIND</code>
+(what a struct pattern tests), <code>COPY</code> (value semantics) and <code>NEW_RECORD</code>.
+<code>GET_FIELD</code>/<code>SET_FIELD</code> on a Record are member accesses. Only the CVM1 VMs run
+them; FastVM, the JIT and the AOT backends refuse a program that needs them (see
+<a href="../crush/engines.html">Engines, AOT and Walkers</a>).</p>
 <h2 id="polyglot-concurrency-ai-and-dom"><a class="header" href="#polyglot-concurrency-ai-and-dom">Polyglot, concurrency, AI and DOM</a></h2>
 <div class="table-wrapper">
 <table>
@@ -498,8 +554,8 @@ call. If the capability is not registered by the host the VM stops with <code>un
 </thead>
 <tbody>
 <tr><td><code>exec_lang</code></td><td><code>EXEC_LANG "json"</code></td><td>run a <code>@python { }</code> / <code>@javascript { }</code> / <code>@bash { }</code> block; the operand is a JSON string with <code>lang</code>, <code>code</code>, <code>var_count</code> and the marshalling lists. Needs the matching <code>polyglot.&lt;lang&gt;</code> capability — see <a href="../crush/polyglot.html">Polyglot</a></td></tr>
-<tr><td><code>spawn</code> <code>yield</code> <code>await</code></td><td><code>SPAWN n</code> <code>YIELD</code> <code>AWAIT</code></td><td>dispatched to the <code>concurrency_native.spawn/yield/await</code> gates; <strong>stubs</strong> — nothing is scheduled</td></tr>
-<tr><td><code>ai_query</code> … (13 names)</td><td><code>AI_QUERY</code> … (10 opcodes)</td><td><strong>stubs</strong>, see <a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a></td></tr>
+<tr><td><code>spawn</code> <code>yield</code> <code>await</code></td><td><code>SPAWN n</code> <code>YIELD</code> <code>AWAIT</code></td><td>real green tasks on the CVM1 VMs, see <a href="../crush/concurrency.html">Concurrency</a></td></tr>
+<tr><td><code>ai_query</code> … (10 names)</td><td><code>AI_QUERY</code> … (10 opcodes)</td><td>gated through <code>ai_native.&lt;kind&gt;</code> capabilities; <code>ai_capability_discovery</code>, <code>ai_adaptation_request</code>, <code>ai_semantic_switch</code> are refused. See <a href="../cast/ai-native.html#what-actually-runs">AI-Native CAST</a></td></tr>
 <tr><td><code>dom_query</code> <code>dom_mutate</code> <code>dom_event_listener</code></td><td><code>DOM_QUERY</code> …</td><td><strong>stubs</strong>: lowered to <code>NOP</code>; the <code>dom_native.*</code> gates exist only for hand-written CVM1</td></tr>
 </tbody>
 </table>
@@ -513,22 +569,22 @@ program. It handles exactly these IR operations:</p>
 <tr><th></th><th></th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Lowered faithfully</strong></td><td><code>push_int</code> <code>push_float</code> <code>push_str</code> <code>push_bool</code> <code>push_null</code> <code>pop</code> <code>dup</code> <code>swap</code> <code>load</code> <code>store</code> <code>add</code> <code>sub</code> <code>mul</code> <code>div</code> <code>mod</code> <code>neg</code> <code>eq</code> <code>ne</code> <code>lt</code> <code>gt</code> <code>le</code> <code>ge</code> <code>and</code> <code>or</code> <code>not</code> <code>call</code> <code>cap_call</code> <code>ret</code> <code>halt</code> <code>jmp</code> <code>jmp_if</code> <code>jmp_if_not</code> <code>enter_try</code> <code>exit_try</code> <code>throw</code> <code>array_push</code> <code>array_pop</code> <code>len</code> <code>index</code> <code>arr_get</code> <code>arr_set</code> <code>make_range</code> <code>str_contains</code> <code>str_split</code> <code>str_replace</code> <code>str_join</code> <code>new_obj</code> <code>get_field</code> <code>set_field</code> <code>exec_lang</code> <code>spawn</code> <code>yield</code> <code>await</code></td></tr>
-<tr><td><strong>Lowered with a loss</strong></td><td><code>new_array</code> (size ignored — always empty), <code>new_struct</code> (→ <code>NEW_OBJ</code>, name dropped), <code>export_var</code> (→ <code>NOP</code>), <code>dom_*</code> and all <code>ai_*</code> including <code>ai_capability_discovery</code>, <code>ai_adaptation_request</code>, <code>ai_semantic_switch</code> (→ <code>NOP</code>)</td></tr>
-<tr><td><strong>Rejected</strong></td><td>everything else the <code>casm</code> crate defines — <code>arr_push</code> <code>arr_pop</code> <code>arr_len</code> <code>bit_*</code> <code>shl</code> <code>shr</code> <code>rot</code> <code>pick</code> <code>roll</code> <code>type_of</code> <code>cast</code> <code>math_*</code> <code>str_starts_with</code> <code>str_ends_with</code> <code>str_to_*</code> <code>str_trim</code> <code>new_tuple</code> <code>new_list</code> <code>new_vector</code> <code>new_set</code> <code>*_push</code> <code>import_var</code> <code>call_host</code> <code>call_interface</code> <code>break</code> <code>continue</code> — fail with <code>Unsupported CVM1 opcode: NAME at FUNCTION:INDEX</code></td></tr>
+<tr><td><strong>Lowered</strong></td><td>every IR operation except the rows below: the stack, arithmetic, comparison, logic, bit (<code>bit_*</code>, <code>shl</code>, <code>shr</code>), <code>math_*</code>, <code>type_of</code>, <code>cast</code>, string, array/collection, object and COSM member ops, calls, jumps, <code>try</code>/<code>throw</code>, <code>exec_lang</code>, <code>spawn</code>/<code>yield</code>/<code>await</code>, and ten <code>ai_*</code> ops</td></tr>
+<tr><td><strong>Lowered with a loss</strong></td><td><code>new_array</code> (size ignored: always empty), <code>new_struct</code> (→ <code>NEW_OBJ</code>, name dropped), <code>export_var</code> and the <code>dom_*</code> ops (→ <code>NOP</code>)</td></tr>
+<tr><td><strong>Rejected</strong></td><td><code>break</code>, <code>continue</code> (no loop target in the instruction), <code>import_var</code>, <code>call_host</code>, <code>call_interface</code>, and the declined <code>ai_capability_discovery</code>, <code>ai_adaptation_request</code>, <code>ai_semantic_switch</code>: they fail with <code>Unsupported CVM1 opcode: NAME at FUNCTION:INDEX</code></td></tr>
 </tbody>
 </table>
 </div>
-<p>So for hand-written programs the <strong>text assembly is the more capable form</strong>: it
-reaches <code>ROT</code>, <code>PICK</code>, <code>CAST</code>, <code>MATH_*</code>, the bit operations, tuples and sets that
-the IR route refuses. For programs <em>compiled from Crush</em>, the compiler stays inside
-the “lowered faithfully” set.</p>
+<p>(crush-ast keeps this classification exhaustive in its
+<code>crush-lang-sdk/tests/casm_lowering_completeness.rs</code>; the spot checks below were
+run against <code>cb655f3</code>.) A bit shift lowers and runs:</p>
 <!-- check: casm-json -->
-<!-- check: runfail Unsupported CVM1 opcode: shl -->
+<!-- check: output -->
 <pre><code class="language-json">{
   "version": "1.0",
   "functions": { "main": { "body": [
     {"op": "push_int", "value": 1},
+    {"op": "push_int", "value": 3},
     {"op": "shl"},
     {"op": "cap_call", "name": "io.print", "argc": 1},
     {"op": "halt"}
@@ -536,7 +592,21 @@ the “lowered faithfully” set.</p>
   "manifest": { "permissions": ["io.print"] }
 }
 </code></pre>
-<p>(The block above is expected to fail: <code>shl</code> is in the IR but not lowered.)</p>
+<pre><code class="language-text">8
+</code></pre>
+<p>while <code>break</code> is refused:</p>
+<!-- check: casm-json -->
+<!-- check: runfail Unsupported CVM1 opcode: break -->
+<pre><code class="language-json">{
+  "version": "1.0",
+  "functions": { "main": { "body": [
+    {"op": "push_int", "value": 1},
+    {"op": "break"},
+    {"op": "halt"}
+  ] } },
+  "manifest": { "permissions": ["io.print"] }
+}
+</code></pre>
 
                     </main>
 

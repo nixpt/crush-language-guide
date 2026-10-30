@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Import Styles\n\n> **Not yet implemented.** Every form of `import` parses, but **none of them load\n> anything** — the compiler lowers each to a capability that the runtime does not\n> provide. The only import form that runs is `use @lang`, which only declares\n> that a polyglot block will use a module. This is crush-ast **CRUSH-110** (open):\n> today there is no way to share code between files.\n\n| Form | Parses | Runs |\n|------|:------:|------|\n| `import io` / `import fs as files` / `import net { a, b }` | yes | fails: `unknown capability: module.load` |\n| `use @mcp \"url\" { tools } as alias` | yes | fails: `unknown capability: mcp.connect` |\n| `use @cap \"cap.path\" { names } as alias` | yes | fails: `unknown capability: cap.acquire` |\n| `import @git \"url\" as alias`, `import @http \"url\" as alias` | yes | fails: `unknown capability: external.load` |\n| `use @lang python \"math\" as math` | yes | runs; see below |\n\nEach failing form is checked below, so this page will say so the day one starts\nworking:\n",
+   "source": "# Import Styles\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n\n> **Not yet implemented.** Every form of `import` parses, but **none of them load\n> anything** — the compiler lowers each to a capability that the runtime does not\n> provide, so the program is refused before it runs. The only import form that\n> works is `use @lang`, which declares a module for polyglot blocks. This is\n> crush-ast **CRUSH-110** (open): today there is no way to share code between files.\n\n| Form | Parses | Runs |\n|------|:------:|------|\n| `import io` / `import fs as files` / `import net { a, b }` | yes | refused: `not available in this host: module.load` |\n| `use @mcp \"url\" { tools } as alias` | yes | refused: `not available in this host: mcp.connect, mcp.get_tool` |\n| `use @cap \"cap.path\" { names } as alias` | yes | refused: `not available in this host: cap.acquire` |\n| `import @git \"url\" as alias`, `import @http \"url\" as alias` | yes | refused: `not available in this host: external.load` |\n| `use @lang python \"math\" [as m]` | yes | runs; see below |\n\nEach failing form is checked below, so this page will say so the day one starts\nworking:\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/imports.md:21",
+      "src": "examples/imports.md:23",
       "browser": "fail",
       "why": "not implemented yet (CRUSH-110); Run shows what happens today"
      }
@@ -65,7 +65,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/imports.md:27",
+      "src": "examples/imports.md:29",
       "browser": "fail",
       "why": "not implemented yet (CRUSH-110); Run shows what happens today"
      }
@@ -89,7 +89,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/imports.md:33",
+      "src": "examples/imports.md:35",
       "browser": "fail",
       "why": "not implemented yet (CRUSH-110); Run shows what happens today"
      }
@@ -102,7 +102,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "## `use @lang`\n\n`use @lang <language> \"<module>\" as <alias>` declares a module for a polyglot\nblock. It is accepted and runs, but the alias is not wired to the block's\nvariables — the block still has to `import` the module itself:\n",
+   "source": "## `use @lang`\n\n`use @lang <language> \"<module>\" [as <alias>]` writes the import into every later\nblock of that language, under the module's own name and the alias:\n",
    "state": {
     "status": "done"
    },
@@ -114,7 +114,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "use @lang python \"math\" as math\n\n@python {\nimport math\nv = math.factorial(5)\n}\nprint(v)\n",
+   "source": "use @lang python \"math\" as m\n\n@python -> v {\nv = m.factorial(5) + math.factorial(3)\n}\nprint(v)\n",
    "state": {
     "status": "pending"
    },
@@ -125,10 +125,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/imports.md:45",
+      "src": "examples/imports.md:46",
       "browser": "host",
-      "why": "uses `@python` blocks (polyglot); uses the standard library (`math.factorial`), which the in-browser runtime does not provide",
-      "expect_output": "120\n"
+      "why": "uses `@python` blocks (polyglot), which the in-browser runtime does not provide",
+      "expect_output": "126\n"
      }
     }
    },

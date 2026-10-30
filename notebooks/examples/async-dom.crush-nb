@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`).\n",
+   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`; `crush doctor` checks).\n\n> Verified against crush-ast `cb655f3` (2026-10-16).\n",
    "state": {
     "status": "done"
    },
@@ -30,7 +30,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "// Three languages, one program. Values flow through Crush variables.\nlet numbers = [3, 1, 4, 1, 5, 9, 2, 6]\n\n@python {\nimport statistics\nmean = statistics.mean(numbers)\n}\n\n@javascript {\nconst spread = Math.max(...numbers) - Math.min(...numbers)\n}\n\nlet m = mean\nlet s = spread\n@bash {\necho \"mean=$m spread=$s\"\n}\nprint(\"\")\nprint(\"done\")\n",
+   "source": "// Three languages, one program. Values flow through Crush variables.\nlet numbers = [3, 1, 4, 1, 5, 9, 2, 6]\n\n@python -> mean {\nimport statistics\nmean = statistics.mean(numbers)\n}\n\n@javascript -> spread {\nconst spread = Math.max(...numbers) - Math.min(...numbers)\n}\n\n@python -> line {\nline = f\"mean={mean} spread={spread}\"\n}\nprint(line)\n\n@bash {\necho \"bash: $(echo done)\"\n}\nprint(\"\")\n",
    "state": {
     "status": "pending"
    },
@@ -41,10 +41,10 @@
     ],
     "extra": {
      "guide": {
-      "src": "examples/async-dom.md:12",
+      "src": "examples/async-dom.md:14",
       "browser": "host",
       "why": "uses `@bash`, `@javascript`, `@python` blocks (polyglot), which the in-browser runtime does not provide",
-      "expect_output": "mean=3.875 spread=8\ndone\n"
+      "expect_output": "mean=3.875 spread=8\nbash: done\n"
      }
     }
    },
@@ -55,7 +55,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "**What this shows:**\n\n- `@python`: reads the Crush variable `numbers`, and its last top-level binding,\n  `mean`, becomes a Crush variable\n- `@javascript`: the same protocol; `spread` comes back as a number\n- `@bash`: receives the `let` variables declared before it as environment\n  variables. Results of earlier blocks are not passed automatically, so they are\n  copied into `let m = mean` / `let s = spread` first\n- Block output is trimmed and has no trailing newline, which is why `print(\"\")`\n  is used to finish the line\n- All three run as ordinary subprocesses with your user's authority — see\n  [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority)\n",
+   "source": "**What this shows:**\n\n- `@python -> mean`: the block reads the Crush variable `numbers` (inputs are\n  automatic) and declares `mean` as its output, which becomes a Crush variable\n- `@javascript -> spread`: the same protocol; `spread` comes back as a number\n- the second `@python` block reads both earlier outputs, because they are Crush\n  variables now\n- `@bash`: only its printed output comes back. It does **not** see Crush\n  variables today (crush-ast [#255](https://github.com/nixpt/crush-ast/issues/255)),\n  which is why the formatting is done in Python\n- block output is trimmed and has no trailing newline, which is why `print(\"\")`\n  is used to finish the line\n- all three run as ordinary subprocesses with your user's authority — see\n  [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority)\n",
    "state": {
     "status": "done"
    },
