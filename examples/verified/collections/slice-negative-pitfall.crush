@@ -1,6 +1,0 @@
-// PITFALL (crush-ast issue #254): a[-1] counts from the end, but negative
-// slice bounds do not: they are silently clamped. Compute positive bounds.
-let a = [1, 2, 3, 4]
-print(a[-1])
-print(a[1:-1])
-print(a[1:len(a) - 1])

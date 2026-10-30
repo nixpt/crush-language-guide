@@ -1,6 +1,6 @@
 # Control Flow
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 Crush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,
 and `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.
@@ -140,11 +140,11 @@ ada is 36
 alan is 41
 ```
 
-> **Known bug ([crush-ast #256](https://github.com/nixpt/crush-ast/issues/256)).**
-> Calling a method on the loop variable (`for s in shapes { s.area() }`, or
-> `a.push(x)` on an array element) is compiled as a capability named `s.area`, and
-> the program is refused. Bind the element with `let` first (iterate an index and
-> write `let s = shapes[i]`).
+The loop variable is a local like any `let`, so methods work on it:
+`for s in shapes { print(s.area()) }`, or `row.push(x)` on each row of an array of
+arrays. (Before crush-ast [#256](https://github.com/nixpt/crush-ast/issues/256)
+such a call was compiled as a capability named `s.area` and the program was
+refused.)
 
 ## Break and continue
 
@@ -228,19 +228,16 @@ two
 still two
 ```
 
-Current limitations (alpha):
-
-- **`return match ...` returns `null`** (silently: crush-ast
-  [#253](https://github.com/nixpt/crush-ast/issues/253)). The parser takes the
-  `return` as a bare return. Bind first, then return:
+A `match` can be returned directly (before crush-ast
+[#253](https://github.com/nixpt/crush-ast/issues/253), `return match ...` silently
+returned `null`):
 
 ```crush
 fn name(v) {
-    let r = match v {
+    return match v {
         0 => "zero",
         _ => "other"
     }
-    return r
 }
 print(name(0))
 print(name(3))
@@ -251,6 +248,8 @@ print(name(3))
 zero
 other
 ```
+
+Current limitations (alpha):
 
 - A `match` with no matching arm evaluates to `null`; there is no
   exhaustiveness error.

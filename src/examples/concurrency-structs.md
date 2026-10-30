@@ -1,6 +1,6 @@
 # Structs (and Concurrency)
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 A struct is declared once (on one line), built with a literal, and given methods
 in an `impl` block. Structs are passed by reference.

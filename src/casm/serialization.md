@@ -55,7 +55,7 @@ compiled program is verbose: the five-line `add` program in the
 followed by the program as MessagePack (via `rmp_serde`), and `save` marks the file
 executable on Unix. The reader skips a leading `#!` line.
 
-> **Known bug (since crush-ast `v0.3.9`, still in `aa07413`).** A `.casmb` file cannot be read back. The
+> **Known bug (since crush-ast `v0.3.9`, still in `d04bc60a`).** A `.casmb` file cannot be read back. The
 > writer emits MessagePack's compact array encoding but `Instruction` flattens its
 > operands into a map, so every load fails with `invalid type: sequence, expected a
 > map`. Until that is fixed, treat `.casmb` as write-only and ship `.cvm1`
@@ -108,7 +108,7 @@ The old docs said `"version": "0.1"` for CASM; that is now rejected (major `0`).
 { "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 ```
 
-> **Known inconsistency (since crush-ast `v0.3.9`, still in `aa07413`).** `CAST_VERSION` is `"0.1"` but the
+> **Known inconsistency (since crush-ast `v0.3.9`, still in `d04bc60a`).** `CAST_VERSION` is `"0.1"` but the
 > Crush front end stamps the CAST it produces with `cast_version: "1.0.0"`. The
 > versioned loader (`Program::deserialize`/`load`) therefore rejects the front end's
 > *own* output, while plain `serde_json` and `validate_json` accept it. Example

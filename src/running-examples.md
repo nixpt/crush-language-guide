@@ -20,7 +20,7 @@ environment** (`--env`). Edited code keeps the example's grants.
 
 The Run button uses **crush-web**, the WebAssembly build of the Crush VM that also
 powers the [playground](https://crushlang.org/playground/). It is the same compiler
-and VM as `crush-run` (the book's copy is built from crush-ast `aa07413`, the commit this guide is
+and VM as `crush-run` (the book's copy is built from crush-ast `d04bc60a`, the commit this guide is
 verified against), and it grants the same way:
 
 - **Always granted:** what `crush run` grants with no flags: `print` /

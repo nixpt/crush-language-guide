@@ -43,7 +43,7 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast aa07413, src/play/pkg) handles itself: crush_vm::run's
+# What crush-web (crush-ast d04bc60a, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
 # collections.*, json.*, ...: on by default since CRUSH-113), sys.args/sys.exit,
 # and io.read (the page asks the reader for each line).

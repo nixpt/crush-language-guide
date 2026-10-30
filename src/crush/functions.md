@@ -1,6 +1,6 @@
 # Functions
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 This chapter covers defining and calling functions. Named functions are
 top-level declarations, and they are also **values**: you can store one in a
@@ -155,8 +155,8 @@ print(add(2, 3))
 
 They capture variables from where they are written; that, and the rules for
 calling function values, is in [Closures and Function Values](closures.md). The
-built-ins `print` and `len` are not values (`let g = len` compiles but fails at run
-time, crush-ast [#257](https://github.com/nixpt/crush-ast/issues/257)); wrap them:
+built-ins `print` and `len` are not values (`let g = len` is a compile error that
+says so, crush-ast [#257](https://github.com/nixpt/crush-ast/issues/257)); wrap them:
 `|x| len(x)`.
 
 The pipeline operator (`x |> f`) takes a function name or a variable holding one:

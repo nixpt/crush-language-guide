@@ -1,0 +1,5 @@
+// ai_semantic_match and ai_synthesize are built-ins: they compile to the same
+// capability-gated call as the CAST SemanticMatch / Synthesize nodes. crush-run
+// has no AI backend, so the program is refused before it runs.
+let m = ai_semantic_match("refund", "billing", 0.8)
+print(m)

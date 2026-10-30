@@ -3,8 +3,8 @@
 Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.
 
-> Verified against crush-ast `aa07413` (main, 2026-10-16), a debug build. That is
-> newer than the `0.6.0` release on crates.io: see the note below.
+> Verified against crush-ast `d04bc60a` (main, 2026-10-29), a release build. That is
+> newer than the `0.7.1` release on crates.io: see the note below.
 
 ## 1. Build the toolchain
 
@@ -50,16 +50,17 @@ Put them on your `PATH`, or install them with the bundled installer
 (`cargo run -p crush-installer -- install --bin-dir target/release` copies them
 into `~/.crush/bin`; it does not currently include the `crush` wrapper).
 
-> **Crates.io.** Release `0.6.0` (2026-10-15) is published for `crush-lang-sdk`
+> **Crates.io.** Release `0.7.1` (2026-10-20, crush-ast `85393971`) is published for `crush-lang-sdk`
 > (which installs `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and
 > `crush-diff`), `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-cosm`,
 > `crush-errors`, `crush-diagnostics`, `crush-ffi`, `crush-caison` (and its old name
 > `crush-cson`), `crush-index`, `crush-walker-core`, `crush-lang-python`,
 > `crush-lang-js`, `crush-lint`, `crush-installer`, `tree-sitter-crush`, `crush-jit`,
-> `crush-python` and `crush-pkg`; `crush-aot`, `crush-aotc` and `crush-lang-rust` are
-> not published. `0.6.0` predates parts of this guide: struct methods resolving on
-> their Kind (Records, `@kind` semantics), explicit polyglot outputs (`-> name`) and
-> the AOT refusals landed on `main` after it. Build from source for everything
+> `crush-python`, `crush-pkg`, `crush-aotc` and `crush-lang-rust`; `crush-aot` is not
+> published. `0.7.1` predates these fixes the guide describes: `return match …`
+> returning its value (#253), negative slice bounds (#254), methods on a `for` loop
+> variable (#256), the compile error for a built-in used as a value (#257) and
+> `crushc` accepting constructor calls (#260). Build from source for everything
 > here. **Never depend on `crush-lang-sdk` `0.2`**: that line has been yanked, and
 > it runs `@lang` blocks without the `--polyglot` gate.
 
@@ -198,7 +199,7 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Both snippets are compiled and run against crush-ast `aa07413` by
+Both snippets are compiled and run against crush-ast `d04bc60a` by
 `scripts/check-examples.py --crush-ast`. `Runtime::new()` registers only the
 built-in primitives (`io.print`, `io.read`, …); to expose more — the standard
 library, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass

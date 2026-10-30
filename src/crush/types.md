@@ -1,6 +1,6 @@
 # Data Types
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 Crush is dynamically typed at run time, with a **static checker** that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -196,10 +196,10 @@ Reading past the end is a runtime error (`array index out of range`), and so is
 method form `a.pop()` is **not** available (the program is refused with `not
 available in this host: pop`); call `array.pop(a)`.
 
-> **Known bug ([crush-ast #254](https://github.com/nixpt/crush-ast/issues/254)).**
-> Negative slice bounds are silently wrong: `[1, 2, 3, 4][1:-1]` gives `[]` and
-> `[1, 2, 3, 4][-3:]` gives the whole array. Compute positive bounds
-> (`a[1:len(a) - 1]`) until it is fixed.
+Negative slice bounds count from the end, as an index does: with
+`let a = [1, 2, 3, 4]`, `a[1:-1]` is `[2, 3]`, `a[-3:]` is `[2, 3, 4]` and
+`a[:-1]` is `[1, 2, 3]`. (Before crush-ast
+[#254](https://github.com/nixpt/crush-ast/issues/254) they were silently clamped.)
 
 ### Objects (maps)
 

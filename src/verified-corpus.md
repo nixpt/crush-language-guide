@@ -6,7 +6,7 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
-> Verified against crush-ast `aa07413` (the commit in the repository's
+> Verified against crush-ast `d04bc60a` (the commit in the repository's
 > `CRUSH_AST_COMMIT` file). 123 programs.
 
 | Area | Programs | Covers |
@@ -48,11 +48,7 @@ changes and the corpus fails, which is the signal to update the guide.
 
 | Pitfall | Issue |
 |---|---|
-| `control-flow/match-return-pitfall`: `return match …` returns `null` | [#253](https://github.com/nixpt/crush-ast/issues/253) |
-| `collections/slice-negative-pitfall`: `a[1:-1]` is `[]` | [#254](https://github.com/nixpt/crush-ast/issues/254) |
 | `polyglot/bash`: a `@bash` block sees no Crush variables | [#255](https://github.com/nixpt/crush-ast/issues/255) |
-| `structs/method-on-loop-variable`: `s.area()` on a `for` variable is refused | [#256](https://github.com/nixpt/crush-ast/issues/256) |
-| `closures/builtin-not-a-value`: `let g = len` fails at run time | [#257](https://github.com/nixpt/crush-ast/issues/257) |
 | `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
 
 ## Running it

@@ -1,6 +1,6 @@
 # Structs, Methods and Kinds
 
-> Verified against crush-ast `aa07413` (2026-10-16). New since the 0.3 line:
+> Verified against crush-ast `d04bc60a` (2026-10-29). New since the 0.3 line:
 > `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the
 > COSM object model).
 
@@ -130,14 +130,10 @@ print(t.size())
 [runtime] `T` has no method `size`
 ```
 
-Two current limits:
-
-- The receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call
-  non-function`); bind the value with `let` first.
-- A method call on a **`for` loop variable** is mistaken for a capability call
-  and the program is refused (`not available in this host: s.area`; crush-ast
-  [#256](https://github.com/nixpt/crush-ast/issues/256)). Loop over indexes and
-  bind `let s = items[i]`.
+The receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call
+non-function`); bind the value with `let` first. A `for` loop variable is a name
+like any other, so `for s in items { s.area() }` works (it was refused before
+crush-ast [#256](https://github.com/nixpt/crush-ast/issues/256)).
 
 ## Traits
 
@@ -308,15 +304,14 @@ key or value is a compile error that lists the valid ones.
 These are the object models of the languages crush-ast lowers (Python classes,
 JS objects, Rust and Go values), which Crush can write directly. Strategies no
 engine runs yet are refused at compile time rather than half-implemented:
-`resolution: prototype_chain` gives `` struct `Z` declares
-`@kind(resolution: prototype_chain)`, which no engine runs yet ``.
+`resolution: embedding_promotion` (Go's embedding) gives `` struct `Z` declares
+`@kind(resolution: embedding_promotion)`, which no engine runs yet ``.
 
 A constructor (`construct: ctor(init)`) runs `init` on a new instance when the
-struct is called like a function. (`crush run` handles this; `crushc` and
-`crush build` wrongly reject it with `Undefined function: Acc`, crush-ast
-[#260](https://github.com/nixpt/crush-ast/issues/260).)
+struct is called like a function. (`crushc` and `crush build` accept it too
+since crush-ast [#260](https://github.com/nixpt/crush-ast/issues/260); before, they
+rejected it with `Undefined function: Acc`.)
 
-<!-- check: nocrushc crush-ast #260 -->
 ```crush
 @kind(construct: ctor(init))
 struct Acc { total: Int }

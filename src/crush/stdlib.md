@@ -1,6 +1,6 @@
 # Standard Library
 
-> Verified against crush-ast `aa07413` (2026-10-16).
+> Verified against crush-ast `d04bc60a` (2026-10-29).
 
 Crush's "standard library" is a set of **capabilities** — dotted functions such
 as `str.split` and `math.sqrt` — that the host registers. It is *not* a module
