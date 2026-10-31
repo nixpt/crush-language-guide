@@ -83,7 +83,7 @@ cannot disagree. Under `mdbook serve` the links 404 until you generate the files
 ```sh
 mdbook build
 python3 scripts/build-notebooks.py --out book/notebooks --validate schemas/notebook.schema.json
-cargo install --locked --root /tmp/nbk crush-notebook-kernel@0.2.0
+cargo install --locked --root /tmp/nbk crush-notebook-kernel@0.3.0
 python3 scripts/run-notebooks.py --kernel /tmp/nbk/bin/crush-notebook-kernel --dir book/notebooks
 ```
 

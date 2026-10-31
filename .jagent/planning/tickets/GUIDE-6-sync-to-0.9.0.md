@@ -67,10 +67,9 @@ New corpus programs: `basics/int-literals`, `basics/bad-hex-literal` (.err), `st
   the "no display" error with it, and the API/events from `crates/crush-gui` source and
   `docs/design/ui-api.md`. crush-ast's own README says the same of its desktop backend. The counter
   block on the page is `text`, unchecked, and the page says so.
-- **Notebooks CI job will likely fail on the new cells**: `crush-notebook-kernel` 0.2.0 (latest on
-  crates.io) is built on crush-ast 0.8.0, so the string-slice and any other 0.9.0-only cells fail there.
-  Needs a kernel release on 0.9.0 (then bump `KERNEL_VERSION`). I did not run the notebooks job
-  locally (kernel not installed; disk).
+- **Notebooks**: needed a kernel on crush-ast 0.9.0. `crush-notebook-kernel` 0.3.0 was published
+  for this (nixpt/crush-notebook#2); `KERNEL_VERSION` is 0.3.0. All 32 notebooks (134 cells) run
+  clean through it with `scripts/run-notebooks.py` (checked locally, 2026-10-31).
 - **Released `crush_web_bg.wasm` is 9,702,572 bytes**, 2.8 MB larger than the guide's own build of the
   previous commit (6,869,494). The entire difference is the 2,858,761-byte `name` section: crush-ast's
   `artifacts.yml` runs `wasm-bindgen --target web` without `--remove-name-section`
