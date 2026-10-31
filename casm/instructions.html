@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -187,7 +187,7 @@
 <p>Every instruction has two spellings: the <strong>JSON name</strong> used in the CASM IR
 (<code>"op": "push_int"</code>) and the <strong>CVM1 mnemonic</strong> used in the text assembly and the
 binary (<code>PUSH</code>). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against crush-ast <code>c1cc21fb</code> (2026-10-30); the examples at the
+Behaviour was checked against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31); the examples at the
 end of each section are run by this guide’s checker.</p>
 <h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading stack effects</a></h2>
 <p><code>a b → c</code> means: pop <code>b</code> (the <strong>top</strong>), pop <code>a</code>, push <code>c</code>. The rightmost value is
@@ -216,7 +216,7 @@ section</a> lists exactly which IR ops reach the VM.</p>
 <tr><td><code>pop</code></td><td><code>POP</code></td><td>—</td><td><code>a →</code></td><td></td></tr>
 <tr><td><code>dup</code></td><td><code>DUP</code></td><td>—</td><td><code>a → a a</code></td><td></td></tr>
 <tr><td><code>swap</code></td><td><code>SWAP</code></td><td>—</td><td><code>a b → b a</code></td><td></td></tr>
-<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>c1cc21fb</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
+<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>bad81048</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
 <tr><td><code>pick</code></td><td><code>PICK n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td>copy the item <code>n</code> below the top (<code>PICK 2</code> copies the third)</td></tr>
 <tr><td><code>roll</code></td><td><code>ROLL n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td><em>move</em> the item <code>n</code> below the top to the top</td></tr>
 <tr><td>—</td><td><code>NOP</code></td><td>—</td><td>—</td><td>text/binary only</td></tr>
@@ -577,7 +577,7 @@ program. It handles exactly these IR operations:</p>
 </div>
 <p>(crush-ast keeps this classification exhaustive in its
 <code>crush-lang-sdk/tests/casm_lowering_completeness.rs</code>; the spot checks below were
-run against <code>c1cc21fb</code>.) A bit shift lowers and runs:</p>
+run against <code>bad81048</code>.) A bit shift lowers and runs:</p>
 <!-- check: casm-json -->
 <!-- check: output -->
 <pre><code class="language-json">{

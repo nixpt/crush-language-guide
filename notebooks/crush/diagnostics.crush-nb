@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "Errors and Diagnostics — The Crush Language Guide",
+  "description": "Generated from crush/diagnostics.md of The Crush Language Guide (https://docs.crushlang.org/crush/diagnostics.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/diagnostics.md",
+   "guide_url": "https://docs.crushlang.org/crush/diagnostics.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-diagnostics-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Errors and Diagnostics\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nThis page is about how the tools *report* a problem; the language's own\n`try`/`catch`/`throw` is in [Control Flow](https://docs.crushlang.org/crush/control_flow.html#errors-try--catch--throw).\nSince 0.9.0 `crush`, `crushc` and `crush-run` report problems with one JSON schema,\nand a semantic error points at the line and column it is on.\n\n## Text (the default)\n\nA mistake the compiler can see is reported before anything runs:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-diagnostics-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let x = 1\n    print(y)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/diagnostics.md:15",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-diagnostics-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[compile] Undefined variable: y\n```\n\nSyntax errors say where the parser gave up:\n\n```text\n[compile] Parse errors: Unexpected token at line 1, column 12: unexpected token in expression: newline\n```\n\n## JSON: `--message-format json`\n\nAdd `--message-format json` to `crush run`, `crush-run run`, `crushc` or `crush build`\nand every error is one\nJSON object on its own line, for an editor, a language-server bridge or an agent\nthat should not have to parse prose. Running the program above:\n\n```sh\ncrush-run run e.crush --message-format json\n```\n\n```json\n{\"code\":\"E-TP01\",\"level\":\"error\",\"file\":\"e.crush\",\"line\":2,\"col\":7,\"message\":\"Undefined variable: y\",\"hint\":null}\n```\n\n`crushc -C e.crush --message-format json` prints the identical record: there is one\nschema, with seven fields in this order:\n\n| Field | Meaning |\n|---|---|\n| `code` | a stable code: `E-TP01` (a semantic / type error), `E-PP01` (a parse error), `E-RT05` (a run-time error: here division by zero), `E-CAPS` (a capability the run does not grant) |\n| `level` | `error`, or `note` for a non-fatal remark |\n| `file` | the file as you named it |\n| `line`, `col` | 1-based position, or `null` when the problem has none (a run-time error, a refused capability) |\n| `message` | the same text the default output shows |\n| `hint` | a suggestion, or `null` |\n\nA syntax error carries its position the same way:\n\n```json\n{\"code\":\"E-PP01\",\"level\":\"error\",\"file\":\"s.crush\",\"line\":1,\"col\":12,\"message\":\"unexpected token in expression: newline\",\"hint\":null}\n```\n\nand a refused run says what it lacks:\n\n```json\n{\"code\":\"E-CAPS\",\"level\":\"error\",\"file\":\"h.crush\",\"line\":null,\"col\":null,\"message\":\"needs capabilities this run does not grant; nothing was run: http.get\",\"hint\":\"no grant in this build provides them\"}\n```\n\nWrong arity is caught at compile time, with the call's position:\n\n```json\n{\"code\":\"E-TP01\",\"level\":\"error\",\"file\":\"ar.crush\",\"line\":2,\"col\":1,\"message\":\"Function 'f' expects 1 arguments, found 2\",\"hint\":null}\n```\n\nThe stream has one record per error and nothing else on standard output, so\n`... --message-format json | jq` is safe. The program's own `print` output is\nseparate, and the `[steps=…]` summary is on standard error as ever.\n\n## Where to go next\n\n- [Debugging](https://docs.crushlang.org/crush/debugging.html): stop at a line and look at the variables.\n- [Capability System](https://docs.crushlang.org/crush/capabilities.html): what `E-CAPS` refusals mean and which flag fixes each.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Capability System\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30).\n\nCrush programs can't touch the outside world directly. Every interaction with the\nhost — printing, reading a file, making an HTTP request, spawning a process,\nrunning another language — is a **capability call**, and a capability only exists\nif the host that is running the program has explicitly turned it on. There is no\nambient authority.\n\n> **Status: alpha.** The model below is real and enforced, but the set of\n> capabilities is small and the permission granularity is coarse (on/off per\n> group, with a directory root for the filesystem). Read\n> [What is not enforced](#what-is-not-enforced) before relying on it for\n> isolation.\n\n## Calling a capability\n\nA capability call looks like an ordinary dotted function call — **no `@` prefix**:\n",
+   "source": "# Capability System\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nCrush programs can't touch the outside world directly. Every interaction with the\nhost — printing, reading a file, making an HTTP request, spawning a process,\nrunning another language — is a **capability call**, and a capability only exists\nif the host that is running the program has explicitly turned it on. There is no\nambient authority.\n\n> **Status: alpha.** The model below is real and enforced, but the set of\n> capabilities is small and the permission granularity is coarse (on/off per\n> group, with a directory root for the filesystem). Read\n> [What is not enforced](#what-is-not-enforced) before relying on it for\n> isolation.\n\n## Calling a capability\n\nA capability call looks like an ordinary dotted function call — **no `@` prefix**:\n",
    "state": {
     "status": "done"
    },
@@ -90,7 +90,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "`io.read` reads a line from standard input. On this page, Run asks you for each\nline; type `Ada` to get the output below:\n\n```crush\nlet name = io.read()\nio.print(\"Hello, \" + name)\n```\n\n## Enabling more capabilities\n\nWith the CLI, each *group* of capabilities is switched on by a flag on\n`crush-run run` (or `crush run`). Anything not switched on is simply **not\nregistered**. Before running anything, `crush-run` works out every capability the\ncompiled program can reach and refuses the whole run if one isn't granted, listing\nthe flag that would grant each:\n\n| Flag | Capabilities enabled |\n|---|---|\n| (none: on by default) | the standard library: `str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`, `path.*`, `regex.*`, `bytes.*`, `buffer.*`, `binary.*`, `result.*`, `time.format/parse`, `env.os/arch`, `system.*`, plus `sys.args()` / `sys.exit(code)`; pure computation, see [Standard Library](https://docs.crushlang.org/crush/stdlib.html). `--no-stdlib` removes it |\n| `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find`, `text.head/tail/wc/cut/grep` |\n| `--env` | `env.get`, `env.all`, `env.home_dir` |\n| `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep`, `async.sleep` |\n| `--net` | `net.http_get`, `net.http_post`, `net.http_put`, `net.http_delete`, `net.http_request` |\n| `--process` | `process.exec` |\n| `--crypto` | `crypto.sha256`, `crypto.random` |\n| `--db PATH` | `db.query`, `db.execute` on that SQLite file |\n| `--graphics` | `graphics.canvas/rect/circle/text/to_svg` |\n| `--bus` | `message_bus.publish/subscribe/recv` |\n| `--task` | `task.start/stop/list` |\n| `--akg` | `akg.write/read/search` |\n| `--polyglot` | `@python { }`, `@javascript { }`, `@bash { }` blocks — see [Polyglot](https://docs.crushlang.org/crush/polyglot.html) |\n\n`crush-run caps` prints the list for your build. Some groups (`--net`, `--db`,\n`--graphics`, `--gpu`) are Cargo features of `crush-lang-sdk` that a default build\nleaves out; the standard library is a default feature.\n\nWithout the flag, nothing runs, not even the first line:\n",
+   "source": "`io.read` reads a line from standard input. On this page, Run asks you for each\nline; type `Ada` to get the output below:\n\n```crush\nlet name = io.read()\nio.print(\"Hello, \" + name)\n```\n\n## Enabling more capabilities\n\nWith the CLI, each *group* of capabilities is switched on by a flag on\n`crush-run run` (or `crush run`). Anything not switched on is simply **not\nregistered**. Before running anything, `crush-run` works out every capability the\ncompiled program can reach and refuses the whole run if one isn't granted, listing\nthe flag that would grant each:\n\n| Flag | Capabilities enabled |\n|---|---|\n| (none: on by default) | the standard library: `str.*`, `math.*`, `conv.*`, `collections.*`, `json.*`, `path.*`, `regex.*`, `bytes.*`, `buffer.*`, `binary.*`, `result.*`, `time.format/parse`, `env.os/arch`, `system.*`, plus `sys.args()` / `sys.exit(code)`; pure computation, see [Standard Library](https://docs.crushlang.org/crush/stdlib.html). `--no-stdlib` removes it |\n| `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find`, `text.head/tail/wc/cut/grep` |\n| `--env` | `env.get`, `env.all`, `env.home_dir` |\n| `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep`, `async.sleep` |\n| `--net` | `net.http_get`, `net.http_post`, `net.http_put`, `net.http_delete`, `net.http_request` (**HTTP only**) |\n| `--tcp` | raw TCP **client** sockets: `tcp.connect`, `tcp.tls_wrap`, and `tcp.send`, `tcp.recv`, `tcp.close`, `tcp.ping` on the connections you hold; see [Raw sockets](#raw-sockets-tcp) |\n| `--tcp-listen` | raw TCP **server** sockets: `tcp.listen`, `tcp.accept`, and the same `send`/`recv`/`close`/`ping`; does not allow `tcp.connect` |\n| `--ui` | `ui.*`, only with `crush gui run`; see [Windows](https://docs.crushlang.org/crush/gui.html) |\n| `--process` | `process.exec` |\n| `--crypto` | `crypto.sha256`, `crypto.random` |\n| `--db PATH` | `db.query`, `db.execute` on that SQLite file |\n| `--graphics` | `graphics.canvas/rect/circle/text/to_svg` |\n| `--bus` | `message_bus.publish/subscribe/recv` |\n| `--task` | `task.start/stop/list` |\n| `--akg` | `akg.write/read/search` |\n| `--polyglot` | `@python { }`, `@javascript { }`, `@bash { }` blocks — see [Polyglot](https://docs.crushlang.org/crush/polyglot.html) |\n\n`crush-run caps` prints the list for your build. Some groups (`--db`, `--graphics`,\n`--gpu`) are Cargo features of `crush-lang-sdk` that a default build leaves out;\nthe standard library, the HTTP client (`net.*`, since 0.9.0) and the raw sockets\n(`tcp.*`) are default features, which only compiles them in: a program that uses\nthem is still refused until you pass the flag.\n\nThe old HTTP names `http.get`, `http.post`, `http.put`, `http.delete` and\n`http.request` are refused by name, with the replacement. This run is refused\nbefore anything executes, with or without `--net`:\n",
    "state": {
     "status": "done"
    },
@@ -99,6 +99,43 @@
   },
   {
    "id": "crush-capabilities-3",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    let r = http.get(\"http://example.com/\")\n    print(r)\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/capabilities.md:114",
+      "browser": "fail",
+      "why": "this example shows a run-time error",
+      "expect_error": "was renamed to net.http_get"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-md-7",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[capabilities] block.crush needs capabilities this run does not grant; nothing was run:\n  http.get was renamed to net.http_get (grant it with --net)\n```\n\nWithout the flag, nothing runs, not even the first line:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-4",
    "kind": {
     "type": "crush"
    },
@@ -113,7 +150,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:107",
+      "src": "crush/capabilities.md:127",
       "browser": "fail",
       "why": "this example shows a run-time error",
       "expect_error": "fs.read"
@@ -123,7 +160,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-7",
+   "id": "crush-capabilities-md-9",
    "kind": {
     "type": "markdown"
    },
@@ -135,7 +172,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-4",
+   "id": "crush-capabilities-5",
    "kind": {
     "type": "crush"
    },
@@ -150,7 +187,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:124",
+      "src": "crush/capabilities.md:144",
       "browser": "fail",
       "why": "this example shows a run-time error",
       "expect_error": "path escapes sandbox root"
@@ -160,7 +197,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-9",
+   "id": "crush-capabilities-md-11",
    "kind": {
     "type": "markdown"
    },
@@ -172,7 +209,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-5",
+   "id": "crush-capabilities-6",
    "kind": {
     "type": "crush"
    },
@@ -187,7 +224,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:135",
+      "src": "crush/capabilities.md:155",
       "browser": "run",
       "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "0\n"
@@ -197,7 +234,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-11",
+   "id": "crush-capabilities-md-13",
    "kind": {
     "type": "markdown"
    },
@@ -209,7 +246,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-6",
+   "id": "crush-capabilities-7",
    "kind": {
     "type": "crush"
    },
@@ -224,7 +261,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:153",
+      "src": "crush/capabilities.md:173",
       "browser": "run",
       "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "hello\n[a.txt]\n"
@@ -234,7 +271,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-13",
+   "id": "crush-capabilities-md-15",
    "kind": {
     "type": "markdown"
    },
@@ -246,7 +283,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-7",
+   "id": "crush-capabilities-8",
    "kind": {
     "type": "crush"
    },
@@ -261,7 +298,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:170",
+      "src": "crush/capabilities.md:190",
       "browser": "host",
       "why": "uses `process.exec`, which the in-browser runtime does not provide",
       "expect_output": "null\ntrue\n{\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"hi\\n\"}\n"
@@ -271,11 +308,11 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-15",
+   "id": "crush-capabilities-md-17",
    "kind": {
     "type": "markdown"
    },
-   "source": "- `env.get(name)` → string, or `null` if unset.\n- `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`\n  (bounded by the wall-clock quota).\n- `process.exec(cmd, args)` — exactly **two** arguments (the command and one\n  argument string) — returns a JSON string with `exit_code`, `stdout`, `stderr`.\n- `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;\n  size capped by `--net-max-response-bytes` (default 1 MiB).\n- `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).\n\nA host capability that fails (missing file, refused connection, path escape)\naborts the program with `[runtime] unknown capability: <name>: <reason>` — the\n\"unknown capability\" wording is misleading there, and the error is not\ncatchable by [`try`/`catch`](https://docs.crushlang.org/crush/control_flow.html#what-catch-does-not-catch).\n\n## Declaring what a program uses: `@capabilities`\n\nA program can say up front which capabilities it may use beyond the ambient,\neffect-free built-ins (`io.print`, `str.*`, arrays, the standard library):\n",
+   "source": "- `env.get(name)` → string, or `null` if unset.\n- `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`\n  (bounded by the wall-clock quota).\n- `process.exec(cmd, args)` — exactly **two** arguments (the command and one\n  argument string) — returns a JSON string with `exit_code`, `stdout`, `stderr`.\n- `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;\n  size capped by `--net-max-response-bytes` (default 1 MiB).\n- `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).\n\n### Raw sockets (`tcp.*`)\n\nSince 0.9.0 a program can open TCP connections directly. `--net` is HTTP only and\ndoes **not** grant these; the socket flags are separate, and the server flag is a\nstronger grant than the client flag because it makes the program reachable from\nother hosts:\n\n| Flag | Lets the program |\n|---|---|\n| `--tcp` | `tcp.connect(uri)` outbound; `tcp.tls_wrap(conn)` upgrades a connection to TLS |\n| `--tcp-listen` | `tcp.listen(uri)` and `tcp.accept(listener)`; it does not allow `tcp.connect` |\n| either | `tcp.send(conn, text)`, `tcp.recv(conn)`, `tcp.close(conn)`, `tcp.ping(conn)` on a connection id it already holds |\n\nA URI is `tcp://IP:PORT` with a literal IP address (no host names). `tcp.listen`\nand `tcp.connect` return an integer id; `tcp.accept` blocks until a client\nconnects. `tcp.send` takes text and returns the byte count; `tcp.recv` returns up\nto 16 KiB as text. This program is both ends of a conversation, so it needs both\nflags (the connect is queued by the kernel before `accept` takes it):\n",
    "state": {
     "status": "done"
    },
@@ -283,7 +320,44 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-8",
+   "id": "crush-capabilities-9",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let srv = tcp.listen(\"tcp://127.0.0.1:47123\")\nlet c = tcp.connect(\"tcp://127.0.0.1:47123\")\nlet s = tcp.accept(srv)\ntcp.send(c, \"ping\")\nprint(tcp.recv(s))\ntcp.send(s, \"pong\")\nprint(tcp.recv(c))\ntcp.close(c)\ntcp.close(s)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/capabilities.md:232",
+      "browser": "host",
+      "why": "uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide",
+      "expect_output": "ping\npong\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-md-19",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Granting only `--tcp` is refused, naming what is missing:\n\n```text\n[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:\n  --tcp-listen: tcp.accept, tcp.listen\n```\n\nA host capability that fails (missing file, refused connection, path escape)\naborts the program with `[runtime] unknown capability: <name>: <reason>` — the\n\"unknown capability\" wording is misleading there, and the error is not\ncatchable by [`try`/`catch`](https://docs.crushlang.org/crush/control_flow.html#what-catch-does-not-catch).\n\n## Declaring what a program uses: `@capabilities`\n\nA program can say up front which capabilities it may use beyond the ambient,\neffect-free built-ins (`io.print`, `str.*`, arrays, the standard library):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-10",
    "kind": {
     "type": "crush"
    },
@@ -298,7 +372,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:203",
+      "src": "crush/capabilities.md:268",
       "browser": "run",
       "why": "needs time, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "true\n"
@@ -308,7 +382,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-17",
+   "id": "crush-capabilities-md-21",
    "kind": {
     "type": "markdown"
    },
@@ -320,7 +394,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-9",
+   "id": "crush-capabilities-11",
    "kind": {
     "type": "crush"
    },
@@ -335,7 +409,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:219",
+      "src": "crush/capabilities.md:284",
       "browser": "fail",
       "why": "this example shows a run-time error",
       "expect_error": "not declared in @capabilities: env.get"
@@ -345,7 +419,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-19",
+   "id": "crush-capabilities-md-23",
    "kind": {
     "type": "markdown"
    },

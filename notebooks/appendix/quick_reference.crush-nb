@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `c1cc21fb`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |\n| `crush doctor` | which polyglot interpreters are on `PATH` |\n| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |\n| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |\n\nCapability flags (everything is **off** unless you pass it, except the standard\nlibrary, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`\n`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`\n`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused\nbefore it runs. Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
+   "source": "# Quick Reference\n\nCheat sheets for the toolchain, the Crush language and CASM. Every code block that\ncan run is run by the guide's checker against crush-ast `bad81048`. Details live in\nthe chapters linked from each heading.\n\n## Command line ([Getting Started](https://docs.crushlang.org/getting-started.html))\n\n| Command | Does |\n|---|---|\n| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |\n| `crush build FILE.crush` | compile to `.cvm1` |\n| `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |\n| `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |\n| `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\\|ast\\|types` prints a layer; `-C` only checks |\n| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |\n| `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |\n| `crush doctor` | which polyglot interpreters are on `PATH` |\n| `crush debug FILE --step --inspect` | breakpoints, step, watch, print ([Debugging](https://docs.crushlang.org/crush/debugging.html)) |\n| `crush gui run FILE --ui` | a program that draws a window; needs the separate `crush-gui` ([Windows](https://docs.crushlang.org/crush/gui.html)) |\n| `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |\n| `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |\n\nCapability flags (everything is **off** unless you pass it, except the standard\nlibrary, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`\n`--net` (HTTP) `--tcp` `--tcp-listen` (raw sockets) `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`\n`--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused\nbefore it runs; `--message-format json` makes errors one JSON object per line ([Diagnostics](https://docs.crushlang.org/crush/diagnostics.html)). Quotas:\n`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),\n`--max-call-depth` (256).\n\n## Language ([Syntax](https://docs.crushlang.org/crush/syntax.html))\n\n### Variables and functions\n",
    "state": {
     "status": "done"
    },
@@ -41,7 +41,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:34",
+      "src": "appendix/quick_reference.md:36",
       "browser": "run",
       "expect_output": "Hello, Alice\n43\n"
      }
@@ -77,7 +77,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:63",
+      "src": "appendix/quick_reference.md:65",
       "browser": "run",
       "expect_output": "2\n25\n"
      }
@@ -113,7 +113,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:86",
+      "src": "appendix/quick_reference.md:88",
       "browser": "run",
       "expect_output": "medium\n0\n1\n2\na\nb\n"
      }
@@ -149,7 +149,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:133",
+      "src": "appendix/quick_reference.md:135",
       "browser": "run",
       "expect_output": "caught: disk full\n"
      }
@@ -185,7 +185,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:148",
+      "src": "appendix/quick_reference.md:150",
       "browser": "run",
       "expect_output": "7\ncrush/en\n"
      }
@@ -221,7 +221,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:176",
+      "src": "appendix/quick_reference.md:178",
       "browser": "run",
       "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "no notes\n"
@@ -246,7 +246,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:189",
+      "src": "appendix/quick_reference.md:191",
       "browser": "run",
       "expect_output": "ab3\n6\n"
      }
@@ -282,7 +282,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "appendix/quick_reference.md:208",
+      "src": "appendix/quick_reference.md:210",
       "browser": "fail",
       "why": "this example shows a refusal",
       "expect_error": "--polyglot"

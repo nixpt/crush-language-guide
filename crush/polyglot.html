@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30), with Python 3.14, Node 26 and
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31), with Python 3.14, Node 26 and
 bash 5.3 on the host.</p>
 </blockquote>
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
@@ -500,27 +500,28 @@ print(text)
 <h3 id="bash"><a class="header" href="#bash">Bash</a></h3>
 <p><code>@bash</code> blocks have no value marshaling: only their printed output comes back,
 and <code>-&gt;</code> on a <code>@bash</code> block is a compile error (<code>`-&gt;` output lists are not supported for @bash: it has no value marshaling</code>).</p>
-<blockquote>
-<p><strong>Known bug (<a href="https://github.com/nixpt/crush-ast/issues/255">crush-ast #255</a>).</strong>
-Earlier releases passed the function’s top-level <code>let</code>s to a <code>@bash</code> block as
-environment variables. Since explicit outputs landed (CRUSH-270) a <code>@bash</code> block
-receives <strong>no</strong> Crush variables, and <code>$name</code> silently expands to the empty
-string:</p>
-</blockquote>
+<p>A <code>@bash</code> block does read Crush variables, by name: every <code>$name</code> or <code>${name}</code> in the
+block that matches a Crush variable in scope is passed to bash as an environment
+variable of that name (since 0.9.0; crush-ast
+<a href="https://github.com/nixpt/crush-ast/issues/255">#255</a>). Numbers arrive as their
+text. A variable the block does not mention is not passed, and a <code>$name</code> that is not
+a Crush variable expands to the empty string, as in any shell:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:341" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:342" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
 <pre><code class="language-crush">let name = "crush"
+let n = 42
 @bash {
-echo "hello [$name]"
+echo "hello [$name] n=${n} [$nothing_here]"
 }
+print("")
 </code></pre>
 </div>
 
 <!-- check: output -->
-<pre><code class="language-text">hello []
+<pre><code class="language-text">hello [crush] n=42 []
 </code></pre>
-<p>Until that is fixed, compute the value in a <code>@python</code> block and print it, or
-write it to a file the <code>@bash</code> block reads. Bash inherits the host environment
+<p>Nothing comes back except what the block prints, so to get a value out compute it in
+a <code>@python</code> or <code>@javascript</code> block with <code>-&gt;</code>. Bash inherits the host environment
 (<code>$HOME</code>, <code>$PATH</code>, …) in the default, unsandboxed lane.</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <p>If the interpreter exits non-zero, the program stops with a
@@ -529,7 +530,7 @@ write it to a file the <code>@bash</code> block reads. Bash inherits the host en
 right place in your <code>.crush</code> file:</p>
 <!-- check: runfail at .crush line 3 -->
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:366" data-why="this example shows a run-time error" data-grants="polyglot.python" data-expect-error="at .crush line 3">
+<div class="crush-block" data-crush="fail" data-src="crush/polyglot.md:369" data-why="this example shows a run-time error" data-grants="polyglot.python" data-expect-error="at .crush line 3">
 <pre><code class="language-crush">print("a")
 print("b")
 @python {
@@ -568,7 +569,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:414" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:417" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -608,7 +609,7 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
-<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:453" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:456" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
 <pre><code class="language-crush">@python[pypi:six] -&gt; v {
 import six
 v = six.__version__

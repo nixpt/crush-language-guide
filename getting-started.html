@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d1d19af1.js"></script>
+        <script src="toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -187,21 +187,40 @@
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.</p>
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (main, 2026-10-30), a release build. That is
-newer than the <code>0.7.1</code> release on crates.io: see the note below.</p>
+<p>Verified against crush-ast <code>bad81048</code>, the <strong>v0.9.0</strong> release (2026-10-31): the
+prebuilt binaries from its GitHub release, which this guide’s checker runs.</p>
 </blockquote>
-<h2 id="1-build-the-toolchain"><a class="header" href="#1-build-the-toolchain">1. Build the toolchain</a></h2>
+<h2 id="1-install-the-toolchain"><a class="header" href="#1-install-the-toolchain">1. Install the toolchain</a></h2>
 <p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
-Build it from source — this is the path this guide’s examples are validated
-against:</p>
+There are two ways to get it. Both give you the same <code>crush</code>, <code>crushc</code>, <code>crush-run</code>,
+<code>crush-compile</code>, <code>crush-repl</code> and <code>crush-debug</code>.</p>
+<p><strong>From crates.io</strong> (needs Rust 1.95 or newer):</p>
+<pre><code class="language-sh">cargo install crush-lang-sdk
+</code></pre>
+<blockquote>
+<p><strong>Not <code>cargo install crush</code>.</strong> The <code>crush</code> crate on crates.io is an unrelated
+project. The toolchain is published as <strong><code>crush-lang-sdk</code></strong>. There is no
+<code>crush-ast</code> crate either; that is the repository’s name.</p>
+</blockquote>
+<p><strong>Prebuilt Linux binaries.</strong> Since v0.9.0 every <code>vX.Y.Z</code> tag has a GitHub release
+(a pre-release until 1.0) with a Linux x86_64 tarball, a tarball of the browser
+runtime, and a <code>SHA256SUMS</code> file. v0.9.0 is the first such release:</p>
+<pre><code class="language-sh">gh release download v0.9.0 --repo nixpt/crush-ast
+sha256sum -c SHA256SUMS
+tar -xzf crush-0.9.0-x86_64-unknown-linux-gnu.tar.gz
+export PATH="$PWD/crush-0.9.0-x86_64-unknown-linux-gnu:$PATH"
+</code></pre>
+<p>The tarball holds <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code>,
+<code>crush-debug</code>, <code>crush-pkg</code> and <code>crush-gui</code>. <code>crush doctor</code> then tells you which
+interpreters your polyglot blocks can use.</p>
+<p><strong>From source</strong>, to build a particular commit (this is how the guide’s CI builds
+the commit in <code>CRUSH_AST_COMMIT</code>):</p>
 <pre><code class="language-sh">git clone https://github.com/nixpt/crush-ast
 git clone https://github.com/nixpt/buckets      # must sit NEXT TO crush-ast
 cd crush-ast
 cargo build --release -p crush-lang-sdk                       # crush, crush-run, crushc, ...
 cargo build --release -p crush-aot                            # optional: crush-aotc (native AOT)
 </code></pre>
-<p>Add <code>--features net,db,graphics</code> to the first build for the <code>--net</code>, <code>--db</code> and
-<code>--graphics</code> capability groups.</p>
 <p>Two things to know:</p>
 <ul>
 <li><strong><code>buckets</code> must be a sibling directory.</strong> <code>crush-vm</code> has an optional
@@ -209,48 +228,44 @@ path-dependency on <code>../buckets</code> (the sandbox provisioner), and Cargo 
 even when the feature is off, so a lone <code>crush-ast</code> checkout fails with
 <code>failed to read .../buckets/Cargo.toml</code>.</li>
 <li><strong>The standard library is built in by default</strong> (crush-ast CRUSH-113): <code>str.*</code>,
-<code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code> and friends need no flag.</li>
+<code>math.*</code>, <code>conv.*</code>, <code>collections.*</code>, <code>json.*</code> and friends need no flag. As of
+0.9.0 the HTTP client (<code>net.*</code>) and raw TCP sockets (<code>tcp.*</code>) are compiled in by
+default too; they are still refused unless you pass <code>--net</code> / <code>--tcp</code> /
+<code>--tcp-listen</code>. Only <code>db</code> and <code>graphics</code> still need <code>--features db,graphics</code>.</li>
 </ul>
-<p>You need Rust 1.95 or newer (crush-ast’s CI checks that MSRV, and its
-<code>rust-toolchain.toml</code> selects <code>stable</code>; this guide was verified with rustc 1.96). The build produces these binaries in
-<code>target/release/</code>:</p>
+<p>The binaries:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Binary</th><th>What it does</th></tr>
 </thead>
 <tbody>
-<tr><td><code>crush</code></td><td>The front door: <code>crush run FILE</code>, <code>crush build FILE</code>, <code>crush repl</code></td></tr>
+<tr><td><code>crush</code></td><td>The front door: <code>crush run FILE</code>, <code>crush build FILE</code>, <code>crush repl</code>, <code>crush debug FILE</code>, <code>crush gui run FILE --ui</code>, <code>crush doctor</code></td></tr>
 <tr><td><code>crush-run</code></td><td>Run a <code>.crush</code>, <code>.casm</code> or <code>.cvm1</code> file (all the capability flags live here)</td></tr>
 <tr><td><code>crushc</code></td><td>Compile <code>.crush</code> to bytecode (<code>.cvm1</code>), or <code>--emit casm|ast|types</code>; <code>-C</code> only checks</td></tr>
 <tr><td><code>crush-compile</code></td><td>Assemble CASM text into a <code>.cvm1</code> binary</td></tr>
 <tr><td><code>crush-repl</code></td><td>Interactive REPL (<code>crush repl</code>; commands are <code>.help</code>, <code>.quit</code>)</td></tr>
-<tr><td><code>crush-diff</code></td><td>Run programs on several engines and report where they disagree</td></tr>
+<tr><td><code>crush-debug</code></td><td>The debugger (<code>crush debug</code>): see <a href="crush/debugging.html">Debugging</a></td></tr>
+<tr><td><code>crush-gui</code></td><td>Programs that draw a window (<code>crush gui run</code>): a separate package, see <a href="crush/gui.html">Windows</a></td></tr>
+<tr><td><code>crush-diff</code></td><td>(from a source build) run programs on several engines and report where they disagree</td></tr>
 <tr><td><code>crush-aotc</code></td><td>(from <code>-p crush-aot</code>) compile <code>.crush</code> to a native library via Rust or C, or <code>crush-aotc run FILE</code></td></tr>
 </tbody>
 </table>
 </div>
-<p>Put them on your <code>PATH</code>, or install them with the bundled installer
-(<code>cargo run -p crush-installer -- install --bin-dir target/release</code> copies them
-into <code>~/.crush/bin</code>; it does not currently include the <code>crush</code> wrapper).</p>
+<p>Source builds need Rust 1.95 or newer (crush-ast’s CI checks that MSRV).</p>
 <blockquote>
-<p><strong>Crates.io.</strong> Release <code>0.7.1</code> (2026-10-20, crush-ast <code>85393971</code>) is published for <code>crush-lang-sdk</code>
-(which installs <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code> and
-<code>crush-diff</code>), <code>crush-vm</code>, <code>crush-frontend</code>, <code>casm</code>, <code>crush-cast</code>, <code>crush-cosm</code>,
-<code>crush-errors</code>, <code>crush-diagnostics</code>, <code>crush-ffi</code>, <code>crush-caison</code> (and its old name
-<code>crush-cson</code>), <code>crush-index</code>, <code>crush-walker-core</code>, <code>crush-lang-python</code>,
-<code>crush-lang-js</code>, <code>crush-lint</code>, <code>crush-installer</code>, <code>tree-sitter-crush</code>, <code>crush-jit</code>,
-<code>crush-python</code>, <code>crush-pkg</code>, <code>crush-aotc</code> and <code>crush-lang-rust</code>; <code>crush-aot</code> is not
-published. <code>0.7.1</code> predates these fixes the guide describes: <code>return match …</code>
-returning its value (#253), negative slice bounds (#254), methods on a <code>for</code> loop
-variable (#256), the compile error for a built-in used as a value (#257) and
-<code>crushc</code> accepting constructor calls (#260). Build from source for everything
-here. <strong>Never depend on <code>crush-lang-sdk</code> <code>0.2</code></strong>: that line has been yanked, and
-it runs <code>@lang</code> blocks without the <code>--polyglot</code> gate.</p>
+<p><strong>Crates.io.</strong> Release <code>0.9.0</code> (2026-10-31, crush-ast <code>bad81048</code>) is published for
+<code>crush-lang-sdk</code> (which installs <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>,
+<code>crush-repl</code>, <code>crush-debug</code> and <code>crush-diff</code>) and the library crates, all released
+together at the workspace version. Earlier releases (<code>0.7.1</code>, <code>0.8.0</code>) lack things
+this guide describes: slices on strings, hex and binary literals, the debugger,
+<code>tcp.*</code>, and the single diagnostics format. <strong>Never depend on <code>crush-lang-sdk</code>
+<code>0.2</code></strong>: that line has been yanked, and it runs <code>@lang</code> blocks without the
+<code>--polyglot</code> gate.</p>
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
-<div class="crush-block" data-crush="run" data-src="getting-started.md:71" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="getting-started.md:92" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">let name = "Crush"
 print("Hello, " + name + "!")
@@ -285,11 +300,13 @@ off until you switch it on:</p>
 <pre><code class="language-sh">crush run prog.crush                             # str.* math.* conv.* json.* ... need nothing
 crush run --fs --fs-root ./data prog.crush       # fs.read / fs.write / fs.exists / fs.list
 crush run --polyglot prog.crush                  # @python / @javascript / @bash blocks
+crush run --net prog.crush                       # net.http_get / http_post / ... (HTTP only)
+crush run --tcp prog.crush                       # tcp.connect / send / recv (client sockets)
 crush-run caps prog.crush                        # what does it need? (runs nothing)
 </code></pre>
 <p>For example, this reads a file, so it needs <code>--fs</code>:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="getting-started.md:126" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="getting-started.md:149" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print(fs.read("notes.txt"))
 </code></pre>
 </div>
@@ -326,10 +343,12 @@ crates give direct access to the IR, bytecode, or VM.</p>
 </tbody>
 </table>
 </div>
-<p>SDK Cargo features: the defaults <code>stdlib</code> (the standard library),
+<p>SDK Cargo features: the defaults <code>stdlib</code> (the standard library), <code>net</code> (the HTTP
+client), <code>tcp</code> and <code>tcp-tls</code> (raw sockets), <code>debug</code> (the debugger),
 <code>native-plugins</code>, <code>polyglot-python</code>, <code>polyglot-javascript</code> and <code>polyglot-rust</code> (the
 analyses that marshal values into and out of <code>@lang</code> blocks), plus the optional
-<code>net</code>, <code>db</code>, <code>graphics</code>, <code>gpu</code>, <code>repl-helper</code> and <code>polyglot-typescript</code>.</p>
+<code>db</code>, <code>graphics</code>, <code>gpu</code>, <code>repl-helper</code> and <code>polyglot-typescript</code>. A default feature
+only compiles the capability in; the program still needs the matching flag at run time.</p>
 <h2 id="4-embedding"><a class="header" href="#4-embedding">4. Embedding</a></h2>
 <p>Compile Crush source and run it on the VM — the same thing <code>crush run</code> does:</p>
 <pre class="playground"><code class="language-rust no_run">use crush_lang_sdk::compile::compile_crush_source;
@@ -358,7 +377,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
     assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>Both snippets are compiled and run against crush-ast <code>c1cc21fb</code> by
+<p>Both snippets are compiled and run against crush-ast <code>bad81048</code> by
 <code>scripts/check-examples.py --crush-ast</code>. <code>Runtime::new()</code> registers only the
 built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
 library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass

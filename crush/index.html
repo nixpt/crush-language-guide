@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30).</p>
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
 </blockquote>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -211,8 +211,28 @@ runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time 
 also in the repository (<a href="engines.html">Engines, AOT and Walkers</a>). Walkers
 translate Python, JavaScript, Rust and other languages into the same CAST.</li>
 </ul>
+<h2 id="new-in-090"><a class="header" href="#new-in-090">New in 0.9.0</a></h2>
+<p>Each item links to the page that documents it (and every example there was run).</p>
+<ul>
+<li><strong>Slices on strings, and steps.</strong> <code>s[0:5]</code>, <code>s[-5:]</code>, <code>s[::2]</code>, <code>s[::-1]</code> on strings
+and arrays; they lower to <code>seq.slice</code>. (<a href="types.html#slicing-strings">Types</a>)</li>
+<li><strong>Hex and binary literals.</strong> <code>0xff</code>, <code>0b101</code>. (<a href="syntax.html#literals">Syntax</a>)</li>
+<li><strong>A debugger.</strong> <code>crush debug FILE --step --inspect</code>: breakpoints by line, step,
+watch, print, with the inspection itself a grant. (<a href="debugging.html">Debugging</a>)</li>
+<li><strong>Windows.</strong> <code>crush gui run FILE --ui</code> and the <code>ui.*</code> API, from the separate
+<code>crush-gui</code> package. (<a href="gui.html">Windows</a>)</li>
+<li><strong>Raw sockets.</strong> <code>tcp.*</code> behind <code>--tcp</code> (client) and <code>--tcp-listen</code> (server);
+<code>--net</code> stays HTTP-only. <code>net.*</code> is compiled into the default build, and the old
+<code>http.*</code> names are refused with their replacement. (<a href="capabilities.html#raw-sockets-tcp">Capability System</a>)</li>
+<li><strong>One diagnostics format.</strong> <code>--message-format json</code> gives one schema across the
+tools, and semantic errors carry a line and column. (<a href="diagnostics.html">Diagnostics</a>)</li>
+<li><strong>Easier install.</strong> <code>cargo install crush-lang-sdk</code> (not <code>cargo install crush</code>,
+which is an unrelated crate), or the prebuilt Linux binaries on the GitHub release;
+v0.9.0 is the first release to have them. (<a href="../getting-started.html">Getting Started</a>)</li>
+<li><code>@bash</code> blocks can read Crush variables again, by <code>$name</code>. (<a href="polyglot.html#bash">Polyglot</a>)</li>
+</ul>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:32" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="crush/README.md:53" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">print("Hello, Crush!")
 </code></pre>
@@ -226,7 +246,7 @@ translate Python, JavaScript, Rust and other languages into the same CAST.</li>
 <pre><code class="language-sh">crush run hello.crush
 </code></pre>
 <h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:50" data-expect="far: 25
+<div class="crush-block" data-crush="run" data-src="crush/README.md:71" data-expect="far: 25
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
 impl Point {
@@ -274,7 +294,7 @@ enforced.</li>
 <tr><td><code>spawn</code> / <code>yield</code> / <code>await</code>, <code>parallel_map</code></td><td>works on the VM</td></tr>
 <tr><td><code>import</code> (multi-file programs)</td><td>not yet: CRUSH-110</td></tr>
 <tr><td>Capabilities, <code>@capabilities</code>, the standard library</td><td>works; the standard library is on by default</td></tr>
-<tr><td>Polyglot: Python, JavaScript (declared <code>-&gt;</code> outputs), Bash</td><td>works (host authority by default); <code>@bash</code> sees no Crush variables today (#255)</td></tr>
+<tr><td>Polyglot: Python, JavaScript (declared <code>-&gt;</code> outputs), Bash</td><td>works (host authority by default); <code>@bash</code> reads the Crush variables it names as <code>$name</code></td></tr>
 <tr><td>Polyglot sandbox</td><td>opt-in build, verified on Linux with <code>bwrap</code></td></tr>
 <tr><td>CAST / CASM formats</td><td>documented in their own sections</td></tr>
 </tbody>

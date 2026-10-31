@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30).</p>
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
 </blockquote>
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -310,12 +310,64 @@ o
 HELLO
 el
 </code></pre>
-<p>The slice syntax <code>s[1:3]</code> is for arrays only; on a string it compiles but fails
-at run time (<code>expected array, got str</code>). Use <code>str.substring</code>.</p>
+<h3 id="slicing-strings"><a class="header" href="#slicing-strings">Slicing strings</a></h3>
+<p><code>s[start:stop]</code> slices a string by <strong>characters</strong> (since 0.9.0; before it, a string
+slice compiled and then failed with <code>expected array, got str</code>). Either bound may
+be left out, a negative bound counts from the end, and a bound past the end is
+clamped rather than an error. <code>stop</code> is exclusive, and the result is a new string.
+The slice counts characters, not bytes, so it never splits a multi-byte character
+(unlike <code>len</code>, which counts bytes):</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:126" data-expect="hello
+world
+hello
+world
+lo world
+él
+">
+<pre><code class="language-crush">let s = "hello world"
+print(s[0:5])
+print(s[6:])
+print(s[:5])
+print(s[-5:])
+print(s[3:100])
+print("héllo"[1:3])
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">hello
+world
+hello
+world
+lo world
+él
+</code></pre>
+<p>A third part is a step: <code>s[::2]</code> takes every second character and a negative step
+walks backwards, so <code>s[::-1]</code> reverses. The step form works the same on arrays (see
+<a href="#arrays">Arrays</a>). A step of <code>0</code> is a runtime error
+(<code>expected non-zero slice step, got 0</code>).</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:151" data-expect="hlowrd
+dlrow olleh
+!🎉語本日
+">
+<pre><code class="language-crush">let s = "hello world"
+print(s[::2])
+print(s[::-1])
+print("日本語🎉!"[::-1])
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">hlowrd
+dlrow olleh
+!🎉語本日
+</code></pre>
+<p>Every bracket slice lowers to the standard-library capability <code>seq.slice(target, start, stop, step)</code>, where <code>null</code> means “from the edge”; <code>str.substring</code> still
+works and takes its bounds as arguments.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <h3 id="arrays"><a class="header" href="#arrays">Arrays</a></h3>
 <p>Ordered, mixed-type, zero-indexed. Index, assign by index, and <code>len</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:126" data-expect="10
+<div class="crush-block" data-crush="run" data-src="crush/types.md:175" data-expect="10
 [10, 99, 30]
 3
 2
@@ -339,7 +391,7 @@ print(nested[0][1])
 </code></pre>
 <p>Append with <code>array.push(arr, value)</code> or the method form <code>arr.push(value)</code>; <code>+</code>
 joins two arrays:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:148" data-expect="[1, 2, 3, 4]
+<div class="crush-block" data-crush="run" data-src="crush/types.md:197" data-expect="[1, 2, 3, 4]
 [1, 2]
 ">
 <pre><code class="language-crush">let a = [1, 2]
@@ -355,7 +407,7 @@ print([1] + [2])
 [1, 2]
 </code></pre>
 <p>Iterate with <code>for</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:164" data-expect="a
+<div class="crush-block" data-crush="run" data-src="crush/types.md:213" data-expect="a
 b
 ">
 <pre><code class="language-crush">for item in ["a", "b"] {
@@ -370,7 +422,7 @@ b
 </code></pre>
 <p><code>array.pop(a)</code> removes and returns the last element, <code>a.append(v)</code> is an alias for
 <code>push</code>, and slices <code>a[start:end]</code> work (end exclusive):</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:179" data-expect="4
+<div class="crush-block" data-crush="run" data-src="crush/types.md:228" data-expect="4
 [1, 2, 3]
 [1, 2]
 ">
@@ -394,10 +446,32 @@ method form <code>a.pop()</code> is <strong>not</strong> available (the program 
 <code>let a = [1, 2, 3, 4]</code>, <code>a[1:-1]</code> is <code>[2, 3]</code>, <code>a[-3:]</code> is <code>[2, 3, 4]</code> and
 <code>a[:-1]</code> is <code>[1, 2, 3]</code>. (Before crush-ast
 <a href="https://github.com/nixpt/crush-ast/issues/254">#254</a> they were silently clamped.)</p>
+<p>Slices take a step too (0.9.0): <code>a[::2]</code> is every second element, <code>a[::-1]</code> is the
+array reversed, <code>a[1:5:2]</code> starts at 1 and takes every second element before 5, and
+<code>a[:]</code> is a copy:</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:257" data-expect="[1, 3, 5]
+[6, 5, 4, 3, 2, 1]
+[2, 4]
+[1, 2, 3, 4, 5, 6]
+">
+<pre><code class="language-crush">let a = [1, 2, 3, 4, 5, 6]
+print(a[::2])
+print(a[::-1])
+print(a[1:5:2])
+print(a[:])
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">[1, 3, 5]
+[6, 5, 4, 3, 2, 1]
+[2, 4]
+[1, 2, 3, 4, 5, 6]
+</code></pre>
 <h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
 <p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
 strings. Read and write fields with <strong>dot notation</strong> or a <strong>string subscript</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:209" data-expect="Alice
+<div class="crush-block" data-crush="run" data-src="crush/types.md:278" data-expect="Alice
 31
 alice@example.com
 ">
@@ -416,7 +490,7 @@ print(person.email)
 alice@example.com
 </code></pre>
 <p>Nested objects chain:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:227" data-expect="5432
+<div class="crush-block" data-crush="run" data-src="crush/types.md:296" data-expect="5432
 5433
 ">
 <pre><code class="language-crush">let cfg = {"db": {"port": 5432}}
@@ -432,7 +506,7 @@ print(cfg.db.port)
 </code></pre>
 <p>Objects keep <strong>insertion order</strong>: printing, <code>for k in obj</code> and
 <code>collections.keys(obj)</code> all list keys in the order they were first set.</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:243" data-expect="Alice
+<div class="crush-block" data-crush="run" data-src="crush/types.md:312" data-expect="Alice
 {name: Alice, age: 30}
 name
 age
@@ -459,7 +533,7 @@ age
 <p>Declare a struct with its field names (optionally with type hints) <strong>on one
 line</strong>, then build one with a literal that names every field, or with
 <code>new Name()</code> and assign fields individually:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:272" data-expect="{x: 1.0, y: 2.0}
+<div class="crush-block" data-crush="run" data-src="crush/types.md:341" data-expect="{x: 1.0, y: 2.0}
 4.0
 ">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
@@ -487,7 +561,7 @@ Methods, traits, value semantics and <code>@kind</code> are in
 newlines inside <code>struct { ... }</code> (gap <code>GAP-STRUCT-MULTILINE</code>, listed in crush-ast’s
 CRUSH-192 ticket):</p>
 <!-- check: nyi GAP-STRUCT-MULTILINE -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:301" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:370" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
 <pre><code class="language-crush">struct Point {
     x: Float,
     y: Float
@@ -498,7 +572,7 @@ CRUSH-192 ticket):</p>
 <h2 id="type-annotations"><a class="header" href="#type-annotations">Type annotations</a></h2>
 <p>You may annotate variables, parameters and return types with <code>Int</code>, <code>Float</code>,
 <code>String</code>, <code>Bool</code>, or <code>Any</code>. The compiler checks them statically:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:313" data-expect="answer
+<div class="crush-block" data-crush="run" data-src="crush/types.md:382" data-expect="answer
 42
 ">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
@@ -516,13 +590,13 @@ print(double(21))
 </code></pre>
 <p>Mismatches are rejected at compile time:</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:331" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:400" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x: Int = "not a number"
 </code></pre>
 </div>
 
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:336" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:405" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
     return n * 2
 }
@@ -536,7 +610,7 @@ all fail with a parse or <code>Unknown type</code> error.</p>
 <h2 id="conversion-and-inspection"><a class="header" href="#conversion-and-inspection">Conversion and inspection</a></h2>
 <p>The standard library’s <code>conv.*</code> capabilities convert between types and report
 them:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:352" data-expect="43
+<div class="crush-block" data-crush="run" data-src="crush/types.md:421" data-expect="43
 5x
 2.0
 array
@@ -563,7 +637,7 @@ null
 <p><code>if</code> and <code>while</code> conditions are type-checked: an <code>Int</code> or <code>String</code> is <strong>not</strong>
 silently truthy. Compare explicitly (<code>x != 0</code>, <code>s != ""</code>).</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:378" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:447" data-why="this example shows a compile error">
 <pre><code class="language-crush">if 1 {
     print("yes")
 }

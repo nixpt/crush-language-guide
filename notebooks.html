@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d1d19af1.js"></script>
+        <script src="toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -238,9 +238,9 @@ and the cell kinds it does not run yet are described in the
 </tbody>
 </table>
 </div>
-<p>The kernel is <code>crush-notebook-kernel</code> 0.2.0, built on crush-ast 0.8.0 (the
-commit this guide is verified against, released): every chapter notebook runs
-in it as the page says (the guide’s CI checks each cell).</p>
+<p>The kernel is <code>crush-notebook-kernel</code> 0.3.0, built on crush-ast 0.9.0, the same
+release as this guide, so the 0.9.0 cells (slicing a string, <code>s[::-1]</code>, hex and binary
+literals) run in a notebook as they do on the page.</p>
 <p>The examples marked <strong>needs the host</strong> are refused in the notebook too, and so
 are the ones the page runs only because it grants them something (<code>@python</code>,
 <code>@javascript</code>, the filesystem, the clock): the kernel grants what <code>crush run</code>
@@ -270,6 +270,8 @@ and each host-only cell has to be refused.</p>
 <li><a href="notebooks/crush/closures.crush-nb" download=""><code>crush/closures.crush-nb</code></a>, from <a href="crush/closures.html">Closures and Function Values</a></li>
 <li><a href="notebooks/crush/concurrency.crush-nb" download=""><code>crush/concurrency.crush-nb</code></a>, from <a href="crush/concurrency.html">Concurrency</a></li>
 <li><a href="notebooks/crush/control_flow.crush-nb" download=""><code>crush/control_flow.crush-nb</code></a>, from <a href="crush/control_flow.html">Control Flow</a></li>
+<li><a href="notebooks/crush/debugging.crush-nb" download=""><code>crush/debugging.crush-nb</code></a>, from <a href="crush/debugging.html">Debugging</a></li>
+<li><a href="notebooks/crush/diagnostics.crush-nb" download=""><code>crush/diagnostics.crush-nb</code></a>, from <a href="crush/diagnostics.html">Errors and Diagnostics</a></li>
 <li><a href="notebooks/crush/functions.crush-nb" download=""><code>crush/functions.crush-nb</code></a>, from <a href="crush/functions.html">Functions</a></li>
 <li><a href="notebooks/crush/operators.crush-nb" download=""><code>crush/operators.crush-nb</code></a>, from <a href="crush/operators.html">Operators</a></li>
 <li><a href="notebooks/crush/polyglot.crush-nb" download=""><code>crush/polyglot.crush-nb</code></a>, from <a href="crush/polyglot.html">Polyglot Programming</a></li>

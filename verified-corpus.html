@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-d1d19af1.js"></script>
+        <script src="toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,8 +188,8 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.</p>
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (the commit in the repository’s
-<code>CRUSH_AST_COMMIT</code> file). 123 programs.</p>
+<p>Verified against crush-ast <code>bad81048</code> (the commit in the repository’s
+<code>CRUSH_AST_COMMIT</code> file). 130 programs.</p>
 </blockquote>
 <div class="table-wrapper">
 <table>
@@ -197,9 +197,9 @@ observed by running one of these programs.</p>
 <tr><th>Area</th><th style="text-align: right">Programs</th><th>Covers</th></tr>
 </thead>
 <tbody>
-<tr><td><code>basics/</code></td><td style="text-align: right">11</td><td>literals, <code>print</code> vs <code>io.print</code>, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords</td></tr>
+<tr><td><code>basics/</code></td><td style="text-align: right">13</td><td>literals (including hex and binary), <code>print</code> vs <code>io.print</code>, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords</td></tr>
 <tr><td><code>operators/</code></td><td style="text-align: right">10</td><td>arithmetic, comparison, <code>and</code>/<code>or</code>/<code>not</code>, short-circuit, string <code>+</code>, <code>|&gt;</code>, overflow, division by zero</td></tr>
-<tr><td><code>strings/</code></td><td style="text-align: right">6</td><td>indexing, <code>str.*</code>, <code>conv.chr</code>/<code>ord</code>, escapes; string methods and slices that don’t exist</td></tr>
+<tr><td><code>strings/</code></td><td style="text-align: right">8</td><td>indexing, <code>str.*</code>, <code>conv.chr</code>/<code>ord</code>, escapes, string and array slices (<code>s[a:b]</code>, <code>s[::step]</code>), string methods that don’t exist</td></tr>
 <tr><td><code>collections/</code></td><td style="text-align: right">11</td><td>arrays, <code>array.pop</code>, maps (insertion order, subscripts, iteration), <code>collections.*</code>, <code>json.*</code></td></tr>
 <tr><td><code>control-flow/</code></td><td style="text-align: right">9</td><td><code>if</code>, <code>while</code>/<code>break</code>/<code>continue</code>, ranges, <code>match</code> as expression and statement</td></tr>
 <tr><td><code>functions/</code></td><td style="text-align: right">5</td><td>definitions, arity checks, no defaults, top-level visibility, the call-depth quota</td></tr>
@@ -208,7 +208,7 @@ observed by running one of these programs.</p>
 <tr><td><code>match/</code></td><td style="text-align: right">3</td><td>struct patterns, and their compile errors</td></tr>
 <tr><td><code>errors/</code></td><td style="text-align: right">6</td><td><code>try</code>/<code>catch</code>/<code>throw</code>, rethrow, what <code>catch</code> can’t catch, <code>result.*</code></td></tr>
 <tr><td><code>modules/</code></td><td style="text-align: right">2</td><td><code>import</code> (refused), <code>export</code></td></tr>
-<tr><td><code>capabilities/</code></td><td style="text-align: right">9</td><td>refusal before running, <code>--fs</code> and <code>--fs-root</code>, <code>@capabilities</code>, <code>io.read</code>, <code>sys.args</code>, <code>math.random</code></td></tr>
+<tr><td><code>capabilities/</code></td><td style="text-align: right">12</td><td>refusal before running, <code>--fs</code> and <code>--fs-root</code>, <code>@capabilities</code>, <code>io.read</code>, <code>sys.args</code>, <code>math.random</code></td></tr>
 <tr><td><code>polyglot/</code></td><td style="text-align: right">15</td><td><code>--polyglot</code>, <code>-&gt; outputs</code>, JavaScript, chaining, <code>use @lang</code>, isolation, errors, bash</td></tr>
 <tr><td><code>concurrency/</code></td><td style="text-align: right">7</td><td><code>spawn</code>/<code>yield</code>/<code>await</code>, <code>async fn</code>, <code>parallel_map</code> and its rules</td></tr>
 <tr><td><code>annotations/</code></td><td style="text-align: right">3</td><td>manifest annotations, <code>@wip</code>, <code>@capabilities</code></td></tr>
@@ -243,7 +243,6 @@ changes and the corpus fails, which is the signal to update the guide.</p>
 <tr><th>Pitfall</th><th>Issue</th></tr>
 </thead>
 <tbody>
-<tr><td><code>polyglot/bash</code>: a <code>@bash</code> block sees no Crush variables</td><td><a href="https://github.com/nixpt/crush-ast/issues/255">#255</a></td></tr>
 <tr><td><code>polyglot/header-comment-pitfall</code>: <code>//</code> on a block header → <code>Undefined variable</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/266">#266</a></td></tr>
 </tbody>
 </table>

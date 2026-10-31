@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`; `crush doctor` checks).\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30).\n",
+   "source": "# Polyglot Pipeline\n\nThe same data, handled by the language best suited to each step, with Crush\nvariables as the glue. This replaces an earlier \"Async LLM Dashboard\" page whose\n`dom.*`, `seahorse` and `async`/`await` calls do not run in the current\ntoolchain.\n\nRun it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`\non `PATH`; `crush doctor` checks).\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n",
    "state": {
     "status": "done"
    },
@@ -55,7 +55,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "**What this shows:**\n\n- `@python -> mean`: the block reads the Crush variable `numbers` (inputs are\n  automatic) and declares `mean` as its output, which becomes a Crush variable\n- `@javascript -> spread`: the same protocol; `spread` comes back as a number\n- the second `@python` block reads both earlier outputs, because they are Crush\n  variables now\n- `@bash`: only its printed output comes back. It does **not** see Crush\n  variables today (crush-ast [#255](https://github.com/nixpt/crush-ast/issues/255)),\n  which is why the formatting is done in Python\n- block output is trimmed and has no trailing newline, which is why `print(\"\")`\n  is used to finish the line\n- all three run as ordinary subprocesses with your user's authority — see\n  [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority)\n",
+   "source": "**What this shows:**\n\n- `@python -> mean`: the block reads the Crush variable `numbers` (inputs are\n  automatic) and declares `mean` as its output, which becomes a Crush variable\n- `@javascript -> spread`: the same protocol; `spread` comes back as a number\n- the second `@python` block reads both earlier outputs, because they are Crush\n  variables now\n- `@bash`: only its printed output comes back. It could read a Crush variable\n  by naming it (`$name`), but it has no way to hand a value back, which is why the\n  formatting is done in Python\n- block output is trimmed and has no trailing newline, which is why `print(\"\")`\n  is used to finish the line\n- all three run as ordinary subprocesses with your user's authority — see\n  [Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority)\n",
    "state": {
     "status": "done"
    },

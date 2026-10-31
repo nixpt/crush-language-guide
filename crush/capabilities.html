@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30).</p>
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
 </blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -277,7 +277,10 @@ the flag that would grant each:</p>
 <tr><td><code>--fs</code></td><td><code>fs.read</code>, <code>fs.write</code>, <code>fs.exists</code>, <code>fs.list</code>, <code>fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find</code>, <code>text.head/tail/wc/cut/grep</code></td></tr>
 <tr><td><code>--env</code></td><td><code>env.get</code>, <code>env.all</code>, <code>env.home_dir</code></td></tr>
 <tr><td><code>--time</code></td><td><code>time.now</code>, <code>time.now_ms</code>, <code>time.now_iso</code>, <code>time.elapsed</code>, <code>time.sleep</code>, <code>async.sleep</code></td></tr>
-<tr><td><code>--net</code></td><td><code>net.http_get</code>, <code>net.http_post</code>, <code>net.http_put</code>, <code>net.http_delete</code>, <code>net.http_request</code></td></tr>
+<tr><td><code>--net</code></td><td><code>net.http_get</code>, <code>net.http_post</code>, <code>net.http_put</code>, <code>net.http_delete</code>, <code>net.http_request</code> (<strong>HTTP only</strong>)</td></tr>
+<tr><td><code>--tcp</code></td><td>raw TCP <strong>client</strong> sockets: <code>tcp.connect</code>, <code>tcp.tls_wrap</code>, and <code>tcp.send</code>, <code>tcp.recv</code>, <code>tcp.close</code>, <code>tcp.ping</code> on the connections you hold; see <a href="#raw-sockets-tcp">Raw sockets</a></td></tr>
+<tr><td><code>--tcp-listen</code></td><td>raw TCP <strong>server</strong> sockets: <code>tcp.listen</code>, <code>tcp.accept</code>, and the same <code>send</code>/<code>recv</code>/<code>close</code>/<code>ping</code>; does not allow <code>tcp.connect</code></td></tr>
+<tr><td><code>--ui</code></td><td><code>ui.*</code>, only with <code>crush gui run</code>; see <a href="gui.html">Windows</a></td></tr>
 <tr><td><code>--process</code></td><td><code>process.exec</code></td></tr>
 <tr><td><code>--crypto</code></td><td><code>crypto.sha256</code>, <code>crypto.random</code></td></tr>
 <tr><td><code>--db PATH</code></td><td><code>db.query</code>, <code>db.execute</code> on that SQLite file</td></tr>
@@ -289,12 +292,27 @@ the flag that would grant each:</p>
 </tbody>
 </table>
 </div>
-<p><code>crush-run caps</code> prints the list for your build. Some groups (<code>--net</code>, <code>--db</code>,
-<code>--graphics</code>, <code>--gpu</code>) are Cargo features of <code>crush-lang-sdk</code> that a default build
-leaves out; the standard library is a default feature.</p>
+<p><code>crush-run caps</code> prints the list for your build. Some groups (<code>--db</code>, <code>--graphics</code>,
+<code>--gpu</code>) are Cargo features of <code>crush-lang-sdk</code> that a default build leaves out;
+the standard library, the HTTP client (<code>net.*</code>, since 0.9.0) and the raw sockets
+(<code>tcp.*</code>) are default features, which only compiles them in: a program that uses
+them is still refused until you pass the flag.</p>
+<p>The old HTTP names <code>http.get</code>, <code>http.post</code>, <code>http.put</code>, <code>http.delete</code> and
+<code>http.request</code> are refused by name, with the replacement. This run is refused
+before anything executes, with or without <code>--net</code>:</p>
+<!-- check: runfail was renamed to net.http_get -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:114" data-why="this example shows a run-time error" data-expect-error="was renamed to net.http_get">
+<pre><code class="language-crush">let r = http.get("http://example.com/")
+print(r)
+</code></pre>
+</div>
+
+<pre><code class="language-text">[capabilities] block.crush needs capabilities this run does not grant; nothing was run:
+  http.get was renamed to net.http_get (grant it with --net)
+</code></pre>
 <p>Without the flag, nothing runs, not even the first line:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:107" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:127" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print("first line")
 print(fs.read("data.txt"))
 </code></pre>
@@ -308,7 +326,7 @@ program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:124" data-why="this example shows a run-time error" data-grants="fs" data-expect-error="path escapes sandbox root">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:144" data-why="this example shows a run-time error" data-grants="fs" data-expect-error="path escapes sandbox root">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -318,7 +336,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:135" data-expect="0
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:155" data-expect="0
 " data-grants="fs">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
@@ -342,7 +360,7 @@ has a scope.</p>
 </table>
 </div>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:153" data-expect="hello
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:173" data-expect="hello
 [a.txt]
 " data-grants="fs">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
@@ -359,7 +377,7 @@ print(fs.list("sub"))
 </code></pre>
 <h3 id="environment-time-processes-network"><a class="header" href="#environment-time-processes-network">Environment, time, processes, network</a></h3>
 <!-- check: flags --env --time --process -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:170" data-why="uses `process.exec`, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:190" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
 print(process.exec("echo", "hi"))
@@ -381,6 +399,50 @@ argument string) — returns a JSON string with <code>exit_code</code>, <code>st
 size capped by <code>--net-max-response-bytes</code> (default 1 MiB).</li>
 <li><code>crypto.sha256(data)</code>, <code>crypto.random(n)</code> (base64, <code>n ≤ 4096</code>).</li>
 </ul>
+<h3 id="raw-sockets-tcp"><a class="header" href="#raw-sockets-tcp">Raw sockets (<code>tcp.*</code>)</a></h3>
+<p>Since 0.9.0 a program can open TCP connections directly. <code>--net</code> is HTTP only and
+does <strong>not</strong> grant these; the socket flags are separate, and the server flag is a
+stronger grant than the client flag because it makes the program reachable from
+other hosts:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Lets the program</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--tcp</code></td><td><code>tcp.connect(uri)</code> outbound; <code>tcp.tls_wrap(conn)</code> upgrades a connection to TLS</td></tr>
+<tr><td><code>--tcp-listen</code></td><td><code>tcp.listen(uri)</code> and <code>tcp.accept(listener)</code>; it does not allow <code>tcp.connect</code></td></tr>
+<tr><td>either</td><td><code>tcp.send(conn, text)</code>, <code>tcp.recv(conn)</code>, <code>tcp.close(conn)</code>, <code>tcp.ping(conn)</code> on a connection id it already holds</td></tr>
+</tbody>
+</table>
+</div>
+<p>A URI is <code>tcp://IP:PORT</code> with a literal IP address (no host names). <code>tcp.listen</code>
+and <code>tcp.connect</code> return an integer id; <code>tcp.accept</code> blocks until a client
+connects. <code>tcp.send</code> takes text and returns the byte count; <code>tcp.recv</code> returns up
+to 16 KiB as text. This program is both ends of a conversation, so it needs both
+flags (the connect is queued by the kernel before <code>accept</code> takes it):</p>
+<!-- check: flags --tcp --tcp-listen -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:232" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
+<pre><code class="language-crush">let srv = tcp.listen("tcp://127.0.0.1:47123")
+let c = tcp.connect("tcp://127.0.0.1:47123")
+let s = tcp.accept(srv)
+tcp.send(c, "ping")
+print(tcp.recv(s))
+tcp.send(s, "pong")
+print(tcp.recv(c))
+tcp.close(c)
+tcp.close(s)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">ping
+pong
+</code></pre>
+<p>Granting only <code>--tcp</code> is refused, naming what is missing:</p>
+<pre><code class="language-text">[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:
+  --tcp-listen: tcp.accept, tcp.listen
+</code></pre>
 <p>A host capability that fails (missing file, refused connection, path escape)
 aborts the program with <code>[runtime] unknown capability: &lt;name&gt;: &lt;reason&gt;</code> — the
 “unknown capability” wording is misleading there, and the error is not
@@ -389,7 +451,7 @@ catchable by <a href="control_flow.html#what-catch-does-not-catch"><code>try</co
 <p>A program can say up front which capabilities it may use beyond the ambient,
 effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
 <!-- check: flags --time -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:203" data-expect="true
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:268" data-expect="true
 " data-grants="time">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 let t = time.now_ms()
@@ -404,7 +466,7 @@ print(t &gt; 0)
 (<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:</p>
 <!-- check: runfail not declared in @capabilities: env.get -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:219" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:284" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 print(env.get("HOME"))
 </code></pre>

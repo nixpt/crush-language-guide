@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30): every runnable block on this
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31): every runnable block on this
 page was compiled and run with that build.</p>
 </blockquote>
 <p>This chapter covers the lexical structure and grammar that the Crush parser
@@ -301,7 +301,7 @@ print(r)
 <tr><th>Kind</th><th>Examples</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td>Integer</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>hex and binary prefixes lex; <code>0o17</code> and <code>1_000</code> do not</td></tr>
+<tr><td>Integer</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>hex (<code>0x</code>/<code>0X</code>, any digit case) and binary (<code>0b</code>) literals, 0.9.0; <code>0o17</code> and <code>1_000</code> do not lex, and <code>0x</code> with no digits is <code>Invalid number literal</code></td></tr>
 <tr><td>Float</td><td><code>3.14</code>, <code>0.5</code></td><td>no exponent form (<code>1.5e3</code> is rejected)</td></tr>
 <tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td>single or double quotes; escapes <code>\n \t \" \\</code></td></tr>
 <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
@@ -311,10 +311,29 @@ print(r)
 </tbody>
 </table>
 </div>
+<p>Hex and binary literals are ordinary integers, so they mix freely with decimal ones:</p>
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:138" data-expect="255
+5
+258
+-16
+">
+<pre><code class="language-crush">print(0xff)
+print(0b101)
+print(0xFF + 0b11)
+print(-0x10)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">255
+5
+258
+-16
+</code></pre>
 <p>Triple-quoted strings are parse errors, and bytes literals (<code>b"..."</code>) are refused
 with <code>bytes literals (b"...") are not supported yet</code>. A string literal may
 contain a raw newline.</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:140" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:157" data-expect="42
 3.14
 tab:	here
 47
@@ -341,7 +360,7 @@ single "quotes" work too
 <h2 id="statements-and-semicolons"><a class="header" href="#statements-and-semicolons">Statements and semicolons</a></h2>
 <p>Semicolons are <strong>optional</strong>. A statement ends at a newline, or you may write <code>;</code>
 (and <code>a; b</code> on one line) if you prefer. Both of these are the same program:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:165" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:182" data-expect="3
 ">
 <pre><code class="language-crush">let a = 1; let b = 2;
 print(a + b);
@@ -351,7 +370,7 @@ print(a + b);
 <!-- check: output -->
 <pre><code class="language-text">3
 </code></pre>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:175" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:192" data-expect="3
 ">
 <pre><code class="language-crush">let a = 1
 let b = 2
@@ -368,7 +387,7 @@ error (<code>unexpected token in expression: newline</code>). Keep such expressi
 line, or build them with several statements. Blocks (<code>fn</code>/<code>if</code>/<code>while</code> bodies,
 lambda bodies, <code>match</code> arms) do span lines.</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:193" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:210" data-why="this example shows a compile error">
 <pre><code class="language-crush">let a = [1,
   2]
 print(a)
@@ -378,7 +397,7 @@ print(a)
 <h3 id="return-values"><a class="header" href="#return-values">Return values</a></h3>
 <p>A function returns a value only through an explicit <code>return</code>. A bare final
 expression is <strong>not</strong> an implicit return — it yields <code>null</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:204" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:221" data-expect="5
 null
 ">
 <pre><code class="language-crush">fn explicit() { return 5 }
@@ -401,7 +420,7 @@ or loop body, the name refers to that binding for the rest of the function (see
 <a href="variables.html">Variables</a>). Each execution of a <code>let</code> does create a fresh
 binding, which is what a <a href="closures.html">closure</a> captures.</p>
 <h2 id="variables-and-functions"><a class="header" href="#variables-and-functions">Variables and functions</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:230" data-expect="43
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:247" data-expect="43
 Alice
 ">
 <pre><code class="language-crush">let x = 42
@@ -438,7 +457,7 @@ pipeline <code>|&gt;</code>. There is no <code>**</code>, <code>//</code>, <code
 <li>Logical OR: <code>||</code></li>
 <li>Pipeline: <code>|&gt;</code></li>
 </ol>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:269" data-expect="7
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:286" data-expect="7
 9
 true
 ">
@@ -454,7 +473,7 @@ print(1 &lt; 2 &amp;&amp; 2 &lt; 3)
 true
 </code></pre>
 <h2 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:284" data-expect="big
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:301" data-expect="big
 3
 0
 1
@@ -498,7 +517,7 @@ for n in 1..=2 {
 <p><code>break</code> and <code>continue</code> work in <code>while</code> and <code>for</code>. See <a href="control_flow.html">Control Flow</a>.</p>
 <h2 id="capability-calls"><a class="header" href="#capability-calls">Capability calls</a></h2>
 <p>A capability call looks like an ordinary dotted call — <strong>no <code>@</code> prefix</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:325" data-expect="Hello, Crush
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:342" data-expect="Hello, Crush
 ">
 <pre><code class="language-crush">io.print("Hello, ", "Crush")
 </code></pre>
@@ -516,7 +535,7 @@ and which command-line flags grant them, is covered in
 required; it is what introduces the block. Polyglot execution is <strong>off by
 default</strong> and needs <code>--polyglot</code>:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:346" data-grants="polyglot.python">
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:363" data-grants="polyglot.python">
 <pre><code class="language-crush">@python {
 print("Hello from Python")
 }
@@ -538,7 +557,7 @@ There is no <code>std.*</code> module tree.</p>
 <p><code>use @lang python "math"</code> is different and does work: it writes <code>import math</code> into
 every later <code>@python</code> block (see <a href="polyglot.html#imports-for-blocks-use-lang">Polyglot</a>).</p>
 <!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:375" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:392" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
@@ -546,7 +565,7 @@ print("never reached")
 
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:383" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:400" data-expect="42
 ">
 <pre><code class="language-crush">let result = 6 * 7
 export result

@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Syntax and Grammar\n\n> Verified against crush-ast `c1cc21fb` (2026-10-30): every runnable block on this\n> page was compiled and run with that build.\n\nThis chapter covers the lexical structure and grammar that the Crush parser\n(`crush-frontend`) accepts today. Every `crush` example in this guide is run\nthrough the real toolchain by `scripts/check-examples.py`; where something is\ndescribed in the design but the parser does not accept it yet, the page says so\nand links the crush-ast ticket.\n\n> **Status: alpha.** The language is small and still moving. If a feature isn't\n> in this chapter, assume it doesn't exist yet.\n\n## A program\n\nA Crush file is a sequence of statements. There are two styles, and they can be\nmixed:\n\n- **Script style** — bare top-level statements run top to bottom.\n- **`fn main()`** — an explicit entry function.\n\nWhen a file has both, the top-level statements run first and then `main`'s body\nruns.\n",
+   "source": "# Syntax and Grammar\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31): every runnable block on this\n> page was compiled and run with that build.\n\nThis chapter covers the lexical structure and grammar that the Crush parser\n(`crush-frontend`) accepts today. Every `crush` example in this guide is run\nthrough the real toolchain by `scripts/check-examples.py`; where something is\ndescribed in the design but the parser does not accept it yet, the page says so\nand links the crush-ast ticket.\n\n> **Status: alpha.** The language is small and still moving. If a feature isn't\n> in this chapter, assume it doesn't exist yet.\n\n## A program\n\nA Crush file is a sequence of statements. There are two styles, and they can be\nmixed:\n\n- **Script style** — bare top-level statements run top to bottom.\n- **`fn main()`** — an explicit entry function.\n\nWhen a file has both, the top-level statements run first and then `main`'s body\nruns.\n",
    "state": {
     "status": "done"
    },
@@ -198,7 +198,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "## Literals\n\n| Kind | Examples | Notes |\n|---|---|---|\n| Integer | `42`, `-7`, `0x2A`, `0b101` | hex and binary prefixes lex; `0o17` and `1_000` do not |\n| Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |\n| String | `\"hello\"`, `'hello'` | single or double quotes; escapes `\\n \\t \\\" \\\\` |\n| Boolean | `true`, `false` | |\n| Null | `null` | |\n| Array | `[1, 2, 3]` | see [Types](https://docs.crushlang.org/crush/types.html) |\n| Object | `{\"a\": 1, b: 2}` | see [Types](https://docs.crushlang.org/crush/types.html) |\n\nTriple-quoted strings are parse errors, and bytes literals (`b\"...\"`) are refused\nwith `bytes literals (b\"...\") are not supported yet`. A string literal may\ncontain a raw newline.\n",
+   "source": "## Literals\n\n| Kind | Examples | Notes |\n|---|---|---|\n| Integer | `42`, `-7`, `0x2A`, `0b101` | hex (`0x`/`0X`, any digit case) and binary (`0b`) literals, 0.9.0; `0o17` and `1_000` do not lex, and `0x` with no digits is `Invalid number literal` |\n| Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |\n| String | `\"hello\"`, `'hello'` | single or double quotes; escapes `\\n \\t \\\" \\\\` |\n| Boolean | `true`, `false` | |\n| Null | `null` | |\n| Array | `[1, 2, 3]` | see [Types](https://docs.crushlang.org/crush/types.html) |\n| Object | `{\"a\": 1, b: 2}` | see [Types](https://docs.crushlang.org/crush/types.html) |\n\nHex and binary literals are ordinary integers, so they mix freely with decimal ones:\n",
    "state": {
     "status": "done"
    },
@@ -207,6 +207,42 @@
   },
   {
    "id": "crush-syntax-6",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "print(0xff)\nprint(0b101)\nprint(0xFF + 0b11)\nprint(-0x10)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/syntax.md:138",
+      "browser": "run",
+      "expect_output": "255\n5\n258\n-16\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-md-13",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Triple-quoted strings are parse errors, and bytes literals (`b\"...\"`) are refused\nwith `bytes literals (b\"...\") are not supported yet`. A string literal may\ncontain a raw newline.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-syntax-7",
    "kind": {
     "type": "crush"
    },
@@ -221,7 +257,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:140",
+      "src": "crush/syntax.md:157",
       "browser": "run",
       "expect_output": "42\n3.14\ntab:\there\n47\nsingle \"quotes\" work too\n"
      }
@@ -230,7 +266,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-13",
+   "id": "crush-syntax-md-15",
    "kind": {
     "type": "markdown"
    },
@@ -242,7 +278,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-7",
+   "id": "crush-syntax-8",
    "kind": {
     "type": "crush"
    },
@@ -257,7 +293,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:165",
+      "src": "crush/syntax.md:182",
       "browser": "run",
       "expect_output": "3\n"
      }
@@ -266,7 +302,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-8",
+   "id": "crush-syntax-9",
    "kind": {
     "type": "crush"
    },
@@ -281,7 +317,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:175",
+      "src": "crush/syntax.md:192",
       "browser": "run",
       "expect_output": "3\n"
      }
@@ -290,7 +326,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-16",
+   "id": "crush-syntax-md-18",
    "kind": {
     "type": "markdown"
    },
@@ -302,7 +338,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-9",
+   "id": "crush-syntax-10",
    "kind": {
     "type": "crush"
    },
@@ -317,7 +353,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:193",
+      "src": "crush/syntax.md:210",
       "browser": "fail",
       "why": "this example shows a compile error"
      }
@@ -326,7 +362,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-18",
+   "id": "crush-syntax-md-20",
    "kind": {
     "type": "markdown"
    },
@@ -338,7 +374,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-10",
+   "id": "crush-syntax-11",
    "kind": {
     "type": "crush"
    },
@@ -353,7 +389,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:204",
+      "src": "crush/syntax.md:221",
       "browser": "run",
       "expect_output": "5\nnull\n"
      }
@@ -362,7 +398,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-20",
+   "id": "crush-syntax-md-22",
    "kind": {
     "type": "markdown"
    },
@@ -374,7 +410,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-11",
+   "id": "crush-syntax-12",
    "kind": {
     "type": "crush"
    },
@@ -389,7 +425,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:230",
+      "src": "crush/syntax.md:247",
       "browser": "run",
       "expect_output": "43\nAlice\n"
      }
@@ -398,7 +434,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-22",
+   "id": "crush-syntax-md-24",
    "kind": {
     "type": "markdown"
    },
@@ -410,7 +446,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-12",
+   "id": "crush-syntax-13",
    "kind": {
     "type": "crush"
    },
@@ -425,7 +461,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:269",
+      "src": "crush/syntax.md:286",
       "browser": "run",
       "expect_output": "7\n9\ntrue\n"
      }
@@ -434,7 +470,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-24",
+   "id": "crush-syntax-md-26",
    "kind": {
     "type": "markdown"
    },
@@ -446,7 +482,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-13",
+   "id": "crush-syntax-14",
    "kind": {
     "type": "crush"
    },
@@ -461,7 +497,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:284",
+      "src": "crush/syntax.md:301",
       "browser": "run",
       "expect_output": "big\n3\n0\n1\n2\n10\n20\n"
      }
@@ -470,7 +506,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-26",
+   "id": "crush-syntax-md-28",
    "kind": {
     "type": "markdown"
    },
@@ -482,7 +518,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-14",
+   "id": "crush-syntax-15",
    "kind": {
     "type": "crush"
    },
@@ -497,7 +533,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:325",
+      "src": "crush/syntax.md:342",
       "browser": "run",
       "expect_output": "Hello, Crush\n"
      }
@@ -506,7 +542,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-28",
+   "id": "crush-syntax-md-30",
    "kind": {
     "type": "markdown"
    },
@@ -518,7 +554,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-15",
+   "id": "crush-syntax-16",
    "kind": {
     "type": "crush"
    },
@@ -533,7 +569,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:346",
+      "src": "crush/syntax.md:363",
       "browser": "run",
       "why": "needs polyglot.python, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)"
      }
@@ -542,7 +578,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-30",
+   "id": "crush-syntax-md-32",
    "kind": {
     "type": "markdown"
    },
@@ -554,7 +590,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-16",
+   "id": "crush-syntax-17",
    "kind": {
     "type": "crush"
    },
@@ -569,7 +605,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:375",
+      "src": "crush/syntax.md:392",
       "browser": "fail",
       "why": "not implemented yet (CRUSH-110); Run shows what happens today"
      }
@@ -578,7 +614,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-32",
+   "id": "crush-syntax-md-34",
    "kind": {
     "type": "markdown"
    },
@@ -590,7 +626,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-17",
+   "id": "crush-syntax-18",
    "kind": {
     "type": "crush"
    },
@@ -605,7 +641,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/syntax.md:383",
+      "src": "crush/syntax.md:400",
       "browser": "run",
       "expect_output": "42\n"
      }
@@ -614,7 +650,7 @@
    "outputs": []
   },
   {
-   "id": "crush-syntax-md-34",
+   "id": "crush-syntax-md-36",
    "kind": {
     "type": "markdown"
    },

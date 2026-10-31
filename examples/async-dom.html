@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,7 +191,7 @@ toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
 on <code>PATH</code>; <code>crush doctor</code> checks).</p>
 <blockquote>
-<p>Verified against crush-ast <code>c1cc21fb</code> (2026-10-30).</p>
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
 </blockquote>
 <!-- check: flags --polyglot -->
 <div class="crush-block" data-crush="host" data-src="examples/async-dom.md:14" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
@@ -230,9 +230,9 @@ automatic) and declares <code>mean</code> as its output, which becomes a Crush v
 <li><code>@javascript -&gt; spread</code>: the same protocol; <code>spread</code> comes back as a number</li>
 <li>the second <code>@python</code> block reads both earlier outputs, because they are Crush
 variables now</li>
-<li><code>@bash</code>: only its printed output comes back. It does <strong>not</strong> see Crush
-variables today (crush-ast <a href="https://github.com/nixpt/crush-ast/issues/255">#255</a>),
-which is why the formatting is done in Python</li>
+<li><code>@bash</code>: only its printed output comes back. It could read a Crush variable
+by naming it (<code>$name</code>), but it has no way to hand a value back, which is why the
+formatting is done in Python</li>
 <li>block output is trimmed and has no trailing newline, which is why <code>print("")</code>
 is used to finish the line</li>
 <li>all three run as ordinary subprocesses with your user’s authority — see

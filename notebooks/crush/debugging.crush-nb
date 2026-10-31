@@ -1,0 +1,65 @@
+{
+ "meta": {
+  "title": "Debugging — The Crush Language Guide",
+  "description": "Generated from crush/debugging.md of The Crush Language Guide (https://docs.crushlang.org/crush/debugging.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/debugging.md",
+   "guide_url": "https://docs.crushlang.org/crush/debugging.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-debugging-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Debugging\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\n`crush debug FILE` (the same program as `crush-debug FILE`) runs a program under a\ndebugger: breakpoints by source line, single-stepping, watchpoints on a variable, and\nprinting values. It reads commands from standard input, so it works at a terminal and\nin a pipe. It is in the prebuilt tarball and in `cargo install crush-lang-sdk`.\n\n## Debugging is a grant\n\nLike every other authority in Crush, looking inside a running program is switched on\nby a flag, and **nothing is granted by default**:\n\n| Flag | Lets the debugger |\n|---|---|\n| `--step` | run the program and `break`, `step`, `next`, `finish`, `continue`, `watch` |\n| `--inspect` | (needs `--step`) show variable values in full |\n| `--inspect=redacted` | (needs `--step`) show a value's type and a per-session hash instead, so you can tell whether two values are equal without seeing them |\n| `--break FILE:LINE` | set a breakpoint before the first command (repeatable; `LINE` alone works) |\n\nThe program's own capabilities are granted with the same flags as `crush run`\n(`--fs`, `--net`, `--polyglot`, …). Without `--step`, every command that would run the\nprogram is refused, and without `--inspect` values show as `<hidden>`:\n\n```text\n$ printf 'break 3\\ncontinue\\nquit\\n' | crush debug d.crush\ncru-s-debugger> refused: `break` needs the `debug.step` grant (pass --step)\ncru-s-debugger> refused: `continue` needs the `debug.step` grant (pass --step)\n```\n\n## A session\n\nTake this program, saved as `d.crush`:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-debugging-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let total = 0\nfor i in 0..3 {\n    total = total + i\n}\nprint(total)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/debugging.md:36",
+      "browser": "run",
+      "expect_output": "3\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-debugging-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Stop on line 3 and look at the variables. The commands are typed\nafter the prompt (shown here as a script piped in):\n\n```text\n$ printf 'break 3\\ncontinue\\nprint total\\nlocals\\nquit\\n' | crush debug d.crush --step --inspect\ncru-s-debugger> breakpoint #0 set at d.crush:3\ncru-s-debugger> hit breakpoint #0 at d.crush:3 in main\n     3 |     total = total + i\ncru-s-debugger> total = 0\ncru-s-debugger> total (slot 0) = 0\ni (slot 1) = 0\n__end_0 (slot 2) = 3\ncru-s-debugger> bye.\n```\n\nThe `__end_0` slot is the compiler's copy of the loop bound; it shows that the debugger\nreports the real locals of the compiled function.\n\nWith `--inspect=redacted` the same `print total` gives a type and a hash:\n\n```text\ncru-s-debugger> total = <int #95e76d5b42ff8213>\n```\n\n## Commands\n\n| Command | Does |\n|---|---|\n| `break FILE:LINE` or `break LINE` | set a breakpoint (`delete ID` removes it, `list` shows them) |\n| `step` / `s` | one instruction, or one source line; enters calls |\n| `next` / `n` | step over: run a call to completion |\n| `stepi` / `nexti` | the same, always by instruction |\n| `finish` / `fin` | step out: run until this function returns |\n| `continue` / `c` | run until a breakpoint, a watchpoint, or the end |\n| `watch NAME` | stop when that local changes (`unwatch ID` removes it) |\n| `print NAME` or `p NAME` | print a local, or a field with `NAME.field` |\n| `locals` / `vars` | print every assigned local of the current frame |\n| `status` / `info` | show the VM state |\n| `quit` / `q` | leave |\n\n## For editors and agents: `--message-format json`\n\nWith `--message-format json` there is no prompt and prose: each event the debugger\nreports is one JSON object per line on standard output. Stopping at the same\nbreakpoint produces:\n\n```json\n{\"event\":\"started\",\"file\":\"d.crush\",\"visibility\":\"Full\"}\n{\"command\":\"break 3\",\"event\":\"message\",\"text\":\"breakpoint #0 set at d.crush:3\"}\n{\"event\":\"stopped\",\"file\":\"d.crush\",\"frames\":[{\"depth\":1,\"file\":\"d.crush\",\"function\":\"main\",\"ip\":48,\"line\":3,\"locals\":[{\"name\":\"total\",\"slot\":0,\"value\":{\"text\":\"0\",\"type\":\"int\"}},{\"name\":\"i\",\"slot\":1,\"value\":{\"text\":\"0\",\"type\":\"int\"}},{\"name\":\"__end_0\",\"slot\":2,\"value\":{\"text\":\"3\",\"type\":\"int\"}}]}],\"function\":\"main\",\"line\":3,\"reason\":{\"id\":0,\"kind\":\"breakpoint\"},\"source\":\"    total = total + i\"}\n{\"command\":\"print total\",\"event\":\"message\",\"text\":\"total = 0\"}\n```\n\nso a tool can follow the program without parsing the text form.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

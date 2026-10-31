@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7bc81275.js";
+            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-d1d19af1.js"></script>
+        <script src="../toc-73e5c564.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,7 +191,7 @@ produce it from other languages, and an AI agent can write it directly (see
  an agent's JSON ──────┘
 </code></pre>
 <p>This page is the schema reference. It is derived from <code>crates/crush-cast/src/lib.rs</code>
-in crush-ast (verified against <code>c1cc21fb</code>, 2026-10-30); the examples are accepted by <code>crush_cast::validate_json</code>,
+in crush-ast (verified against <code>bad81048</code>, 2026-10-31); the examples are accepted by <code>crush_cast::validate_json</code>,
 compiled and run by this guide’s checker.</p>
 <h2 id="document-structure"><a class="header" href="#document-structure">Document structure</a></h2>
 <pre><code class="language-json">{
@@ -455,7 +455,7 @@ CBOR:</p>
 <p><code>Program::deserialize</code> / <code>load</code> check <code>cast_version</code> and refuse a different <strong>major</strong>
 than <code>CAST_VERSION</code> (<code>"0.1"</code>): <code>version mismatch at cast boundary: expected 0.1, found …</code>. The corpus in <code>examples/cast/</code> uses <code>"0.1"</code> / <code>"0.1.0"</code>.</p>
 <blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>c1cc21fb</code>).</strong> The Crush front end stamps the trees
+<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> The Crush front end stamps the trees
 it produces <code>cast_version: "1.0.0"</code>, which the versioned loader then rejects — so a
 CAST dump from the compiler cannot be re-loaded with <code>Program::load</code>, though
 <code>serde_json</code> and <code>validate_json</code> accept it. When you write CAST by hand or from an
