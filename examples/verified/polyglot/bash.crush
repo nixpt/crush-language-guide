@@ -1,6 +1,6 @@
 // @bash runs the block under bash; only its printed (trimmed) output comes back.
-// PITFALL (crush-ast issue #255): Crush variables are NOT visible in
-// the block today: $name expands to the empty string.
+// A Crush variable the block names as $name / ${name} is passed in as an
+// environment variable of that name (crush-ast #255, fixed in 0.9.0).
 let name = "crush"
 @bash {
 echo "hello [$name]"

@@ -22,6 +22,9 @@
 - [Polyglot Programming](crush/polyglot.md)
 - [Standard Library](crush/stdlib.md)
 - [Annotations](crush/annotations.md)
+- [Errors and Diagnostics](crush/diagnostics.md)
+- [Debugging](crush/debugging.md)
+- [Windows: the ui.* API](crush/gui.md)
 - [Engines, AOT and Walkers](crush/engines.md)
 
 # Examples

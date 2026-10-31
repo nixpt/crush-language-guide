@@ -5,7 +5,7 @@ programs, each written by a different LLM that was given little more than "can y
 learn crush?" and a pointer to crush-ast. Its README tells the story of each one:
 which constraints the authors hit, and the compiler bugs they found along the way.
 
-> Every program below was run on crush-ast `c1cc21fb` (2026-10-30) with
+> Every program below was run on crush-ast `bad81048` (v0.9.0, 2026-10-31) with
 > `crush-run run --max-steps 500000000 FILE < /dev/null`. All of them ran to their
 > documented conclusion. The outputs quoted are what that run printed.
 

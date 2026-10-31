@@ -118,11 +118,11 @@ jobs:
     # Every chapter notebook: valid against crush-notebook's schema, and run
     # through the published notebook kernel (each runnable cell prints what the
     # page shows, each expected failure fails, each host-only cell is refused).
-    # crush-notebook-kernel 0.2.0 is built on crush-ast 0.8.0, the release of
-    # the pinned commit; bump it with CRUSH_AST_COMMIT.
+    # crush-notebook-kernel 0.3.0 is built on crush-ast 0.9.0, the pinned release.
+    # Bump KERNEL_VERSION with CRUSH_AST_COMMIT when a new kernel is published.
     runs-on: ubuntu-latest
     env:
-      KERNEL_VERSION: 0.2.0
+      KERNEL_VERSION: 0.3.0
     steps:
       - uses: actions/checkout@v4
 

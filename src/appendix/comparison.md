@@ -3,7 +3,7 @@
 How Crush relates to the languages people usually compare it with. Crush is **alpha**:
 the language is small, the standard library is a set of host capabilities, and several
 features in its design (imports, an executing AI layer) are not implemented yet. The
-comparisons below are about what is real today (verified against crush-ast `c1cc21fb`).
+comparisons below are about what is real today (verified against crush-ast `bad81048`).
 
 ## What Crush is for
 

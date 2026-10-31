@@ -1,6 +1,6 @@
 # Polyglot Programming
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30), with Python 3.14, Node 26 and
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31), with Python 3.14, Node 26 and
 > bash 5.3 on the host.
 
 A Crush program can embed code from other languages with `@language { ... }`
@@ -331,27 +331,30 @@ print(text)
 and `->` on a `@bash` block is a compile error (`` `->` output lists are not
 supported for @bash: it has no value marshaling ``).
 
-> **Known bug ([crush-ast #255](https://github.com/nixpt/crush-ast/issues/255)).**
-> Earlier releases passed the function's top-level `let`s to a `@bash` block as
-> environment variables. Since explicit outputs landed (CRUSH-270) a `@bash` block
-> receives **no** Crush variables, and `$name` silently expands to the empty
-> string:
+A `@bash` block does read Crush variables, by name: every `$name` or `${name}` in the
+block that matches a Crush variable in scope is passed to bash as an environment
+variable of that name (since 0.9.0; crush-ast
+[#255](https://github.com/nixpt/crush-ast/issues/255)). Numbers arrive as their
+text. A variable the block does not mention is not passed, and a `$name` that is not
+a Crush variable expands to the empty string, as in any shell:
 
 <!-- check: flags --polyglot -->
 ```crush
 let name = "crush"
+let n = 42
 @bash {
-echo "hello [$name]"
+echo "hello [$name] n=${n} [$nothing_here]"
 }
+print("")
 ```
 
 <!-- check: output -->
 ```text
-hello []
+hello [crush] n=42 []
 ```
 
-Until that is fixed, compute the value in a `@python` block and print it, or
-write it to a file the `@bash` block reads. Bash inherits the host environment
+Nothing comes back except what the block prints, so to get a value out compute it in
+a `@python` or `@javascript` block with `->`. Bash inherits the host environment
 (`$HOME`, `$PATH`, …) in the default, unsandboxed lane.
 
 ## Errors

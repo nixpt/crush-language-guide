@@ -66,9 +66,9 @@ and the cell kinds it does not run yet are described in the
 | `@bash`, processes, network | refused | refused | with the matching flag |
 | Between examples | every run starts fresh | cells share a session | one program per file |
 
-The kernel is `crush-notebook-kernel` 0.2.0, built on crush-ast 0.8.0 (the
-commit this guide is verified against, released): every chapter notebook runs
-in it as the page says (the guide's CI checks each cell).
+The kernel is `crush-notebook-kernel` 0.3.0, built on crush-ast 0.9.0, the same
+release as this guide, so the 0.9.0 cells (slicing a string, `s[::-1]`, hex and binary
+literals) run in a notebook as they do on the page.
 
 The examples marked **needs the host** are refused in the notebook too, and so
 are the ones the page runs only because it grants them something (`@python`,

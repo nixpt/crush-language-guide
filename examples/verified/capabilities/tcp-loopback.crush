@@ -1,0 +1,11 @@
+// Raw sockets (0.9.0): tcp.* behind --tcp (client) and --tcp-listen (server).
+// One program is both ends of a loopback conversation, so it needs both flags.
+let srv = tcp.listen("tcp://127.0.0.1:47123")
+let c = tcp.connect("tcp://127.0.0.1:47123")
+let s = tcp.accept(srv)
+tcp.send(c, "ping")
+print(tcp.recv(s))
+tcp.send(s, "pong")
+print(tcp.recv(c))
+tcp.close(c)
+tcp.close(s)

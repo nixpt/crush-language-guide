@@ -1,6 +1,6 @@
 # Crush Overview
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30).
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
 
 **Crush** is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -26,6 +26,27 @@ when something doesn't.
   runs on a VM (`crush-vm`), with a faster VM, a JIT and ahead-of-time backends
   also in the repository ([Engines, AOT and Walkers](engines.md)). Walkers
   translate Python, JavaScript, Rust and other languages into the same CAST.
+
+## New in 0.9.0
+
+Each item links to the page that documents it (and every example there was run).
+
+- **Slices on strings, and steps.** `s[0:5]`, `s[-5:]`, `s[::2]`, `s[::-1]` on strings
+  and arrays; they lower to `seq.slice`. ([Types](types.md#slicing-strings))
+- **Hex and binary literals.** `0xff`, `0b101`. ([Syntax](syntax.md#literals))
+- **A debugger.** `crush debug FILE --step --inspect`: breakpoints by line, step,
+  watch, print, with the inspection itself a grant. ([Debugging](debugging.md))
+- **Windows.** `crush gui run FILE --ui` and the `ui.*` API, from the separate
+  `crush-gui` package. ([Windows](gui.md))
+- **Raw sockets.** `tcp.*` behind `--tcp` (client) and `--tcp-listen` (server);
+  `--net` stays HTTP-only. `net.*` is compiled into the default build, and the old
+  `http.*` names are refused with their replacement. ([Capability System](capabilities.md#raw-sockets-tcp))
+- **One diagnostics format.** `--message-format json` gives one schema across the
+  tools, and semantic errors carry a line and column. ([Diagnostics](diagnostics.md))
+- **Easier install.** `cargo install crush-lang-sdk` (not `cargo install crush`,
+  which is an unrelated crate), or the prebuilt Linux binaries on the GitHub release;
+  v0.9.0 is the first release to have them. ([Getting Started](../getting-started.md))
+- `@bash` blocks can read Crush variables again, by `$name`. ([Polyglot](polyglot.md#bash))
 
 ## Hello, Crush
 
@@ -92,7 +113,7 @@ far: 25
 | `spawn` / `yield` / `await`, `parallel_map` | works on the VM |
 | `import` (multi-file programs) | not yet: CRUSH-110 |
 | Capabilities, `@capabilities`, the standard library | works; the standard library is on by default |
-| Polyglot: Python, JavaScript (declared `->` outputs), Bash | works (host authority by default); `@bash` sees no Crush variables today (#255) |
+| Polyglot: Python, JavaScript (declared `->` outputs), Bash | works (host authority by default); `@bash` reads the Crush variables it names as `$name` |
 | Polyglot sandbox | opt-in build, verified on Linux with `bwrap` |
 | CAST / CASM formats | documented in their own sections |
 

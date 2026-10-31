@@ -6,14 +6,14 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
-> Verified against crush-ast `c1cc21fb` (the commit in the repository's
-> `CRUSH_AST_COMMIT` file). 123 programs.
+> Verified against crush-ast `bad81048` (the commit in the repository's
+> `CRUSH_AST_COMMIT` file). 130 programs.
 
 | Area | Programs | Covers |
 |---|---:|---|
-| `basics/` | 11 | literals, `print` vs `io.print`, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords |
+| `basics/` | 13 | literals (including hex and binary), `print` vs `io.print`, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords |
 | `operators/` | 10 | arithmetic, comparison, `and`/`or`/`not`, short-circuit, string `+`, `\|>`, overflow, division by zero |
-| `strings/` | 6 | indexing, `str.*`, `conv.chr`/`ord`, escapes; string methods and slices that don't exist |
+| `strings/` | 8 | indexing, `str.*`, `conv.chr`/`ord`, escapes, string and array slices (`s[a:b]`, `s[::step]`), string methods that don't exist |
 | `collections/` | 11 | arrays, `array.pop`, maps (insertion order, subscripts, iteration), `collections.*`, `json.*` |
 | `control-flow/` | 9 | `if`, `while`/`break`/`continue`, ranges, `match` as expression and statement |
 | `functions/` | 5 | definitions, arity checks, no defaults, top-level visibility, the call-depth quota |
@@ -22,7 +22,7 @@ observed by running one of these programs.
 | `match/` | 3 | struct patterns, and their compile errors |
 | `errors/` | 6 | `try`/`catch`/`throw`, rethrow, what `catch` can't catch, `result.*` |
 | `modules/` | 2 | `import` (refused), `export` |
-| `capabilities/` | 9 | refusal before running, `--fs` and `--fs-root`, `@capabilities`, `io.read`, `sys.args`, `math.random` |
+| `capabilities/` | 12 | refusal before running, `--fs` and `--fs-root`, `@capabilities`, `io.read`, `sys.args`, `math.random` |
 | `polyglot/` | 15 | `--polyglot`, `-> outputs`, JavaScript, chaining, `use @lang`, isolation, errors, bash |
 | `concurrency/` | 7 | `spawn`/`yield`/`await`, `async fn`, `parallel_map` and its rules |
 | `annotations/` | 3 | manifest annotations, `@wip`, `@capabilities` |
@@ -48,7 +48,6 @@ changes and the corpus fails, which is the signal to update the guide.
 
 | Pitfall | Issue |
 |---|---|
-| `polyglot/bash`: a `@bash` block sees no Crush variables | [#255](https://github.com/nixpt/crush-ast/issues/255) |
 | `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
 
 ## Running it

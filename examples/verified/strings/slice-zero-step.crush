@@ -1,0 +1,2 @@
+// A slice step of 0 is a runtime error, for strings and arrays alike.
+print("abc"[::0])

@@ -1,6 +1,6 @@
 # Syntax and Grammar
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30): every runnable block on this
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31): every runnable block on this
 > page was compiled and run with that build.
 
 This chapter covers the lexical structure and grammar that the Crush parser
@@ -125,13 +125,30 @@ positive
 
 | Kind | Examples | Notes |
 |---|---|---|
-| Integer | `42`, `-7`, `0x2A`, `0b101` | hex and binary prefixes lex; `0o17` and `1_000` do not |
+| Integer | `42`, `-7`, `0x2A`, `0b101` | hex (`0x`/`0X`, any digit case) and binary (`0b`) literals, 0.9.0; `0o17` and `1_000` do not lex, and `0x` with no digits is `Invalid number literal` |
 | Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |
 | String | `"hello"`, `'hello'` | single or double quotes; escapes `\n \t \" \\` |
 | Boolean | `true`, `false` | |
 | Null | `null` | |
 | Array | `[1, 2, 3]` | see [Types](types.md) |
 | Object | `{"a": 1, b: 2}` | see [Types](types.md) |
+
+Hex and binary literals are ordinary integers, so they mix freely with decimal ones:
+
+```crush
+print(0xff)
+print(0b101)
+print(0xFF + 0b11)
+print(-0x10)
+```
+
+<!-- check: output -->
+```text
+255
+5
+258
+-16
+```
 
 Triple-quoted strings are parse errors, and bytes literals (`b"..."`) are refused
 with `bytes literals (b"...") are not supported yet`. A string literal may

@@ -1,6 +1,6 @@
 # Data Types
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30).
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
 
 Crush is dynamically typed at run time, with a **static checker** that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -114,8 +114,57 @@ HELLO
 el
 ```
 
-The slice syntax `s[1:3]` is for arrays only; on a string it compiles but fails
-at run time (`expected array, got str`). Use `str.substring`.
+### Slicing strings
+
+`s[start:stop]` slices a string by **characters** (since 0.9.0; before it, a string
+slice compiled and then failed with `expected array, got str`). Either bound may
+be left out, a negative bound counts from the end, and a bound past the end is
+clamped rather than an error. `stop` is exclusive, and the result is a new string.
+The slice counts characters, not bytes, so it never splits a multi-byte character
+(unlike `len`, which counts bytes):
+
+```crush
+let s = "hello world"
+print(s[0:5])
+print(s[6:])
+print(s[:5])
+print(s[-5:])
+print(s[3:100])
+print("héllo"[1:3])
+```
+
+<!-- check: output -->
+```text
+hello
+world
+hello
+world
+lo world
+él
+```
+
+A third part is a step: `s[::2]` takes every second character and a negative step
+walks backwards, so `s[::-1]` reverses. The step form works the same on arrays (see
+[Arrays](#arrays)). A step of `0` is a runtime error
+(`expected non-zero slice step, got 0`).
+
+```crush
+let s = "hello world"
+print(s[::2])
+print(s[::-1])
+print("日本語🎉!"[::-1])
+```
+
+<!-- check: output -->
+```text
+hlowrd
+dlrow olleh
+!🎉語本日
+```
+
+Every bracket slice lowers to the standard-library capability `seq.slice(target,
+start, stop, step)`, where `null` means "from the edge"; `str.substring` still
+works and takes its bounds as arguments.
 
 ## Collections
 
@@ -200,6 +249,26 @@ Negative slice bounds count from the end, as an index does: with
 `let a = [1, 2, 3, 4]`, `a[1:-1]` is `[2, 3]`, `a[-3:]` is `[2, 3, 4]` and
 `a[:-1]` is `[1, 2, 3]`. (Before crush-ast
 [#254](https://github.com/nixpt/crush-ast/issues/254) they were silently clamped.)
+
+Slices take a step too (0.9.0): `a[::2]` is every second element, `a[::-1]` is the
+array reversed, `a[1:5:2]` starts at 1 and takes every second element before 5, and
+`a[:]` is a copy:
+
+```crush
+let a = [1, 2, 3, 4, 5, 6]
+print(a[::2])
+print(a[::-1])
+print(a[1:5:2])
+print(a[:])
+```
+
+<!-- check: output -->
+```text
+[1, 3, 5]
+[6, 5, 4, 3, 2, 1]
+[2, 4]
+[1, 2, 3, 4, 5, 6]
+```
 
 ### Objects (maps)
 

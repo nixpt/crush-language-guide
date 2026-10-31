@@ -2,7 +2,7 @@
 
 Every program here is CASM **text assembly** — the form you can write by hand and run
 with `crush-run run FILE.casm --cap io.print` — and every one is executed by this
-guide's checker against crush-ast `c1cc21fb`, with the output shown. The JSON IR is
+guide's checker against crush-ast `bad81048`, with the output shown. The JSON IR is
 covered in [Program Structure](structure.md) and
 [Serialization](serialization.md). Opcode details are in the
 [Instruction Reference](instructions.md).

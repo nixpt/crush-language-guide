@@ -1,0 +1,13 @@
+// s[a:b] slices a string by characters (0.9.0; it was a type error before).
+// Bounds are optional and negative bounds count from the end; out-of-range
+// bounds clamp. The slice is a new string.
+let s = "hello world"
+print(s[0:5])
+print(s[6:])
+print(s[:5])
+print(s[-5:])
+print(s[:-6])
+print(s[3:100])
+print("[" + s[4:2] + "]")
+let u = "héllo"
+print(u[1:3])

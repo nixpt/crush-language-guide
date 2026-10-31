@@ -1,0 +1,1 @@
+http.get was renamed to net.http_get

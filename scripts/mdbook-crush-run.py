@@ -43,7 +43,7 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast c1cc21fb, src/play/pkg) handles itself: crush_vm::run's
+# What crush-web (crush-ast bad81048, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
 # collections.*, json.*, ...: on by default since CRUSH-113), sys.args/sys.exit,
 # and io.read (the page asks the reader for each line).
@@ -54,6 +54,7 @@ BROWSER_CAPS = {"io.print", "str.concat", "str.contains", "str.join", "str.len",
 # such block really fails in crush-web, so a stale list shows up as a failure.
 HOST_CAPS = {
     "fs": "the filesystem", "file": "the filesystem", "net": "the network",
+    "tcp": "raw sockets",
     "env": "the environment", "time": "the clock", "process": "processes",
     "db": "a database", "graphics": "graphics", "crypto": "cryptography",
     "text": "the filesystem",
@@ -114,7 +115,7 @@ GRANT_NAMESPACES = {"time": {"time"}, "env": {"env"}, "fs": {"fs", "file", "text
 # cannot match the output the guide shows: it stays labelled as needing the host.
 MACHINE_FACTS = {"env.os", "env.arch", "env.home_dir", "env.all"}
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",
-            "--env": "the environment", "--time": "the clock", "--process": "processes"}
+            "--tcp": "raw sockets", "--tcp-listen": "raw sockets", "--env": "the environment", "--time": "the clock", "--process": "processes"}
 
 
 def host_needs(d, code):

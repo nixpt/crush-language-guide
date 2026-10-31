@@ -1,0 +1,8 @@
+// Integer literals: decimal, hex (0x, any case) and binary (0b), 0.9.0.
+// They are ordinary integers; there is no 0o octal form and no 1_000 separator.
+print(0xff)
+print(0xFF == 255)
+print(0b101)
+print(0x2A + 0b11)
+print(-0x10)
+print(0x7fffffffffffffff)

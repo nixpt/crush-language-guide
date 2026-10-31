@@ -1,0 +1,4 @@
+// --tcp grants the client side only; listening and accepting need --tcp-listen,
+// and the run is refused before anything executes.
+let srv = tcp.listen("tcp://127.0.0.1:47124")
+print(srv)

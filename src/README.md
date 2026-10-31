@@ -12,8 +12,8 @@ toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
 intermediate representation (CAST) that other languages can be translated into.
 
 > **Alpha.** This guide documents what the toolchain does today, verified against
-> crush-ast `c1cc21fb` (main, 2026-10-30): every `crush` example on these pages is
-> compiled and run by `scripts/check-examples.py`, and a corpus of 120+ standalone
+> crush-ast `bad81048` (v0.9.0, 2026-10-31): every `crush` example on these pages is
+> compiled and run by `scripts/check-examples.py`, and a corpus of 130 standalone
 > programs with their exact output lives in `examples/verified/`
 > ([The Verified Corpus](verified-corpus.md)). Features that exist in the design but
 > not in the implementation are marked *not yet implemented*, with the crush-ast
