@@ -8,7 +8,7 @@ toolchain.
 Run it with `crush run --polyglot poly.crush` (needs `python3`, `node` and `bash`
 on `PATH`; `crush doctor` checks).
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30).
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
 
 <!-- check: flags --polyglot -->
 ```crush
@@ -48,9 +48,9 @@ bash: done
 - `@javascript -> spread`: the same protocol; `spread` comes back as a number
 - the second `@python` block reads both earlier outputs, because they are Crush
   variables now
-- `@bash`: only its printed output comes back. It does **not** see Crush
-  variables today (crush-ast [#255](https://github.com/nixpt/crush-ast/issues/255)),
-  which is why the formatting is done in Python
+- `@bash`: only its printed output comes back. It could read a Crush variable
+  by naming it (`$name`), but it has no way to hand a value back, which is why the
+  formatting is done in Python
 - block output is trimmed and has no trailing newline, which is why `print("")`
   is used to finish the line
 - all three run as ordinary subprocesses with your user's authority — see

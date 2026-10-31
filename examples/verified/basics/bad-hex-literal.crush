@@ -1,0 +1,2 @@
+// A prefix with no digits is not a number.
+print(0x)

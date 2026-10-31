@@ -3,14 +3,42 @@
 Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.
 
-> Verified against crush-ast `c1cc21fb` (main, 2026-10-30), a release build. That is
-> newer than the `0.7.1` release on crates.io: see the note below.
+> Verified against crush-ast `bad81048`, the **v0.9.0** release (2026-10-31): the
+> prebuilt binaries from its GitHub release, which this guide's checker runs.
 
-## 1. Build the toolchain
+## 1. Install the toolchain
 
 The language is implemented in [crush-ast](https://github.com/nixpt/crush-ast).
-Build it from source — this is the path this guide's examples are validated
-against:
+There are two ways to get it. Both give you the same `crush`, `crushc`, `crush-run`,
+`crush-compile`, `crush-repl` and `crush-debug`.
+
+**From crates.io** (needs Rust 1.95 or newer):
+
+```sh
+cargo install crush-lang-sdk
+```
+
+> **Not `cargo install crush`.** The `crush` crate on crates.io is an unrelated
+> project. The toolchain is published as **`crush-lang-sdk`**. There is no
+> `crush-ast` crate either; that is the repository's name.
+
+**Prebuilt Linux binaries.** Since v0.9.0 every `vX.Y.Z` tag has a GitHub release
+(a pre-release until 1.0) with a Linux x86_64 tarball, a tarball of the browser
+runtime, and a `SHA256SUMS` file. v0.9.0 is the first such release:
+
+```sh
+gh release download v0.9.0 --repo nixpt/crush-ast
+sha256sum -c SHA256SUMS
+tar -xzf crush-0.9.0-x86_64-unknown-linux-gnu.tar.gz
+export PATH="$PWD/crush-0.9.0-x86_64-unknown-linux-gnu:$PATH"
+```
+
+The tarball holds `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl`,
+`crush-debug`, `crush-pkg` and `crush-gui`. `crush doctor` then tells you which
+interpreters your polyglot blocks can use.
+
+**From source**, to build a particular commit (this is how the guide's CI builds
+the commit in `CRUSH_AST_COMMIT`):
 
 ```sh
 git clone https://github.com/nixpt/crush-ast
@@ -20,9 +48,6 @@ cargo build --release -p crush-lang-sdk                       # crush, crush-run
 cargo build --release -p crush-aot                            # optional: crush-aotc (native AOT)
 ```
 
-Add `--features net,db,graphics` to the first build for the `--net`, `--db` and
-`--graphics` capability groups.
-
 Two things to know:
 
 - **`buckets` must be a sibling directory.** `crush-vm` has an optional
@@ -30,39 +55,35 @@ Two things to know:
   even when the feature is off, so a lone `crush-ast` checkout fails with
   `failed to read .../buckets/Cargo.toml`.
 - **The standard library is built in by default** (crush-ast CRUSH-113): `str.*`,
-  `math.*`, `conv.*`, `collections.*`, `json.*` and friends need no flag.
+  `math.*`, `conv.*`, `collections.*`, `json.*` and friends need no flag. As of
+  0.9.0 the HTTP client (`net.*`) and raw TCP sockets (`tcp.*`) are compiled in by
+  default too; they are still refused unless you pass `--net` / `--tcp` /
+  `--tcp-listen`. Only `db` and `graphics` still need `--features db,graphics`.
 
-You need Rust 1.95 or newer (crush-ast's CI checks that MSRV, and its
-`rust-toolchain.toml` selects `stable`; this guide was verified with rustc 1.96). The build produces these binaries in
-`target/release/`:
+The binaries:
 
 | Binary | What it does |
 |---|---|
-| `crush` | The front door: `crush run FILE`, `crush build FILE`, `crush repl` |
+| `crush` | The front door: `crush run FILE`, `crush build FILE`, `crush repl`, `crush debug FILE`, `crush gui run FILE --ui`, `crush doctor` |
 | `crush-run` | Run a `.crush`, `.casm` or `.cvm1` file (all the capability flags live here) |
 | `crushc` | Compile `.crush` to bytecode (`.cvm1`), or `--emit casm\|ast\|types`; `-C` only checks |
 | `crush-compile` | Assemble CASM text into a `.cvm1` binary |
 | `crush-repl` | Interactive REPL (`crush repl`; commands are `.help`, `.quit`) |
-| `crush-diff` | Run programs on several engines and report where they disagree |
+| `crush-debug` | The debugger (`crush debug`): see [Debugging](crush/debugging.md) |
+| `crush-gui` | Programs that draw a window (`crush gui run`): a separate package, see [Windows](crush/gui.md) |
+| `crush-diff` | (from a source build) run programs on several engines and report where they disagree |
 | `crush-aotc` | (from `-p crush-aot`) compile `.crush` to a native library via Rust or C, or `crush-aotc run FILE` |
 
-Put them on your `PATH`, or install them with the bundled installer
-(`cargo run -p crush-installer -- install --bin-dir target/release` copies them
-into `~/.crush/bin`; it does not currently include the `crush` wrapper).
+Source builds need Rust 1.95 or newer (crush-ast's CI checks that MSRV).
 
-> **Crates.io.** Release `0.7.1` (2026-10-20, crush-ast `85393971`) is published for `crush-lang-sdk`
-> (which installs `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl` and
-> `crush-diff`), `crush-vm`, `crush-frontend`, `casm`, `crush-cast`, `crush-cosm`,
-> `crush-errors`, `crush-diagnostics`, `crush-ffi`, `crush-caison` (and its old name
-> `crush-cson`), `crush-index`, `crush-walker-core`, `crush-lang-python`,
-> `crush-lang-js`, `crush-lint`, `crush-installer`, `tree-sitter-crush`, `crush-jit`,
-> `crush-python`, `crush-pkg`, `crush-aotc` and `crush-lang-rust`; `crush-aot` is not
-> published. `0.7.1` predates these fixes the guide describes: `return match …`
-> returning its value (#253), negative slice bounds (#254), methods on a `for` loop
-> variable (#256), the compile error for a built-in used as a value (#257) and
-> `crushc` accepting constructor calls (#260). Build from source for everything
-> here. **Never depend on `crush-lang-sdk` `0.2`**: that line has been yanked, and
-> it runs `@lang` blocks without the `--polyglot` gate.
+> **Crates.io.** Release `0.9.0` (2026-10-31, crush-ast `bad81048`) is published for
+> `crush-lang-sdk` (which installs `crush`, `crushc`, `crush-run`, `crush-compile`,
+> `crush-repl`, `crush-debug` and `crush-diff`) and the library crates, all released
+> together at the workspace version. Earlier releases (`0.7.1`, `0.8.0`) lack things
+> this guide describes: slices on strings, hex and binary literals, the debugger,
+> `tcp.*`, and the single diagnostics format. **Never depend on `crush-lang-sdk`
+> `0.2`**: that line has been yanked, and it runs `@lang` blocks without the
+> `--polyglot` gate.
 
 ## 2. Hello, Crush
 
@@ -117,6 +138,8 @@ off until you switch it on:
 crush run prog.crush                             # str.* math.* conv.* json.* ... need nothing
 crush run --fs --fs-root ./data prog.crush       # fs.read / fs.write / fs.exists / fs.list
 crush run --polyglot prog.crush                  # @python / @javascript / @bash blocks
+crush run --net prog.crush                       # net.http_get / http_post / ... (HTTP only)
+crush run --tcp prog.crush                       # tcp.connect / send / recv (client sockets)
 crush-run caps prog.crush                        # what does it need? (runs nothing)
 ```
 
@@ -157,10 +180,12 @@ crates give direct access to the IR, bytecode, or VM.
 | [`crush-errors`](https://crates.io/crates/crush-errors) | Shared error types. |
 | [`tree-sitter-crush`](https://crates.io/crates/tree-sitter-crush) | Tree-sitter grammar (editor tooling, syntax highlighting). |
 
-SDK Cargo features: the defaults `stdlib` (the standard library),
+SDK Cargo features: the defaults `stdlib` (the standard library), `net` (the HTTP
+client), `tcp` and `tcp-tls` (raw sockets), `debug` (the debugger),
 `native-plugins`, `polyglot-python`, `polyglot-javascript` and `polyglot-rust` (the
 analyses that marshal values into and out of `@lang` blocks), plus the optional
-`net`, `db`, `graphics`, `gpu`, `repl-helper` and `polyglot-typescript`.
+`db`, `graphics`, `gpu`, `repl-helper` and `polyglot-typescript`. A default feature
+only compiles the capability in; the program still needs the matching flag at run time.
 
 ## 4. Embedding
 
@@ -199,7 +224,7 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Both snippets are compiled and run against crush-ast `c1cc21fb` by
+Both snippets are compiled and run against crush-ast `bad81048` by
 `scripts/check-examples.py --crush-ast`. `Runtime::new()` registers only the
 built-in primitives (`io.print`, `io.read`, …); to expose more — the standard
 library, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass

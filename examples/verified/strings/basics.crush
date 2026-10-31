@@ -1,5 +1,5 @@
 // len(s) counts bytes; s[i] is a one-character string; negative indexes count
-// from the end. Use str.substring for a range (s[a:b] slices arrays only).
+// from the end. Use str.substring or s[a:b] (0.9.0) for a range.
 let s = "hello"
 print(len(s))
 print(s[1])

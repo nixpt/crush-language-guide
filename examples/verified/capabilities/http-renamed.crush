@@ -1,0 +1,3 @@
+// The pre-0.9 HTTP names are refused with their replacement, even with --net.
+let r = http.get("http://127.0.0.1:1/")
+print(r)

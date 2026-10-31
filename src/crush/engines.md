@@ -1,6 +1,6 @@
 # Engines, AOT and Walkers
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30), with rustc 1.96, gcc, Python
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31), with rustc 1.96, gcc, Python
 > 3.14 and Node 26 on the host.
 
 One Crush program can run on several engines. crush-ast's rule for them is

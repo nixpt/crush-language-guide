@@ -1,7 +1,7 @@
 # Quick Reference
 
 Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide's checker against crush-ast `c1cc21fb`. Details live in
+can run is run by the guide's checker against crush-ast `bad81048`. Details live in
 the chapters linked from each heading.
 
 ## Command line ([Getting Started](../getting-started.md))
@@ -16,14 +16,16 @@ the chapters linked from each heading.
 | `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |
 | `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |
 | `crush doctor` | which polyglot interpreters are on `PATH` |
+| `crush debug FILE --step --inspect` | breakpoints, step, watch, print ([Debugging](../crush/debugging.md)) |
+| `crush gui run FILE --ui` | a program that draws a window; needs the separate `crush-gui` ([Windows](../crush/gui.md)) |
 | `crush-aotc run FILE.crush` | ahead-of-time compile via rustc (`--backend gcc`) and run |
 | `crush-walk-run FILE.py` | walk a Python/JS/Rust/… file to CAST and run it |
 
 Capability flags (everything is **off** unless you pass it, except the standard
 library, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`
-`--net` `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`
+`--net` (HTTP) `--tcp` `--tcp-listen` (raw sockets) `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`
 `--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused
-before it runs. Quotas:
+before it runs; `--message-format json` makes errors one JSON object per line ([Diagnostics](../crush/diagnostics.md)). Quotas:
 `--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),
 `--max-call-depth` (256).
 

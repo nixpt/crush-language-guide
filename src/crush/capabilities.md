@@ -1,6 +1,6 @@
 # Capability System
 
-> Verified against crush-ast `c1cc21fb` (2026-10-30).
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
 
 Crush programs can't touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -87,7 +87,10 @@ the flag that would grant each:
 | `--fs` | `fs.read`, `fs.write`, `fs.exists`, `fs.list`, `fs.ls/cat/pwd/cd/mkdir/rm/cp/mv/touch/find`, `text.head/tail/wc/cut/grep` |
 | `--env` | `env.get`, `env.all`, `env.home_dir` |
 | `--time` | `time.now`, `time.now_ms`, `time.now_iso`, `time.elapsed`, `time.sleep`, `async.sleep` |
-| `--net` | `net.http_get`, `net.http_post`, `net.http_put`, `net.http_delete`, `net.http_request` |
+| `--net` | `net.http_get`, `net.http_post`, `net.http_put`, `net.http_delete`, `net.http_request` (**HTTP only**) |
+| `--tcp` | raw TCP **client** sockets: `tcp.connect`, `tcp.tls_wrap`, and `tcp.send`, `tcp.recv`, `tcp.close`, `tcp.ping` on the connections you hold; see [Raw sockets](#raw-sockets-tcp) |
+| `--tcp-listen` | raw TCP **server** sockets: `tcp.listen`, `tcp.accept`, and the same `send`/`recv`/`close`/`ping`; does not allow `tcp.connect` |
+| `--ui` | `ui.*`, only with `crush gui run`; see [Windows](gui.md) |
 | `--process` | `process.exec` |
 | `--crypto` | `crypto.sha256`, `crypto.random` |
 | `--db PATH` | `db.query`, `db.execute` on that SQLite file |
@@ -97,9 +100,26 @@ the flag that would grant each:
 | `--akg` | `akg.write/read/search` |
 | `--polyglot` | `@python { }`, `@javascript { }`, `@bash { }` blocks — see [Polyglot](polyglot.md) |
 
-`crush-run caps` prints the list for your build. Some groups (`--net`, `--db`,
-`--graphics`, `--gpu`) are Cargo features of `crush-lang-sdk` that a default build
-leaves out; the standard library is a default feature.
+`crush-run caps` prints the list for your build. Some groups (`--db`, `--graphics`,
+`--gpu`) are Cargo features of `crush-lang-sdk` that a default build leaves out;
+the standard library, the HTTP client (`net.*`, since 0.9.0) and the raw sockets
+(`tcp.*`) are default features, which only compiles them in: a program that uses
+them is still refused until you pass the flag.
+
+The old HTTP names `http.get`, `http.post`, `http.put`, `http.delete` and
+`http.request` are refused by name, with the replacement. This run is refused
+before anything executes, with or without `--net`:
+
+<!-- check: runfail was renamed to net.http_get -->
+```crush
+let r = http.get("http://example.com/")
+print(r)
+```
+
+```text
+[capabilities] block.crush needs capabilities this run does not grant; nothing was run:
+  http.get was renamed to net.http_get (grant it with --net)
+```
 
 Without the flag, nothing runs, not even the first line:
 
@@ -188,6 +208,51 @@ true
 - `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;
   size capped by `--net-max-response-bytes` (default 1 MiB).
 - `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).
+
+### Raw sockets (`tcp.*`)
+
+Since 0.9.0 a program can open TCP connections directly. `--net` is HTTP only and
+does **not** grant these; the socket flags are separate, and the server flag is a
+stronger grant than the client flag because it makes the program reachable from
+other hosts:
+
+| Flag | Lets the program |
+|---|---|
+| `--tcp` | `tcp.connect(uri)` outbound; `tcp.tls_wrap(conn)` upgrades a connection to TLS |
+| `--tcp-listen` | `tcp.listen(uri)` and `tcp.accept(listener)`; it does not allow `tcp.connect` |
+| either | `tcp.send(conn, text)`, `tcp.recv(conn)`, `tcp.close(conn)`, `tcp.ping(conn)` on a connection id it already holds |
+
+A URI is `tcp://IP:PORT` with a literal IP address (no host names). `tcp.listen`
+and `tcp.connect` return an integer id; `tcp.accept` blocks until a client
+connects. `tcp.send` takes text and returns the byte count; `tcp.recv` returns up
+to 16 KiB as text. This program is both ends of a conversation, so it needs both
+flags (the connect is queued by the kernel before `accept` takes it):
+
+<!-- check: flags --tcp --tcp-listen -->
+```crush
+let srv = tcp.listen("tcp://127.0.0.1:47123")
+let c = tcp.connect("tcp://127.0.0.1:47123")
+let s = tcp.accept(srv)
+tcp.send(c, "ping")
+print(tcp.recv(s))
+tcp.send(s, "pong")
+print(tcp.recv(c))
+tcp.close(c)
+tcp.close(s)
+```
+
+<!-- check: output -->
+```text
+ping
+pong
+```
+
+Granting only `--tcp` is refused, naming what is missing:
+
+```text
+[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:
+  --tcp-listen: tcp.accept, tcp.listen
+```
 
 A host capability that fails (missing file, refused connection, path escape)
 aborts the program with `[runtime] unknown capability: <name>: <reason>` — the

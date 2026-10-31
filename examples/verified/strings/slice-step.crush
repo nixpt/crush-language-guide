@@ -1,0 +1,13 @@
+// s[a:b:step] and s[::step] (0.9.0): a step takes every nth character, and a
+// negative step walks backwards. The same syntax slices arrays. A slice is
+// character-safe: reversing keeps a 4-byte emoji whole.
+let s = "hello world"
+print(s[::2])
+print(s[::-1])
+print(s[5:0:-1])
+print("日本語🎉!"[::-1])
+let a = [1, 2, 3, 4, 5, 6]
+print(a[::2])
+print(a[::-1])
+print(a[1:5:2])
+print(a[:])
