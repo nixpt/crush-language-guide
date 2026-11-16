@@ -325,7 +325,9 @@ print(P { x: 1 })
 ```
 
   `pub trait Shape { … }` gives the same error. A field cannot be marked `pub`
-  either: in `struct P { pub x: Int }` the parser takes `pub` as the field's name.
+  either: `struct P { pub x: Int }` is a parse error (``Expected `}` but found `x` ``),
+  because `pub` is read as a field name with no type. `struct P { pub: Int }` is legal
+  and declares a field called `pub`.
 
 ### What is planned
 

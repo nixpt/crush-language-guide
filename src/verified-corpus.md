@@ -7,7 +7,7 @@ the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
 > Verified against crush-ast `7f3fef31` (the commit in the repository's
-> `CRUSH_AST_COMMIT` file). 149 programs.
+> `CRUSH_AST_COMMIT` file). 150 programs.
 
 | Area | Programs | Covers |
 |---|---:|---|
@@ -21,7 +21,7 @@ observed by running one of these programs.
 | `structs/` | 11 | literals, sealing, equality, `impl`, traits, value semantics, C3, bound methods, constructors |
 | `match/` | 3 | struct patterns, and their compile errors |
 | `errors/` | 7 | `try`/`catch`/`throw`, rethrow, catching run-time faults, what `catch` can't catch, `result.*` |
-| `modules/` | 20 | the `import` forms, `-L` and `CRUSH_PATH`, module rules and errors, structs across files, the struct/trait name clash, `pub` and `__`, `export` |
+| `modules/` | 21 | the `import` forms, `-L` and `CRUSH_PATH`, module rules and errors, structs across files, the struct/trait name clash, `pub` and `__`, `export` |
 | `capabilities/` | 12 | refusal before running, `--fs` and `--fs-root`, `@capabilities`, `io.read`, `sys.args`, `math.random` |
 | `polyglot/` | 15 | `--polyglot`, `-> outputs`, JavaScript, chaining, `use @lang`, isolation, errors, bash |
 | `concurrency/` | 7 | `spawn`/`yield`/`await`, `async fn`, `parallel_map` and its rules |
@@ -51,7 +51,7 @@ changes and the corpus fails, which is the signal to update the guide.
 | Pitfall | Issue |
 |---|---|
 | `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
-| `modules/import-in-main-pitfall`: an `import` inside `fn main` is accepted (inside any other function it is refused) | not filed yet |
+| `modules/import-in-main-pitfall`: an `import` inside `fn main` is accepted (inside any other function it is refused) | [crush-ast#535](https://github.com/nixpt/crush-ast/issues/535) |
 
 ## Running it
 
