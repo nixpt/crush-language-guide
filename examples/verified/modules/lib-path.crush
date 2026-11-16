@@ -1,0 +1,5 @@
+// -L DIR adds a directory to the import search path (repeatable, searched in
+// order, after the program's own directory). Here lib/text/greet.crush is found
+// through `-L lib` (see lib-path.flags).
+import text.greet
+print(greet.hello("crush"))

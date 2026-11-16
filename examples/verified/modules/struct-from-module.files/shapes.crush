@@ -1,0 +1,5 @@
+struct Rect { w: Int, h: Int }
+impl Rect {
+    fn area(self) { return self.w * self.h }
+}
+fn rect(w, h) { return Rect { w: w, h: h } }

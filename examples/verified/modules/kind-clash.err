@@ -1,0 +1,1 @@
+map.crush:1:1: struct `Point` is also declared in plane.crush:1:1: struct and trait names are one global namespace across imports, so two files cannot both declare `Point`

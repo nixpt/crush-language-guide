@@ -1,0 +1,2 @@
+fn shout(s) { return str.to_upper(s) + "!" }
+fn twice(s) { return s + s }

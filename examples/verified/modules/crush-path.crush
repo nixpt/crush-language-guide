@@ -1,0 +1,4 @@
+// CRUSH_PATH (colon-separated) is searched after -L. Here it is `shared`
+// (see crush-path.env), which holds consts.crush.
+import consts
+print(consts.pi_ish())

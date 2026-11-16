@@ -1,6 +1,6 @@
 # Syntax and Grammar
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31): every runnable block on this
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16): every runnable block on this
 > page was compiled and run with that build.
 
 This chapter covers the lexical structure and grammar that the Crush parser
@@ -126,7 +126,7 @@ positive
 | Kind | Examples | Notes |
 |---|---|---|
 | Integer | `42`, `-7`, `0x2A`, `0b101` | hex (`0x`/`0X`, any digit case) and binary (`0b`) literals, 0.9.0; `0o17` and `1_000` do not lex, and `0x` with no digits is `Invalid number literal` |
-| Float | `3.14`, `0.5` | no exponent form (`1.5e3` is rejected) |
+| Float | `3.14`, `0.5`, `1.5e3`, `2.5e+3`, `1e-7` | a decimal exponent, since 0.11 (CRUSH-221); a malformed one (`1e`, `1.e5`) is `Invalid number literal` |
 | String | `"hello"`, `'hello'` | single or double quotes; escapes `\n \t \" \\` |
 | Boolean | `true`, `false` | |
 | Null | `null` | |
@@ -379,16 +379,18 @@ variables cross the boundary, and the (important) security caveats.
 
 ## Imports and exports
 
-`import a.b` **parses**, but importing does not load anything yet: `import` is
-lowered to a `module.load` capability that nothing registers, so a program
-containing one is refused before it runs (`not available in this host:
-module.load`, crush-ast **CRUSH-110**). Every program is currently a single file.
-There is no `std.*` module tree.
+`import a.b` loads `a/b.crush` **at compile time** and binds the qualifier `b`
+(`import a.b as x` binds `x`, `import a.b { f, g }` binds the bare names). The file
+is looked for in the importing file's directory, then each `-L DIR`, then
+`CRUSH_PATH`. Imports go at the top level of a file, and a module contains only
+definitions. See [Modules, Packages and Visibility](modules.md) for the rules,
+packages and `pub`. There is no `std.*` module tree: a module that is not found is
+a compile error listing the directories searched.
 
-`use @lang python "math"` is different and does work: it writes `import math` into
-every later `@python` block (see [Polyglot](polyglot.md#imports-for-blocks-use-lang)).
+`use @lang python "math"` is different: it writes `import math` into every later
+`@python` block (see [Polyglot](polyglot.md#imports-for-blocks-use-lang)).
 
-<!-- check: nyi CRUSH-110 -->
+<!-- check: error -->
 ```crush
 import std.io
 print("never reached")
@@ -408,7 +410,9 @@ print(result)
 42
 ```
 
-`export let x = ...` and `export fn f() {...}` are parse errors.
+`export let x = ...` and `export fn f() {...}` are parse errors. `export` has
+nothing to do with modules: every function of a module is importable without it,
+and a module that contains an `export` statement is refused.
 
 ## Annotations
 

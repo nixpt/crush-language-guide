@@ -1,0 +1,9 @@
+// `pub fn` (and `pub async fn`) is accepted and NOT enforced yet (crush-ast
+// #518): the parser drops `pub`, so cube, which has no `pub`, is importable
+// from another file just like square. Planned: a W-VIS01 warning for a
+// non-pub name used from another package (#519), an error before 1.0 (#524).
+import shapes
+print(shapes.square(3))
+print(shapes.cube(2))
+pub fn local(x) { return x + 1 }
+print(local(1))

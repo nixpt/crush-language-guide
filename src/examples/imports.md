@@ -1,39 +1,45 @@
 # Import Styles
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
-> **Not yet implemented.** Every form of `import` parses, but **none of them load
-> anything** — the compiler lowers each to a capability that the runtime does not
-> provide, so the program is refused before it runs. The only import form that
-> works is `use @lang`, which declares a module for polyglot blocks. This is
-> crush-ast **CRUSH-110** (open): today there is no way to share code between files.
+Crush has one import that loads Crush code, `import a.b`, resolved **at compile
+time** from `.crush` files (crush-ast CRUSH-110), and a few other forms. This page
+lists each with what it does at the pinned commit. The rules for modules, packages
+and `pub` are in [Modules, Packages and Visibility](../crush/modules.md).
 
-| Form | Parses | Runs |
-|------|:------:|------|
-| `import io` / `import fs as files` / `import net { a, b }` | yes | refused: `not available in this host: module.load` |
-| `use @mcp "url" { tools } as alias` | yes | refused: `not available in this host: mcp.connect, mcp.get_tool` |
-| `use @cap "cap.path" { names } as alias` | yes | refused: `not available in this host: cap.acquire` |
-| `import @git "url" as alias`, `import @http "url" as alias` | yes | refused: `not available in this host: external.load` |
-| `use @lang python "math" [as m]` | yes | runs; see below |
+| Form | What happens |
+|------|------|
+| `import util.strings`, `import util.strings as s`, `import util.strings { twice }` | loads `util/strings.crush` at compile time; see [Modules](../crush/modules.md) |
+| `import io`, `import fs as files` (no such file) | compile error: `` `import fs`: module not found — no fs.crush in any of: … `` |
+| `import @http "url" as x`, `import @git "url" as x`, `import @file "path" as x` | compile error: `is not supported yet: no Crush host can load an external resource` |
+| `use @mcp "url" { tools } as alias` | compile error: `is not supported yet: no Crush host implements MCP client connections` |
+| `use @cap "cap.path" { "names" } as alias` | compiles, refused before running: `not available in this host: cap.acquire` |
+| `use @lang python "math" [as m]` | runs; see below |
 
-Each failing form is checked below, so this page will say so the day one starts
-working:
+The capabilities are not modules: `fs.read(...)` is available to a program run with
+`--fs` without any import, and `import fs` looks for a file named `fs.crush`.
 
-<!-- check: nyi CRUSH-110 -->
+<!-- check: error -->
 ```crush
 import fs as files
 print("loaded")
 ```
 
-<!-- check: nyi CRUSH-110 -->
+<!-- check: error -->
 ```crush
 use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
 print("loaded")
 ```
 
-<!-- check: nyi CRUSH-110 -->
+<!-- check: error -->
 ```crush
 import @http "https://example.com/data.json" as data
+print("loaded")
+```
+
+<!-- check: runfail not available in this host: cap.acquire -->
+```crush
+use @cap "fs.read" { "read" } as r
 print("loaded")
 ```
 
@@ -57,8 +63,26 @@ print(v)
 126
 ```
 
-## Sharing code today
+## Sharing code between files
 
-Put helper functions in the same file, or do the work in a polyglot block. The
-only cross-file mechanism that exists is outside the language: run several
-programs and pass data through files or the host.
+Put shared functions in a module and import it:
+
+<!-- check: compile -->
+```crush
+// util/strings.crush
+fn shout(s) { return str.to_upper(s) + "!" }
+fn twice(s) { return s + s }
+```
+
+<!-- check: skip multi-file program: examples/verified/modules/import-forms -->
+```crush
+import util.strings as s
+print(s.shout("hi"))
+```
+
+```text
+HI!
+```
+
+Run it from the directory that holds both files (`crush run main.crush`), or point
+`-L` / `CRUSH_PATH` at the directory that holds `util/`.

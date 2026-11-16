@@ -1,5 +1,6 @@
 // `export name` marks an existing variable or function; it is not a declaration
-// form (`export fn f()` is a parse error). Every program is one file today.
+// form (`export fn f()` is a parse error), and it has nothing to do with imports:
+// a module may not contain it (see export-in-module).
 let result = 6 * 7
 export result
 print(result)

@@ -1,0 +1,2 @@
+struct Point { lat: Float, lon: Float }
+fn here() { return Point { lat: 27.7, lon: 85.3 } }

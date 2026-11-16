@@ -1,0 +1,5 @@
+// `pub` before `struct` does not parse yet: `pub` is not a keyword, so this is
+// read as the name `pub` followed by a struct declaration (crush-ast #518;
+// accepting it is planned with #519).
+pub struct P { x: Int }
+print(P { x: 1 })

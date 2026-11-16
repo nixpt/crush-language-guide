@@ -1,0 +1,5 @@
+// A module may only define functions, structs, impls and traits, and import
+// other modules: a top-level `let` (or call) in it is a compile error, so there
+// is no hidden init order. Use a function instead (fn limit() { return 10 }).
+import state
+print(state.next())
