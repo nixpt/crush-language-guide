@@ -1,6 +1,6 @@
 # Standard Library
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 Crush's "standard library" is a set of **capabilities** — dotted functions such
 as `str.split` and `math.sqrt` — that the host registers. It is *not* a module
@@ -228,13 +228,17 @@ a#b#
 [a, b, c]
 ```
 
-> **Known bug.** `regex.match` is registered but can't be called from source:
-> `match` is a keyword, so `regex.match(...)` is a parse error (`Expected field
-> name but found match`).
+`regex.match(pattern, s)` returns the whole match followed by the groups. (It used
+to be a parse error, because `match` is a keyword; since crush-ast CRUSH-394 a
+keyword is accepted as a name after a dot.)
 
-<!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
 ```crush
 print(regex.match("([a-z]+)([0-9]+)", "abc123"))
+```
+
+<!-- check: output -->
+```text
+[abc123, abc, 123]
 ```
 
 ## Other families

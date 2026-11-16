@@ -1,6 +1,6 @@
 # Structs, Methods and Kinds
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31). New since the 0.3 line:
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16). New since the 0.3 line:
 > `impl`, `trait`, `@kind` and struct patterns (crush-ast CRUSH-zorro-41/43, the
 > COSM object model).
 
@@ -130,8 +130,8 @@ print(t.size())
 [runtime] `T` has no method `size`
 ```
 
-The receiver must be a name. `S { n: 3 }.size()` is a parse error (`Cannot call
-non-function`); bind the value with `let` first. A `for` loop variable is a name
+The receiver can be any expression: `S { n: 3 }.size()` works (it was a parse
+error before crush-ast CRUSH-363). A `for` loop variable is a name
 like any other, so `for s in items { s.area() }` works (it was refused before
 crush-ast [#256](https://github.com/nixpt/crush-ast/issues/256)).
 

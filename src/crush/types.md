@@ -1,6 +1,6 @@
 # Data Types
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 Crush is dynamically typed at run time, with a **static checker** that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -11,7 +11,7 @@ covers the values you can build today.
 | Type | Literal | Notes |
 |------|---------|-------|
 | Int | `42`, `-7`, `0x2A`, `0b101` | 64-bit signed; overflow is a runtime error |
-| Float | `3.14` | 64-bit IEEE 754. No exponent literals (`1.5e3` is a parse error) |
+| Float | `3.14`, `1.5e3`, `1e-7` | 64-bit IEEE 754. Exponent literals since 0.11 (CRUSH-221); `1e` alone is `Invalid number literal` |
 | String | `"hello"`, `'hello'` | `len` counts **bytes** |
 | Bool | `true`, `false` | |
 | Null | `null` | absence of a value |
@@ -93,8 +93,9 @@ Pi is 3.14
 `len(s)` is the byte length and `s[i]` yields a one-character string (a negative
 index counts from the end). The standard library's `str.*` capabilities add
 `str.split`, `str.trim`, `str.to_upper`, `str.substring` and friends — see
-[Standard Library](stdlib.md). Strings have no methods: `s.to_upper()` is refused
-(`not available in this host: to_upper`); call `str.to_upper(s)`.
+[Standard Library](stdlib.md). Strings have no methods: `s.to_upper()` fails at run time
+(`` `.to_upper(…)` on a str: member calls resolve on struct instances (COSM Records)
+and maps ``); call `str.to_upper(s)`.
 
 ```crush
 let s = "hello"
@@ -242,8 +243,8 @@ print(a[0:2])
 
 Reading past the end is a runtime error (`array index out of range`), and so is
 `a[-1]` on an empty array; `a[-1]` on a non-empty one is the last element. The
-method form `a.pop()` is **not** available (the program is refused with `not
-available in this host: pop`); call `array.pop(a)`.
+method form `a.pop()` does the same as `array.pop(a)` (crush-ast CRUSH-391, on main
+after v0.11.2).
 
 Negative slice bounds count from the end, as an index does: with
 `let a = [1, 2, 3, 4]`, `a[1:-1]` is `[2, 3]`, `a[-3:]` is `[2, 3, 4]` and

@@ -1,6 +1,6 @@
 # Errors and Diagnostics
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 This page is about how the tools *report* a problem; the language's own
 `try`/`catch`/`throw` is in [Control Flow](control_flow.md#errors-try--catch--throw).

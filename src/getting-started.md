@@ -3,8 +3,11 @@
 Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.
 
-> Verified against crush-ast `bad81048`, the **v0.9.0** release (2026-10-31): the
-> prebuilt binaries from its GitHub release, which this guide's checker runs.
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16), built from source as the
+> guide's CI does. That commit is newer than the latest release, **v0.11.2**
+> (2026-11-07): a few things on these pages (catching run-time faults, `a.pop()`,
+> calling any expression, the struct-name clash error, `--max-wall-ms`, the
+> `net.*`/`tcp.*` timeouts) are on main only until the next release.
 
 ## 1. Install the toolchain
 
@@ -24,13 +27,13 @@ cargo install crush-lang-sdk
 
 **Prebuilt Linux binaries.** Since v0.9.0 every `vX.Y.Z` tag has a GitHub release
 (a pre-release until 1.0) with a Linux x86_64 tarball, a tarball of the browser
-runtime, and a `SHA256SUMS` file. v0.9.0 is the first such release:
+runtime, and a `SHA256SUMS` file. The newest is v0.11.2:
 
 ```sh
-gh release download v0.9.0 --repo nixpt/crush-ast
+gh release download v0.11.2 --repo nixpt/crush-ast
 sha256sum -c SHA256SUMS
-tar -xzf crush-0.9.0-x86_64-unknown-linux-gnu.tar.gz
-export PATH="$PWD/crush-0.9.0-x86_64-unknown-linux-gnu:$PATH"
+tar -xzf crush-0.11.2-x86_64-unknown-linux-gnu.tar.gz
+export PATH="$PWD/crush-0.11.2-x86_64-unknown-linux-gnu:$PATH"
 ```
 
 The tarball holds `crush`, `crushc`, `crush-run`, `crush-compile`, `crush-repl`,
@@ -76,10 +79,11 @@ The binaries:
 
 Source builds need Rust 1.95 or newer (crush-ast's CI checks that MSRV).
 
-> **Crates.io.** Release `0.9.0` (2026-10-31, crush-ast `bad81048`) is published for
+> **Crates.io.** The newest release on crates.io is `0.11.2` (2026-11-07), published for
 > `crush-lang-sdk` (which installs `crush`, `crushc`, `crush-run`, `crush-compile`,
 > `crush-repl`, `crush-debug` and `crush-diff`) and the library crates, all released
-> together at the workspace version. Earlier releases (`0.7.1`, `0.8.0`) lack things
+> together at the workspace version (the guide's pinned commit is newer; see the
+> note at the top). Releases before `0.9.0` (`0.7.1`, `0.8.0`) lack things
 > this guide describes: slices on strings, hex and binary literals, the debugger,
 > `tcp.*`, and the single diagnostics format. **Never depend on `crush-lang-sdk`
 > `0.2`**: that line has been yanked, and it runs `@lang` blocks without the
@@ -115,17 +119,22 @@ The `[steps=…]` line is a run summary on standard error. Compile-only checking
 
 ### Three file types
 
-`crush run` (and `crush-run run`) takes source, assembly or bytecode:
+`crush run` (and `crush-run run`) takes source, CAST, CASM, assembly or bytecode,
+one extension per format (crush-ast #365, since v0.10.0):
 
 ```sh
 crushc hello.crush -o hello.cvm1         # compile to CVM1 bytecode
 crush run hello.cvm1                     # run the bytecode
-crushc --emit casm hello.crush -o hello.casm
-crush run --cap io.print hello.casm      # CASM text: grant each capability it calls
+crushc --emit casm hello.crush -o hello.casm   # CASM IR as JSON
+crush run hello.casm
+crushc --emit cvms hello.crush -o hello.cvms   # CVM1 assembly text, with `.cap` lines
+crush run hello.cvms
 ```
 
-A `.casm` text file has no manifest, so every capability it calls must be named
-with `--cap` (without it: `capability not declared in manifest: io.print`).
+Assembly you write by hand (`.cvms`) has no manifest unless you add `.cap NAME`
+lines, so every capability it calls must be named with `--cap` (without it:
+`capability not declared in manifest: io.print`). Assembly text in a `.casm` file
+still runs, with a note asking you to rename it to `.cvms`.
 Arguments after the file name reach the program as `sys.args()`:
 `crush run prog.crush a b` → `[a, b]`.
 
@@ -224,7 +233,7 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Both snippets are compiled and run against crush-ast `bad81048` by
+Both snippets are compiled and run against crush-ast `7f3fef31` by
 `scripts/check-examples.py --crush-ast`. `Runtime::new()` registers only the
 built-in primitives (`io.print`, `io.read`, …); to expose more — the standard
 library, filesystem, polyglot — build a `HostCaps` with `HostCapsBuilder` and pass

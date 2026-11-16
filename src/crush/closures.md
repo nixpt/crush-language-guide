@@ -1,6 +1,6 @@
 # Closures and Function Values
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31). New since the 0.3 line
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16). New since the 0.3 line
 > (crush-ast CRUSH-251).
 
 Functions in Crush are values. A named function can be stored, passed and
@@ -225,18 +225,21 @@ fn main() {
 
 ## Calling a function value
 
-Only a **name** can be called. `fs[0](1)` and `make()(2)` are parse errors today
-(crush-ast CRUSH-zorro-24); bind the value to a name first, as the examples above
-do.
+Any expression that yields a function can be called: an element of an array, a
+map entry, or the result of another call (crush-ast CRUSH-363; before it, only a
+name could be called):
 
-<!-- check: error -->
 ```crush
-let fs = [|x| x + 1]
+let fs = [|x| x + 1, |x| x * 2]
 print(fs[0](1))
+fn adder(n) { return |x| x + n }
+print(adder(10)(5))
 ```
 
+<!-- check: output -->
 ```text
-[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function
+2
+15
 ```
 
 The built-ins (`print`, `len`, `parallel_map`, …) are not function values:

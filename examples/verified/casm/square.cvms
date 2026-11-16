@@ -1,0 +1,14 @@
+; CVM1 assembly (.cvms, crushc --emit cvms) for: fn sq(n) { return n * n }  print(sq(7))
+; Run assembly text with --cap for every capability it calls (or list them with .cap lines).
+.func main
+    PUSH 7
+    CALL sq
+    CAP_CALL "io.print" 1
+    PUSH_NULL
+    RET
+.func sq
+    STORE 0
+    LOAD 0
+    LOAD 0
+    MUL
+    RET

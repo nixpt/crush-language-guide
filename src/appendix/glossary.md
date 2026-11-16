@@ -20,8 +20,8 @@ Crush parser and the language walkers, or written directly by an agent. See
 
 ### CASM (Crush Assembly)
 The stack-machine instruction set programs compile to. The name covers the **IR**
-(JSON, `casm::Program`), the **text assembly** (`.func`/`PUSH`/`CAP_CALL`, the
-`.casm` files `crush-run` reads) and, one step down, the **CVM1** binary. See
+(JSON, `casm::Program`, `.casm` files), the **text assembly** (`.func`/`PUSH`/`CAP_CALL`,
+`.cvms` files) and, one step down, the **CVM1** binary. See
 [CASM](../casm/index.md).
 
 ### CVM1

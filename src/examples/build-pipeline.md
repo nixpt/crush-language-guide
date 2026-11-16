@@ -11,8 +11,7 @@ Run it with `crush run --process build.crush`.
 ```crush
 // A tiny build pipeline: run each step as a process, stop at the first failure.
 fn run_tool(cmd: String, arg: String) -> Int {
-    let raw = process.exec(cmd, arg)
-    let res = json.parse(raw)
+    let res = process.exec(cmd, arg)
     return res.exit_code
 }
 
@@ -53,10 +52,10 @@ pipeline stopped
 **What this shows:**
 
 - **Capability-gated side effects.** `process.exec` only exists because of the
-  `--process` flag; without it the program fails with `unknown capability:
-  process.exec`.
-- **Structured results.** `process.exec(cmd, arg)` returns a JSON string with
-  `exit_code`, `stdout` and `stderr`; `json.parse` turns it into an object.
+  `--process` flag; without it the program is refused before it runs, naming
+  `--process: process.exec`.
+- **Structured results.** `process.exec(cmd, arg)` returns a map with
+  `exit_code`, `stdout` and `stderr` (a JSON string before crush-ast 0.11).
 - **Fail-fast.** `step` returns the exit code, `main` breaks out of the loop on
   the first non-zero one.
 - **Data-driven steps.** The pipeline is an array of `[name, command, argument]`

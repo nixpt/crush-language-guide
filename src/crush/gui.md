@@ -1,6 +1,7 @@
 # Windows: the `ui.*` API
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31) **up to the window**: the
+> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31) **up to the window** (the
+> page's checked blocks also pass at `7f3fef31`): the
 > refusal, the error without a display and the API below were checked against the
 > release binaries and crush-ast's source. The guide's checker has no desktop session,
 > so it has not opened a window; crush-ast says the same of its own desktop backend

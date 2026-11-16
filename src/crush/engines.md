@@ -1,7 +1,8 @@
 # Engines, AOT and Walkers
 
 > Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31), with rustc 1.96, gcc, Python
-> 3.14 and Node 26 on the host.
+> 3.14 and Node 26 on the host. The page's checked blocks also pass at `7f3fef31`;
+> the AOT and walker transcripts were not re-run there.
 
 One Crush program can run on several engines. crush-ast's rule for them is
 **"the VM is exact; every other engine is exact or loud"**: an engine either
@@ -96,7 +97,8 @@ compiles and runs like Crush. This is separate from `@lang` blocks (which run a
 real interpreter): walked code runs on the Crush VM, under its capabilities.
 `crush-walk-run FILE` walks, compiles and runs a file by its extension
 (`.py`, `.js`/`.ts`, `.rs`, `.c`, `.go`, `.zig`, `.sh`, `.dart`, `.wasm`, …);
-`crush run` itself only takes `.crush`, `.casm` and `.cvm1`.
+`crush run` itself takes `.crush`, CAST (`.cast.json`, `.castb`), `.casm` (CASM
+JSON), `.cvms` (assembly) and `.cvm1`.
 
 Walkers follow the same exact-or-loud rule. A Python program prints exactly what
 `python3` prints:

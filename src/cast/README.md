@@ -12,7 +12,7 @@ produce it from other languages, and an AI agent can write it directly (see
 ```
 
 This page is the schema reference. It is derived from `crates/crush-cast/src/lib.rs`
-in crush-ast (verified against `bad81048`, 2026-10-31); the examples are accepted by `crush_cast::validate_json`,
+in crush-ast (verified against `7f3fef31`, 2026-11-16); the examples are accepted by `crush_cast::validate_json`,
 compiled and run by this guide's checker.
 
 ## Document structure
@@ -269,16 +269,12 @@ CBOR:
 | `.castb`, `.cbor` | CBOR (`cbor4ii`), no header or magic |
 
 `Program::deserialize` / `load` check `cast_version` and refuse a different **major**
-than `CAST_VERSION` (`"0.1"`): `version mismatch at cast boundary: expected 0.1,
-found …`. The corpus in `examples/cast/` uses `"0.1"` / `"0.1.0"`.
+than `CAST_VERSION` (`"0.1.0"`): `version mismatch at cast boundary: expected
+0.1.0, found …`. Every producer, the Crush front end included, writes `"0.1.0"`
+(from `v0.3.9` through `v0.9.0` the front end stamped `"1.0.0"` and the loader
+rejected its own output). A tree with major version `1` is refused:
 
-> **Known inconsistency (since crush-ast `v0.3.9`, still in `bad81048`).** The Crush front end stamps the trees
-> it produces `cast_version: "1.0.0"`, which the versioned loader then rejects — so a
-> CAST dump from the compiler cannot be re-loaded with `Program::load`, though
-> `serde_json` and `validate_json` accept it. When you write CAST by hand or from an
-> agent, use `"0.1.0"`.
-
-<!-- check: cast-load-fails version mismatch at cast boundary: expected 0.1, found 1.0.0 -->
+<!-- check: cast-load-fails version mismatch at cast boundary: expected 0.1.0, found 1.0.0 -->
 <!-- check: cast-json -->
 ```json
 { "cast_version": "1.0.0", "entry": "main", "lang": null,

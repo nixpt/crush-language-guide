@@ -1,6 +1,6 @@
 # Functions
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 This chapter covers defining and calling functions. Named functions are
 top-level declarations, and they are also **values**: you can store one in a
@@ -106,7 +106,8 @@ Mutual recursion works too. Recursion depth is capped by the VM's call-depth
 quota — **256 frames by default** (`--max-call-depth N` on `crush-run`); exceeding
 it ends the program with `call depth quota exceeded`. The other default quotas are
 1,000,000 instructions (`--max-steps`), a 4096-slot stack (`--max-stack`), 1 MiB of
-output (`--max-output`), and a 30-second wall-clock limit per polyglot block.
+output (`--max-output`), and a 30-second wall-clock budget for the whole run
+(`--max-wall-ms`).
 
 <!-- check: runfail call depth quota exceeded -->
 ```crush

@@ -1,19 +1,19 @@
 # Quick Reference
 
 Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide's checker against crush-ast `bad81048`. Details live in
+can run is run by the guide's checker against crush-ast `7f3fef31`. Details live in
 the chapters linked from each heading.
 
 ## Command line ([Getting Started](../getting-started.md))
 
 | Command | Does |
 |---|---|
-| `crush run FILE [flags]` | run a `.crush`, `.casm` (text) or `.cvm1` file |
+| `crush run FILE [flags]` | run a `.crush`, `.cast.json`, `.casm` (CASM JSON), `.cvms` (assembly) or `.cvm1` file |
 | `crush build FILE.crush` | compile to `.cvm1` |
 | `crush-run run FILE [flags]` | same as `crush run`; all the capability flags live here |
 | `crush-run caps [FILE]` | list the capabilities of your build, or what FILE needs (runs nothing) |
 | `crushc FILE.crush -o OUT.cvm1` | compile; `--emit casm\|ast\|types` prints a layer; `-C` only checks |
-| `crush-compile FILE.casm -o OUT.cvm1 --cap NAME` | assemble CASM text |
+| `crush-compile FILE.cvms -o OUT.cvm1 --cap NAME` | assemble CVM1 assembly text (or CASM JSON `.casm`) |
 | `crush repl` / `crush-repl` | interactive REPL (`.help`, `.quit`) |
 | `crush doctor` | which polyglot interpreters are on `PATH` |
 | `crush debug FILE --step --inspect` | breakpoints, step, watch, print ([Debugging](../crush/debugging.md)) |
@@ -26,7 +26,8 @@ library, which `--no-stdlib` removes): `--fs` `--fs-root DIR` `--env` `--time`
 `--net` (HTTP) `--tcp` `--tcp-listen` (raw sockets) `--process` `--crypto` `--db PATH` `--graphics` `--bus` `--task` `--akg`
 `--polyglot` `--cap NAME`. A program that needs an ungranted capability is refused
 before it runs; `--message-format json` makes errors one JSON object per line ([Diagnostics](../crush/diagnostics.md)). Quotas:
-`--max-steps` (default 1,000,000), `--max-stack` (4,096), `--max-output` (1 MiB),
+`--max-steps` (default 1,000,000, or `unlimited`), `--max-wall-ms` (30,000 for the
+whole run, or `unlimited`), `--max-stack` (4,096), `--max-output` (1 MiB),
 `--max-call-depth` (256).
 
 ## Language ([Syntax](../crush/syntax.md))
@@ -218,7 +219,7 @@ Without the flag the program is refused:
 | Type | Example | Notes |
 |---|---|---|
 | `Int` | `42`, `0x2A`, `0b101` | 64-bit, checked overflow |
-| `Float` | `3.14` | no exponent form |
+| `Float` | `3.14`, `1.5e3` | exponent form since 0.11 |
 | `String` | `"hello"`, `'hello'` | UTF-8; `len` counts bytes |
 | `Bool` | `true` | |
 | `Null` | `null` | |
@@ -274,4 +275,5 @@ Annotations (`: Int`, `-> Int`) are checked at compile time and are optional.
 Stack effects and the JSON-IR names are in the
 [Instruction Reference](../casm/instructions.md). Remember: arguments are pushed
 **first argument first** (`PUSH_STR "a"`, `PUSH_STR "b"`, `CAP_CALL "io.print" 2`
-prints `ab`), and a `.casm` file needs `--cap` for every capability it calls.
+prints `ab`), and an assembly file (`.cvms`) needs `--cap` (or a `.cap` line) for
+every capability it calls.

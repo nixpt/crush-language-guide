@@ -1,1 +1,1 @@
-not available in this host: to_upper
+`.to_upper(…)` on a str: member calls resolve on struct instances (COSM Records) and maps

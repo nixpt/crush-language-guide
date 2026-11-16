@@ -2,8 +2,9 @@
 
 How Crush relates to the languages people usually compare it with. Crush is **alpha**:
 the language is small, the standard library is a set of host capabilities, and several
-features in its design (imports, an executing AI layer) are not implemented yet. The
-comparisons below are about what is real today (verified against crush-ast `bad81048`).
+features in its design (remote imports, an executing AI layer) are not implemented yet.
+The comparisons below are about what is real today (verified against crush-ast
+`7f3fef31`).
 
 ## What Crush is for
 
@@ -18,7 +19,8 @@ comparisons below are about what is real today (verified against crush-ast `bad8
   unless you use the opt-in sandbox lane. See [Polyglot](../crush/polyglot.md).
 
 It is **not** a general-purpose replacement for Python or JavaScript: there is no
-package ecosystem, no working `import`, and a small standard library.
+package ecosystem to speak of, no enforced visibility between modules yet, and a small
+standard library.
 
 ## Crush vs Python
 
@@ -109,7 +111,8 @@ do not support.
 ❌ **Look elsewhere when:**
 
 - You need a mature ecosystem, libraries or tooling — use Python or JavaScript.
-- You need modules or imports today.
+- You need enforced module boundaries today (`pub` is accepted but not enforced
+  yet; see [Modules](../crush/modules.md)).
 - You need hardened isolation of *foreign-language* code: polyglot blocks run as host
   processes unless you build the optional bubblewrap sandbox lane, which is Linux-only.
 

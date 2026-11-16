@@ -1,6 +1,6 @@
 # Capability System
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 Crush programs can't touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -190,23 +190,53 @@ hello
 ```crush
 print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() > 0)
-print(process.exec("echo", "hi"))
+let r = process.exec("echo", "hi")
+print(r.exit_code)
+print(str.trim(r.stdout))
 ```
 
 <!-- check: output -->
 ```text
 null
 true
-{"exit_code":0,"stderr":"","stdout":"hi\n"}
+0
+hi
 ```
 
 - `env.get(name)` → string, or `null` if unset.
 - `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`
-  (bounded by the wall-clock quota).
+  (bounded by the wall-clock budget, `--max-wall-ms`).
 - `process.exec(cmd, args)` — exactly **two** arguments (the command and one
-  argument string) — returns a JSON string with `exit_code`, `stdout`, `stderr`.
+  argument string) — returns a map `{exit_code, stdout, stderr}` (crush-ast
+  CRUSH-242; before 0.11 it was a JSON string). A command that cannot start is not
+  an error: `exit_code` is `-1` and `stderr` says why.
 - `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;
-  size capped by `--net-max-response-bytes` (default 1 MiB).
+  size capped by `--net-max-response-bytes` (default 1 MiB). Each `net.*` verb takes
+  an optional last argument `{timeout_ms: N}`; a request that takes longer fails
+  with a catchable error (`… timed out after N ms`). `net.http_request(method, url,
+  body, headers)` returns `{status, reason, headers, body}`, with the response
+  header names lower-cased (crush-ast #509).
+
+<!-- check: skip needs a local HTTP server -->
+```crush
+let r = net.http_request("GET", "http://127.0.0.1:47125/hi.txt", "", {})
+print(r.status)
+print(r.headers["content-type"])
+try {
+    print(net.http_get("http://127.0.0.1:47126/", {timeout_ms: 300}))
+} catch e {
+    print(e)
+}
+```
+
+```text
+200
+text/plain
+error(net.http_get: net.http_get http://127.0.0.1:47126/: timed out after 300 ms)
+```
+
+(Run by hand at the pinned commit, with `python3 -m http.server 47125` serving a
+`hi.txt` and a listener on port 47126 that accepts and never answers.)
 - `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).
 
 ### Raw sockets (`tcp.*`)
@@ -224,8 +254,13 @@ other hosts:
 
 A URI is `tcp://IP:PORT` with a literal IP address (no host names). `tcp.listen`
 and `tcp.connect` return an integer id; `tcp.accept` blocks until a client
-connects. `tcp.send` takes text and returns the byte count; `tcp.recv` returns up
-to 16 KiB as text. This program is both ends of a conversation, so it needs both
+connects. `tcp.send` takes text (or bytes) and returns the byte count. `tcp.recv`
+returns what one read delivered, at most 16 KiB, as text; an incomplete UTF-8
+character at the end is held back and returned by the next call, so a message can
+arrive over several calls: loop until you have all of it (a delimiter, a length, or
+`""`, which `tcp.recv` returns only at end of stream). `tcp.recv` and `tcp.accept`
+take an optional `{timeout_ms: N}`; a timeout is a catchable error, and a timed-out
+`tcp.recv` loses nothing (crush-ast #512). This program is both ends of a conversation, so it needs both
 flags (the connect is queued by the kernel before `accept` takes it):
 
 <!-- check: flags --tcp --tcp-listen -->
@@ -247,6 +282,36 @@ ping
 pong
 ```
 
+A `tcp.recv` that times out can be caught, and the data that arrives later is read
+by the next call:
+
+<!-- check: flags --tcp --tcp-listen -->
+```crush
+let srv = tcp.listen("tcp://127.0.0.1:47124")
+let c = tcp.connect("tcp://127.0.0.1:47124")
+let s = tcp.accept(srv)
+try {
+    print(tcp.recv(s, {timeout_ms: 100}))
+} catch e {
+    print("caught: " + e)
+}
+tcp.send(c, "late")
+print(tcp.recv(s))
+tcp.close(c)
+print(tcp.recv(s) == "")
+tcp.close(s)
+```
+
+<!-- check: output -->
+```text
+caught: error(tcp.recv: tcp.recv: timed out after 100 ms)
+late
+true
+```
+
+(The capability name appears twice in that message; it is crush-ast's text as it
+stands.)
+
 Granting only `--tcp` is refused, naming what is missing:
 
 ```text
@@ -255,9 +320,10 @@ Granting only `--tcp` is refused, naming what is missing:
 ```
 
 A host capability that fails (missing file, refused connection, path escape)
-aborts the program with `[runtime] unknown capability: <name>: <reason>` — the
-"unknown capability" wording is misleading there, and the error is not
-catchable by [`try`/`catch`](control_flow.md#what-catch-does-not-catch).
+raises `[runtime] <name>: <reason>`, for example `[runtime] fs.read: fs.read
+missing.txt: No such file or directory (os error 2)`. Inside
+[`try`/`catch`](control_flow.md#what-catch-catches) it is caught like any other
+fault; outside one it ends the program.
 
 ## Declaring what a program uses: `@capabilities`
 
@@ -280,7 +346,7 @@ Entries can be exact names (`fs.cat`), families (`fs`, `fs.*`) or scoped names
 (`fs.read:/var/log`). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:
 
-<!-- check: runfail not declared in @capabilities: env.get -->
+<!-- check: error -->
 ```crush
 @capabilities [time.now_ms]
 print(env.get("HOME"))
@@ -318,11 +384,26 @@ program with a `[runtime]` error:
 
 | Quota | Default | CLI flag |
 |---|---|---|
-| instructions | 1,000,000 | `--max-steps` |
+| instructions | 1,000,000 | `--max-steps N`, or `--max-steps unlimited` |
 | stack slots | 4,096 | `--max-stack` |
 | output bytes | 1 MiB | `--max-output` |
 | call depth | 256 | `--max-call-depth` |
-| wall-clock per polyglot subprocess | 30,000 ms | (set via `Quotas::max_wall_time_ms` when embedding) |
+| wall-clock time for the whole run | 30,000 ms | `--max-wall-ms N`, or `--max-wall-ms unlimited` for a long-lived program such as a server (crush-ast #510) |
+
+The wall-clock budget covers the whole run, computation included, so lifting the
+step limit does not make a runaway loop run forever:
+
+<!-- check: runfail wall-clock quota exceeded (200ms) -->
+<!-- check: flags --max-steps unlimited --max-wall-ms 200 -->
+```crush
+let i = 0
+while true { i = i + 1 }
+```
+
+A blocking capability such as `time.sleep` gets what is left of the budget.
+`--max-wall-ms 0` is a zero budget, not "no limit": the run stops at the first
+clock check (the VM looks at the clock every 1,024 instructions) or the first
+blocking call, so only a very short program still finishes.
 
 Output printed before a run-time failure is kept: the program's earlier lines
 appear, then the `[runtime]` error on standard error.
@@ -343,7 +424,7 @@ names the capabilities it is allowed to call in its manifest — a list of names
 
 A capability call whose name is not both **registered** by the host and **listed**
 in the program's permissions is refused. See [Getting Started](../getting-started.md)
-and [CASM structure](../casm/structure.md). For `.casm` text run with `crush-run`,
+and [CASM structure](../casm/structure.md). For assembly text (`.cvms`) run with `crush-run`,
 `--cap NAME` adds names to that list.
 
 There is no path or URL scoping in the manifest (`"fs.read": ["./data"]` is not a
