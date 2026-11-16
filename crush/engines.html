@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -184,7 +184,8 @@
                         <h1 id="engines-aot-and-walkers"><a class="header" href="#engines-aot-and-walkers">Engines, AOT and Walkers</a></h1>
 <blockquote>
 <p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31), with rustc 1.96, gcc, Python
-3.14 and Node 26 on the host.</p>
+3.14 and Node 26 on the host. The page’s checked blocks also pass at <code>7f3fef31</code>;
+the AOT and walker transcripts were not re-run there.</p>
 </blockquote>
 <p>One Crush program can run on several engines. crush-ast’s rule for them is
 <strong>“the VM is exact; every other engine is exact or loud”</strong>: an engine either
@@ -274,7 +275,8 @@ compiles and runs like Crush. This is separate from <code>@lang</code> blocks (w
 real interpreter): walked code runs on the Crush VM, under its capabilities.
 <code>crush-walk-run FILE</code> walks, compiles and runs a file by its extension
 (<code>.py</code>, <code>.js</code>/<code>.ts</code>, <code>.rs</code>, <code>.c</code>, <code>.go</code>, <code>.zig</code>, <code>.sh</code>, <code>.dart</code>, <code>.wasm</code>, …);
-<code>crush run</code> itself only takes <code>.crush</code>, <code>.casm</code> and <code>.cvm1</code>.</p>
+<code>crush run</code> itself takes <code>.crush</code>, CAST (<code>.cast.json</code>, <code>.castb</code>), <code>.casm</code> (CASM
+JSON), <code>.cvms</code> (assembly) and <code>.cvm1</code>.</p>
 <p>Walkers follow the same exact-or-loud rule. A Python program prints exactly what
 <code>python3</code> prints:</p>
 <pre><code class="language-console">$ cat fact.py

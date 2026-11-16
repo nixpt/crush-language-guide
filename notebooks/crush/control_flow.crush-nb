@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Control Flow\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nCrush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,\nand `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.\n\n## If\n",
+   "source": "# Control Flow\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16).\n\nCrush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,\nand `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.\n\n## If\n",
    "state": {
     "status": "done"
    },
@@ -510,7 +510,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "An uncaught `throw` ends the program with `[runtime] uncaught error: <value>`.\n\n### What `catch` does *not* catch\n\n`try`/`catch` handles values raised with `throw`. **Runtime faults from the VM or\na host capability are not catchable**: division by zero, an out-of-range array\nindex, a failing `fs.read`, or a polyglot block that raises all abort the\nprogram with a `[runtime]` error instead of reaching your `catch`.\n",
+   "source": "An uncaught `throw` ends the program with `[runtime] uncaught error: <value>`.\n\n### What `catch` catches\n\n`try`/`catch` handles values raised with `throw`, and, since crush-ast\nCRUSH-393 (on main after v0.11.2), also **runtime faults**: division by zero, an out-of-range index, a\nruntime type error, a failing host capability (a missing file for `fs.read`, a\nnetwork timeout). The caught value is an error value that prints as\n`error(<message>)`:\n",
    "state": {
     "status": "done"
    },
@@ -522,7 +522,43 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    try {\n        print(1 / 0)\n    } catch e {\n        print(\"caught\")\n    }\n}\n",
+   "source": "try {\n    print(1 / 0)\n} catch e {\n    print(\"caught: \" + e)\n}\ntry {\n    print([1][3])\n} catch e {\n    print(conv.type_of(e))\n}\nprint(\"after\")\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/control_flow.md:328",
+      "browser": "run",
+      "expect_output": "caught: error(division by zero)\nerror\nafter\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-md-30",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "Some failures are **not** catchable and still end the program even inside `try`:\nrunning out of a quota (`--max-steps`, `--max-stack`, `--max-output`,\n`--max-wall-ms`, call depth), a capability the run does not grant (refused before\nanything runs), `sys.exit`, an uncaught `throw`, and a polyglot block that raises:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-control-flow-16",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    try {\n        let i = 0\n        while true { i = i + 1 }\n    } catch e {\n        print(\"never reached\")\n    }\n}\n",
    "state": {
     "status": "pending"
    },
@@ -533,16 +569,17 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/control_flow.md:328",
+      "src": "crush/control_flow.md:356",
       "browser": "fail",
-      "why": "not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today"
+      "why": "this example shows a run-time error",
+      "expect_error": "instruction quota exceeded"
      }
     }
    },
    "outputs": []
   },
   {
-   "id": "crush-control-flow-md-30",
+   "id": "crush-control-flow-md-32",
    "kind": {
     "type": "markdown"
    },

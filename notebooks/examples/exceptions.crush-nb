@@ -54,7 +54,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "**What this shows:**\n\n- `try { ... } catch e { ... }` — the thrown value binds to `e`\n- `throw expr` — the rest of the `try` body is skipped\n- Output printed before the `throw` is kept (`5` above)\n- Thrown values may be strings, numbers, or objects (`err.code`)\n- `catch` handles only values raised with `throw`. A VM fault such as\n  `1 / 0`, a failed capability call, or a crashing polyglot block ends the program\n  instead — see [Control Flow](https://docs.crushlang.org/crush/control_flow.html#what-catch-does-not-catch)\n",
+   "source": "**What this shows:**\n\n- `try { ... } catch e { ... }` — the thrown value binds to `e`\n- `throw expr` — the rest of the `try` body is skipped\n- Output printed before the `throw` is kept (`5` above)\n- Thrown values may be strings, numbers, or objects (`err.code`)\n- `catch` also handles VM faults such as `1 / 0` and failed capability calls\n  (the caught value prints as `error(<message>)`); a crashing polyglot block or an\n  exhausted quota still ends the program — see\n  [Control Flow](https://docs.crushlang.org/crush/control_flow.html#what-catch-catches)\n",
    "state": {
     "status": "done"
    },

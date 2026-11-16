@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/closures.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31). New since the 0.3 line
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16). New since the 0.3 line
 (crush-ast CRUSH-251).</p>
 </blockquote>
 <p>Functions in Crush are values. A named function can be stored, passed and
@@ -411,23 +411,28 @@ time round, so capture that when you want each closure to keep its own value:</p
 2
 </code></pre>
 <h2 id="calling-a-function-value"><a class="header" href="#calling-a-function-value">Calling a function value</a></h2>
-<p>Only a <strong>name</strong> can be called. <code>fs[0](1)</code> and <code>make()(2)</code> are parse errors today
-(crush-ast CRUSH-zorro-24); bind the value to a name first, as the examples above
-do.</p>
-<!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/closures.md:233" data-why="this example shows a compile error">
-<pre><code class="language-crush">let fs = [|x| x + 1]
+<p>Any expression that yields a function can be called: an element of an array, a
+map entry, or the result of another call (crush-ast CRUSH-363; before it, only a
+name could be called):</p>
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:232" data-expect="2
+15
+">
+<pre><code class="language-crush">let fs = [|x| x + 1, |x| x * 2]
 print(fs[0](1))
+fn adder(n) { return |x| x + n }
+print(adder(10)(5))
 </code></pre>
 </div>
 
-<pre><code class="language-text">[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function
+<!-- check: output -->
+<pre><code class="language-text">2
+15
 </code></pre>
 <p>The built-ins (<code>print</code>, <code>len</code>, <code>parallel_map</code>, …) are not function values:
 <code>let g = len</code> is a compile error that names the fix, <code>`len` is a built-in, not a function value; wrap it in a lambda: `|x| len(x)`</code> (crush-ast
 <a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>; before, it compiled and
 failed at run time). Wrap them in a lambda:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:248" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:251" data-expect="3
 ">
 <pre><code class="language-crush">let size = |x| len(x)
 print(size([1, 2, 3]))
@@ -440,7 +445,7 @@ print(size([1, 2, 3]))
 <h2 id="with-the-pipeline-spawn-and-parallel_map"><a class="header" href="#with-the-pipeline-spawn-and-parallel_map">With the pipeline, <code>spawn</code> and <code>parallel_map</code></a></h2>
 <p>The pipeline operator takes any function value bound to a name, and so do
 <a href="concurrency.html"><code>spawn</code> and <code>parallel_map</code></a>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:263" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:266" data-expect="5
 [1, 4, 9]
 ">
 <pre><code class="language-crush">let inc = |n| n + 1

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31): every runnable block on this
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16): every runnable block on this
 page was compiled and run with that build.</p>
 </blockquote>
 <p>This chapter covers the lexical structure and grammar that the Crush parser
@@ -302,7 +302,7 @@ print(r)
 </thead>
 <tbody>
 <tr><td>Integer</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>hex (<code>0x</code>/<code>0X</code>, any digit case) and binary (<code>0b</code>) literals, 0.9.0; <code>0o17</code> and <code>1_000</code> do not lex, and <code>0x</code> with no digits is <code>Invalid number literal</code></td></tr>
-<tr><td>Float</td><td><code>3.14</code>, <code>0.5</code></td><td>no exponent form (<code>1.5e3</code> is rejected)</td></tr>
+<tr><td>Float</td><td><code>3.14</code>, <code>0.5</code>, <code>1.5e3</code>, <code>2.5e+3</code>, <code>1e-7</code></td><td>a decimal exponent, since 0.11 (CRUSH-221); a malformed one (<code>1e</code>, <code>1.e5</code>) is <code>Invalid number literal</code></td></tr>
 <tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td>single or double quotes; escapes <code>\n \t \" \\</code></td></tr>
 <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
 <tr><td>Null</td><td><code>null</code></td><td></td></tr>
@@ -550,14 +550,17 @@ print("Hello from Python")
 <p>See <a href="polyglot.html">Polyglot Programming</a> for the supported languages, how
 variables cross the boundary, and the (important) security caveats.</p>
 <h2 id="imports-and-exports"><a class="header" href="#imports-and-exports">Imports and exports</a></h2>
-<p><code>import a.b</code> <strong>parses</strong>, but importing does not load anything yet: <code>import</code> is
-lowered to a <code>module.load</code> capability that nothing registers, so a program
-containing one is refused before it runs (<code>not available in this host: module.load</code>, crush-ast <strong>CRUSH-110</strong>). Every program is currently a single file.
-There is no <code>std.*</code> module tree.</p>
-<p><code>use @lang python "math"</code> is different and does work: it writes <code>import math</code> into
-every later <code>@python</code> block (see <a href="polyglot.html#imports-for-blocks-use-lang">Polyglot</a>).</p>
-<!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:392" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<p><code>import a.b</code> loads <code>a/b.crush</code> <strong>at compile time</strong> and binds the qualifier <code>b</code>
+(<code>import a.b as x</code> binds <code>x</code>, <code>import a.b { f, g }</code> binds the bare names). The file
+is looked for in the importing file’s directory, then each <code>-L DIR</code>, then
+<code>CRUSH_PATH</code>. Imports go at the top level of a file, and a module contains only
+definitions. See <a href="modules.html">Modules, Packages and Visibility</a> for the rules,
+packages and <code>pub</code>. There is no <code>std.*</code> module tree: a module that is not found is
+a compile error listing the directories searched.</p>
+<p><code>use @lang python "math"</code> is different: it writes <code>import math</code> into every later
+<code>@python</code> block (see <a href="polyglot.html#imports-for-blocks-use-lang">Polyglot</a>).</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:394" data-why="this example shows a compile error">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
@@ -565,7 +568,7 @@ print("never reached")
 
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:400" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:402" data-expect="42
 ">
 <pre><code class="language-crush">let result = 6 * 7
 export result
@@ -576,7 +579,9 @@ print(result)
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
-<p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors.</p>
+<p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors. <code>export</code> has
+nothing to do with modules: every function of a module is importable without it,
+and a module that contains an <code>export</code> statement is refused.</p>
 <h2 id="annotations"><a class="header" href="#annotations">Annotations</a></h2>
 <p><code>@name</code> also introduces annotations:</p>
 <ul>

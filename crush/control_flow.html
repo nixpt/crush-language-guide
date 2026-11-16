@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/control_flow.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
@@ -499,17 +499,47 @@ try {
 7
 </code></pre>
 <p>An uncaught <code>throw</code> ends the program with <code>[runtime] uncaught error: &lt;value&gt;</code>.</p>
-<h3 id="what-catch-does-not-catch"><a class="header" href="#what-catch-does-not-catch">What <code>catch</code> does <em>not</em> catch</a></h3>
-<p><code>try</code>/<code>catch</code> handles values raised with <code>throw</code>. <strong>Runtime faults from the VM or
-a host capability are not catchable</strong>: division by zero, an out-of-range array
-index, a failing <code>fs.read</code>, or a polyglot block that raises all abort the
-program with a <code>[runtime]</code> error instead of reaching your <code>catch</code>.</p>
-<!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
-<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:328" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
+<h3 id="what-catch-catches"><a class="header" href="#what-catch-catches">What <code>catch</code> catches</a></h3>
+<p><code>try</code>/<code>catch</code> handles values raised with <code>throw</code>, and, since crush-ast
+CRUSH-393 (on main after v0.11.2), also <strong>runtime faults</strong>: division by zero, an out-of-range index, a
+runtime type error, a failing host capability (a missing file for <code>fs.read</code>, a
+network timeout). The caught value is an error value that prints as
+<code>error(&lt;message&gt;)</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:328" data-expect="caught: error(division by zero)
+error
+after
+">
 <pre><code class="language-crush">try {
     print(1 / 0)
 } catch e {
-    print("caught")
+    print("caught: " + e)
+}
+try {
+    print([1][3])
+} catch e {
+    print(conv.type_of(e))
+}
+print("after")
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">caught: error(division by zero)
+error
+after
+</code></pre>
+<p>Some failures are <strong>not</strong> catchable and still end the program even inside <code>try</code>:
+running out of a quota (<code>--max-steps</code>, <code>--max-stack</code>, <code>--max-output</code>,
+<code>--max-wall-ms</code>, call depth), a capability the run does not grant (refused before
+anything runs), <code>sys.exit</code>, an uncaught <code>throw</code>, and a polyglot block that raises:</p>
+<!-- check: runfail instruction quota exceeded -->
+<!-- check: flags --max-steps 1000 -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:356" data-why="this example shows a run-time error" data-expect-error="instruction quota exceeded">
+<pre><code class="language-crush">try {
+    let i = 0
+    while true { i = i + 1 }
+} catch e {
+    print("never reached")
 }
 </code></pre>
 </div>

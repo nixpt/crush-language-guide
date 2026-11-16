@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31), with Python 3.14, Node 26 and
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16), with Python 3.14, Node 26 and
 bash 5.3 on the host.</p>
 </blockquote>
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
@@ -544,20 +544,22 @@ raise ValueError("x")
     raise ValueError("x")
 ValueError: x
 </code></pre>
-<p>A guest failure is <strong>not</strong> catchable with Crush <code>try</code>/<code>catch</code>
-(<a href="control_flow.html#what-catch-does-not-catch">Control Flow</a>). Handle expected
+<p>A guest failure is <strong>not</strong> catchable with Crush <code>try</code>/<code>catch</code>, unlike a VM fault
+or a failing capability (<a href="control_flow.html#what-catch-catches">Control Flow</a>). Handle expected
 failures inside the block (<code>try:</code> / <code>except:</code> in Python) and return a value that
 says what happened. Failures to <em>start</em> a sandboxed block — package resolution,
 missing <code>bwrap</code> — are reported separately as <code>sandbox setup failed</code>, so a
 provisioning problem is never mistaken for a bug in your code.</p>
 <h2 id="timeouts"><a class="header" href="#timeouts">Timeouts</a></h2>
-<p>Every block runs under a <strong>wall-clock limit of 30 seconds</strong> (<code>Quotas::max_wall_time_ms</code>,
-default <code>30_000</code>). At the deadline the interpreter’s whole process group is killed
-and the program ends with:</p>
+<p>A block runs under the run’s <strong>wall-clock budget</strong>: 30 seconds for the whole run by
+default (<code>--max-wall-ms</code>, <code>Quotas::max_wall_time_ms</code>), and a block gets what is
+left of it. At the deadline the interpreter’s whole process group is killed and the
+program ends with:</p>
 <pre><code class="language-text">[runtime] 'polyglot.python' exceeded its 30000ms wall-clock quota and was killed
 </code></pre>
-<p>(crush-ast CRUSH-19.) The limit is a field of <code>Quotas</code>, so it is configurable
-when you embed the VM; <code>crush-run</code> doesn’t expose a flag for it. In the sandboxed
+<p>(crush-ast CRUSH-19; with <code>--max-wall-ms 500</code> the message says <code>499ms</code>, the time
+that was left when the block started.) <code>crush-run --max-wall-ms N|unlimited</code> sets
+the budget (crush-ast #510). In the sandboxed
 lane the limit also covers package provisioning. The instruction quota
 (<code>--max-steps</code>) does not apply to time spent inside a guest.</p>
 <h2 id="sandbox-and-authority"><a class="header" href="#sandbox-and-authority">Sandbox and authority</a></h2>
@@ -569,7 +571,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:417" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:419" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -609,7 +611,7 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
-<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:456" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:458" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
 <pre><code class="language-crush">@python[pypi:six] -&gt; v {
 import six
 v = six.__version__

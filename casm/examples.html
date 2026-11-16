@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,13 +185,14 @@
 <p class="crush-notebook-link"><a href="../notebooks/casm/examples.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
-with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
-guide’s checker against crush-ast <code>bad81048</code>, with the output shown. The JSON IR is
+with <code>crush-run run FILE.cvms --cap io.print</code> (<code>.cvms</code> since crush-ast v0.10.0; a
+<code>.casm</code> file of text still runs, with a note to rename it) — and every one is executed by this
+guide’s checker against crush-ast <code>7f3fef31</code>, with the output shown. The JSON IR is
 covered in <a href="structure.html">Program Structure</a> and
 <a href="serialization.html">Serialization</a>. Opcode details are in the
 <a href="instructions.html">Instruction Reference</a>.</p>
 <p>All programs print with <code>CAP_CALL "io.print" N</code>, so run them with <code>--cap io.print</code>
-(a <code>.casm</code> file carries no permissions of its own).</p>
+(an assembly file carries no permissions unless it has <code>.cap NAME</code> lines).</p>
 <h2 id="1-hello-world"><a class="header" href="#1-hello-world">1. Hello, world</a></h2>
 <pre><code class="language-casm">.func main
     PUSH_STR "Hello, CASM!"
@@ -380,7 +381,7 @@ end:
 it ends the program with a <code>[runtime]</code> error.</p>
 <h2 id="8-host-capabilities"><a class="header" href="#8-host-capabilities">8. Host capabilities</a></h2>
 <p>File access needs the <code>--fs</code> flag <strong>and</strong> the capability in the manifest, so run
-this one as <code>crush-run run prog.casm --cap io.print --cap fs.exists --fs</code>:</p>
+this one as <code>crush-run run prog.cvms --cap io.print --cap fs.exists --fs</code>:</p>
 <!-- check: flags --cap fs.exists --fs -->
 <pre><code class="language-casm">.func main
     PUSH_STR "no-such-file.txt"
@@ -407,7 +408,7 @@ the VM stops at the call with <code>capability not declared in manifest: fs.exis
 <p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
 Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
 <p><strong><code>if</code> / <code>else</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:287" data-expect="big
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:288" data-expect="big
 ">
 <pre><code class="language-crush">let n = 3
 if n &gt; 2 {
@@ -439,7 +440,7 @@ L49:
     RET
 </code></pre>
 <p><strong><code>try</code> / <code>catch</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:322" data-expect="caught bad
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:323" data-expect="caught bad
 ">
 <pre><code class="language-crush">try {
     throw "bad"
@@ -469,7 +470,7 @@ L28:
 </code></pre>
 <p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
 slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:355" data-expect="6
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:356" data-expect="6
 ">
 <pre><code class="language-crush">let t = 0
 for x in [1, 2, 3] { t = t + x }

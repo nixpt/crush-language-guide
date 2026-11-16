@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Capability System\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nCrush programs can't touch the outside world directly. Every interaction with the\nhost — printing, reading a file, making an HTTP request, spawning a process,\nrunning another language — is a **capability call**, and a capability only exists\nif the host that is running the program has explicitly turned it on. There is no\nambient authority.\n\n> **Status: alpha.** The model below is real and enforced, but the set of\n> capabilities is small and the permission granularity is coarse (on/off per\n> group, with a directory root for the filesystem). Read\n> [What is not enforced](#what-is-not-enforced) before relying on it for\n> isolation.\n\n## Calling a capability\n\nA capability call looks like an ordinary dotted function call — **no `@` prefix**:\n",
+   "source": "# Capability System\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16).\n\nCrush programs can't touch the outside world directly. Every interaction with the\nhost — printing, reading a file, making an HTTP request, spawning a process,\nrunning another language — is a **capability call**, and a capability only exists\nif the host that is running the program has explicitly turned it on. There is no\nambient authority.\n\n> **Status: alpha.** The model below is real and enforced, but the set of\n> capabilities is small and the permission granularity is coarse (on/off per\n> group, with a directory root for the filesystem). Read\n> [What is not enforced](#what-is-not-enforced) before relying on it for\n> isolation.\n\n## Calling a capability\n\nA capability call looks like an ordinary dotted function call — **no `@` prefix**:\n",
    "state": {
     "status": "done"
    },
@@ -176,20 +176,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    print(fs.read(\"../outside.txt\"))\n}\n",
+   "source": "print(fs.read(\"../outside.txt\"))\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "needs-host"
     ],
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:144",
-      "browser": "fail",
-      "why": "this example shows a run-time error",
+      "browser": "host",
+      "why": "uses `fs.read`, which the in-browser runtime does not provide",
       "expect_error": "path escapes sandbox root"
      }
     }
@@ -225,8 +225,8 @@
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:155",
-      "browser": "run",
-      "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
+      "browser": "host",
+      "why": "uses `fs.exists`, which the in-browser runtime does not provide",
       "expect_output": "0\n"
      }
     }
@@ -262,8 +262,8 @@
     "extra": {
      "guide": {
       "src": "crush/capabilities.md:173",
-      "browser": "run",
-      "why": "needs fs, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
+      "browser": "host",
+      "why": "uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide",
       "expect_output": "hello\n[a.txt]\n"
      }
     }
@@ -287,7 +287,7 @@
    "kind": {
     "type": "crush"
    },
-   "source": "print(env.get(\"CRUSH_GUIDE_DEMO_UNSET\"))\nprint(time.now() > 0)\nprint(process.exec(\"echo\", \"hi\"))\n",
+   "source": "print(env.get(\"CRUSH_GUIDE_DEMO_UNSET\"))\nprint(time.now() > 0)\nlet r = process.exec(\"echo\", \"hi\")\nprint(r.exit_code)\nprint(str.trim(r.stdout))\n",
    "state": {
     "status": "pending"
    },
@@ -301,7 +301,7 @@
       "src": "crush/capabilities.md:190",
       "browser": "host",
       "why": "uses `process.exec`, which the in-browser runtime does not provide",
-      "expect_output": "null\ntrue\n{\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"hi\\n\"}\n"
+      "expect_output": "null\ntrue\n0\nhi\n"
      }
     }
    },
@@ -312,7 +312,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "- `env.get(name)` → string, or `null` if unset.\n- `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`\n  (bounded by the wall-clock quota).\n- `process.exec(cmd, args)` — exactly **two** arguments (the command and one\n  argument string) — returns a JSON string with `exit_code`, `stdout`, `stderr`.\n- `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;\n  size capped by `--net-max-response-bytes` (default 1 MiB).\n- `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).\n\n### Raw sockets (`tcp.*`)\n\nSince 0.9.0 a program can open TCP connections directly. `--net` is HTTP only and\ndoes **not** grant these; the socket flags are separate, and the server flag is a\nstronger grant than the client flag because it makes the program reachable from\nother hosts:\n\n| Flag | Lets the program |\n|---|---|\n| `--tcp` | `tcp.connect(uri)` outbound; `tcp.tls_wrap(conn)` upgrades a connection to TLS |\n| `--tcp-listen` | `tcp.listen(uri)` and `tcp.accept(listener)`; it does not allow `tcp.connect` |\n| either | `tcp.send(conn, text)`, `tcp.recv(conn)`, `tcp.close(conn)`, `tcp.ping(conn)` on a connection id it already holds |\n\nA URI is `tcp://IP:PORT` with a literal IP address (no host names). `tcp.listen`\nand `tcp.connect` return an integer id; `tcp.accept` blocks until a client\nconnects. `tcp.send` takes text and returns the byte count; `tcp.recv` returns up\nto 16 KiB as text. This program is both ends of a conversation, so it needs both\nflags (the connect is queued by the kernel before `accept` takes it):\n",
+   "source": "- `env.get(name)` → string, or `null` if unset.\n- `time.now()` Unix seconds; `time.now_ms()`; `time.now_iso()`; `time.sleep(ms)`\n  (bounded by the wall-clock budget, `--max-wall-ms`).\n- `process.exec(cmd, args)` — exactly **two** arguments (the command and one\n  argument string) — returns a map `{exit_code, stdout, stderr}` (crush-ast\n  CRUSH-242; before 0.11 it was a JSON string). A command that cannot start is not\n  an error: `exit_code` is `-1` and `stderr` says why.\n- `net.http_get(url)` / `net.http_post(url, body)` — response body as a string;\n  size capped by `--net-max-response-bytes` (default 1 MiB). Each `net.*` verb takes\n  an optional last argument `{timeout_ms: N}`; a request that takes longer fails\n  with a catchable error (`… timed out after N ms`). `net.http_request(method, url,\n  body, headers)` returns `{status, reason, headers, body}`, with the response\n  header names lower-cased (crush-ast #509).\n\n```crush\nlet r = net.http_request(\"GET\", \"http://127.0.0.1:47125/hi.txt\", \"\", {})\nprint(r.status)\nprint(r.headers[\"content-type\"])\ntry {\n    print(net.http_get(\"http://127.0.0.1:47126/\", {timeout_ms: 300}))\n} catch e {\n    print(e)\n}\n```\n\n```text\n200\ntext/plain\nerror(net.http_get: net.http_get http://127.0.0.1:47126/: timed out after 300 ms)\n```\n\n(Run by hand at the pinned commit, with `python3 -m http.server 47125` serving a\n`hi.txt` and a listener on port 47126 that accepts and never answers.)\n- `crypto.sha256(data)`, `crypto.random(n)` (base64, `n ≤ 4096`).\n\n### Raw sockets (`tcp.*`)\n\nSince 0.9.0 a program can open TCP connections directly. `--net` is HTTP only and\ndoes **not** grant these; the socket flags are separate, and the server flag is a\nstronger grant than the client flag because it makes the program reachable from\nother hosts:\n\n| Flag | Lets the program |\n|---|---|\n| `--tcp` | `tcp.connect(uri)` outbound; `tcp.tls_wrap(conn)` upgrades a connection to TLS |\n| `--tcp-listen` | `tcp.listen(uri)` and `tcp.accept(listener)`; it does not allow `tcp.connect` |\n| either | `tcp.send(conn, text)`, `tcp.recv(conn)`, `tcp.close(conn)`, `tcp.ping(conn)` on a connection id it already holds |\n\nA URI is `tcp://IP:PORT` with a literal IP address (no host names). `tcp.listen`\nand `tcp.connect` return an integer id; `tcp.accept` blocks until a client\nconnects. `tcp.send` takes text (or bytes) and returns the byte count. `tcp.recv`\nreturns what one read delivered, at most 16 KiB, as text; an incomplete UTF-8\ncharacter at the end is held back and returned by the next call, so a message can\narrive over several calls: loop until you have all of it (a delimiter, a length, or\n`\"\"`, which `tcp.recv` returns only at end of stream). `tcp.recv` and `tcp.accept`\ntake an optional `{timeout_ms: N}`; a timeout is a catchable error, and a timed-out\n`tcp.recv` loses nothing (crush-ast #512). This program is both ends of a conversation, so it needs both\nflags (the connect is queued by the kernel before `accept` takes it):\n",
    "state": {
     "status": "done"
    },
@@ -335,7 +335,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:232",
+      "src": "crush/capabilities.md:267",
       "browser": "host",
       "why": "uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide",
       "expect_output": "ping\npong\n"
@@ -349,7 +349,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Granting only `--tcp` is refused, naming what is missing:\n\n```text\n[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:\n  --tcp-listen: tcp.accept, tcp.listen\n```\n\nA host capability that fails (missing file, refused connection, path escape)\naborts the program with `[runtime] unknown capability: <name>: <reason>` — the\n\"unknown capability\" wording is misleading there, and the error is not\ncatchable by [`try`/`catch`](https://docs.crushlang.org/crush/control_flow.html#what-catch-does-not-catch).\n\n## Declaring what a program uses: `@capabilities`\n\nA program can say up front which capabilities it may use beyond the ambient,\neffect-free built-ins (`io.print`, `str.*`, arrays, the standard library):\n",
+   "source": "A `tcp.recv` that times out can be caught, and the data that arrives later is read\nby the next call:\n",
    "state": {
     "status": "done"
    },
@@ -358,6 +358,43 @@
   },
   {
    "id": "crush-capabilities-10",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let srv = tcp.listen(\"tcp://127.0.0.1:47124\")\nlet c = tcp.connect(\"tcp://127.0.0.1:47124\")\nlet s = tcp.accept(srv)\ntry {\n    print(tcp.recv(s, {timeout_ms: 100}))\n} catch e {\n    print(\"caught: \" + e)\n}\ntcp.send(c, \"late\")\nprint(tcp.recv(s))\ntcp.close(c)\nprint(tcp.recv(s) == \"\")\ntcp.close(s)\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/capabilities.md:289",
+      "browser": "host",
+      "why": "uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide",
+      "expect_output": "caught: error(tcp.recv: tcp.recv: timed out after 100 ms)\nlate\ntrue\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-md-21",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "(The capability name appears twice in that message; it is crush-ast's text as it\nstands.)\n\nGranting only `--tcp` is refused, naming what is missing:\n\n```text\n[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:\n  --tcp-listen: tcp.accept, tcp.listen\n```\n\nA host capability that fails (missing file, refused connection, path escape)\nraises `[runtime] <name>: <reason>`, for example `[runtime] fs.read: fs.read\nmissing.txt: No such file or directory (os error 2)`. Inside\n[`try`/`catch`](https://docs.crushlang.org/crush/control_flow.html#what-catch-catches) it is caught like any other\nfault; outside one it ends the program.\n\n## Declaring what a program uses: `@capabilities`\n\nA program can say up front which capabilities it may use beyond the ambient,\neffect-free built-ins (`io.print`, `str.*`, arrays, the standard library):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-11",
    "kind": {
     "type": "crush"
    },
@@ -372,7 +409,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:268",
+      "src": "crush/capabilities.md:334",
       "browser": "run",
       "why": "needs time, which the page grants it and the notebook kernel does not (it grants what `crush run` grants without flags)",
       "expect_output": "true\n"
@@ -382,7 +419,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-21",
+   "id": "crush-capabilities-md-23",
    "kind": {
     "type": "markdown"
    },
@@ -394,7 +431,7 @@
    "outputs": []
   },
   {
-   "id": "crush-capabilities-11",
+   "id": "crush-capabilities-12",
    "kind": {
     "type": "crush"
    },
@@ -409,21 +446,57 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/capabilities.md:284",
+      "src": "crush/capabilities.md:350",
       "browser": "fail",
-      "why": "this example shows a run-time error",
-      "expect_error": "not declared in @capabilities: env.get"
+      "why": "this example shows a compile error"
      }
     }
    },
    "outputs": []
   },
   {
-   "id": "crush-capabilities-md-23",
+   "id": "crush-capabilities-md-25",
    "kind": {
     "type": "markdown"
    },
-   "source": "```text\n[compile] the program uses a capability not declared in @capabilities: env.get\n  add it to @capabilities, or stop using it\n```\n\nThe declaration limits what the program *may* use; the run's flags still decide\nwhat it *gets*. `crush-run caps prog.crush` prints both:\n\n```text\nprog.crush\n  declares: time.now_ms\n  needs these grants to run:\n    --time: time.now_ms\n  also uses (ambient): io.print\n```\n\nA program without `@capabilities` compiles as before.\n\n> **Known bug ([crush-ast #258](https://github.com/nixpt/crush-ast/issues/258)).**\n> The check runs when `crush-run run` / `crush run` compiles a `.crush` file. `crushc`\n> and `crush build` don't apply it yet, and the `.cvm1` they write drops the\n> declaration, so review the source, not just the bytecode. (The\n[awesome-crush](https://github.com/nixpt/awesome-crush) `agents/log-triage`\nentry walks through this with an agent-written tool.)\n\n## Resource limits\n\nSeparately from capabilities, the VM enforces **quotas**; exceeding one ends the\nprogram with a `[runtime]` error:\n\n| Quota | Default | CLI flag |\n|---|---|---|\n| instructions | 1,000,000 | `--max-steps` |\n| stack slots | 4,096 | `--max-stack` |\n| output bytes | 1 MiB | `--max-output` |\n| call depth | 256 | `--max-call-depth` |\n| wall-clock per polyglot subprocess | 30,000 ms | (set via `Quotas::max_wall_time_ms` when embedding) |\n\nOutput printed before a run-time failure is kept: the program's earlier lines\nappear, then the `[runtime]` error on standard error.\n\n## Embedding: declaring permissions\n\nWhen you embed the VM from Rust you choose the capability set yourself\n(`crush_lang_sdk::HostCaps`, `Runtime`, `ProgramBuilder`), and a CASM program\nnames the capabilities it is allowed to call in its manifest — a list of names:\n\n```json\n{\n  \"version\": \"1.0\",\n  \"manifest\": { \"permissions\": [\"io.print\"] },\n  \"functions\": { \"main\": { \"params\": [], \"locals\": [], \"body\": [] } }\n}\n```\n\nA capability call whose name is not both **registered** by the host and **listed**\nin the program's permissions is refused. See [Getting Started](https://docs.crushlang.org/getting-started.html)\nand [CASM structure](https://docs.crushlang.org/casm/structure.html). For `.casm` text run with `crush-run`,\n`--cap NAME` adds names to that list.\n\nThere is no path or URL scoping in the manifest (`\"fs.read\": [\"./data\"]` is not a\nthing): scoping today is the host's job — e.g. `--fs-root`.\n\n## What is not enforced\n\nBe honest with yourself about the isolation you actually get:\n\n- **Polyglot blocks run outside this capability model.** With `--polyglot`,\n  `@python { }` / `@javascript { }` / `@bash { }` blocks run as ordinary\n  subprocesses with the **host process's authority**: a Python block can read any\n  file the user can. The `fs`/`net`/`process` flags above do not constrain it. An\n  optional build-time sandbox (bubblewrap, via `buckets`) exists but is **off by\n  default** — see [Polyglot](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority).\n- Quotas bound instructions and (for polyglot) wall-clock time, not memory.\n- `process.exec` runs any command the user can run; only enable it for programs\n  you trust.\n\n## Not implemented\n\nThe following capabilities appeared in earlier revisions of this guide but do not\nexist in the runtime: `io.eprint`, `fs.delete`, `sys.exec`, `sys.env`,\n`net.get`, `net.post`, `net.http`, `type.of`, `console.print`,\n`array.length`, `map.keys`, `map.has_key`, and `module.load` (what `import`\nlowers to — crush-ast **CRUSH-110**). Use the replacements above\n(`fs.rm`, `env.get`, `net.http_get`, `conv.type_of`, `len`, …). `sys.args()` and\n`sys.exit(code)` do exist now (ambient).\n\n## Next Steps\n\n- **[Standard Library](https://docs.crushlang.org/crush/stdlib.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
+   "source": "```text\n[compile] the program uses a capability not declared in @capabilities: env.get\n  add it to @capabilities, or stop using it\n```\n\nThe declaration limits what the program *may* use; the run's flags still decide\nwhat it *gets*. `crush-run caps prog.crush` prints both:\n\n```text\nprog.crush\n  declares: time.now_ms\n  needs these grants to run:\n    --time: time.now_ms\n  also uses (ambient): io.print\n```\n\nA program without `@capabilities` compiles as before.\n\n> **Known bug ([crush-ast #258](https://github.com/nixpt/crush-ast/issues/258)).**\n> The check runs when `crush-run run` / `crush run` compiles a `.crush` file. `crushc`\n> and `crush build` don't apply it yet, and the `.cvm1` they write drops the\n> declaration, so review the source, not just the bytecode. (The\n[awesome-crush](https://github.com/nixpt/awesome-crush) `agents/log-triage`\nentry walks through this with an agent-written tool.)\n\n## Resource limits\n\nSeparately from capabilities, the VM enforces **quotas**; exceeding one ends the\nprogram with a `[runtime]` error:\n\n| Quota | Default | CLI flag |\n|---|---|---|\n| instructions | 1,000,000 | `--max-steps N`, or `--max-steps unlimited` |\n| stack slots | 4,096 | `--max-stack` |\n| output bytes | 1 MiB | `--max-output` |\n| call depth | 256 | `--max-call-depth` |\n| wall-clock time for the whole run | 30,000 ms | `--max-wall-ms N`, or `--max-wall-ms unlimited` for a long-lived program such as a server (crush-ast #510) |\n\nThe wall-clock budget covers the whole run, computation included, so lifting the\nstep limit does not make a runaway loop run forever:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-13",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "let i = 0\nwhile true { i = i + 1 }\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "needs-host"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/capabilities.md:398",
+      "browser": "host",
+      "why": "needs a wall-clock budget (crush-web has no wall clock), which the in-browser runtime does not provide",
+      "expect_error": "wall-clock quota exceeded (200ms)"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-capabilities-md-27",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "A blocking capability such as `time.sleep` gets what is left of the budget.\n`--max-wall-ms 0` is a zero budget, not \"no limit\": the run stops at the first\nclock check (the VM looks at the clock every 1,024 instructions) or the first\nblocking call, so only a very short program still finishes.\n\nOutput printed before a run-time failure is kept: the program's earlier lines\nappear, then the `[runtime]` error on standard error.\n\n## Embedding: declaring permissions\n\nWhen you embed the VM from Rust you choose the capability set yourself\n(`crush_lang_sdk::HostCaps`, `Runtime`, `ProgramBuilder`), and a CASM program\nnames the capabilities it is allowed to call in its manifest — a list of names:\n\n```json\n{\n  \"version\": \"1.0\",\n  \"manifest\": { \"permissions\": [\"io.print\"] },\n  \"functions\": { \"main\": { \"params\": [], \"locals\": [], \"body\": [] } }\n}\n```\n\nA capability call whose name is not both **registered** by the host and **listed**\nin the program's permissions is refused. See [Getting Started](https://docs.crushlang.org/getting-started.html)\nand [CASM structure](https://docs.crushlang.org/casm/structure.html). For assembly text (`.cvms`) run with `crush-run`,\n`--cap NAME` adds names to that list.\n\nThere is no path or URL scoping in the manifest (`\"fs.read\": [\"./data\"]` is not a\nthing): scoping today is the host's job — e.g. `--fs-root`.\n\n## What is not enforced\n\nBe honest with yourself about the isolation you actually get:\n\n- **Polyglot blocks run outside this capability model.** With `--polyglot`,\n  `@python { }` / `@javascript { }` / `@bash { }` blocks run as ordinary\n  subprocesses with the **host process's authority**: a Python block can read any\n  file the user can. The `fs`/`net`/`process` flags above do not constrain it. An\n  optional build-time sandbox (bubblewrap, via `buckets`) exists but is **off by\n  default** — see [Polyglot](https://docs.crushlang.org/crush/polyglot.html#sandbox-and-authority).\n- Quotas bound instructions and (for polyglot) wall-clock time, not memory.\n- `process.exec` runs any command the user can run; only enable it for programs\n  you trust.\n\n## Not implemented\n\nThe following capabilities appeared in earlier revisions of this guide but do not\nexist in the runtime: `io.eprint`, `fs.delete`, `sys.exec`, `sys.env`,\n`net.get`, `net.post`, `net.http`, `type.of`, `console.print`,\n`array.length`, `map.keys`, `map.has_key`, and `module.load` (what `import`\nlowers to — crush-ast **CRUSH-110**). Use the replacements above\n(`fs.rm`, `env.get`, `net.http_get`, `conv.type_of`, `len`, …). `sys.args()` and\n`sys.exit(code)` do exist now (ambient).\n\n## Next Steps\n\n- **[Standard Library](https://docs.crushlang.org/crush/stdlib.html)**\n- **[Polyglot Programming](https://docs.crushlang.org/crush/polyglot.html)**\n",
    "state": {
     "status": "done"
    },

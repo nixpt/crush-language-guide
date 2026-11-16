@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-73e5c564.js"></script>
+        <script src="toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -206,7 +206,7 @@ Edited code keeps the example’s grants.</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
-and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>bad81048</code>, the commit this guide is
+and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>7f3fef31</code>, the commit this guide is
 verified against), and it grants the same way:</p>
 <ul>
 <li><strong>Always granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> /
@@ -303,8 +303,15 @@ that never finishes is stopped at the time limit the same way; the next
 </ul>
 <h2 id="the-filesystem"><a class="header" href="#the-filesystem">The filesystem</a></h2>
 <p>Natively, <code>crush-run --fs</code> works on real files under <code>--fs-root</code>, and the guide’s
-<code>--fs</code> examples are checked in an empty one. In the browser, a run granted the
-filesystem gets an <strong>empty directory of its own, in memory</strong>, which disappears
+<code>--fs</code> examples are checked in an empty one.</p>
+<blockquote>
+<p><strong>Off at the pinned commit.</strong> The book does not grant the filesystem right now,
+so <code>--fs</code> examples are labelled as needing the host: the crush-web build of
+crush-ast <code>7f3fef31</code> crashes before running anything when it is given the
+in-memory filesystem (see <code>src/play/pkg/PROVENANCE.md</code>). What follows is how
+the grant works when it is on.</p>
+</blockquote>
+<p>In the browser, a run granted the filesystem gets an <strong>empty directory of its own, in memory</strong>, which disappears
 when the run ends. The <code>fs.*</code> and <code>text.*</code> capabilities are the same code as
 natively, over that directory instead of the disk. They give the same results
 and the same errors (<code>No such file or directory (os error 2)</code>), and they keep

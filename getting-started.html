@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-73e5c564.js"></script>
+        <script src="toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -187,8 +187,11 @@
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code>, the <strong>v0.9.0</strong> release (2026-10-31): the
-prebuilt binaries from its GitHub release, which this guide’s checker runs.</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16), built from source as the
+guide’s CI does. That commit is newer than the latest release, <strong>v0.11.2</strong>
+(2026-11-07): a few things on these pages (catching run-time faults, <code>a.pop()</code>,
+calling any expression, the struct-name clash error, <code>--max-wall-ms</code>, the
+<code>net.*</code>/<code>tcp.*</code> timeouts) are on main only until the next release.</p>
 </blockquote>
 <h2 id="1-install-the-toolchain"><a class="header" href="#1-install-the-toolchain">1. Install the toolchain</a></h2>
 <p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
@@ -204,11 +207,11 @@ project. The toolchain is published as <strong><code>crush-lang-sdk</code></stro
 </blockquote>
 <p><strong>Prebuilt Linux binaries.</strong> Since v0.9.0 every <code>vX.Y.Z</code> tag has a GitHub release
 (a pre-release until 1.0) with a Linux x86_64 tarball, a tarball of the browser
-runtime, and a <code>SHA256SUMS</code> file. v0.9.0 is the first such release:</p>
-<pre><code class="language-sh">gh release download v0.9.0 --repo nixpt/crush-ast
+runtime, and a <code>SHA256SUMS</code> file. The newest is v0.11.2:</p>
+<pre><code class="language-sh">gh release download v0.11.2 --repo nixpt/crush-ast
 sha256sum -c SHA256SUMS
-tar -xzf crush-0.9.0-x86_64-unknown-linux-gnu.tar.gz
-export PATH="$PWD/crush-0.9.0-x86_64-unknown-linux-gnu:$PATH"
+tar -xzf crush-0.11.2-x86_64-unknown-linux-gnu.tar.gz
+export PATH="$PWD/crush-0.11.2-x86_64-unknown-linux-gnu:$PATH"
 </code></pre>
 <p>The tarball holds <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code>,
 <code>crush-debug</code>, <code>crush-pkg</code> and <code>crush-gui</code>. <code>crush doctor</code> then tells you which
@@ -254,10 +257,11 @@ default too; they are still refused unless you pass <code>--net</code> / <code>-
 </div>
 <p>Source builds need Rust 1.95 or newer (crush-ast’s CI checks that MSRV).</p>
 <blockquote>
-<p><strong>Crates.io.</strong> Release <code>0.9.0</code> (2026-10-31, crush-ast <code>bad81048</code>) is published for
+<p><strong>Crates.io.</strong> The newest release on crates.io is <code>0.11.2</code> (2026-11-07), published for
 <code>crush-lang-sdk</code> (which installs <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>,
 <code>crush-repl</code>, <code>crush-debug</code> and <code>crush-diff</code>) and the library crates, all released
-together at the workspace version. Earlier releases (<code>0.7.1</code>, <code>0.8.0</code>) lack things
+together at the workspace version (the guide’s pinned commit is newer; see the
+note at the top). Releases before <code>0.9.0</code> (<code>0.7.1</code>, <code>0.8.0</code>) lack things
 this guide describes: slices on strings, hex and binary literals, the debugger,
 <code>tcp.*</code>, and the single diagnostics format. <strong>Never depend on <code>crush-lang-sdk</code>
 <code>0.2</code></strong>: that line has been yanked, and it runs <code>@lang</code> blocks without the
@@ -265,7 +269,7 @@ this guide describes: slices on strings, hex and binary literals, the debugger,
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
-<div class="crush-block" data-crush="run" data-src="getting-started.md:92" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="getting-started.md:96" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">let name = "Crush"
 print("Hello, " + name + "!")
@@ -284,14 +288,19 @@ print("Hello, " + name + "!")
 <p>The <code>[steps=…]</code> line is a run summary on standard error. Compile-only checking is
 <code>crushc -C hello.crush</code>; to see the bytecode, <code>crushc --emit casm hello.crush</code>.</p>
 <h3 id="three-file-types"><a class="header" href="#three-file-types">Three file types</a></h3>
-<p><code>crush run</code> (and <code>crush-run run</code>) takes source, assembly or bytecode:</p>
+<p><code>crush run</code> (and <code>crush-run run</code>) takes source, CAST, CASM, assembly or bytecode,
+one extension per format (crush-ast #365, since v0.10.0):</p>
 <pre><code class="language-sh">crushc hello.crush -o hello.cvm1         # compile to CVM1 bytecode
 crush run hello.cvm1                     # run the bytecode
-crushc --emit casm hello.crush -o hello.casm
-crush run --cap io.print hello.casm      # CASM text: grant each capability it calls
+crushc --emit casm hello.crush -o hello.casm   # CASM IR as JSON
+crush run hello.casm
+crushc --emit cvms hello.crush -o hello.cvms   # CVM1 assembly text, with `.cap` lines
+crush run hello.cvms
 </code></pre>
-<p>A <code>.casm</code> text file has no manifest, so every capability it calls must be named
-with <code>--cap</code> (without it: <code>capability not declared in manifest: io.print</code>).
+<p>Assembly you write by hand (<code>.cvms</code>) has no manifest unless you add <code>.cap NAME</code>
+lines, so every capability it calls must be named with <code>--cap</code> (without it:
+<code>capability not declared in manifest: io.print</code>). Assembly text in a <code>.casm</code> file
+still runs, with a note asking you to rename it to <code>.cvms</code>.
 Arguments after the file name reach the program as <code>sys.args()</code>:
 <code>crush run prog.crush a b</code> → <code>[a, b]</code>.</p>
 <h3 id="capabilities-need-flags"><a class="header" href="#capabilities-need-flags">Capabilities need flags</a></h3>
@@ -306,7 +315,7 @@ crush-run caps prog.crush                        # what does it need? (runs noth
 </code></pre>
 <p>For example, this reads a file, so it needs <code>--fs</code>:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="getting-started.md:149" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="getting-started.md:158" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print(fs.read("notes.txt"))
 </code></pre>
 </div>
@@ -377,7 +386,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
     assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>Both snippets are compiled and run against crush-ast <code>bad81048</code> by
+<p>Both snippets are compiled and run against crush-ast <code>7f3fef31</code> by
 <code>scripts/check-examples.py --crush-ast</code>. <code>Runtime::new()</code> registers only the
 built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
 library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass

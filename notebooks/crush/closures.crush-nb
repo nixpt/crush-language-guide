@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Closures and Function Values\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
+   "source": "# Closures and Function Values\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16). New since the 0.3 line\n> (crush-ast CRUSH-251).\n\nFunctions in Crush are values. A named function can be stored, passed and\nreturned; a **lambda** is a function written inline; and a lambda **captures** the\nvariables around it, which makes it a closure.\n\n## Function values\n\nA function's name, used without calling it, is a value:\n",
    "state": {
     "status": "done"
    },
@@ -342,7 +342,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "## Calling a function value\n\nOnly a **name** can be called. `fs[0](1)` and `make()(2)` are parse errors today\n(crush-ast CRUSH-zorro-24); bind the value to a name first, as the examples above\ndo.\n",
+   "source": "## Calling a function value\n\nAny expression that yields a function can be called: an element of an array, a\nmap entry, or the result of another call (crush-ast CRUSH-363; before it, only a\nname could be called):\n",
    "state": {
     "status": "done"
    },
@@ -354,20 +354,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    let fs = [|x| x + 1]\n    print(fs[0](1))\n}\n",
+   "source": "let fs = [|x| x + 1, |x| x * 2]\nprint(fs[0](1))\nfn adder(n) { return |x| x + n }\nprint(adder(10)(5))\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "crush/closures.md:233",
-      "browser": "fail",
-      "why": "this example shows a compile error"
+      "src": "crush/closures.md:232",
+      "browser": "run",
+      "expect_output": "2\n15\n"
      }
     }
    },
@@ -378,7 +378,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "```text\n[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function\n```\n\nThe built-ins (`print`, `len`, `parallel_map`, …) are not function values:\n`let g = len` is a compile error that names the fix, `` `len` is a built-in, not a\nfunction value; wrap it in a lambda: `|x| len(x)` `` (crush-ast\n[#257](https://github.com/nixpt/crush-ast/issues/257); before, it compiled and\nfailed at run time). Wrap them in a lambda:\n",
+   "source": "The built-ins (`print`, `len`, `parallel_map`, …) are not function values:\n`let g = len` is a compile error that names the fix, `` `len` is a built-in, not a\nfunction value; wrap it in a lambda: `|x| len(x)` `` (crush-ast\n[#257](https://github.com/nixpt/crush-ast/issues/257); before, it compiled and\nfailed at run time). Wrap them in a lambda:\n",
    "state": {
     "status": "done"
    },
@@ -401,7 +401,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/closures.md:248",
+      "src": "crush/closures.md:251",
       "browser": "run",
       "expect_output": "3\n"
      }
@@ -437,7 +437,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/closures.md:263",
+      "src": "crush/closures.md:266",
       "browser": "run",
       "expect_output": "5\n[1, 4, 9]\n"
      }

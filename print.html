@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-73e5c564.js"></script>
+        <script src="toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -196,7 +196,7 @@ toolchain that runs it: a compiler to bytecode, a sandboxed VM, and an
 intermediate representation (CAST) that other languages can be translated into.</p>
 <blockquote>
 <p><strong>Alpha.</strong> This guide documents what the toolchain does today, verified against
-crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31): every <code>crush</code> example on these pages is
+crush-ast <code>7f3fef31</code> (main, 2026-11-16): every <code>crush</code> example on these pages is
 compiled and run by <code>scripts/check-examples.py</code>, and a corpus of 130 standalone
 programs with their exact output lives in <code>examples/verified/</code>
 (<a href="#the-verified-corpus">The Verified Corpus</a>). Features that exist in the design but
@@ -275,8 +275,11 @@ compiler running inside the agent-native OS.</p>
 <p>Crush is alpha software. This page gets you from a clean machine to a running
 program, and then shows how to embed the VM in a Rust application.</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code>, the <strong>v0.9.0</strong> release (2026-10-31): the
-prebuilt binaries from its GitHub release, which this guide’s checker runs.</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16), built from source as the
+guide’s CI does. That commit is newer than the latest release, <strong>v0.11.2</strong>
+(2026-11-07): a few things on these pages (catching run-time faults, <code>a.pop()</code>,
+calling any expression, the struct-name clash error, <code>--max-wall-ms</code>, the
+<code>net.*</code>/<code>tcp.*</code> timeouts) are on main only until the next release.</p>
 </blockquote>
 <h2 id="1-install-the-toolchain"><a class="header" href="#1-install-the-toolchain">1. Install the toolchain</a></h2>
 <p>The language is implemented in <a href="https://github.com/nixpt/crush-ast">crush-ast</a>.
@@ -292,11 +295,11 @@ project. The toolchain is published as <strong><code>crush-lang-sdk</code></stro
 </blockquote>
 <p><strong>Prebuilt Linux binaries.</strong> Since v0.9.0 every <code>vX.Y.Z</code> tag has a GitHub release
 (a pre-release until 1.0) with a Linux x86_64 tarball, a tarball of the browser
-runtime, and a <code>SHA256SUMS</code> file. v0.9.0 is the first such release:</p>
-<pre><code class="language-sh">gh release download v0.9.0 --repo nixpt/crush-ast
+runtime, and a <code>SHA256SUMS</code> file. The newest is v0.11.2:</p>
+<pre><code class="language-sh">gh release download v0.11.2 --repo nixpt/crush-ast
 sha256sum -c SHA256SUMS
-tar -xzf crush-0.9.0-x86_64-unknown-linux-gnu.tar.gz
-export PATH="$PWD/crush-0.9.0-x86_64-unknown-linux-gnu:$PATH"
+tar -xzf crush-0.11.2-x86_64-unknown-linux-gnu.tar.gz
+export PATH="$PWD/crush-0.11.2-x86_64-unknown-linux-gnu:$PATH"
 </code></pre>
 <p>The tarball holds <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>, <code>crush-repl</code>,
 <code>crush-debug</code>, <code>crush-pkg</code> and <code>crush-gui</code>. <code>crush doctor</code> then tells you which
@@ -342,10 +345,11 @@ default too; they are still refused unless you pass <code>--net</code> / <code>-
 </div>
 <p>Source builds need Rust 1.95 or newer (crush-ast’s CI checks that MSRV).</p>
 <blockquote>
-<p><strong>Crates.io.</strong> Release <code>0.9.0</code> (2026-10-31, crush-ast <code>bad81048</code>) is published for
+<p><strong>Crates.io.</strong> The newest release on crates.io is <code>0.11.2</code> (2026-11-07), published for
 <code>crush-lang-sdk</code> (which installs <code>crush</code>, <code>crushc</code>, <code>crush-run</code>, <code>crush-compile</code>,
 <code>crush-repl</code>, <code>crush-debug</code> and <code>crush-diff</code>) and the library crates, all released
-together at the workspace version. Earlier releases (<code>0.7.1</code>, <code>0.8.0</code>) lack things
+together at the workspace version (the guide’s pinned commit is newer; see the
+note at the top). Releases before <code>0.9.0</code> (<code>0.7.1</code>, <code>0.8.0</code>) lack things
 this guide describes: slices on strings, hex and binary literals, the debugger,
 <code>tcp.*</code>, and the single diagnostics format. <strong>Never depend on <code>crush-lang-sdk</code>
 <code>0.2</code></strong>: that line has been yanked, and it runs <code>@lang</code> blocks without the
@@ -353,7 +357,7 @@ this guide describes: slices on strings, hex and binary literals, the debugger,
 </blockquote>
 <h2 id="2-hello-crush"><a class="header" href="#2-hello-crush">2. Hello, Crush</a></h2>
 <p>Save this as <code>hello.crush</code>:</p>
-<div class="crush-block" data-crush="run" data-src="getting-started.md:92" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="getting-started.md:96" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">let name = "Crush"
 print("Hello, " + name + "!")
@@ -372,14 +376,19 @@ print("Hello, " + name + "!")
 <p>The <code>[steps=…]</code> line is a run summary on standard error. Compile-only checking is
 <code>crushc -C hello.crush</code>; to see the bytecode, <code>crushc --emit casm hello.crush</code>.</p>
 <h3 id="three-file-types"><a class="header" href="#three-file-types">Three file types</a></h3>
-<p><code>crush run</code> (and <code>crush-run run</code>) takes source, assembly or bytecode:</p>
+<p><code>crush run</code> (and <code>crush-run run</code>) takes source, CAST, CASM, assembly or bytecode,
+one extension per format (crush-ast #365, since v0.10.0):</p>
 <pre><code class="language-sh">crushc hello.crush -o hello.cvm1         # compile to CVM1 bytecode
 crush run hello.cvm1                     # run the bytecode
-crushc --emit casm hello.crush -o hello.casm
-crush run --cap io.print hello.casm      # CASM text: grant each capability it calls
+crushc --emit casm hello.crush -o hello.casm   # CASM IR as JSON
+crush run hello.casm
+crushc --emit cvms hello.crush -o hello.cvms   # CVM1 assembly text, with `.cap` lines
+crush run hello.cvms
 </code></pre>
-<p>A <code>.casm</code> text file has no manifest, so every capability it calls must be named
-with <code>--cap</code> (without it: <code>capability not declared in manifest: io.print</code>).
+<p>Assembly you write by hand (<code>.cvms</code>) has no manifest unless you add <code>.cap NAME</code>
+lines, so every capability it calls must be named with <code>--cap</code> (without it:
+<code>capability not declared in manifest: io.print</code>). Assembly text in a <code>.casm</code> file
+still runs, with a note asking you to rename it to <code>.cvms</code>.
 Arguments after the file name reach the program as <code>sys.args()</code>:
 <code>crush run prog.crush a b</code> → <code>[a, b]</code>.</p>
 <h3 id="capabilities-need-flags"><a class="header" href="#capabilities-need-flags">Capabilities need flags</a></h3>
@@ -394,7 +403,7 @@ crush-run caps prog.crush                        # what does it need? (runs noth
 </code></pre>
 <p>For example, this reads a file, so it needs <code>--fs</code>:</p>
 <!-- check: runfail fs.read -->
-<div class="crush-block" data-crush="fail" data-src="getting-started.md:149" data-why="this example shows a run-time error" data-expect-error="fs.read">
+<div class="crush-block" data-crush="fail" data-src="getting-started.md:158" data-why="this example shows a run-time error" data-expect-error="fs.read">
 <pre><code class="language-crush">print(fs.read("notes.txt"))
 </code></pre>
 </div>
@@ -465,7 +474,7 @@ fn main() -&gt; anyhow::Result&lt;()&gt; {
     assert_eq!(result.output, "hello, cvm1\n");
     Ok(())
 }</code></pre>
-<p>Both snippets are compiled and run against crush-ast <code>bad81048</code> by
+<p>Both snippets are compiled and run against crush-ast <code>7f3fef31</code> by
 <code>scripts/check-examples.py --crush-ast</code>. <code>Runtime::new()</code> registers only the
 built-in primitives (<code>io.print</code>, <code>io.read</code>, …); to expose more — the standard
 library, filesystem, polyglot — build a <code>HostCaps</code> with <code>HostCapsBuilder</code> and pass
@@ -506,7 +515,7 @@ Edited code keeps the example’s grants.</p>
 <h2 id="what-runs-in-the-browser"><a class="header" href="#what-runs-in-the-browser">What runs in the browser</a></h2>
 <p>The Run button uses <strong>crush-web</strong>, the WebAssembly build of the Crush VM that also
 powers the <a href="https://crushlang.org/playground/">playground</a>. It is the same compiler
-and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>bad81048</code>, the commit this guide is
+and VM as <code>crush-run</code> (the book’s copy is built from crush-ast <code>7f3fef31</code>, the commit this guide is
 verified against), and it grants the same way:</p>
 <ul>
 <li><strong>Always granted:</strong> what <code>crush run</code> grants with no flags: <code>print</code> /
@@ -603,8 +612,15 @@ that never finishes is stopped at the time limit the same way; the next
 </ul>
 <h2 id="the-filesystem"><a class="header" href="#the-filesystem">The filesystem</a></h2>
 <p>Natively, <code>crush-run --fs</code> works on real files under <code>--fs-root</code>, and the guide’s
-<code>--fs</code> examples are checked in an empty one. In the browser, a run granted the
-filesystem gets an <strong>empty directory of its own, in memory</strong>, which disappears
+<code>--fs</code> examples are checked in an empty one.</p>
+<blockquote>
+<p><strong>Off at the pinned commit.</strong> The book does not grant the filesystem right now,
+so <code>--fs</code> examples are labelled as needing the host: the crush-web build of
+crush-ast <code>7f3fef31</code> crashes before running anything when it is given the
+in-memory filesystem (see <code>src/play/pkg/PROVENANCE.md</code>). What follows is how
+the grant works when it is on.</p>
+</blockquote>
+<p>In the browser, a run granted the filesystem gets an <strong>empty directory of its own, in memory</strong>, which disappears
 when the run ends. The <code>fs.*</code> and <code>text.*</code> capabilities are the same code as
 natively, over that directory instead of the disk. They give the same results
 and the same errors (<code>No such file or directory (os error 2)</code>), and they keep
@@ -672,16 +688,20 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, <code>@python</code>, the filesystem (an empty in-memory directory), the clock, the (empty) environment</td><td><code>print</code>, the standard library, <code>caison.parse</code>: what <code>crush run</code> grants with no flags</td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, <code>@python</code>, the clock, the (empty) environment (the filesystem grant is off at the pinned commit, see <a href="#the-filesystem">Running the Examples</a>)</td><td><code>print</code>, the standard library, <code>caison.parse</code>: what <code>crush run</code> grants with no flags</td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
 <tr><td><code>@python</code>/<code>@javascript</code>, filesystem</td><td>when the example’s label grants them</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td><code>@bash</code>, processes, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
 </div>
-<p>The kernel is <code>crush-notebook-kernel</code> 0.3.0, built on crush-ast 0.9.0, the same
-release as this guide, so the 0.9.0 cells (slicing a string, <code>s[::-1]</code>, hex and binary
-literals) run in a notebook as they do on the page.</p>
+<p>The kernel is <code>crush-notebook-kernel</code> 0.3.0, built on crush-ast 0.9.0 (the newest
+published kernel), while the guide is verified against crush-ast <code>7f3fef31</code>, which is
+newer. Cells that use something added since 0.9.0 (catching run-time faults,
+<code>a.pop()</code>, calling any expression, <code>regex.match</code>, exponent literals,
+<code>process.exec</code>’s result map) behave in the notebook as in 0.9.0 until a kernel built
+on a newer crush-ast is published. The 0.3.0 kernel also predates imports
+(crush-ast 0.9.0 refused every <code>import</code>).</p>
 <p>The examples marked <strong>needs the host</strong> are refused in the notebook too, and so
 are the ones the page runs only because it grants them something (<code>@python</code>,
 <code>@javascript</code>, the filesystem, the clock): the kernel grants what <code>crush run</code>
@@ -714,6 +734,7 @@ and each host-only cell has to be refused.</p>
 <li><a href="notebooks/crush/debugging.crush-nb" download=""><code>crush/debugging.crush-nb</code></a>, from <a href="#debugging">Debugging</a></li>
 <li><a href="notebooks/crush/diagnostics.crush-nb" download=""><code>crush/diagnostics.crush-nb</code></a>, from <a href="#errors-and-diagnostics">Errors and Diagnostics</a></li>
 <li><a href="notebooks/crush/functions.crush-nb" download=""><code>crush/functions.crush-nb</code></a>, from <a href="#functions">Functions</a></li>
+<li><a href="notebooks/crush/modules.crush-nb" download=""><code>crush/modules.crush-nb</code></a>, from <a href="#modules-packages-and-visibility">Modules, Packages and Visibility</a></li>
 <li><a href="notebooks/crush/operators.crush-nb" download=""><code>crush/operators.crush-nb</code></a>, from <a href="#operators-1">Operators</a></li>
 <li><a href="notebooks/crush/polyglot.crush-nb" download=""><code>crush/polyglot.crush-nb</code></a>, from <a href="#polyglot-programming">Polyglot Programming</a></li>
 <li><a href="notebooks/crush/stdlib.crush-nb" download=""><code>crush/stdlib.crush-nb</code></a>, from <a href="#standard-library">Standard Library</a></li>
@@ -740,8 +761,8 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (the commit in the repository’s
-<code>CRUSH_AST_COMMIT</code> file). 130 programs.</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (the commit in the repository’s
+<code>CRUSH_AST_COMMIT</code> file). 150 programs.</p>
 </blockquote>
 <div class="table-wrapper">
 <table>
@@ -752,20 +773,20 @@ observed by running one of these programs.</p>
 <tr><td><code>basics/</code></td><td style="text-align: right">13</td><td>literals (including hex and binary), <code>print</code> vs <code>io.print</code>, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords</td></tr>
 <tr><td><code>operators/</code></td><td style="text-align: right">10</td><td>arithmetic, comparison, <code>and</code>/<code>or</code>/<code>not</code>, short-circuit, string <code>+</code>, <code>|&gt;</code>, overflow, division by zero</td></tr>
 <tr><td><code>strings/</code></td><td style="text-align: right">8</td><td>indexing, <code>str.*</code>, <code>conv.chr</code>/<code>ord</code>, escapes, string and array slices (<code>s[a:b]</code>, <code>s[::step]</code>), string methods that don’t exist</td></tr>
-<tr><td><code>collections/</code></td><td style="text-align: right">11</td><td>arrays, <code>array.pop</code>, maps (insertion order, subscripts, iteration), <code>collections.*</code>, <code>json.*</code></td></tr>
+<tr><td><code>collections/</code></td><td style="text-align: right">11</td><td>arrays, <code>array.pop</code> and <code>a.pop()</code>, maps (insertion order, subscripts, iteration), <code>collections.*</code>, <code>json.*</code></td></tr>
 <tr><td><code>control-flow/</code></td><td style="text-align: right">9</td><td><code>if</code>, <code>while</code>/<code>break</code>/<code>continue</code>, ranges, <code>match</code> as expression and statement</td></tr>
 <tr><td><code>functions/</code></td><td style="text-align: right">5</td><td>definitions, arity checks, no defaults, top-level visibility, the call-depth quota</td></tr>
-<tr><td><code>closures/</code></td><td style="text-align: right">11</td><td>lambdas, function values, capture by reference, counters, loop capture, recursion</td></tr>
+<tr><td><code>closures/</code></td><td style="text-align: right">11</td><td>lambdas, function values, calling any expression, capture by reference, counters, loop capture, recursion</td></tr>
 <tr><td><code>structs/</code></td><td style="text-align: right">11</td><td>literals, sealing, equality, <code>impl</code>, traits, value semantics, C3, bound methods, constructors</td></tr>
 <tr><td><code>match/</code></td><td style="text-align: right">3</td><td>struct patterns, and their compile errors</td></tr>
-<tr><td><code>errors/</code></td><td style="text-align: right">6</td><td><code>try</code>/<code>catch</code>/<code>throw</code>, rethrow, what <code>catch</code> can’t catch, <code>result.*</code></td></tr>
-<tr><td><code>modules/</code></td><td style="text-align: right">2</td><td><code>import</code> (refused), <code>export</code></td></tr>
+<tr><td><code>errors/</code></td><td style="text-align: right">7</td><td><code>try</code>/<code>catch</code>/<code>throw</code>, rethrow, catching run-time faults, what <code>catch</code> can’t catch, <code>result.*</code></td></tr>
+<tr><td><code>modules/</code></td><td style="text-align: right">21</td><td>the <code>import</code> forms, <code>-L</code> and <code>CRUSH_PATH</code>, module rules and errors, structs across files, the struct/trait name clash, <code>pub</code> and <code>__</code>, <code>export</code></td></tr>
 <tr><td><code>capabilities/</code></td><td style="text-align: right">12</td><td>refusal before running, <code>--fs</code> and <code>--fs-root</code>, <code>@capabilities</code>, <code>io.read</code>, <code>sys.args</code>, <code>math.random</code></td></tr>
 <tr><td><code>polyglot/</code></td><td style="text-align: right">15</td><td><code>--polyglot</code>, <code>-&gt; outputs</code>, JavaScript, chaining, <code>use @lang</code>, isolation, errors, bash</td></tr>
 <tr><td><code>concurrency/</code></td><td style="text-align: right">7</td><td><code>spawn</code>/<code>yield</code>/<code>await</code>, <code>async fn</code>, <code>parallel_map</code> and its rules</td></tr>
 <tr><td><code>annotations/</code></td><td style="text-align: right">3</td><td>manifest annotations, <code>@wip</code>, <code>@capabilities</code></td></tr>
 <tr><td><code>ai-native/</code></td><td style="text-align: right">2</td><td>the refused <code>semantic_switch</code>, AI expressions not in source</td></tr>
-<tr><td><code>casm/</code></td><td style="text-align: right">2</td><td>running CASM text with <code>--cap</code></td></tr>
+<tr><td><code>casm/</code></td><td style="text-align: right">2</td><td>running assembly text (<code>.cvms</code>) with <code>--cap</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -777,12 +798,14 @@ observed by running one of these programs.</p>
 <tr><th>File</th><th>Meaning</th></tr>
 </thead>
 <tbody>
-<tr><td><code>NAME.crush</code> / <code>NAME.casm</code></td><td>the program; its first comment lines say what it shows</td></tr>
+<tr><td><code>NAME.crush</code> / <code>NAME.cvms</code></td><td>the program; its first comment lines say what it shows</td></tr>
 <tr><td><code>NAME.out</code></td><td>its exact standard output</td></tr>
 <tr><td><code>NAME.err</code></td><td>present when the program must <strong>fail</strong>: every line of it must appear in the error output</td></tr>
 <tr><td><code>NAME.flags</code></td><td>the <code>crush-run</code> flags it needs (<code>--polyglot</code>, <code>--fs --fs-root .</code>, …)</td></tr>
 <tr><td><code>NAME.stdin</code></td><td>what it reads from standard input (otherwise it reads end-of-file)</td></tr>
 <tr><td><code>NAME.needs</code></td><td>host programs it needs (<code>python3</code>, <code>node</code>); skipped, not failed, without them</td></tr>
+<tr><td><code>NAME.env</code></td><td>environment variables for the run, <code>NAME=value</code> per line (<code>CRUSH_PATH=shared</code>)</td></tr>
+<tr><td><code>NAME.files/</code></td><td>the other files the program needs, such as the modules it imports; copied next to it for the run, and not programs of their own</td></tr>
 </tbody>
 </table>
 </div>
@@ -796,6 +819,7 @@ changes and the corpus fails, which is the signal to update the guide.</p>
 </thead>
 <tbody>
 <tr><td><code>polyglot/header-comment-pitfall</code>: <code>//</code> on a block header → <code>Undefined variable</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/266">#266</a></td></tr>
+<tr><td><code>modules/import-in-main-pitfall</code>: an <code>import</code> inside <code>fn main</code> is accepted (inside any other function it is refused)</td><td><a href="https://github.com/nixpt/crush-ast/issues/535">crush-ast#535</a></td></tr>
 </tbody>
 </table>
 </div>
@@ -819,7 +843,7 @@ against the pinned crush-ast commit on every pull request.</p>
 <p class="crush-notebook-link"><a href="notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -845,6 +869,25 @@ runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time 
 also in the repository (<a href="#engines-aot-and-walkers">Engines, AOT and Walkers</a>). Walkers
 translate Python, JavaScript, Rust and other languages into the same CAST.</li>
 </ul>
+<h2 id="new-since-090"><a class="header" href="#new-since-090">New since 0.9.0</a></h2>
+<p>At the pinned commit (main after v0.11.2); each item links to its page.</p>
+<ul>
+<li><strong>Imports and packages.</strong> <code>import a.b [as x] [{ f }]</code> loads <code>.crush</code> files at
+compile time, through <code>-L</code>, <code>CRUSH_PATH</code> and crush-pkg dependencies; <code>pub fn</code> is
+accepted, not enforced yet; a struct or trait name declared in two files is a
+compile error. (<a href="#modules-packages-and-visibility">Modules</a>)</li>
+<li><strong><code>catch</code> catches run-time faults</strong>: division by zero, a bad index, a failing
+capability. (<a href="#what-catch-catches">Control Flow</a>)</li>
+<li><strong>Calls on any expression</strong> (<code>fs[0](1)</code>, <code>make()(2)</code>, <code>S { n: 3 }.size()</code>), the
+method form <code>a.pop()</code>, <code>regex.match</code> callable, exponent literals (<code>1.5e3</code>).
+(<a href="#calling-a-function-value">Closures</a>, <a href="#data-types">Types</a>)</li>
+<li><strong><code>process.exec</code> returns a map</strong> <code>{exit_code, stdout, stderr}</code>.
+(<a href="#environment-time-processes-network">Capability System</a>)</li>
+<li><strong>Quotas and networking.</strong> <code>--max-wall-ms N|unlimited</code> bounds the whole run,
+<code>--max-steps unlimited</code>; <code>net.*</code> and <code>tcp.recv</code>/<code>tcp.accept</code> take
+<code>{timeout_ms}</code>; <code>net.http_request</code> returns response headers.
+(<a href="#resource-limits">Capability System</a>)</li>
+</ul>
 <h2 id="new-in-090"><a class="header" href="#new-in-090">New in 0.9.0</a></h2>
 <p>Each item links to the page that documents it (and every example there was run).</p>
 <ul>
@@ -866,7 +909,7 @@ v0.9.0 is the first release to have them. (<a href="#getting-started">Getting St
 <li><code>@bash</code> blocks can read Crush variables again, by <code>$name</code>. (<a href="#bash">Polyglot</a>)</li>
 </ul>
 <h2 id="hello-crush-1"><a class="header" href="#hello-crush-1">Hello, Crush</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:53" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="crush/README.md:73" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">print("Hello, Crush!")
 </code></pre>
@@ -880,7 +923,7 @@ v0.9.0 is the first release to have them. (<a href="#getting-started">Getting St
 <pre><code class="language-sh">crush run hello.crush
 </code></pre>
 <h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:71" data-expect="far: 25
+<div class="crush-block" data-crush="run" data-src="crush/README.md:91" data-expect="far: 25
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
 impl Point {
@@ -926,7 +969,7 @@ enforced.</li>
 <tr><td>Closures and function values</td><td>works on the VM; AOT refuses them by name</td></tr>
 <tr><td>Structs, <code>impl</code>, <code>trait</code>, <code>@kind</code>, struct patterns</td><td>works on the VM; AOT refuses method calls by name</td></tr>
 <tr><td><code>spawn</code> / <code>yield</code> / <code>await</code>, <code>parallel_map</code></td><td>works on the VM</td></tr>
-<tr><td><code>import</code> (multi-file programs)</td><td>not yet: CRUSH-110</td></tr>
+<tr><td><code>import</code> (multi-file programs), crush-pkg packages</td><td>works, resolved at compile time; <code>pub</code> is accepted on <code>fn</code> and not enforced yet (<a href="#modules-packages-and-visibility">Modules</a>)</td></tr>
 <tr><td>Capabilities, <code>@capabilities</code>, the standard library</td><td>works; the standard library is on by default</td></tr>
 <tr><td>Polyglot: Python, JavaScript (declared <code>-&gt;</code> outputs), Bash</td><td>works (host authority by default); <code>@bash</code> reads the Crush variables it names as <code>$name</code></td></tr>
 <tr><td>Polyglot sandbox</td><td>opt-in build, verified on Linux with <code>bwrap</code></td></tr>
@@ -947,7 +990,7 @@ enforced.</li>
 <p class="crush-notebook-link"><a href="notebooks/crush/syntax.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31): every runnable block on this
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16): every runnable block on this
 page was compiled and run with that build.</p>
 </blockquote>
 <p>This chapter covers the lexical structure and grammar that the Crush parser
@@ -1064,7 +1107,7 @@ print(r)
 </thead>
 <tbody>
 <tr><td>Integer</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>hex (<code>0x</code>/<code>0X</code>, any digit case) and binary (<code>0b</code>) literals, 0.9.0; <code>0o17</code> and <code>1_000</code> do not lex, and <code>0x</code> with no digits is <code>Invalid number literal</code></td></tr>
-<tr><td>Float</td><td><code>3.14</code>, <code>0.5</code></td><td>no exponent form (<code>1.5e3</code> is rejected)</td></tr>
+<tr><td>Float</td><td><code>3.14</code>, <code>0.5</code>, <code>1.5e3</code>, <code>2.5e+3</code>, <code>1e-7</code></td><td>a decimal exponent, since 0.11 (CRUSH-221); a malformed one (<code>1e</code>, <code>1.e5</code>) is <code>Invalid number literal</code></td></tr>
 <tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td>single or double quotes; escapes <code>\n \t \" \\</code></td></tr>
 <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
 <tr><td>Null</td><td><code>null</code></td><td></td></tr>
@@ -1312,14 +1355,17 @@ print("Hello from Python")
 <p>See <a href="#polyglot-programming">Polyglot Programming</a> for the supported languages, how
 variables cross the boundary, and the (important) security caveats.</p>
 <h2 id="imports-and-exports"><a class="header" href="#imports-and-exports">Imports and exports</a></h2>
-<p><code>import a.b</code> <strong>parses</strong>, but importing does not load anything yet: <code>import</code> is
-lowered to a <code>module.load</code> capability that nothing registers, so a program
-containing one is refused before it runs (<code>not available in this host: module.load</code>, crush-ast <strong>CRUSH-110</strong>). Every program is currently a single file.
-There is no <code>std.*</code> module tree.</p>
-<p><code>use @lang python "math"</code> is different and does work: it writes <code>import math</code> into
-every later <code>@python</code> block (see <a href="#imports-for-blocks-use-lang">Polyglot</a>).</p>
-<!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:392" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<p><code>import a.b</code> loads <code>a/b.crush</code> <strong>at compile time</strong> and binds the qualifier <code>b</code>
+(<code>import a.b as x</code> binds <code>x</code>, <code>import a.b { f, g }</code> binds the bare names). The file
+is looked for in the importing file’s directory, then each <code>-L DIR</code>, then
+<code>CRUSH_PATH</code>. Imports go at the top level of a file, and a module contains only
+definitions. See <a href="#modules-packages-and-visibility">Modules, Packages and Visibility</a> for the rules,
+packages and <code>pub</code>. There is no <code>std.*</code> module tree: a module that is not found is
+a compile error listing the directories searched.</p>
+<p><code>use @lang python "math"</code> is different: it writes <code>import math</code> into every later
+<code>@python</code> block (see <a href="#imports-for-blocks-use-lang">Polyglot</a>).</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/syntax.md:394" data-why="this example shows a compile error">
 <pre><code class="language-crush">import std.io
 print("never reached")
 </code></pre>
@@ -1327,7 +1373,7 @@ print("never reached")
 
 <p><code>export name</code> parses and marks an existing variable or function for export. It
 is not an expression-level declaration:</p>
-<div class="crush-block" data-crush="run" data-src="crush/syntax.md:400" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/syntax.md:402" data-expect="42
 ">
 <pre><code class="language-crush">let result = 6 * 7
 export result
@@ -1338,7 +1384,9 @@ print(result)
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
-<p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors.</p>
+<p><code>export let x = ...</code> and <code>export fn f() {...}</code> are parse errors. <code>export</code> has
+nothing to do with modules: every function of a module is importable without it,
+and a module that contains an <code>export</code> statement is refused.</p>
 <h2 id="annotations"><a class="header" href="#annotations">Annotations</a></h2>
 <p><code>@name</code> also introduces annotations:</p>
 <ul>
@@ -1408,7 +1456,7 @@ parse errors today (crush-ast CRUSH-zorro-24).</p>
 <p class="crush-notebook-link"><a href="notebooks/crush/types.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush is dynamically typed at run time, with a <strong>static checker</strong> that catches
 obvious mismatches at compile time when you add type annotations. This chapter
@@ -1421,7 +1469,7 @@ covers the values you can build today.</p>
 </thead>
 <tbody>
 <tr><td>Int</td><td><code>42</code>, <code>-7</code>, <code>0x2A</code>, <code>0b101</code></td><td>64-bit signed; overflow is a runtime error</td></tr>
-<tr><td>Float</td><td><code>3.14</code></td><td>64-bit IEEE 754. No exponent literals (<code>1.5e3</code> is a parse error)</td></tr>
+<tr><td>Float</td><td><code>3.14</code>, <code>1.5e3</code>, <code>1e-7</code></td><td>64-bit IEEE 754. Exponent literals since 0.11 (CRUSH-221); <code>1e</code> alone is <code>Invalid number literal</code></td></tr>
 <tr><td>String</td><td><code>"hello"</code>, <code>'hello'</code></td><td><code>len</code> counts <strong>bytes</strong></td></tr>
 <tr><td>Bool</td><td><code>true</code>, <code>false</code></td><td></td></tr>
 <tr><td>Null</td><td><code>null</code></td><td>absence of a value</td></tr>
@@ -1509,9 +1557,9 @@ Pi is 3.14
 <p><code>len(s)</code> is the byte length and <code>s[i]</code> yields a one-character string (a negative
 index counts from the end). The standard library’s <code>str.*</code> capabilities add
 <code>str.split</code>, <code>str.trim</code>, <code>str.to_upper</code>, <code>str.substring</code> and friends — see
-<a href="#standard-library">Standard Library</a>. Strings have no methods: <code>s.to_upper()</code> is refused
-(<code>not available in this host: to_upper</code>); call <code>str.to_upper(s)</code>.</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:99" data-expect="5
+<a href="#standard-library">Standard Library</a>. Strings have no methods: <code>s.to_upper()</code> fails at run time
+(<code>`.to_upper(…)` on a str: member calls resolve on struct instances (COSM Records) and maps</code>); call <code>str.to_upper(s)</code>.</p>
+<div class="crush-block" data-crush="run" data-src="crush/types.md:100" data-expect="5
 e
 o
 HELLO
@@ -1540,7 +1588,7 @@ be left out, a negative bound counts from the end, and a bound past the end is
 clamped rather than an error. <code>stop</code> is exclusive, and the result is a new string.
 The slice counts characters, not bytes, so it never splits a multi-byte character
 (unlike <code>len</code>, which counts bytes):</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:126" data-expect="hello
+<div class="crush-block" data-crush="run" data-src="crush/types.md:127" data-expect="hello
 world
 hello
 world
@@ -1569,7 +1617,7 @@ lo world
 walks backwards, so <code>s[::-1]</code> reverses. The step form works the same on arrays (see
 <a href="#arrays">Arrays</a>). A step of <code>0</code> is a runtime error
 (<code>expected non-zero slice step, got 0</code>).</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:151" data-expect="hlowrd
+<div class="crush-block" data-crush="run" data-src="crush/types.md:152" data-expect="hlowrd
 dlrow olleh
 !🎉語本日
 ">
@@ -1590,7 +1638,7 @@ works and takes its bounds as arguments.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <h3 id="arrays"><a class="header" href="#arrays">Arrays</a></h3>
 <p>Ordered, mixed-type, zero-indexed. Index, assign by index, and <code>len</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:175" data-expect="10
+<div class="crush-block" data-crush="run" data-src="crush/types.md:176" data-expect="10
 [10, 99, 30]
 3
 2
@@ -1614,7 +1662,7 @@ print(nested[0][1])
 </code></pre>
 <p>Append with <code>array.push(arr, value)</code> or the method form <code>arr.push(value)</code>; <code>+</code>
 joins two arrays:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:197" data-expect="[1, 2, 3, 4]
+<div class="crush-block" data-crush="run" data-src="crush/types.md:198" data-expect="[1, 2, 3, 4]
 [1, 2]
 ">
 <pre><code class="language-crush">let a = [1, 2]
@@ -1630,7 +1678,7 @@ print([1] + [2])
 [1, 2]
 </code></pre>
 <p>Iterate with <code>for</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:213" data-expect="a
+<div class="crush-block" data-crush="run" data-src="crush/types.md:214" data-expect="a
 b
 ">
 <pre><code class="language-crush">for item in ["a", "b"] {
@@ -1645,7 +1693,7 @@ b
 </code></pre>
 <p><code>array.pop(a)</code> removes and returns the last element, <code>a.append(v)</code> is an alias for
 <code>push</code>, and slices <code>a[start:end]</code> work (end exclusive):</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:228" data-expect="4
+<div class="crush-block" data-crush="run" data-src="crush/types.md:229" data-expect="4
 [1, 2, 3]
 [1, 2]
 ">
@@ -1664,7 +1712,8 @@ print(a[0:2])
 </code></pre>
 <p>Reading past the end is a runtime error (<code>array index out of range</code>), and so is
 <code>a[-1]</code> on an empty array; <code>a[-1]</code> on a non-empty one is the last element. The
-method form <code>a.pop()</code> is <strong>not</strong> available (the program is refused with <code>not available in this host: pop</code>); call <code>array.pop(a)</code>.</p>
+method form <code>a.pop()</code> does the same as <code>array.pop(a)</code> (crush-ast CRUSH-391, on main
+after v0.11.2).</p>
 <p>Negative slice bounds count from the end, as an index does: with
 <code>let a = [1, 2, 3, 4]</code>, <code>a[1:-1]</code> is <code>[2, 3]</code>, <code>a[-3:]</code> is <code>[2, 3, 4]</code> and
 <code>a[:-1]</code> is <code>[1, 2, 3]</code>. (Before crush-ast
@@ -1672,7 +1721,7 @@ method form <code>a.pop()</code> is <strong>not</strong> available (the program 
 <p>Slices take a step too (0.9.0): <code>a[::2]</code> is every second element, <code>a[::-1]</code> is the
 array reversed, <code>a[1:5:2]</code> starts at 1 and takes every second element before 5, and
 <code>a[:]</code> is a copy:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:257" data-expect="[1, 3, 5]
+<div class="crush-block" data-crush="run" data-src="crush/types.md:258" data-expect="[1, 3, 5]
 [6, 5, 4, 3, 2, 1]
 [2, 4]
 [1, 2, 3, 4, 5, 6]
@@ -1694,7 +1743,7 @@ print(a[:])
 <h3 id="objects-maps"><a class="header" href="#objects-maps">Objects (maps)</a></h3>
 <p>Key–value pairs written <code>{"key": value}</code>. Keys may be bare identifiers or
 strings. Read and write fields with <strong>dot notation</strong> or a <strong>string subscript</strong>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:278" data-expect="Alice
+<div class="crush-block" data-crush="run" data-src="crush/types.md:279" data-expect="Alice
 31
 alice@example.com
 ">
@@ -1713,7 +1762,7 @@ print(person.email)
 alice@example.com
 </code></pre>
 <p>Nested objects chain:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:296" data-expect="5432
+<div class="crush-block" data-crush="run" data-src="crush/types.md:297" data-expect="5432
 5433
 ">
 <pre><code class="language-crush">let cfg = {"db": {"port": 5432}}
@@ -1729,7 +1778,7 @@ print(cfg.db.port)
 </code></pre>
 <p>Objects keep <strong>insertion order</strong>: printing, <code>for k in obj</code> and
 <code>collections.keys(obj)</code> all list keys in the order they were first set.</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:312" data-expect="Alice
+<div class="crush-block" data-crush="run" data-src="crush/types.md:313" data-expect="Alice
 {name: Alice, age: 30}
 name
 age
@@ -1756,7 +1805,7 @@ age
 <p>Declare a struct with its field names (optionally with type hints) <strong>on one
 line</strong>, then build one with a literal that names every field, or with
 <code>new Name()</code> and assign fields individually:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:341" data-expect="{x: 1.0, y: 2.0}
+<div class="crush-block" data-crush="run" data-src="crush/types.md:342" data-expect="{x: 1.0, y: 2.0}
 4.0
 ">
 <pre><code class="language-crush">struct Point { x: Float, y: Float }
@@ -1784,7 +1833,7 @@ Methods, traits, value semantics and <code>@kind</code> are in
 newlines inside <code>struct { ... }</code> (gap <code>GAP-STRUCT-MULTILINE</code>, listed in crush-ast’s
 CRUSH-192 ticket):</p>
 <!-- check: nyi GAP-STRUCT-MULTILINE -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:370" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:371" data-why="not implemented yet (GAP-STRUCT-MULTILINE); Run shows what happens today">
 <pre><code class="language-crush">struct Point {
     x: Float,
     y: Float
@@ -1795,7 +1844,7 @@ CRUSH-192 ticket):</p>
 <h2 id="type-annotations"><a class="header" href="#type-annotations">Type annotations</a></h2>
 <p>You may annotate variables, parameters and return types with <code>Int</code>, <code>Float</code>,
 <code>String</code>, <code>Bool</code>, or <code>Any</code>. The compiler checks them statically:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:382" data-expect="answer
+<div class="crush-block" data-crush="run" data-src="crush/types.md:383" data-expect="answer
 42
 ">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
@@ -1813,13 +1862,13 @@ print(double(21))
 </code></pre>
 <p>Mismatches are rejected at compile time:</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:400" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:401" data-why="this example shows a compile error">
 <pre><code class="language-crush">let x: Int = "not a number"
 </code></pre>
 </div>
 
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:405" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:406" data-why="this example shows a compile error">
 <pre><code class="language-crush">fn double(n: Int) -&gt; Int {
     return n * 2
 }
@@ -1833,7 +1882,7 @@ all fail with a parse or <code>Unknown type</code> error.</p>
 <h2 id="conversion-and-inspection"><a class="header" href="#conversion-and-inspection">Conversion and inspection</a></h2>
 <p>The standard library’s <code>conv.*</code> capabilities convert between types and report
 them:</p>
-<div class="crush-block" data-crush="run" data-src="crush/types.md:421" data-expect="43
+<div class="crush-block" data-crush="run" data-src="crush/types.md:422" data-expect="43
 5x
 2.0
 array
@@ -1860,7 +1909,7 @@ null
 <p><code>if</code> and <code>while</code> conditions are type-checked: an <code>Int</code> or <code>String</code> is <strong>not</strong>
 silently truthy. Compare explicitly (<code>x != 0</code>, <code>s != ""</code>).</p>
 <!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/types.md:447" data-why="this example shows a compile error">
+<div class="crush-block" data-crush="fail" data-src="crush/types.md:448" data-why="this example shows a compile error">
 <pre><code class="language-crush">if 1 {
     print("yes")
 }
@@ -1897,7 +1946,7 @@ compile error (<code>Cannot compare types string and int</code>). <code>1 == 1.0
 <p class="crush-notebook-link"><a href="notebooks/crush/variables.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>This chapter covers declaration, assignment, and the scoping rules the compiler
 enforces today.</p>
@@ -2168,7 +2217,7 @@ possible yet (crush-ast <strong>CRUSH-110</strong>).</p>
 
 <p>Crush’s operators are deliberately few.</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <h2 id="arithmetic"><a class="header" href="#arithmetic">Arithmetic</a></h2>
 <div class="table-wrapper">
@@ -2407,7 +2456,7 @@ true
 <p class="crush-notebook-link"><a href="notebooks/crush/control_flow.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush has <code>if</code>/<code>else</code>, <code>while</code>, <code>for</code>, <code>break</code>/<code>continue</code>, a <code>match</code> expression,
 and <code>try</code>/<code>catch</code>/<code>throw</code>. Conditions are type-checked and must be <code>Bool</code>.</p>
@@ -2721,17 +2770,47 @@ try {
 7
 </code></pre>
 <p>An uncaught <code>throw</code> ends the program with <code>[runtime] uncaught error: &lt;value&gt;</code>.</p>
-<h3 id="what-catch-does-not-catch"><a class="header" href="#what-catch-does-not-catch">What <code>catch</code> does <em>not</em> catch</a></h3>
-<p><code>try</code>/<code>catch</code> handles values raised with <code>throw</code>. <strong>Runtime faults from the VM or
-a host capability are not catchable</strong>: division by zero, an out-of-range array
-index, a failing <code>fs.read</code>, or a polyglot block that raises all abort the
-program with a <code>[runtime]</code> error instead of reaching your <code>catch</code>.</p>
-<!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
-<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:328" data-why="not implemented yet (GAP-CATCH-RUNTIME-FAULTS); Run shows what happens today">
+<h3 id="what-catch-catches"><a class="header" href="#what-catch-catches">What <code>catch</code> catches</a></h3>
+<p><code>try</code>/<code>catch</code> handles values raised with <code>throw</code>, and, since crush-ast
+CRUSH-393 (on main after v0.11.2), also <strong>runtime faults</strong>: division by zero, an out-of-range index, a
+runtime type error, a failing host capability (a missing file for <code>fs.read</code>, a
+network timeout). The caught value is an error value that prints as
+<code>error(&lt;message&gt;)</code>:</p>
+<div class="crush-block" data-crush="run" data-src="crush/control_flow.md:328" data-expect="caught: error(division by zero)
+error
+after
+">
 <pre><code class="language-crush">try {
     print(1 / 0)
 } catch e {
-    print("caught")
+    print("caught: " + e)
+}
+try {
+    print([1][3])
+} catch e {
+    print(conv.type_of(e))
+}
+print("after")
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">caught: error(division by zero)
+error
+after
+</code></pre>
+<p>Some failures are <strong>not</strong> catchable and still end the program even inside <code>try</code>:
+running out of a quota (<code>--max-steps</code>, <code>--max-stack</code>, <code>--max-output</code>,
+<code>--max-wall-ms</code>, call depth), a capability the run does not grant (refused before
+anything runs), <code>sys.exit</code>, an uncaught <code>throw</code>, and a polyglot block that raises:</p>
+<!-- check: runfail instruction quota exceeded -->
+<!-- check: flags --max-steps 1000 -->
+<div class="crush-block" data-crush="fail" data-src="crush/control_flow.md:356" data-why="this example shows a run-time error" data-expect-error="instruction quota exceeded">
+<pre><code class="language-crush">try {
+    let i = 0
+    while true { i = i + 1 }
+} catch e {
+    print("never reached")
 }
 </code></pre>
 </div>
@@ -2746,7 +2825,7 @@ program with a <code>[runtime]</code> error instead of reaching your <code>catch
 <p class="crush-notebook-link"><a href="notebooks/crush/functions.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>This chapter covers defining and calling functions. Named functions are
 top-level declarations, and they are also <strong>values</strong>: you can store one in a
@@ -2854,9 +2933,10 @@ print(fib(15))
 quota — <strong>256 frames by default</strong> (<code>--max-call-depth N</code> on <code>crush-run</code>); exceeding
 it ends the program with <code>call depth quota exceeded</code>. The other default quotas are
 1,000,000 instructions (<code>--max-steps</code>), a 4096-slot stack (<code>--max-stack</code>), 1 MiB of
-output (<code>--max-output</code>), and a 30-second wall-clock limit per polyglot block.</p>
+output (<code>--max-output</code>), and a 30-second wall-clock budget for the whole run
+(<code>--max-wall-ms</code>).</p>
 <!-- check: runfail call depth quota exceeded -->
-<div class="crush-block" data-crush="fail" data-src="crush/functions.md:112" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
+<div class="crush-block" data-crush="fail" data-src="crush/functions.md:113" data-why="this example shows a run-time error" data-expect-error="call depth quota exceeded">
 <pre><code class="language-crush">fn d(n) {
     return d(n - 1)
 }
@@ -2866,7 +2946,7 @@ print(d(1))
 
 <h2 id="higher-order-functions-and-lambdas"><a class="header" href="#higher-order-functions-and-lambdas">Higher-order functions and lambdas</a></h2>
 <p>A function name is a value. Store it, pass it, call it through the variable:</p>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:123" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:124" data-expect="42
 8
 ">
 <pre><code class="language-crush">fn double(n) {
@@ -2886,7 +2966,7 @@ print(apply(double, 4))
 8
 </code></pre>
 <p>Anonymous functions are written <code>|params| expression</code> or <code>|params| { block }</code>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:143" data-expect="42
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:144" data-expect="42
 5
 ">
 <pre><code class="language-crush">let double = |x| { return x * 2 }
@@ -2906,7 +2986,7 @@ built-ins <code>print</code> and <code>len</code> are not values (<code>let g = 
 says so, crush-ast <a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>); wrap them:
 <code>|x| len(x)</code>.</p>
 <p>The pipeline operator (<code>x |&gt; f</code>) takes a function name or a variable holding one:</p>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:164" data-expect="11
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:165" data-expect="11
 ">
 <pre><code class="language-crush">fn double(n) {
     return n * 2
@@ -2925,7 +3005,7 @@ print(5 |&gt; double |&gt; inc)
 <p><code>spawn f(args)</code> starts a green task, <code>yield</code> lets other tasks run, and <code>await h</code>
 waits for a task and returns its result. They are covered in
 <a href="#concurrency">Concurrency</a>. In short:</p>
-<div class="crush-block" data-crush="run" data-src="crush/functions.md:185" data-expect="worker
+<div class="crush-block" data-crush="run" data-src="crush/functions.md:186" data-expect="worker
 main
 ">
 <pre><code class="language-crush">fn worker() {
@@ -2961,7 +3041,7 @@ a top-level lambda can.</li>
 <p class="crush-notebook-link"><a href="notebooks/crush/closures.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31). New since the 0.3 line
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16). New since the 0.3 line
 (crush-ast CRUSH-251).</p>
 </blockquote>
 <p>Functions in Crush are values. A named function can be stored, passed and
@@ -3187,23 +3267,28 @@ time round, so capture that when you want each closure to keep its own value:</p
 2
 </code></pre>
 <h2 id="calling-a-function-value"><a class="header" href="#calling-a-function-value">Calling a function value</a></h2>
-<p>Only a <strong>name</strong> can be called. <code>fs[0](1)</code> and <code>make()(2)</code> are parse errors today
-(crush-ast CRUSH-zorro-24); bind the value to a name first, as the examples above
-do.</p>
-<!-- check: error -->
-<div class="crush-block" data-crush="fail" data-src="crush/closures.md:233" data-why="this example shows a compile error">
-<pre><code class="language-crush">let fs = [|x| x + 1]
+<p>Any expression that yields a function can be called: an element of an array, a
+map entry, or the result of another call (crush-ast CRUSH-363; before it, only a
+name could be called):</p>
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:232" data-expect="2
+15
+">
+<pre><code class="language-crush">let fs = [|x| x + 1, |x| x * 2]
 print(fs[0](1))
+fn adder(n) { return |x| x + n }
+print(adder(10)(5))
 </code></pre>
 </div>
 
-<pre><code class="language-text">[compile] Parse errors: Unexpected token at line 2, column 15: Cannot call non-function
+<!-- check: output -->
+<pre><code class="language-text">2
+15
 </code></pre>
 <p>The built-ins (<code>print</code>, <code>len</code>, <code>parallel_map</code>, …) are not function values:
 <code>let g = len</code> is a compile error that names the fix, <code>`len` is a built-in, not a function value; wrap it in a lambda: `|x| len(x)`</code> (crush-ast
 <a href="https://github.com/nixpt/crush-ast/issues/257">#257</a>; before, it compiled and
 failed at run time). Wrap them in a lambda:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:248" data-expect="3
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:251" data-expect="3
 ">
 <pre><code class="language-crush">let size = |x| len(x)
 print(size([1, 2, 3]))
@@ -3216,7 +3301,7 @@ print(size([1, 2, 3]))
 <h2 id="with-the-pipeline-spawn-and-parallel_map"><a class="header" href="#with-the-pipeline-spawn-and-parallel_map">With the pipeline, <code>spawn</code> and <code>parallel_map</code></a></h2>
 <p>The pipeline operator takes any function value bound to a name, and so do
 <a href="#concurrency"><code>spawn</code> and <code>parallel_map</code></a>:</p>
-<div class="crush-block" data-crush="run" data-src="crush/closures.md:263" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/closures.md:266" data-expect="5
 [1, 4, 9]
 ">
 <pre><code class="language-crush">let inc = |n| n + 1
@@ -3244,7 +3329,7 @@ backends refuse them by name rather than miscompiling them: <code>crush-aotc</co
 <p class="crush-notebook-link"><a href="notebooks/crush/structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31). New since the 0.3 line:
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16). New since the 0.3 line:
 <code>impl</code>, <code>trait</code>, <code>@kind</code> and struct patterns (crush-ast CRUSH-zorro-41/43, the
 COSM object model).</p>
 </blockquote>
@@ -3366,7 +3451,8 @@ print(t.size())
 <pre><code class="language-text">3
 [runtime] `T` has no method `size`
 </code></pre>
-<p>The receiver must be a name. <code>S { n: 3 }.size()</code> is a parse error (<code>Cannot call non-function</code>); bind the value with <code>let</code> first. A <code>for</code> loop variable is a name
+<p>The receiver can be any expression: <code>S { n: 3 }.size()</code> works (it was a parse
+error before crush-ast CRUSH-363). A <code>for</code> loop variable is a name
 like any other, so <code>for s in items { s.area() }</code> works (it was refused before
 crush-ast <a href="https://github.com/nixpt/crush-ast/issues/256">#256</a>).</p>
 <h2 id="traits"><a class="header" href="#traits">Traits</a></h2>
@@ -3661,11 +3747,333 @@ the portable VM and the browser build). The AOT backends build sealed structs
 <li><strong><a href="#closures-and-function-values">Closures and Function Values</a></strong></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="modules-packages-and-visibility"><a class="header" href="#modules-packages-and-visibility">Modules, Packages and Visibility</a></h1>
+<p class="crush-notebook-link"><a href="notebooks/crush/modules.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
+
+<blockquote>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16). Every behaviour on this
+page was run with that build. The programs live in the verified corpus,
+<a href="https://github.com/nixpt/crush-language-guide/tree/main/examples/verified/modules"><code>examples/verified/modules/</code></a>,
+each with the modules it imports in a <code>NAME.files/</code> directory beside it, and
+<code>scripts/verify-examples</code> re-runs them.</p>
+</blockquote>
+<p>A Crush program can be split over several files. <code>import</code> loads another <code>.crush</code>
+file <strong>at compile time</strong> (crush-ast CRUSH-110): the compiler parses it and merges
+its definitions into the program before checking it, so imported functions are
+checked like your own, and the capability check sees imported code exactly as if
+it were local. Nothing is loaded at run time, and no capability is involved.</p>
+<p>Because an import needs a file to search from, it works when you compile or run a
+file (<code>crush run</code>, <code>crush-run run</code>, <code>crushc</code>, <code>crush-debug</code>, the REPL from its
+working directory). It does not work in the browser: the Run buttons in this book
+compile a string, and an <code>import</code> there is refused with “<code>import x</code> was not
+resolved: … this compile has no file path to search from”. The examples on this
+page are therefore shown, not runnable; their output is the corpus’s.</p>
+<h2 id="the-three-forms"><a class="header" href="#the-three-forms">The three forms</a></h2>
+<p>Given <code>geom.crush</code> and <code>util/strings.crush</code> next to the program:</p>
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:27" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// geom.crush
+fn area(w, h) { return w * h }
+fn scaled(x) { return __unit() * x }
+fn __unit() { return 10 }
+</code></pre>
+</div>
+
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:35" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// util/strings.crush
+fn shout(s) { return str.to_upper(s) + "!" }
+fn twice(s) { return s + s }
+</code></pre>
+</div>
+
+<!-- check: skip multi-file program: examples/verified/modules/import-forms -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:42" data-why="not a standalone program: multi-file program: examples/verified/modules/import-forms">
+<pre><code class="language-crush">import geom
+import util.strings as s
+import util.strings { twice }
+print(geom.area(3, 4))
+print(geom.scaled(2))
+print(s.shout("hi"))
+print(twice("ab"))
+let f = geom.area
+print(f(2, 5))
+</code></pre>
+</div>
+
+<pre><code class="language-text">12
+20
+HI!
+abab
+10
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Form</th><th>Binds</th><th>Call</th></tr>
+</thead>
+<tbody>
+<tr><td><code>import geom</code></td><td>the qualifier <code>geom</code> (the last segment of the path)</td><td><code>geom.area(3, 4)</code></td></tr>
+<tr><td><code>import util.strings</code></td><td>the qualifier <code>strings</code>; loads <code>util/strings.crush</code></td><td><code>strings.shout("hi")</code></td></tr>
+<tr><td><code>import util.strings as s</code></td><td>the qualifier <code>s</code> instead</td><td><code>s.shout("hi")</code></td></tr>
+<tr><td><code>import util.strings { twice }</code></td><td>the bare name <code>twice</code> (and the qualifier only when <code>as x</code> is also given)</td><td><code>twice("ab")</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>geom.area</code> without a call is a function value, as for a local function. Inside a
+module, a bare call finds the module’s own functions first (<code>scaled</code> calls
+<code>__unit</code> above), then the module’s own imports, then the built-ins and
+capabilities.</p>
+<h2 id="what-a-module-may-contain"><a class="header" href="#what-a-module-may-contain">What a module may contain</a></h2>
+<p>A module is <strong>definitions only</strong>: <code>fn</code>, <code>struct</code>, <code>impl</code>, <code>trait</code> (with <code>@kind</code>),
+and <code>import</code>s of other modules. Its <code>main</code>, if it has one, is ignored. Any other
+top-level statement is a compile error naming the file and line, so a module has
+no init code and there is no hidden init order. Write a function for a constant
+(<code>fn limit() { return 10 }</code>):</p>
+<pre><code class="language-text">[compile] state.crush:2:1: a top-level `let` in imported module `state`: a module may only define functions, structs, impls and traits, and import other Crush modules — it has no init code (move the statement into a function)
+</code></pre>
+<p><code>export</code> is such a statement too: a module that contains <code>export f</code> is refused
+(<code>a top-level statement in imported module</code>). Exporting is not how modules work
+in Crush; see <a href="#visibility-and-pub">Visibility</a> for what decides what another file
+can call.</p>
+<p>Imports go at the <strong>top level</strong> of a file. One inside a function is refused
+(<code>`import` inside `fn f`: imports go at the top level of a file</code>).</p>
+<blockquote>
+<p><strong>Pitfall.</strong> An <code>import</code> inside <code>fn main() { … }</code> is accepted and works at this
+commit, although crush-ast’s import design says imports inside a function are
+refused. Don’t rely on it; put imports at the top of the file. The corpus program
+<code>modules/import-in-main-pitfall</code> records the current behaviour.</p>
+</blockquote>
+<h2 id="where-modules-are-found"><a class="header" href="#where-modules-are-found">Where modules are found</a></h2>
+<p><code>import a.b</code> looks for <code>a/b.crush</code>, in this order; the first hit wins:</p>
+<ol>
+<li>the directory of the file that contains the <code>import</code>;</li>
+<li>each <code>-L DIR</code> (<code>--lib-path</code>) given to <code>crush-run</code>, <code>crushc</code>, <code>crush-debug</code> or
+<code>crush-repl</code> (<code>crush run</code> and friends pass it on), in order;</li>
+<li>each directory in <code>CRUSH_PATH</code> (colon-separated).</li>
+</ol>
+<p>There is no <code>a/b/mod.crush</code> form. A module that is not found is a compile error
+that lists every directory searched:</p>
+<pre><code class="language-text">[compile] main.crush:1:1: `import consts`: module not found — no consts.crush in any of:
+  . (/home/me/proj)
+  libdir (/home/me/proj/libdir)
+</code></pre>
+<pre><code class="language-bash">crush-run run -L lib main.crush             # lib/text/greet.crush for `import text.greet`
+CRUSH_PATH=shared crush-run run main.crush   # shared/consts.crush for `import consts`
+</code></pre>
+<p>(Corpus: <code>modules/lib-path</code>, <code>modules/crush-path</code>, <code>modules/import-not-found</code>.)</p>
+<p>Each file is loaded once per compile, so two modules that import a third share one
+copy. Two modules that import each other are a compile error that shows the cycle
+(<code>import cycle: ca.crush → cb.crush → ca.crush</code>).</p>
+<h2 id="errors-that-name-the-problem"><a class="header" href="#errors-that-name-the-problem">Errors that name the problem</a></h2>
+<p>A name the module does not define lists what it does define (names starting with
+<code>__</code> are left out of the list):</p>
+<pre><code class="language-text">[compile] main.crush:5:7: `geom.perimeter`: module `geom` (geom.crush) defines no function `perimeter` (it defines: area, scaled)
+</code></pre>
+<p>A selectively imported name that collides with a function of the importing file
+is refused, naming both:</p>
+<pre><code class="language-text">[compile] main.crush:3:1: `import geom { area }` collides with `fn area` (line 4) of the same name in this file
+</code></pre>
+<h2 id="structs-across-files"><a class="header" href="#structs-across-files">Structs across files</a></h2>
+<p>A module’s <code>struct</code>s and their methods work in the importer. Build values through
+a function of the module: a struct <strong>literal</strong> is recognised only in the file that
+declares the struct, so <code>Rect { w: 1, h: 2 }</code> in the importer is
+<code>[compile] Undefined variable: Rect</code>.</p>
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:152" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// shapes.crush
+struct Rect { w: Int, h: Int }
+impl Rect {
+    fn area(self) { return self.w * self.h }
+}
+fn rect(w, h) { return Rect { w: w, h: h } }
+</code></pre>
+</div>
+
+<!-- check: skip multi-file program: examples/verified/modules/struct-from-module -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:162" data-why="not a standalone program: multi-file program: examples/verified/modules/struct-from-module">
+<pre><code class="language-crush">import shapes
+let r = shapes.rect(2, 3)
+print(r)
+print(r.area())
+r.w = 10
+print(r.area())
+</code></pre>
+</div>
+
+<pre><code class="language-text">{w: 2, h: 3}
+6
+30
+</code></pre>
+<p>Fields are public: the importer can read and write them (<code>r.w = 10</code> above).</p>
+<h3 id="one-namespace-for-struct-and-trait-names"><a class="header" href="#one-namespace-for-struct-and-trait-names">One namespace for struct and trait names</a></h3>
+<p>Function names are qualified by their module, but <code>struct</code> and <code>trait</code> names are
+<strong>one global namespace</strong> across all the files of a program. The same name declared
+in two files, whether two modules or a module and the file that imports it, is a
+compile error that names both files (crush-ast #527):</p>
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:187" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// plane.crush
+struct Point { x: Int, y: Int }
+fn origin() { return Point { x: 0, y: 0 } }
+</code></pre>
+</div>
+
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:194" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// map.crush
+struct Point { lat: Float, lon: Float }
+fn here() { return Point { lat: 27.7, lon: 85.3 } }
+</code></pre>
+</div>
+
+<!-- check: skip multi-file program: examples/verified/modules/kind-clash -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:201" data-why="not a standalone program: multi-file program: examples/verified/modules/kind-clash">
+<pre><code class="language-crush">import plane
+import map
+print(plane.origin())
+</code></pre>
+</div>
+
+<pre><code class="language-text">[compile] map.crush:1:1: struct `Point` is also declared in plane.crush:1:1: struct and trait names are one global namespace across imports, so two files cannot both declare `Point` (rename one; per-module Kinds are planned, #523)
+</code></pre>
+<p>Before #527 this compiled, the later <code>Point</code> silently replaced the earlier one,
+and <code>plane.origin()</code> failed at run time. Rename one of the two. A redeclaration
+inside a single file is not covered by this rule. Per-module kind names are
+planned (crush-ast #523).</p>
+<h2 id="packages"><a class="header" href="#packages">Packages</a></h2>
+<p><code>crush-pkg</code> (crush-ast’s package manager) builds a package from a <code>capsule.toml</code>.
+<code>crush-pkg new NAME</code> scaffolds an application, <code>crush-pkg new NAME --lib</code> a library
+whose entry is <code>src/lib.crush</code>. A package lists its dependencies as
+<code>[[dependencies]]</code> rows with a <code>path</code> (a local directory) or a <code>git</code> source:</p>
+<pre><code class="language-toml">[capsule]
+name = "app"
+version = "0.1.0"
+entry = "src/main.crush"
+language = "crush"
+
+[[dependencies]]
+name = "mathlib"
+path = "../mathlib"
+</code></pre>
+<p>When the entry file has an <code>import</code>, every dependency, and the package itself,
+can be imported <strong>by name</strong> (crush-ast CRUSH-367): <code>import mathlib</code> loads the
+dependency’s entry file, and <code>import mathlib.extra</code> loads <code>extra.crush</code> in the
+directory of that entry. The entry’s own directory (<code>src/</code>) is searched for the
+package’s other files, as for any file. A package name wins over a file of the same
+name on the search path.</p>
+<!-- check: skip a crush-pkg package: needs its capsule.toml and the mathlib dependency -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:243" data-why="not a standalone program: a crush-pkg package: needs its capsule.toml and the mathlib dependency">
+<pre><code class="language-crush">// app/src/main.crush
+import mathlib { greet }      // ../mathlib/src/lib.crush
+import mathlib.extra          // ../mathlib/src/extra.crush
+import util                   // src/util.crush
+
+fn main() {
+    print(greet("app"))
+    print(extra.twice(21))
+    print(util.shout("ok"))
+}
+</code></pre>
+</div>
+
+<pre><code class="language-text">$ crush-pkg run
+building app v0.1.0
+  resolved dep mathlib -&gt; …/mathlib/src/lib.crush
+  …
+running app v0.1.0
+hello, app
+42
+ok!
+</code></pre>
+<p>This was run by hand at the pinned commit (the corpus runs <code>crush-run</code> only), with
+<code>mathlib/src/lib.crush</code> as <code>crush-pkg new mathlib --lib</code> writes it
+(<code>fn greet(who) { return "hello, " + who }</code>), <code>mathlib/src/extra.crush</code> defining
+<code>twice</code>, and <code>app/src/util.crush</code> defining <code>shout</code>. Package names resolve only
+through <code>crush-pkg</code>: <code>crush-run run src/main.crush</code> in the same directory says
+<code>`import mathlib`: module not found</code>. An entry file with no <code>import</code> at all is
+built the older way, with the dependencies’ entry files pasted into one source.</p>
+<h2 id="visibility-and-pub"><a class="header" href="#visibility-and-pub">Visibility and <code>pub</code></a></h2>
+<p><strong>Today every function of a module can be imported</strong>, by qualified call or by a
+selective import. Nothing is private.</p>
+<ul>
+<li>A leading <code>__</code> is a naming convention for “internal”. It hides the name from
+the “it defines: …” lists in error messages, and that is all it does:
+<code>geom.__unit()</code> and <code>import geom { __unit }</code> both work
+(corpus <code>modules/private-convention</code>).</li>
+<li><strong><code>pub fn</code></strong> (and <code>pub async fn</code>) is accepted and <strong>not enforced</strong>: the parser
+drops <code>pub</code>, so a function with <code>pub</code> and one without behave the same, in the
+file that declares them and from another file (crush-ast #518):</li>
+</ul>
+<div class="crush-block" data-crush="run" data-src="crush/modules.md:288" data-expect="5
+-1
+">
+<pre><code class="language-crush">pub fn add(a, b) { return a + b }
+fn sub(a, b) { return a - b }
+print(add(2, 3))
+print(sub(2, 3))
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">5
+-1
+</code></pre>
+<!-- check: skip multi-file program: examples/verified/modules/pub-fn -->
+<div class="crush-block" data-crush="none" data-src="crush/modules.md:302" data-why="not a standalone program: multi-file program: examples/verified/modules/pub-fn">
+<pre><code class="language-crush">// shapes.crush has `pub fn square(n)` and plain `fn cube(n)`
+import shapes
+print(shapes.square(3))
+print(shapes.cube(2))
+</code></pre>
+</div>
+
+<pre><code class="language-text">9
+8
+</code></pre>
+<ul>
+<li><strong><code>pub struct</code></strong> and <strong><code>pub trait</code></strong> do not parse yet. <code>pub</code> is not a keyword,
+so the compiler reads a variable named <code>pub</code> and refuses the program:</li>
+</ul>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/modules.md:318" data-why="this example shows a compile error">
+<pre><code class="language-crush">pub struct P { x: Int }
+print(P { x: 1 })
+</code></pre>
+</div>
+
+<pre><code class="language-text">[compile] Undefined variable: pub
+</code></pre>
+<p><code>pub trait Shape { … }</code> gives the same error. A field cannot be marked <code>pub</code>
+either: <code>struct P { pub x: Int }</code> is a parse error (<code>Expected `}` but found `x` </code>),
+because <code>pub</code> is read as a field name with no type. <code>struct P { pub: Int }</code> is legal
+and declares a field called <code>pub</code>.</p>
+<h3 id="what-is-planned"><a class="header" href="#what-is-planned">What is planned</a></h3>
+<p>This is <strong>planned work, not present behaviour</strong>. crush-ast’s visibility design
+(<code>docs/design/visibility-and-packages.md</code>) makes visibility per <strong>package</strong>:</p>
+<ul>
+<li>without <code>pub</code>, a function is visible to every file of its own package; <code>pub</code>
+exports it to other packages;</li>
+<li>the first step (crush-ast #519) records <code>pub</code>, accepts <code>pub struct</code> and
+<code>pub trait</code>, and makes a use of a non-<code>pub</code> function from another package a
+<strong>warning</strong>, <code>W-VIS01</code>; a module with no <code>pub</code> anywhere stays all-public then;</li>
+<li>the warning becomes an <strong>error</strong> before the 1.0 feature freeze of 2026-12-31
+(crush-ast #524).</li>
+</ul>
+<p>So: mark the functions other packages should call with <code>pub</code> now. It costs
+nothing today, and it is what the warning will check.</p>
+<h2 id="remote-imports-and-other-forms"><a class="header" href="#remote-imports-and-other-forms">Remote imports and other forms</a></h2>
+<p><code>import @http "…"</code>, <code>import @git "…"</code>, <code>import @file "…"</code> and <code>use @mcp "…"</code> are
+compile errors: they are not supported yet. <code>use @lang python "math"</code> is a
+different thing that works: it writes <code>import math</code> into every later <code>@python</code>
+block (see <a href="#polyglot-programming">Polyglot</a>). See <a href="#import-styles">Import Styles</a>
+for each form with its current result.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h1>
 <p class="crush-notebook-link"><a href="notebooks/crush/concurrency.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31). New since the 0.3 line
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16). New since the 0.3 line
 (crush-ast #161, #174/#177, #175, CRUSH-251 step 5).</p>
 </blockquote>
 <p>Crush has two kinds of concurrency:</p>
@@ -3851,7 +4259,7 @@ instead of dropping it: <code>`spawn` (green tasks) isn't supported on the Rust 
 <p class="crush-notebook-link"><a href="notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -3992,7 +4400,7 @@ program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:144" data-why="this example shows a run-time error" data-grants="fs" data-expect-error="path escapes sandbox root">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:144" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -4002,8 +4410,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:155" data-expect="0
-" data-grants="fs">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:155" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
 </div>
@@ -4026,9 +4433,7 @@ has a scope.</p>
 </table>
 </div>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:173" data-expect="hello
-[a.txt]
-" data-grants="fs">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:173" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 fs.mkdir("sub")
@@ -4046,23 +4451,52 @@ print(fs.list("sub"))
 <div class="crush-block" data-crush="host" data-src="crush/capabilities.md:190" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
-print(process.exec("echo", "hi"))
+let r = process.exec("echo", "hi")
+print(r.exit_code)
+print(str.trim(r.stdout))
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">null
 true
-{"exit_code":0,"stderr":"","stdout":"hi\n"}
+0
+hi
 </code></pre>
 <ul>
 <li><code>env.get(name)</code> → string, or <code>null</code> if unset.</li>
 <li><code>time.now()</code> Unix seconds; <code>time.now_ms()</code>; <code>time.now_iso()</code>; <code>time.sleep(ms)</code>
-(bounded by the wall-clock quota).</li>
+(bounded by the wall-clock budget, <code>--max-wall-ms</code>).</li>
 <li><code>process.exec(cmd, args)</code> — exactly <strong>two</strong> arguments (the command and one
-argument string) — returns a JSON string with <code>exit_code</code>, <code>stdout</code>, <code>stderr</code>.</li>
+argument string) — returns a map <code>{exit_code, stdout, stderr}</code> (crush-ast
+CRUSH-242; before 0.11 it was a JSON string). A command that cannot start is not
+an error: <code>exit_code</code> is <code>-1</code> and <code>stderr</code> says why.</li>
 <li><code>net.http_get(url)</code> / <code>net.http_post(url, body)</code> — response body as a string;
-size capped by <code>--net-max-response-bytes</code> (default 1 MiB).</li>
+size capped by <code>--net-max-response-bytes</code> (default 1 MiB). Each <code>net.*</code> verb takes
+an optional last argument <code>{timeout_ms: N}</code>; a request that takes longer fails
+with a catchable error (<code>… timed out after N ms</code>). <code>net.http_request(method, url, body, headers)</code> returns <code>{status, reason, headers, body}</code>, with the response
+header names lower-cased (crush-ast #509).</li>
+</ul>
+<!-- check: skip needs a local HTTP server -->
+<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:221" data-why="not a standalone program: needs a local HTTP server">
+<pre><code class="language-crush">let r = net.http_request("GET", "http://127.0.0.1:47125/hi.txt", "", {})
+print(r.status)
+print(r.headers["content-type"])
+try {
+    print(net.http_get("http://127.0.0.1:47126/", {timeout_ms: 300}))
+} catch e {
+    print(e)
+}
+</code></pre>
+</div>
+
+<pre><code class="language-text">200
+text/plain
+error(net.http_get: net.http_get http://127.0.0.1:47126/: timed out after 300 ms)
+</code></pre>
+<p>(Run by hand at the pinned commit, with <code>python3 -m http.server 47125</code> serving a
+<code>hi.txt</code> and a listener on port 47126 that accepts and never answers.)</p>
+<ul>
 <li><code>crypto.sha256(data)</code>, <code>crypto.random(n)</code> (base64, <code>n ≤ 4096</code>).</li>
 </ul>
 <h3 id="raw-sockets-tcp"><a class="header" href="#raw-sockets-tcp">Raw sockets (<code>tcp.*</code>)</a></h3>
@@ -4084,11 +4518,16 @@ other hosts:</p>
 </div>
 <p>A URI is <code>tcp://IP:PORT</code> with a literal IP address (no host names). <code>tcp.listen</code>
 and <code>tcp.connect</code> return an integer id; <code>tcp.accept</code> blocks until a client
-connects. <code>tcp.send</code> takes text and returns the byte count; <code>tcp.recv</code> returns up
-to 16 KiB as text. This program is both ends of a conversation, so it needs both
+connects. <code>tcp.send</code> takes text (or bytes) and returns the byte count. <code>tcp.recv</code>
+returns what one read delivered, at most 16 KiB, as text; an incomplete UTF-8
+character at the end is held back and returned by the next call, so a message can
+arrive over several calls: loop until you have all of it (a delimiter, a length, or
+<code>""</code>, which <code>tcp.recv</code> returns only at end of stream). <code>tcp.recv</code> and <code>tcp.accept</code>
+take an optional <code>{timeout_ms: N}</code>; a timeout is a catchable error, and a timed-out
+<code>tcp.recv</code> loses nothing (crush-ast #512). This program is both ends of a conversation, so it needs both
 flags (the connect is queued by the kernel before <code>accept</code> takes it):</p>
 <!-- check: flags --tcp --tcp-listen -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:232" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:267" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
 <pre><code class="language-crush">let srv = tcp.listen("tcp://127.0.0.1:47123")
 let c = tcp.connect("tcp://127.0.0.1:47123")
 let s = tcp.accept(srv)
@@ -4105,19 +4544,46 @@ tcp.close(s)
 <pre><code class="language-text">ping
 pong
 </code></pre>
+<p>A <code>tcp.recv</code> that times out can be caught, and the data that arrives later is read
+by the next call:</p>
+<!-- check: flags --tcp --tcp-listen -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:289" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
+<pre><code class="language-crush">let srv = tcp.listen("tcp://127.0.0.1:47124")
+let c = tcp.connect("tcp://127.0.0.1:47124")
+let s = tcp.accept(srv)
+try {
+    print(tcp.recv(s, {timeout_ms: 100}))
+} catch e {
+    print("caught: " + e)
+}
+tcp.send(c, "late")
+print(tcp.recv(s))
+tcp.close(c)
+print(tcp.recv(s) == "")
+tcp.close(s)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">caught: error(tcp.recv: tcp.recv: timed out after 100 ms)
+late
+true
+</code></pre>
+<p>(The capability name appears twice in that message; it is crush-ast’s text as it
+stands.)</p>
 <p>Granting only <code>--tcp</code> is refused, naming what is missing:</p>
 <pre><code class="language-text">[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:
   --tcp-listen: tcp.accept, tcp.listen
 </code></pre>
 <p>A host capability that fails (missing file, refused connection, path escape)
-aborts the program with <code>[runtime] unknown capability: &lt;name&gt;: &lt;reason&gt;</code> — the
-“unknown capability” wording is misleading there, and the error is not
-catchable by <a href="#what-catch-does-not-catch"><code>try</code>/<code>catch</code></a>.</p>
+raises <code>[runtime] &lt;name&gt;: &lt;reason&gt;</code>, for example <code>[runtime] fs.read: fs.read missing.txt: No such file or directory (os error 2)</code>. Inside
+<a href="#what-catch-catches"><code>try</code>/<code>catch</code></a> it is caught like any other
+fault; outside one it ends the program.</p>
 <h2 id="declaring-what-a-program-uses-capabilities"><a class="header" href="#declaring-what-a-program-uses-capabilities">Declaring what a program uses: <code>@capabilities</code></a></h2>
 <p>A program can say up front which capabilities it may use beyond the ambient,
 effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
 <!-- check: flags --time -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:268" data-expect="true
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:334" data-expect="true
 " data-grants="time">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 let t = time.now_ms()
@@ -4131,8 +4597,8 @@ print(t &gt; 0)
 <p>Entries can be exact names (<code>fs.cat</code>), families (<code>fs</code>, <code>fs.*</code>) or scoped names
 (<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:</p>
-<!-- check: runfail not declared in @capabilities: env.get -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:284" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:350" data-why="this example shows a compile error">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 print(env.get("HOME"))
 </code></pre>
@@ -4167,14 +4633,28 @@ program with a <code>[runtime]</code> error:</p>
 <tr><th>Quota</th><th>Default</th><th>CLI flag</th></tr>
 </thead>
 <tbody>
-<tr><td>instructions</td><td>1,000,000</td><td><code>--max-steps</code></td></tr>
+<tr><td>instructions</td><td>1,000,000</td><td><code>--max-steps N</code>, or <code>--max-steps unlimited</code></td></tr>
 <tr><td>stack slots</td><td>4,096</td><td><code>--max-stack</code></td></tr>
 <tr><td>output bytes</td><td>1 MiB</td><td><code>--max-output</code></td></tr>
 <tr><td>call depth</td><td>256</td><td><code>--max-call-depth</code></td></tr>
-<tr><td>wall-clock per polyglot subprocess</td><td>30,000 ms</td><td>(set via <code>Quotas::max_wall_time_ms</code> when embedding)</td></tr>
+<tr><td>wall-clock time for the whole run</td><td>30,000 ms</td><td><code>--max-wall-ms N</code>, or <code>--max-wall-ms unlimited</code> for a long-lived program such as a server (crush-ast #510)</td></tr>
 </tbody>
 </table>
 </div>
+<p>The wall-clock budget covers the whole run, computation included, so lifting the
+step limit does not make a runaway loop run forever:</p>
+<!-- check: runfail wall-clock quota exceeded (200ms) -->
+<!-- check: flags --max-steps unlimited --max-wall-ms 200 -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:398" data-why="needs a wall-clock budget (crush-web has no wall clock), which the in-browser runtime does not provide">
+<pre><code class="language-crush">let i = 0
+while true { i = i + 1 }
+</code></pre>
+</div>
+
+<p>A blocking capability such as <code>time.sleep</code> gets what is left of the budget.
+<code>--max-wall-ms 0</code> is a zero budget, not “no limit”: the run stops at the first
+clock check (the VM looks at the clock every 1,024 instructions) or the first
+blocking call, so only a very short program still finishes.</p>
 <p>Output printed before a run-time failure is kept: the program’s earlier lines
 appear, then the <code>[runtime]</code> error on standard error.</p>
 <h2 id="embedding-declaring-permissions"><a class="header" href="#embedding-declaring-permissions">Embedding: declaring permissions</a></h2>
@@ -4189,7 +4669,7 @@ names the capabilities it is allowed to call in its manifest — a list of names
 </code></pre>
 <p>A capability call whose name is not both <strong>registered</strong> by the host and <strong>listed</strong>
 in the program’s permissions is refused. See <a href="#getting-started">Getting Started</a>
-and <a href="#program-structure">CASM structure</a>. For <code>.casm</code> text run with <code>crush-run</code>,
+and <a href="#program-structure">CASM structure</a>. For assembly text (<code>.cvms</code>) run with <code>crush-run</code>,
 <code>--cap NAME</code> adds names to that list.</p>
 <p>There is no path or URL scoping in the manifest (<code>"fs.read": ["./data"]</code> is not a
 thing): scoping today is the host’s job — e.g. <code>--fs-root</code>.</p>
@@ -4224,7 +4704,7 @@ lowers to — crush-ast <strong>CRUSH-110</strong>). Use the replacements above
 <p class="crush-notebook-link"><a href="notebooks/crush/polyglot.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31), with Python 3.14, Node 26 and
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16), with Python 3.14, Node 26 and
 bash 5.3 on the host.</p>
 </blockquote>
 <p>A Crush program can embed code from other languages with <code>@language { ... }</code>
@@ -4583,20 +5063,22 @@ raise ValueError("x")
     raise ValueError("x")
 ValueError: x
 </code></pre>
-<p>A guest failure is <strong>not</strong> catchable with Crush <code>try</code>/<code>catch</code>
-(<a href="#what-catch-does-not-catch">Control Flow</a>). Handle expected
+<p>A guest failure is <strong>not</strong> catchable with Crush <code>try</code>/<code>catch</code>, unlike a VM fault
+or a failing capability (<a href="#what-catch-catches">Control Flow</a>). Handle expected
 failures inside the block (<code>try:</code> / <code>except:</code> in Python) and return a value that
 says what happened. Failures to <em>start</em> a sandboxed block — package resolution,
 missing <code>bwrap</code> — are reported separately as <code>sandbox setup failed</code>, so a
 provisioning problem is never mistaken for a bug in your code.</p>
 <h2 id="timeouts"><a class="header" href="#timeouts">Timeouts</a></h2>
-<p>Every block runs under a <strong>wall-clock limit of 30 seconds</strong> (<code>Quotas::max_wall_time_ms</code>,
-default <code>30_000</code>). At the deadline the interpreter’s whole process group is killed
-and the program ends with:</p>
+<p>A block runs under the run’s <strong>wall-clock budget</strong>: 30 seconds for the whole run by
+default (<code>--max-wall-ms</code>, <code>Quotas::max_wall_time_ms</code>), and a block gets what is
+left of it. At the deadline the interpreter’s whole process group is killed and the
+program ends with:</p>
 <pre><code class="language-text">[runtime] 'polyglot.python' exceeded its 30000ms wall-clock quota and was killed
 </code></pre>
-<p>(crush-ast CRUSH-19.) The limit is a field of <code>Quotas</code>, so it is configurable
-when you embed the VM; <code>crush-run</code> doesn’t expose a flag for it. In the sandboxed
+<p>(crush-ast CRUSH-19; with <code>--max-wall-ms 500</code> the message says <code>499ms</code>, the time
+that was left when the block started.) <code>crush-run --max-wall-ms N|unlimited</code> sets
+the budget (crush-ast #510). In the sandboxed
 lane the limit also covers package provisioning. The instruction quota
 (<code>--max-steps</code>) does not apply to time spent inside a guest.</p>
 <h2 id="sandbox-and-authority"><a class="header" href="#sandbox-and-authority">Sandbox and authority</a></h2>
@@ -4608,7 +5090,7 @@ stop a block from opening sockets or running commands. This was verified: with
 only <code>--polyglot</code>, a <code>@python</code> block reads <code>/etc/hostname</code>, and a <code>@bash</code> block
 runs <code>id</code> and <code>cat</code>.</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:417" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/polyglot.md:419" data-why="has an `@python` block that uses the host&#39;s files, which the in-browser runtime does not provide">
 <pre><code class="language-crush">@python {
 host = open("/etc/hostname").read().strip()
 }
@@ -4648,7 +5130,7 @@ installed and, on first use, network access to download the runtime.</p>
 prefixed <code>pypi:</code> or <code>npm:</code>; bare names are buckets package aliases. A bare
 <code>numpy</code> is <strong>not</strong> assumed to mean PyPI.</p>
 <!-- check: skip needs a crush-vm build with sandboxed-polyglot (see text) -->
-<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:456" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
+<div class="crush-block" data-crush="none" data-src="crush/polyglot.md:458" data-why="not a standalone program: needs a crush-vm build with sandboxed-polyglot (see text)">
 <pre><code class="language-crush">@python[pypi:six] -&gt; v {
 import six
 v = six.__version__
@@ -4686,7 +5168,7 @@ is not limited, and only <code>python</code>, <code>javascript</code> and <code>
 <p class="crush-notebook-link"><a href="notebooks/crush/stdlib.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
 as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
@@ -4932,16 +5414,18 @@ print(regex.split("[,;] *", "a, b;c"))
 a#b#
 [a, b, c]
 </code></pre>
-<blockquote>
-<p><strong>Known bug.</strong> <code>regex.match</code> is registered but can’t be called from source:
-<code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
-</blockquote>
-<!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
-<div class="crush-block" data-crush="fail" data-src="crush/stdlib.md:236" data-why="not implemented yet (GAP-KEYWORD-FIELD-NAMES); Run shows what happens today">
+<p><code>regex.match(pattern, s)</code> returns the whole match followed by the groups. (It used
+to be a parse error, because <code>match</code> is a keyword; since crush-ast CRUSH-394 a
+keyword is accepted as a name after a dot.)</p>
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:235" data-expect="[abc123, abc, 123]
+">
 <pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">[abc123, abc, 123]
+</code></pre>
 <h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
 <p>Also in the standard library: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
 <code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
@@ -4949,7 +5433,7 @@ a#b#
 <code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
 <code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
 helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
-<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:249" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:253" data-expect="5
 {ok: true, value: 5}
 false
 Hello World!
@@ -4985,7 +5469,7 @@ name on the command line (<code>crush run prog.crush a b</code> → <code>[a, b]
 <p class="crush-notebook-link"><a href="notebooks/crush/annotations.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>An annotation is an <code>@name</code> form written before a declaration (or at the top of
 a file). Three kinds exist:</p>
@@ -5133,7 +5617,7 @@ print(route("refund please"))
 <p class="crush-notebook-link"><a href="notebooks/crush/diagnostics.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>This page is about how the tools <em>report</em> a problem; the language’s own
 <code>try</code>/<code>catch</code>/<code>throw</code> is in <a href="#errors-try--catch--throw">Control Flow</a>.
@@ -5201,7 +5685,7 @@ separate, and the <code>[steps=…]</code> summary is on standard error as ever.
 <p class="crush-notebook-link"><a href="notebooks/crush/debugging.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p><code>crush debug FILE</code> (the same program as <code>crush-debug FILE</code>) runs a program under a
 debugger: breakpoints by source line, single-stepping, watchpoints on a variable, and
@@ -5296,7 +5780,8 @@ breakpoint produces:</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="windows-the-ui-api"><a class="header" href="#windows-the-ui-api">Windows: the <code>ui.*</code> API</a></h1>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31) <strong>up to the window</strong>: the
+<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31) <strong>up to the window</strong> (the
+page’s checked blocks also pass at <code>7f3fef31</code>): the
 refusal, the error without a display and the API below were checked against the
 release binaries and crush-ast’s source. The guide’s checker has no desktop session,
 so it has not opened a window; crush-ast says the same of its own desktop backend
@@ -5399,7 +5884,8 @@ million) because a window is long-lived, and the time spent waiting in <code>ui.
 <h1 id="engines-aot-and-walkers"><a class="header" href="#engines-aot-and-walkers">Engines, AOT and Walkers</a></h1>
 <blockquote>
 <p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31), with rustc 1.96, gcc, Python
-3.14 and Node 26 on the host.</p>
+3.14 and Node 26 on the host. The page’s checked blocks also pass at <code>7f3fef31</code>;
+the AOT and walker transcripts were not re-run there.</p>
 </blockquote>
 <p>One Crush program can run on several engines. crush-ast’s rule for them is
 <strong>“the VM is exact; every other engine is exact or loud”</strong>: an engine either
@@ -5489,7 +5975,8 @@ compiles and runs like Crush. This is separate from <code>@lang</code> blocks (w
 real interpreter): walked code runs on the Crush VM, under its capabilities.
 <code>crush-walk-run FILE</code> walks, compiles and runs a file by its extension
 (<code>.py</code>, <code>.js</code>/<code>.ts</code>, <code>.rs</code>, <code>.c</code>, <code>.go</code>, <code>.zig</code>, <code>.sh</code>, <code>.dart</code>, <code>.wasm</code>, …);
-<code>crush run</code> itself only takes <code>.crush</code>, <code>.casm</code> and <code>.cvm1</code>.</p>
+<code>crush run</code> itself takes <code>.crush</code>, CAST (<code>.cast.json</code>, <code>.castb</code>), <code>.casm</code> (CASM
+JSON), <code>.cvms</code> (assembly) and <code>.cvm1</code>.</p>
 <p>Walkers follow the same exact-or-loud rule. A Python program prints exactly what
 <code>python3</code> prints:</p>
 <pre><code class="language-console">$ cat fact.py
@@ -5541,7 +6028,7 @@ sum of squares: 30
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>Runnable Crush programs. Every program and every output block on these pages is
-executed against crush-ast <code>bad81048</code> by <code>scripts/check-examples.py</code>, so what you
+executed against crush-ast <code>7f3fef31</code> by <code>scripts/check-examples.py</code>, so what you
 read is what happens. Pages also record where a
 language feature is <em>not yet implemented</em>, with the crush-ast ticket.</p>
 <div class="table-wrapper">
@@ -5821,16 +6308,17 @@ not found
 <li><code>throw expr</code> — the rest of the <code>try</code> body is skipped</li>
 <li>Output printed before the <code>throw</code> is kept (<code>5</code> above)</li>
 <li>Thrown values may be strings, numbers, or objects (<code>err.code</code>)</li>
-<li><code>catch</code> handles only values raised with <code>throw</code>. A VM fault such as
-<code>1 / 0</code>, a failed capability call, or a crashing polyglot block ends the program
-instead — see <a href="#what-catch-does-not-catch">Control Flow</a></li>
+<li><code>catch</code> also handles VM faults such as <code>1 / 0</code> and failed capability calls
+(the caught value prints as <code>error(&lt;message&gt;)</code>); a crashing polyglot block or an
+exhausted quota still ends the program — see
+<a href="#what-catch-catches">Control Flow</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="structs-and-concurrency"><a class="header" href="#structs-and-concurrency">Structs (and Concurrency)</a></h1>
 <p class="crush-notebook-link"><a href="notebooks/examples/concurrency-structs.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>A struct is declared once (on one line), built with a literal, and given methods
 in an <code>impl</code> block. Structs are passed by reference.</p>
@@ -5917,7 +6405,7 @@ finished: 2
 <p class="crush-notebook-link"><a href="notebooks/examples/lambdas.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <h2 id="the-pipeline-operator"><a class="header" href="#the-pipeline-operator">The pipeline operator</a></h2>
 <p><code>x |&gt; f</code> calls <code>f(x)</code>; <code>x |&gt; f(y)</code> calls <code>f(x, y)</code>. Chains read left to right and
@@ -6016,48 +6504,53 @@ print(parallel_map([1, 2, 3], triple))
 <p class="crush-notebook-link"><a href="notebooks/examples/imports.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
-<blockquote>
-<p><strong>Not yet implemented.</strong> Every form of <code>import</code> parses, but <strong>none of them load
-anything</strong> — the compiler lowers each to a capability that the runtime does not
-provide, so the program is refused before it runs. The only import form that
-works is <code>use @lang</code>, which declares a module for polyglot blocks. This is
-crush-ast <strong>CRUSH-110</strong> (open): today there is no way to share code between files.</p>
-</blockquote>
+<p>Crush has one import that loads Crush code, <code>import a.b</code>, resolved <strong>at compile
+time</strong> from <code>.crush</code> files (crush-ast CRUSH-110), and a few other forms. This page
+lists each with what it does at the pinned commit. The rules for modules, packages
+and <code>pub</code> are in <a href="#modules-packages-and-visibility">Modules, Packages and Visibility</a>.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Form</th><th style="text-align: center">Parses</th><th>Runs</th></tr>
+<tr><th>Form</th><th>What happens</th></tr>
 </thead>
 <tbody>
-<tr><td><code>import io</code> / <code>import fs as files</code> / <code>import net { a, b }</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: module.load</code></td></tr>
-<tr><td><code>use @mcp "url" { tools } as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: mcp.connect, mcp.get_tool</code></td></tr>
-<tr><td><code>use @cap "cap.path" { names } as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: cap.acquire</code></td></tr>
-<tr><td><code>import @git "url" as alias</code>, <code>import @http "url" as alias</code></td><td style="text-align: center">yes</td><td>refused: <code>not available in this host: external.load</code></td></tr>
-<tr><td><code>use @lang python "math" [as m]</code></td><td style="text-align: center">yes</td><td>runs; see below</td></tr>
+<tr><td><code>import util.strings</code>, <code>import util.strings as s</code>, <code>import util.strings { twice }</code></td><td>loads <code>util/strings.crush</code> at compile time; see <a href="#modules-packages-and-visibility">Modules</a></td></tr>
+<tr><td><code>import io</code>, <code>import fs as files</code> (no such file)</td><td>compile error: <code>`import fs`: module not found — no fs.crush in any of: …</code></td></tr>
+<tr><td><code>import @http "url" as x</code>, <code>import @git "url" as x</code>, <code>import @file "path" as x</code></td><td>compile error: <code>is not supported yet: no Crush host can load an external resource</code></td></tr>
+<tr><td><code>use @mcp "url" { tools } as alias</code></td><td>compile error: <code>is not supported yet: no Crush host implements MCP client connections</code></td></tr>
+<tr><td><code>use @cap "cap.path" { "names" } as alias</code></td><td>compiles, refused before running: <code>not available in this host: cap.acquire</code></td></tr>
+<tr><td><code>use @lang python "math" [as m]</code></td><td>runs; see below</td></tr>
 </tbody>
 </table>
 </div>
-<p>Each failing form is checked below, so this page will say so the day one starts
-working:</p>
-<!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:23" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<p>The capabilities are not modules: <code>fs.read(...)</code> is available to a program run with
+<code>--fs</code> without any import, and <code>import fs</code> looks for a file named <code>fs.crush</code>.</p>
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:23" data-why="this example shows a compile error">
 <pre><code class="language-crush">import fs as files
 print("loaded")
 </code></pre>
 </div>
 
-<!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:29" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:29" data-why="this example shows a compile error">
 <pre><code class="language-crush">use @mcp "https://api.github.com" { "issues.list", "repos.get" } as github
 print("loaded")
 </code></pre>
 </div>
 
-<!-- check: nyi CRUSH-110 -->
-<div class="crush-block" data-crush="fail" data-src="examples/imports.md:35" data-why="not implemented yet (CRUSH-110); Run shows what happens today">
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:35" data-why="this example shows a compile error">
 <pre><code class="language-crush">import @http "https://example.com/data.json" as data
+print("loaded")
+</code></pre>
+</div>
+
+<!-- check: runfail not available in this host: cap.acquire -->
+<div class="crush-block" data-crush="fail" data-src="examples/imports.md:41" data-why="this example shows a run-time error" data-expect-error="not available in this host: cap.acquire">
+<pre><code class="language-crush">use @cap "fs.read" { "read" } as r
 print("loaded")
 </code></pre>
 </div>
@@ -6066,7 +6559,7 @@ print("loaded")
 <p><code>use @lang &lt;language&gt; "&lt;module&gt;" [as &lt;alias&gt;]</code> writes the import into every later
 block of that language, under the module’s own name and the alias:</p>
 <!-- check: flags --polyglot -->
-<div class="crush-block" data-crush="run" data-src="examples/imports.md:46" data-expect="126
+<div class="crush-block" data-crush="run" data-src="examples/imports.md:52" data-expect="126
 " data-grants="polyglot.python">
 <pre><code class="language-crush">use @lang python "math" as m
 
@@ -6080,10 +6573,27 @@ print(v)
 <!-- check: output -->
 <pre><code class="language-text">126
 </code></pre>
-<h2 id="sharing-code-today"><a class="header" href="#sharing-code-today">Sharing code today</a></h2>
-<p>Put helper functions in the same file, or do the work in a polyglot block. The
-only cross-file mechanism that exists is outside the language: run several
-programs and pass data through files or the host.</p>
+<h2 id="sharing-code-between-files"><a class="header" href="#sharing-code-between-files">Sharing code between files</a></h2>
+<p>Put shared functions in a module and import it:</p>
+<!-- check: compile -->
+<div class="crush-block" data-crush="none" data-src="examples/imports.md:71" data-why="a fragment: it compiles, but needs setup from the surrounding text to run">
+<pre><code class="language-crush">// util/strings.crush
+fn shout(s) { return str.to_upper(s) + "!" }
+fn twice(s) { return s + s }
+</code></pre>
+</div>
+
+<!-- check: skip multi-file program: examples/verified/modules/import-forms -->
+<div class="crush-block" data-crush="none" data-src="examples/imports.md:78" data-why="not a standalone program: multi-file program: examples/verified/modules/import-forms">
+<pre><code class="language-crush">import util.strings as s
+print(s.shout("hi"))
+</code></pre>
+</div>
+
+<pre><code class="language-text">HI!
+</code></pre>
+<p>Run it from the directory that holds both files (<code>crush run main.crush</code>), or point
+<code>-L</code> / <code>CRUSH_PATH</code> at the directory that holds <code>util/</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="system-info-report"><a class="header" href="#system-info-report">System Info Report</a></h1>
 <p class="crush-notebook-link"><a href="notebooks/examples/sysinfo.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
@@ -6142,8 +6652,7 @@ the first failure.</p>
 <div class="crush-block" data-crush="host" data-src="examples/build-pipeline.md:11" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// A tiny build pipeline: run each step as a process, stop at the first failure.
 fn run_tool(cmd: String, arg: String) -&gt; Int {
-    let raw = process.exec(cmd, arg)
-    let res = json.parse(raw)
+    let res = process.exec(cmd, arg)
     return res.exit_code
 }
 
@@ -6183,9 +6692,10 @@ pipeline stopped
 <p><strong>What this shows:</strong></p>
 <ul>
 <li><strong>Capability-gated side effects.</strong> <code>process.exec</code> only exists because of the
-<code>--process</code> flag; without it the program fails with <code>unknown capability: process.exec</code>.</li>
-<li><strong>Structured results.</strong> <code>process.exec(cmd, arg)</code> returns a JSON string with
-<code>exit_code</code>, <code>stdout</code> and <code>stderr</code>; <code>json.parse</code> turns it into an object.</li>
+<code>--process</code> flag; without it the program is refused before it runs, naming
+<code>--process: process.exec</code>.</li>
+<li><strong>Structured results.</strong> <code>process.exec(cmd, arg)</code> returns a map with
+<code>exit_code</code>, <code>stdout</code> and <code>stderr</code> (a JSON string before crush-ast 0.11).</li>
 <li><strong>Fail-fast.</strong> <code>step</code> returns the exit code, <code>main</code> breaks out of the loop on
 the first non-zero one.</li>
 <li><strong>Data-driven steps.</strong> The pipeline is an array of <code>[name, command, argument]</code>
@@ -6205,7 +6715,7 @@ toolchain.</p>
 <p>Run it with <code>crush run --polyglot poly.crush</code> (needs <code>python3</code>, <code>node</code> and <code>bash</code>
 on <code>PATH</code>; <code>crush doctor</code> checks).</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <!-- check: flags --polyglot -->
 <div class="crush-block" data-crush="host" data-src="examples/async-dom.md:14" data-why="uses `@bash` blocks (polyglot), which the in-browser runtime does not provide">
@@ -6375,7 +6885,7 @@ produce it from other languages, and an AI agent can write it directly (see
  an agent's JSON ──────┘
 </code></pre>
 <p>This page is the schema reference. It is derived from <code>crates/crush-cast/src/lib.rs</code>
-in crush-ast (verified against <code>bad81048</code>, 2026-10-31); the examples are accepted by <code>crush_cast::validate_json</code>,
+in crush-ast (verified against <code>7f3fef31</code>, 2026-11-16); the examples are accepted by <code>crush_cast::validate_json</code>,
 compiled and run by this guide’s checker.</p>
 <h2 id="document-structure"><a class="header" href="#document-structure">Document structure</a></h2>
 <pre><code class="language-json">{
@@ -6637,15 +7147,10 @@ CBOR:</p>
 </table>
 </div>
 <p><code>Program::deserialize</code> / <code>load</code> check <code>cast_version</code> and refuse a different <strong>major</strong>
-than <code>CAST_VERSION</code> (<code>"0.1"</code>): <code>version mismatch at cast boundary: expected 0.1, found …</code>. The corpus in <code>examples/cast/</code> uses <code>"0.1"</code> / <code>"0.1.0"</code>.</p>
-<blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> The Crush front end stamps the trees
-it produces <code>cast_version: "1.0.0"</code>, which the versioned loader then rejects — so a
-CAST dump from the compiler cannot be re-loaded with <code>Program::load</code>, though
-<code>serde_json</code> and <code>validate_json</code> accept it. When you write CAST by hand or from an
-agent, use <code>"0.1.0"</code>.</p>
-</blockquote>
-<!-- check: cast-load-fails version mismatch at cast boundary: expected 0.1, found 1.0.0 -->
+than <code>CAST_VERSION</code> (<code>"0.1.0"</code>): <code>version mismatch at cast boundary: expected 0.1.0, found …</code>. Every producer, the Crush front end included, writes <code>"0.1.0"</code>
+(from <code>v0.3.9</code> through <code>v0.9.0</code> the front end stamped <code>"1.0.0"</code> and the loader
+rejected its own output). A tree with major version <code>1</code> is refused:</p>
+<!-- check: cast-load-fails version mismatch at cast boundary: expected 0.1.0, found 1.0.0 -->
 <!-- check: cast-json -->
 <pre><code class="language-json">{ "cast_version": "1.0.0", "entry": "main", "lang": null,
   "functions": { "main": { "params": [], "body": [], "meta": {} } } }
@@ -6667,7 +7172,7 @@ when the call is a statement and the capability returns a value).</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
 <p>CAST is JSON. An agent that knows the <a href="#cast--the-crush-ast">schema</a> can emit a complete
@@ -6879,11 +7384,13 @@ backend will replace, so the gate names are the stable part:</li>
 <pre><code class="language-text">{kind: query, echo: [{q: capital of France}], ok: true}
 </code></pre>
 <ul>
-<li><strong>An embedder that registers nothing</strong> (<code>Runtime::new()</code>) gets <code>null</code> from every
-AI opcode, silently (crush-ast
+<li><strong>An embedder that registers nothing</strong> (<code>Runtime::new()</code>) gets a run-time error
+from every AI opcode, naming the gate (crush-ast CRUSH-234; before <code>v0.11.0</code> the
+opcode returned <code>null</code> silently,
 <a href="https://github.com/nixpt/crush-ast/issues/261">#261</a>). So a statement such as
-<code>GoalDeclaration</code> runs and does nothing:</li>
+<code>GoalDeclaration</code> stops the program:</li>
 </ul>
+<!-- check: runfail capability denied by host: ai_native.goal_declaration -->
 <!-- check: cast-json -->
 <pre><code class="language-json">{
   "cast_version": "0.1.0", "entry": "main", "lang": null,
@@ -6895,10 +7402,10 @@ AI opcode, silently (crush-ast
   ] } }
 }
 </code></pre>
-<!-- check: output -->
-<pre><code class="language-text">after the goal
+<pre><code class="language-text">capability denied by host: ai_native.goal_declaration: AI op 'goal_declaration' not granted / no AI host registered (grant `ai_native` via HostCapsBuilder::ai_native(true) and register a provider)
 </code></pre>
-<p>and an expression such as <code>Query</code> evaluates to <code>null</code>:</p>
+<p>and so does an expression such as <code>Query</code>:</p>
+<!-- check: runfail capability denied by host: ai_native.query -->
 <!-- check: cast-json -->
 <pre><code class="language-json">{
   "cast_version": "0.1.0", "entry": "main", "lang": null,
@@ -6910,9 +7417,6 @@ AI opcode, silently (crush-ast
       "args": [ { "type": "Var", "name": "answer" } ] } }
   ] } }
 }
-</code></pre>
-<!-- check: output -->
-<pre><code class="language-text">null
 </code></pre>
 <ul>
 <li><strong>Three statements are refused.</strong> <code>CapabilityDiscovery</code>, <code>AdaptationRequest</code> and
@@ -6984,13 +7488,15 @@ it comes from mixing them up:</p>
 </thead>
 <tbody>
 <tr><td><strong>CASM IR</strong> (JSON)</td><td>The compiler’s structured output: functions of JSON instructions, <code>{"op": "push_int", "value": 42}</code></td><td><code>.casm</code> JSON, or <code>.casmb</code> (MessagePack)</td><td>the <code>casm</code> crate (<code>casm::Program</code>)</td><td><code>compile_crush_to_casm</code> produces it; embedders load it with <code>casm::Program::load</code></td></tr>
-<tr><td><strong>CASM text</strong></td><td>A line-oriented assembly you can write by hand: <code>.func main</code> / <code>PUSH 42</code> / <code>CAP_CALL "io.print" 1</code></td><td><code>.casm</code></td><td><code>crush-vm</code>’s assembler</td><td><code>crushc --emit casm</code> prints it; <code>crush-run run x.casm</code> and <code>crush-compile</code> consume it</td></tr>
+<tr><td><strong>CASM text</strong> (CVM1 assembly)</td><td>A line-oriented assembly you can write by hand: <code>.func main</code> / <code>PUSH 42</code> / <code>CAP_CALL "io.print" 1</code></td><td><code>.cvms</code></td><td><code>crush-vm</code>’s assembler</td><td><code>crushc --emit cvms</code> prints it; <code>crush-run run x.cvms</code> and <code>crush-compile</code> consume it</td></tr>
 <tr><td><strong>CVM1</strong> (binary)</td><td>The bytecode the VM actually executes: magic <code>CVM1</code>, constant pool, flat code</td><td><code>.cvm1</code></td><td><code>crush-vm</code> (<code>bytecode.rs</code>)</td><td><code>crushc</code> writes it; <code>crush-run run x.cvm1</code> runs it</td></tr>
 </tbody>
 </table>
 </div>
-<p>(The extension <code>.casm</code> is shared by the JSON IR and the text assembly; the tools
-that read a file expect one of them — <code>crush-run</code> expects text.)</p>
+<p>(Up to crush-ast v0.9.0 the extension <code>.casm</code> was shared by the JSON IR and the
+text assembly. Since v0.10.0 (#365) <code>.casm</code> means the JSON IR and the text is
+<code>.cvms</code>; <code>crush-run</code> still runs text in a <code>.casm</code> file, with a note asking you to
+rename it. This guide’s text examples are labelled <code>casm</code> but are CVM1 assembly.)</p>
 <p>They fit together like this:</p>
 <pre><code> Crush source ──parse──▶ CAST (JSON AST) ──compile──▶ CASM IR (JSON) ──lower──▶ CASM text ──assemble──▶ CVM1 bytes ──▶ VM
                                                                       (crush_lang_sdk::compile::casm_to_vm)
@@ -7024,7 +7530,7 @@ debuggers only).</li>
 </ul>
 <h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
 <p>Compile a small program to text assembly:</p>
-<div class="crush-block" data-crush="run" data-src="casm/README.md:55" data-expect="x = 5
+<div class="crush-block" data-crush="run" data-src="casm/README.md:57" data-expect="x = 5
 ">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b
@@ -7077,7 +7583,7 @@ function called <code>main</code>.</p>
 <p>Every instruction has two spellings: the <strong>JSON name</strong> used in the CASM IR
 (<code>"op": "push_int"</code>) and the <strong>CVM1 mnemonic</strong> used in the text assembly and the
 binary (<code>PUSH</code>). The tables below give both, the operand, and the stack effect.
-Behaviour was checked against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31); the examples at the
+Behaviour was checked against crush-ast <code>7f3fef31</code> (main, 2026-11-16); the examples at the
 end of each section are run by this guide’s checker.</p>
 <h2 id="reading-stack-effects"><a class="header" href="#reading-stack-effects">Reading stack effects</a></h2>
 <p><code>a b → c</code> means: pop <code>b</code> (the <strong>top</strong>), pop <code>a</code>, push <code>c</code>. The rightmost value is
@@ -7106,7 +7612,7 @@ section</a> lists exactly which IR ops reach the VM.</p>
 <tr><td><code>pop</code></td><td><code>POP</code></td><td>—</td><td><code>a →</code></td><td></td></tr>
 <tr><td><code>dup</code></td><td><code>DUP</code></td><td>—</td><td><code>a → a a</code></td><td></td></tr>
 <tr><td><code>swap</code></td><td><code>SWAP</code></td><td>—</td><td><code>a b → b a</code></td><td></td></tr>
-<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>bad81048</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
+<tr><td><code>rot</code></td><td><code>ROT</code></td><td>—</td><td><code>a b c → b a c</code></td><td>as observed on <code>7f3fef31</code>; <strong>not</strong> Forth’s <code>ROT</code></td></tr>
 <tr><td><code>pick</code></td><td><code>PICK n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td>copy the item <code>n</code> below the top (<code>PICK 2</code> copies the third)</td></tr>
 <tr><td><code>roll</code></td><td><code>ROLL n</code></td><td><code>n</code></td><td><code>… → … v</code></td><td><em>move</em> the item <code>n</code> below the top to the top</td></tr>
 <tr><td>—</td><td><code>NOP</code></td><td>—</td><td>—</td><td>text/binary only</td></tr>
@@ -7467,7 +7973,7 @@ program. It handles exactly these IR operations:</p>
 </div>
 <p>(crush-ast keeps this classification exhaustive in its
 <code>crush-lang-sdk/tests/casm_lowering_completeness.rs</code>; the spot checks below were
-run against <code>bad81048</code>.) A bit shift lowers and runs:</p>
+run against <code>7f3fef31</code>.) A bit shift lowers and runs:</p>
 <!-- check: casm-json -->
 <!-- check: output -->
 <pre><code class="language-json">{
@@ -7517,7 +8023,7 @@ are taken from <code>crates/casm/src/lib.rs</code>, <code>crates/crush-vm/src/as
 <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>version</code></td><td>string</td><td>yes</td><td>CASM format version. The loader accepts any version whose <strong>major</strong> is <code>1</code> (<code>CASM_VERSION = "1.0"</code>); the Crush compiler writes <code>"1.0.0"</code>. Anything else is rejected at load time.</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>yes</td><td>CASM format version. The loader accepts any version whose <strong>major</strong> is <code>1</code> (<code>CASM_VERSION = "1.0"</code>); the Crush compiler writes <code>"1.0"</code>. Anything else is rejected at load time.</td></tr>
 <tr><td><code>functions</code></td><td>object</td><td>yes</td><td>function name → function definition</td></tr>
 <tr><td><code>manifest</code></td><td>object</td><td>no</td><td><code>{"permissions": [capability names…]}</code>. Defaults to no permissions.</td></tr>
 <tr><td><code>lang</code></td><td>string</td><td>no</td><td>source-language hint (<code>"crush"</code>, <code>"python"</code>, …); informational</td></tr>
@@ -7628,8 +8134,9 @@ registered. When the Crush compiler lowers a program it adds every capability th
 code actually calls, so a manifest only matters when you write or edit IR by hand
 (or want to <em>restrict</em> a program).</p>
 <h2 id="the-text-assembly"><a class="header" href="#the-text-assembly">The text assembly</a></h2>
-<p>This is what <code>crushc --emit casm</code> prints and <code>crush-run run FILE.casm</code> /
-<code>crush-compile</code> read. One instruction per line:</p>
+<p>This is what <code>crushc --emit cvms</code> prints and <code>crush-run run FILE.cvms</code> /
+<code>crush-compile</code> read (<code>.cvms</code>, CVM1 assembly; up to v0.9.0 it was <code>.casm</code>, which
+<code>crush-run</code> still accepts with a note). One instruction per line:</p>
 <pre><code class="language-casm">; a comment (# also works)
 .func main              ; start of function "main"
     PUSH 40
@@ -7663,21 +8170,28 @@ anonymous routine starting at offset 0.</li>
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
-<p><code>crush-run</code> does not infer permissions from a <code>.casm</code> file: pass the capabilities
-the program uses with <code>--cap</code> (e.g. <code>crush-run run prog.casm --cap io.print</code>).</p>
+<p><code>crush-run</code> does not infer permissions from assembly text: list them with <code>.cap NAME</code>
+lines (as <code>crushc --emit cvms</code> writes them), or pass the capabilities the program
+uses with <code>--cap</code> (e.g. <code>crush-run run prog.cvms --cap io.print</code>).</p>
 <h2 id="the-cvm1-binary"><a class="header" href="#the-cvm1-binary">The CVM1 binary</a></h2>
 <p><code>crushc x.crush -o x.cvm1</code> writes this layout (all multi-byte integers
 big-endian):</p>
 <pre><code> offset  size   field
       0     4   magic            "CVM1"
-      4     1   version          2   (versions 1 and 2 are accepted)
+      4     1   version          2, or 3 when a kind table follows (1 to 3 are accepted)
       5     2   manifest_len
       7     n   manifest         JSON: {"runtime", "permissions", "name"?, "functions"?, "entry"?}
             2   n_consts
             …   consts           n_consts × ( 2-byte length + UTF-8 bytes )
             4   code_len
             …   code             flat bytecode
+  (version 3 only)
+            1   kt_format        1, or 2 for a module that needs a newer COSM
+            4   kt_len
+            …   kind table       the program's kinds (structs, traits) as canonical COSM JSON
 </code></pre>
+<p>A program with no <code>struct</code> or <code>trait</code> is written as version 2, as before; one with
+kinds gets version 3 and the trailing kind table.</p>
 <p>The constant pool holds every string the code names: <code>PUSH_STR</code> literals, capability
 names and function names. A capability name or a string is limited to 65 535 bytes
 and the pool to 65 536 entries because indices are 16-bit. The <code>functions</code> table in
@@ -7732,9 +8246,9 @@ version checks that gate loading. For the layouts themselves see
 <tr><td>source</td><td>Crush text</td><td><code>.crush</code></td><td>you</td><td><code>crushc</code>, <code>crush-run</code>, <code>crush run</code></td></tr>
 <tr><td>CAST</td><td>JSON</td><td><code>.cast.json</code> (any non-<code>.castb</code>/<code>.cbor</code> name)</td><td>walkers, agents, <code>casm</code>-side tools</td><td><code>crush_cast::Program::{deserialize,load}</code>, <code>crush_frontend::compile_cast</code></td></tr>
 <tr><td>CAST</td><td>CBOR</td><td><code>.castb</code>, <code>.cbor</code></td><td><code>crush_cast::Program::save</code></td><td>same</td></tr>
-<tr><td>CASM IR</td><td>JSON</td><td><code>.casm</code></td><td><code>casm::Program::{serialize,save}</code></td><td><code>casm::Program::{deserialize,load}</code></td></tr>
-<tr><td>CASM IR</td><td>MessagePack</td><td><code>.casmb</code></td><td><code>casm::Program::{serialize,save}</code></td><td><strong>see the bug note below</strong></td></tr>
-<tr><td>CASM text</td><td>assembly</td><td><code>.casm</code></td><td><code>crushc --emit casm</code>, you</td><td><code>crush-run run</code>, <code>crush-compile</code></td></tr>
+<tr><td>CASM IR</td><td>JSON</td><td><code>.casm</code></td><td><code>casm::Program::{serialize,save}</code>, <code>crushc --emit casm</code></td><td><code>casm::Program::{deserialize,load}</code>, <code>crush-run run</code>, <code>crush-compile</code></td></tr>
+<tr><td>CASM IR</td><td>MessagePack</td><td><code>.casmb</code></td><td><code>casm::Program::{serialize,save}</code></td><td><code>casm::Program::{deserialize,load}</code></td></tr>
+<tr><td>CASM text</td><td>assembly</td><td><code>.cvms</code> (<code>.casm</code> before v0.10.0)</td><td><code>crushc --emit cvms</code>, you</td><td><code>crush-run run</code>, <code>crush-compile</code></td></tr>
 <tr><td>CVM1</td><td>binary</td><td><code>.cvm1</code></td><td><code>crushc -o</code>, <code>crush build</code>, <code>crush-compile</code></td><td><code>crush-run run</code>, <code>crush run</code>, <code>Runtime::run_blob</code></td></tr>
 </tbody>
 </table>
@@ -7770,22 +8284,23 @@ compiled program is verbose: the five-line <code>add</code> program in the
 <p><code>Program::serialize(Format::Binary)</code> writes the line <code>#!/usr/bin/env crush run</code>
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
 executable on Unix. The reader skips a leading <code>#!</code> line.</p>
-<blockquote>
-<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> A <code>.casmb</code> file cannot be read back. The
-writer emits MessagePack’s compact array encoding but <code>Instruction</code> flattens its
-operands into a map, so every load fails with <code>invalid type: sequence, expected a map</code>. Until that is fixed, treat <code>.casmb</code> as write-only and ship <code>.cvm1</code>
-instead. The block below fails exactly this way:</p>
-</blockquote>
-<!-- check: casmb-fails expected a map -->
+<p>A <code>.casmb</code> file can be read back (from crush-ast <code>v0.3.9</code> through <code>v0.11.2</code> every
+load failed with <code>invalid type: sequence, expected a map</code>; CRUSH-392 fixed it on
+main). This program is written as <code>.casmb</code> and loaded again:</p>
+<!-- check: casmb-roundtrip -->
 <!-- check: casm-json -->
 <pre><code class="language-json">{
   "version": "1.0",
   "functions": { "main": { "body": [ {"op": "halt"} ] } }
 }
 </code></pre>
-<p>Note also that <code>crush run</code> and <code>crush-run run</code> accept only <code>.crush</code>, <code>.casm</code> (as
-<em>text assembly</em>) and <code>.cvm1</code>. Neither can execute IR JSON or <code>.casmb</code> directly; that
-needs the Rust API.</p>
+<!-- check: output -->
+<pre><code class="language-text">round-tripped 1 functions
+</code></pre>
+<p><code>crush run</code> and <code>crush-run run</code> take <code>.crush</code>, CAST (<code>.cast.json</code>, <code>.castb</code>), CASM
+IR JSON (<code>.casm</code>), assembly text (<code>.cvms</code>) and <code>.cvm1</code>, one extension per format
+(crush-ast #365, v0.10.0). Assembly text in a <code>.casm</code> file still runs, with a note
+asking you to rename it to <code>.cvms</code>.</p>
 <h2 id="cvm1-cvm1"><a class="header" href="#cvm1-cvm1">CVM1 (<code>.cvm1</code>)</a></h2>
 <p>The executable form: <code>CVM1</code> magic, a version byte, a JSON manifest, a constant
 pool and a flat code section, described byte by byte in
@@ -7793,7 +8308,7 @@ pool and a flat code section, described byte by byte in
 <pre><code class="language-bash">crushc add.crush -o add.cvm1     # or: crush build add.crush
 crush-run run add.cvm1
 </code></pre>
-<pre><code class="language-bash">crush-compile prog.casm -o prog.cvm1 --cap io.print --name prog   # text assembly -&gt; CVM1
+<pre><code class="language-bash">crush-compile prog.cvms -o prog.cvm1 --cap io.print --name prog   # text assembly -&gt; CVM1
 </code></pre>
 <h2 id="version-gates"><a class="header" href="#version-gates">Version gates</a></h2>
 <p>Every loader fails closed on an incompatible version, comparing the <strong>major</strong>
@@ -7805,8 +8320,8 @@ component only (minor bumps stay compatible):</p>
 </thead>
 <tbody>
 <tr><td>CASM IR</td><td><code>casm::CASM_VERSION = "1.0"</code></td><td><code>version</code> with major <code>1</code> (<code>"1.0"</code>, <code>"1.0.0"</code>, <code>"1.4"</code>)</td><td><code>version mismatch at casm boundary: expected 1.0, found 2.0</code></td></tr>
-<tr><td>CVM1</td><td><code>bytecode::VERSION = 2</code></td><td>version byte <code>1</code> or <code>2</code></td><td><code>UnsupportedVersion(n)</code></td></tr>
-<tr><td>CAST</td><td><code>crush_cast::CAST_VERSION = "0.1"</code></td><td><code>cast_version</code> with major <code>0</code></td><td><code>version mismatch at cast boundary: expected 0.1, found …</code></td></tr>
+<tr><td>CVM1</td><td><code>bytecode::VERSION = 3</code></td><td>version byte <code>1</code> to <code>3</code></td><td><code>UnsupportedVersion(n)</code></td></tr>
+<tr><td>CAST</td><td><code>crush_cast::CAST_VERSION = "0.1.0"</code></td><td><code>cast_version</code> with major <code>0</code></td><td><code>version mismatch at cast boundary: expected 0.1.0, found …</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -7815,14 +8330,10 @@ component only (minor bumps stay compatible):</p>
 <!-- check: runfail version mismatch at casm boundary: expected 1.0, found 0.1 -->
 <pre><code class="language-json">{ "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 </code></pre>
-<blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
-Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</code>. The
-versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
-<em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
-programs in <code>examples/cast/</code> carry <code>"0.1.0"</code> and load fine. See
+<p>Every producer now writes <code>cast_version: "0.1.0"</code>, the front end included, so a
+CAST dump from the compiler loads again with the versioned loader (from <code>v0.3.9</code>
+through <code>v0.9.0</code> the front end stamped <code>"1.0.0"</code>, which that loader rejected). See
 <a href="#serialization">CAST</a>.</p>
-</blockquote>
 <h2 id="rust-api"><a class="header" href="#rust-api">Rust API</a></h2>
 <pre class="playground"><code class="language-rust no_run">use casm::{Format, Program};
 
@@ -7864,13 +8375,14 @@ and let the compiler produce CASM — see the doctrine there.</li>
 <p class="crush-notebook-link"><a href="notebooks/casm/examples.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <p>Every program here is CASM <strong>text assembly</strong> — the form you can write by hand and run
-with <code>crush-run run FILE.casm --cap io.print</code> — and every one is executed by this
-guide’s checker against crush-ast <code>bad81048</code>, with the output shown. The JSON IR is
+with <code>crush-run run FILE.cvms --cap io.print</code> (<code>.cvms</code> since crush-ast v0.10.0; a
+<code>.casm</code> file of text still runs, with a note to rename it) — and every one is executed by this
+guide’s checker against crush-ast <code>7f3fef31</code>, with the output shown. The JSON IR is
 covered in <a href="#program-structure">Program Structure</a> and
 <a href="#serialization-formats">Serialization</a>. Opcode details are in the
 <a href="#instruction-set-reference">Instruction Reference</a>.</p>
 <p>All programs print with <code>CAP_CALL "io.print" N</code>, so run them with <code>--cap io.print</code>
-(a <code>.casm</code> file carries no permissions of its own).</p>
+(an assembly file carries no permissions unless it has <code>.cap NAME</code> lines).</p>
 <h2 id="1-hello-world"><a class="header" href="#1-hello-world">1. Hello, world</a></h2>
 <pre><code class="language-casm">.func main
     PUSH_STR "Hello, CASM!"
@@ -8059,7 +8571,7 @@ end:
 it ends the program with a <code>[runtime]</code> error.</p>
 <h2 id="8-host-capabilities"><a class="header" href="#8-host-capabilities">8. Host capabilities</a></h2>
 <p>File access needs the <code>--fs</code> flag <strong>and</strong> the capability in the manifest, so run
-this one as <code>crush-run run prog.casm --cap io.print --cap fs.exists --fs</code>:</p>
+this one as <code>crush-run run prog.cvms --cap io.print --cap fs.exists --fs</code>:</p>
 <!-- check: flags --cap fs.exists --fs -->
 <pre><code class="language-casm">.func main
     PUSH_STR "no-such-file.txt"
@@ -8086,7 +8598,7 @@ the VM stops at the call with <code>capability not declared in manifest: fs.exis
 <p>The text assembly is also what <code>crushc --emit casm</code> prints, so you can read how
 Crush constructs lower. Labels there are byte offsets (<code>L42</code>).</p>
 <p><strong><code>if</code> / <code>else</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:287" data-expect="big
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:288" data-expect="big
 ">
 <pre><code class="language-crush">let n = 3
 if n &gt; 2 {
@@ -8118,7 +8630,7 @@ L49:
     RET
 </code></pre>
 <p><strong><code>try</code> / <code>catch</code>:</strong></p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:322" data-expect="caught bad
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:323" data-expect="caught bad
 ">
 <pre><code class="language-crush">try {
     throw "bad"
@@ -8148,7 +8660,7 @@ L28:
 </code></pre>
 <p><strong><code>for x in array</code></strong> expands into an index loop: the array in slot 1, the index in
 slot 2, and <code>ARR_LEN … GT … JZ</code> as the loop test:</p>
-<div class="crush-block" data-crush="run" data-src="casm/examples.md:355" data-expect="6
+<div class="crush-block" data-crush="run" data-src="casm/examples.md:356" data-expect="6
 ">
 <pre><code class="language-crush">let t = 0
 for x in [1, 2, 3] { t = t + x }
@@ -8229,8 +8741,8 @@ Crush parser and the language walkers, or written directly by an agent. See
 <a href="#cast--the-crush-ast">CAST</a>.</p>
 <h3 id="casm-crush-assembly"><a class="header" href="#casm-crush-assembly">CASM (Crush Assembly)</a></h3>
 <p>The stack-machine instruction set programs compile to. The name covers the <strong>IR</strong>
-(JSON, <code>casm::Program</code>), the <strong>text assembly</strong> (<code>.func</code>/<code>PUSH</code>/<code>CAP_CALL</code>, the
-<code>.casm</code> files <code>crush-run</code> reads) and, one step down, the <strong>CVM1</strong> binary. See
+(JSON, <code>casm::Program</code>, <code>.casm</code> files), the <strong>text assembly</strong> (<code>.func</code>/<code>PUSH</code>/<code>CAP_CALL</code>,
+<code>.cvms</code> files) and, one step down, the <strong>CVM1</strong> binary. See
 <a href="#casm-overview">CASM</a>.</p>
 <h3 id="cvm1"><a class="header" href="#cvm1">CVM1</a></h3>
 <p>The binary bytecode format the VM executes (<code>.cvm1</code>): magic <code>CVM1</code>, a version byte, a
@@ -8292,7 +8804,7 @@ Python, JavaScript and Bash blocks). See <a href="#engines-aot-and-walkers">Engi
 <p class="crush-notebook-link"><a href="notebooks/appendix/quick_reference.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <p>Cheat sheets for the toolchain, the Crush language and CASM. Every code block that
-can run is run by the guide’s checker against crush-ast <code>bad81048</code>. Details live in
+can run is run by the guide’s checker against crush-ast <code>7f3fef31</code>. Details live in
 the chapters linked from each heading.</p>
 <h2 id="command-line-getting-started"><a class="header" href="#command-line-getting-started">Command line (<a href="#getting-started">Getting Started</a>)</a></h2>
 <div class="table-wrapper">
@@ -8301,12 +8813,12 @@ the chapters linked from each heading.</p>
 <tr><th>Command</th><th>Does</th></tr>
 </thead>
 <tbody>
-<tr><td><code>crush run FILE [flags]</code></td><td>run a <code>.crush</code>, <code>.casm</code> (text) or <code>.cvm1</code> file</td></tr>
+<tr><td><code>crush run FILE [flags]</code></td><td>run a <code>.crush</code>, <code>.cast.json</code>, <code>.casm</code> (CASM JSON), <code>.cvms</code> (assembly) or <code>.cvm1</code> file</td></tr>
 <tr><td><code>crush build FILE.crush</code></td><td>compile to <code>.cvm1</code></td></tr>
 <tr><td><code>crush-run run FILE [flags]</code></td><td>same as <code>crush run</code>; all the capability flags live here</td></tr>
 <tr><td><code>crush-run caps [FILE]</code></td><td>list the capabilities of your build, or what FILE needs (runs nothing)</td></tr>
 <tr><td><code>crushc FILE.crush -o OUT.cvm1</code></td><td>compile; <code>--emit casm|ast|types</code> prints a layer; <code>-C</code> only checks</td></tr>
-<tr><td><code>crush-compile FILE.casm -o OUT.cvm1 --cap NAME</code></td><td>assemble CASM text</td></tr>
+<tr><td><code>crush-compile FILE.cvms -o OUT.cvm1 --cap NAME</code></td><td>assemble CVM1 assembly text (or CASM JSON <code>.casm</code>)</td></tr>
 <tr><td><code>crush repl</code> / <code>crush-repl</code></td><td>interactive REPL (<code>.help</code>, <code>.quit</code>)</td></tr>
 <tr><td><code>crush doctor</code></td><td>which polyglot interpreters are on <code>PATH</code></td></tr>
 <tr><td><code>crush debug FILE --step --inspect</code></td><td>breakpoints, step, watch, print (<a href="#debugging">Debugging</a>)</td></tr>
@@ -8321,11 +8833,12 @@ library, which <code>--no-stdlib</code> removes): <code>--fs</code> <code>--fs-r
 <code>--net</code> (HTTP) <code>--tcp</code> <code>--tcp-listen</code> (raw sockets) <code>--process</code> <code>--crypto</code> <code>--db PATH</code> <code>--graphics</code> <code>--bus</code> <code>--task</code> <code>--akg</code>
 <code>--polyglot</code> <code>--cap NAME</code>. A program that needs an ungranted capability is refused
 before it runs; <code>--message-format json</code> makes errors one JSON object per line (<a href="#errors-and-diagnostics">Diagnostics</a>). Quotas:
-<code>--max-steps</code> (default 1,000,000), <code>--max-stack</code> (4,096), <code>--max-output</code> (1 MiB),
+<code>--max-steps</code> (default 1,000,000, or <code>unlimited</code>), <code>--max-wall-ms</code> (30,000 for the
+whole run, or <code>unlimited</code>), <code>--max-stack</code> (4,096), <code>--max-output</code> (1 MiB),
 <code>--max-call-depth</code> (256).</p>
 <h2 id="language-syntax"><a class="header" href="#language-syntax">Language (<a href="#syntax-and-grammar">Syntax</a>)</a></h2>
 <h3 id="variables-and-functions-1"><a class="header" href="#variables-and-functions-1">Variables and functions</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:36" data-expect="Hello, Alice
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:37" data-expect="Hello, Alice
 43
 ">
 <pre><code class="language-crush">let x = 42
@@ -8355,7 +8868,7 @@ print(add(x, 1))
 <li>No <code>let mut</code>, no <code>T?</code> types, no working <code>import</code> (CRUSH-110).</li>
 </ul>
 <h3 id="closures-closures"><a class="header" href="#closures-closures">Closures (<a href="#closures-and-function-values">Closures</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:65" data-expect="2
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:66" data-expect="2
 25
 ">
 <pre><code class="language-crush">fn make_counter() {
@@ -8378,7 +8891,7 @@ print(5 |&gt; sq)
 25
 </code></pre>
 <h3 id="control-flow-control-flow"><a class="header" href="#control-flow-control-flow">Control flow (<a href="#control-flow-1">Control Flow</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:88" data-expect="medium
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:89" data-expect="medium
 0
 1
 2
@@ -8426,7 +8939,7 @@ bindings and struct patterns; <code>return match …</code> returns its value.</
 <code>-</code> · pipeline <code>|&gt;</code> · ranges <code>a..b</code>, <code>a..=b</code>. There is no <code>**</code>, <code>//</code>, <code>+=</code>, bitwise
 operator or ternary. <code>Int</code> overflow and division by zero are run-time errors.</p>
 <h3 id="errors-1"><a class="header" href="#errors-1">Errors</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:135" data-expect="caught: disk full
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:136" data-expect="caught: disk full
 ">
 <pre><code class="language-crush">try {
     throw "disk full"
@@ -8440,7 +8953,7 @@ operator or ternary. <code>Int</code> overflow and division by zero are run-time
 <pre><code class="language-text">caught: disk full
 </code></pre>
 <h3 id="structs-and-objects-types"><a class="header" href="#structs-and-objects-types">Structs and objects (<a href="#data-types">Types</a>)</a></h3>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:150" data-expect="7
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:151" data-expect="7
 crush/en
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
@@ -8466,8 +8979,7 @@ crush/en
 <p>Capability calls are dotted and have <strong>no <code>@</code></strong>. They exist only if you enabled
 them:</p>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:178" data-expect="no notes
-" data-grants="fs">
+<div class="crush-block" data-crush="host" data-src="appendix/quick_reference.md:179" data-why="uses `fs.exists`, `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">if fs.exists("notes.txt") {
     print(fs.read("notes.txt"))
 } else {
@@ -8479,7 +8991,7 @@ them:</p>
 <!-- check: output -->
 <pre><code class="language-text">no notes
 </code></pre>
-<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:191" data-expect="ab3
+<div class="crush-block" data-crush="run" data-src="appendix/quick_reference.md:192" data-expect="ab3
 6
 ">
 <pre><code class="language-crush">io.print("a", "b", 3)
@@ -8497,7 +9009,7 @@ subprocesses, only with <code>--polyglot</code>, and with the host’s full auth
 by default). Names a block reads are passed in; the names after <code>-&gt;</code> come back.
 Without the flag the program is refused:</p>
 <!-- check: runfail --polyglot -->
-<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:210" data-why="this example shows a refusal" data-expect-error="--polyglot">
+<div class="crush-block" data-crush="fail" data-src="appendix/quick_reference.md:211" data-why="this example shows a refusal" data-expect-error="--polyglot">
 <pre><code class="language-crush">@python {
     print("hello from python")
 }
@@ -8512,7 +9024,7 @@ Without the flag the program is refused:</p>
 </thead>
 <tbody>
 <tr><td><code>Int</code></td><td><code>42</code>, <code>0x2A</code>, <code>0b101</code></td><td>64-bit, checked overflow</td></tr>
-<tr><td><code>Float</code></td><td><code>3.14</code></td><td>no exponent form</td></tr>
+<tr><td><code>Float</code></td><td><code>3.14</code>, <code>1.5e3</code></td><td>exponent form since 0.11</td></tr>
 <tr><td><code>String</code></td><td><code>"hello"</code>, <code>'hello'</code></td><td>UTF-8; <code>len</code> counts bytes</td></tr>
 <tr><td><code>Bool</code></td><td><code>true</code></td><td></td></tr>
 <tr><td><code>Null</code></td><td><code>null</code></td><td></td></tr>
@@ -8575,15 +9087,17 @@ Without the flag the program is refused:</p>
 <p>Stack effects and the JSON-IR names are in the
 <a href="#instruction-set-reference">Instruction Reference</a>. Remember: arguments are pushed
 <strong>first argument first</strong> (<code>PUSH_STR "a"</code>, <code>PUSH_STR "b"</code>, <code>CAP_CALL "io.print" 2</code>
-prints <code>ab</code>), and a <code>.casm</code> file needs <code>--cap</code> for every capability it calls.</p>
+prints <code>ab</code>), and an assembly file (<code>.cvms</code>) needs <code>--cap</code> (or a <code>.cap</code> line) for
+every capability it calls.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="language-comparisons"><a class="header" href="#language-comparisons">Language Comparisons</a></h1>
 <p class="crush-notebook-link"><a href="notebooks/appendix/comparison.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="#chapters-as-notebooks">how to run it</a>)</span></p>
 
 <p>How Crush relates to the languages people usually compare it with. Crush is <strong>alpha</strong>:
 the language is small, the standard library is a set of host capabilities, and several
-features in its design (imports, an executing AI layer) are not implemented yet. The
-comparisons below are about what is real today (verified against crush-ast <code>bad81048</code>).</p>
+features in its design (remote imports, an executing AI layer) are not implemented yet.
+The comparisons below are about what is real today (verified against crush-ast
+<code>7f3fef31</code>).</p>
 <h2 id="what-crush-is-for"><a class="header" href="#what-crush-is-for">What Crush is for</a></h2>
 <ul>
 <li><strong>Running untrusted or semi-trusted scripts with explicit authority.</strong> A program can
@@ -8597,7 +9111,8 @@ subprocesses, so they are gated by <code>--polyglot</code> and carry the host’
 unless you use the opt-in sandbox lane. See <a href="#polyglot-programming">Polyglot</a>.</li>
 </ul>
 <p>It is <strong>not</strong> a general-purpose replacement for Python or JavaScript: there is no
-package ecosystem, no working <code>import</code>, and a small standard library.</p>
+package ecosystem to speak of, no enforced visibility between modules yet, and a small
+standard library.</p>
 <h2 id="crush-vs-python"><a class="header" href="#crush-vs-python">Crush vs Python</a></h2>
 <div class="table-wrapper">
 <table>
@@ -8615,7 +9130,7 @@ package ecosystem, no working <code>import</code>, and a small standard library.
 </table>
 </div>
 <!-- check: output -->
-<div class="crush-block" data-crush="run" data-src="appendix/comparison.md:35">
+<div class="crush-block" data-crush="run" data-src="appendix/comparison.md:37">
 <pre><code class="language-crush">fn greet(name) {
     print("Hello, " + name + "!")
 }
@@ -8700,7 +9215,8 @@ rather than as source text.</li>
 <p>❌ <strong>Look elsewhere when:</strong></p>
 <ul>
 <li>You need a mature ecosystem, libraries or tooling — use Python or JavaScript.</li>
-<li>You need modules or imports today.</li>
+<li>You need enforced module boundaries today (<code>pub</code> is accepted but not enforced
+yet; see <a href="#modules-packages-and-visibility">Modules</a>).</li>
 <li>You need hardened isolation of <em>foreign-language</em> code: polyglot blocks run as host
 processes unless you build the optional bubblewrap sandbox lane, which is Linux-only.</li>
 </ul>

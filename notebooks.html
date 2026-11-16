@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-73e5c564.js"></script>
+        <script src="toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -231,16 +231,20 @@ and the cell kinds it does not run yet are described in the
 </thead>
 <tbody>
 <tr><td>Where it runs</td><td>your browser (crush-web, WebAssembly)</td><td>your machine</td><td>your machine</td></tr>
-<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, <code>@python</code>, the filesystem (an empty in-memory directory), the clock, the (empty) environment</td><td><code>print</code>, the standard library, <code>caison.parse</code>: what <code>crush run</code> grants with no flags</td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
+<tr><td>Granted</td><td><code>print</code>, the standard library and <code>io.read</code> (you type each line), plus what an example’s <strong>grants</strong> label says: <code>@javascript</code>, <code>@python</code>, the clock, the (empty) environment (the filesystem grant is off at the pinned commit, see <a href="running-examples.html#the-filesystem">Running the Examples</a>)</td><td><code>print</code>, the standard library, <code>caison.parse</code>: what <code>crush run</code> grants with no flags</td><td>the standard library, plus whatever its flags grant (<code>--fs</code>, <code>--polyglot</code>, …)</td></tr>
 <tr><td><code>@python</code>/<code>@javascript</code>, filesystem</td><td>when the example’s label grants them</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td><code>@bash</code>, processes, network</td><td>refused</td><td>refused</td><td>with the matching flag</td></tr>
 <tr><td>Between examples</td><td>every run starts fresh</td><td>cells share a session</td><td>one program per file</td></tr>
 </tbody>
 </table>
 </div>
-<p>The kernel is <code>crush-notebook-kernel</code> 0.3.0, built on crush-ast 0.9.0, the same
-release as this guide, so the 0.9.0 cells (slicing a string, <code>s[::-1]</code>, hex and binary
-literals) run in a notebook as they do on the page.</p>
+<p>The kernel is <code>crush-notebook-kernel</code> 0.3.0, built on crush-ast 0.9.0 (the newest
+published kernel), while the guide is verified against crush-ast <code>7f3fef31</code>, which is
+newer. Cells that use something added since 0.9.0 (catching run-time faults,
+<code>a.pop()</code>, calling any expression, <code>regex.match</code>, exponent literals,
+<code>process.exec</code>’s result map) behave in the notebook as in 0.9.0 until a kernel built
+on a newer crush-ast is published. The 0.3.0 kernel also predates imports
+(crush-ast 0.9.0 refused every <code>import</code>).</p>
 <p>The examples marked <strong>needs the host</strong> are refused in the notebook too, and so
 are the ones the page runs only because it grants them something (<code>@python</code>,
 <code>@javascript</code>, the filesystem, the clock): the kernel grants what <code>crush run</code>
@@ -273,6 +277,7 @@ and each host-only cell has to be refused.</p>
 <li><a href="notebooks/crush/debugging.crush-nb" download=""><code>crush/debugging.crush-nb</code></a>, from <a href="crush/debugging.html">Debugging</a></li>
 <li><a href="notebooks/crush/diagnostics.crush-nb" download=""><code>crush/diagnostics.crush-nb</code></a>, from <a href="crush/diagnostics.html">Errors and Diagnostics</a></li>
 <li><a href="notebooks/crush/functions.crush-nb" download=""><code>crush/functions.crush-nb</code></a>, from <a href="crush/functions.html">Functions</a></li>
+<li><a href="notebooks/crush/modules.crush-nb" download=""><code>crush/modules.crush-nb</code></a>, from <a href="crush/modules.html">Modules, Packages and Visibility</a></li>
 <li><a href="notebooks/crush/operators.crush-nb" download=""><code>crush/operators.crush-nb</code></a>, from <a href="crush/operators.html">Operators</a></li>
 <li><a href="notebooks/crush/polyglot.crush-nb" download=""><code>crush/polyglot.crush-nb</code></a>, from <a href="crush/polyglot.html">Polyglot Programming</a></li>
 <li><a href="notebooks/crush/stdlib.crush-nb" download=""><code>crush/stdlib.crush-nb</code></a>, from <a href="crush/stdlib.html">Standard Library</a></li>

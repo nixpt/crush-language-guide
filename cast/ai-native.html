@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,7 +183,7 @@
                     <main>
                         <h1 id="ai-native-cast"><a class="header" href="#ai-native-cast">AI-Native CAST</a></h1>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <h2 id="the-doctrine"><a class="header" href="#the-doctrine">The doctrine</a></h2>
 <p>CAST is JSON. An agent that knows the <a href="index.html">schema</a> can emit a complete
@@ -395,11 +395,13 @@ backend will replace, so the gate names are the stable part:</li>
 <pre><code class="language-text">{kind: query, echo: [{q: capital of France}], ok: true}
 </code></pre>
 <ul>
-<li><strong>An embedder that registers nothing</strong> (<code>Runtime::new()</code>) gets <code>null</code> from every
-AI opcode, silently (crush-ast
+<li><strong>An embedder that registers nothing</strong> (<code>Runtime::new()</code>) gets a run-time error
+from every AI opcode, naming the gate (crush-ast CRUSH-234; before <code>v0.11.0</code> the
+opcode returned <code>null</code> silently,
 <a href="https://github.com/nixpt/crush-ast/issues/261">#261</a>). So a statement such as
-<code>GoalDeclaration</code> runs and does nothing:</li>
+<code>GoalDeclaration</code> stops the program:</li>
 </ul>
+<!-- check: runfail capability denied by host: ai_native.goal_declaration -->
 <!-- check: cast-json -->
 <pre><code class="language-json">{
   "cast_version": "0.1.0", "entry": "main", "lang": null,
@@ -411,10 +413,10 @@ AI opcode, silently (crush-ast
   ] } }
 }
 </code></pre>
-<!-- check: output -->
-<pre><code class="language-text">after the goal
+<pre><code class="language-text">capability denied by host: ai_native.goal_declaration: AI op 'goal_declaration' not granted / no AI host registered (grant `ai_native` via HostCapsBuilder::ai_native(true) and register a provider)
 </code></pre>
-<p>and an expression such as <code>Query</code> evaluates to <code>null</code>:</p>
+<p>and so does an expression such as <code>Query</code>:</p>
+<!-- check: runfail capability denied by host: ai_native.query -->
 <!-- check: cast-json -->
 <pre><code class="language-json">{
   "cast_version": "0.1.0", "entry": "main", "lang": null,
@@ -426,9 +428,6 @@ AI opcode, silently (crush-ast
       "args": [ { "type": "Var", "name": "answer" } ] } }
   ] } }
 }
-</code></pre>
-<!-- check: output -->
-<pre><code class="language-text">null
 </code></pre>
 <ul>
 <li><strong>Three statements are refused.</strong> <code>CapabilityDiscovery</code>, <code>AdaptationRequest</code> and

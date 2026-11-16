@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -195,9 +195,9 @@ version checks that gate loading. For the layouts themselves see
 <tr><td>source</td><td>Crush text</td><td><code>.crush</code></td><td>you</td><td><code>crushc</code>, <code>crush-run</code>, <code>crush run</code></td></tr>
 <tr><td>CAST</td><td>JSON</td><td><code>.cast.json</code> (any non-<code>.castb</code>/<code>.cbor</code> name)</td><td>walkers, agents, <code>casm</code>-side tools</td><td><code>crush_cast::Program::{deserialize,load}</code>, <code>crush_frontend::compile_cast</code></td></tr>
 <tr><td>CAST</td><td>CBOR</td><td><code>.castb</code>, <code>.cbor</code></td><td><code>crush_cast::Program::save</code></td><td>same</td></tr>
-<tr><td>CASM IR</td><td>JSON</td><td><code>.casm</code></td><td><code>casm::Program::{serialize,save}</code></td><td><code>casm::Program::{deserialize,load}</code></td></tr>
-<tr><td>CASM IR</td><td>MessagePack</td><td><code>.casmb</code></td><td><code>casm::Program::{serialize,save}</code></td><td><strong>see the bug note below</strong></td></tr>
-<tr><td>CASM text</td><td>assembly</td><td><code>.casm</code></td><td><code>crushc --emit casm</code>, you</td><td><code>crush-run run</code>, <code>crush-compile</code></td></tr>
+<tr><td>CASM IR</td><td>JSON</td><td><code>.casm</code></td><td><code>casm::Program::{serialize,save}</code>, <code>crushc --emit casm</code></td><td><code>casm::Program::{deserialize,load}</code>, <code>crush-run run</code>, <code>crush-compile</code></td></tr>
+<tr><td>CASM IR</td><td>MessagePack</td><td><code>.casmb</code></td><td><code>casm::Program::{serialize,save}</code></td><td><code>casm::Program::{deserialize,load}</code></td></tr>
+<tr><td>CASM text</td><td>assembly</td><td><code>.cvms</code> (<code>.casm</code> before v0.10.0)</td><td><code>crushc --emit cvms</code>, you</td><td><code>crush-run run</code>, <code>crush-compile</code></td></tr>
 <tr><td>CVM1</td><td>binary</td><td><code>.cvm1</code></td><td><code>crushc -o</code>, <code>crush build</code>, <code>crush-compile</code></td><td><code>crush-run run</code>, <code>crush run</code>, <code>Runtime::run_blob</code></td></tr>
 </tbody>
 </table>
@@ -233,22 +233,23 @@ compiled program is verbose: the five-line <code>add</code> program in the
 <p><code>Program::serialize(Format::Binary)</code> writes the line <code>#!/usr/bin/env crush run</code>
 followed by the program as MessagePack (via <code>rmp_serde</code>), and <code>save</code> marks the file
 executable on Unix. The reader skips a leading <code>#!</code> line.</p>
-<blockquote>
-<p><strong>Known bug (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> A <code>.casmb</code> file cannot be read back. The
-writer emits MessagePack’s compact array encoding but <code>Instruction</code> flattens its
-operands into a map, so every load fails with <code>invalid type: sequence, expected a map</code>. Until that is fixed, treat <code>.casmb</code> as write-only and ship <code>.cvm1</code>
-instead. The block below fails exactly this way:</p>
-</blockquote>
-<!-- check: casmb-fails expected a map -->
+<p>A <code>.casmb</code> file can be read back (from crush-ast <code>v0.3.9</code> through <code>v0.11.2</code> every
+load failed with <code>invalid type: sequence, expected a map</code>; CRUSH-392 fixed it on
+main). This program is written as <code>.casmb</code> and loaded again:</p>
+<!-- check: casmb-roundtrip -->
 <!-- check: casm-json -->
 <pre><code class="language-json">{
   "version": "1.0",
   "functions": { "main": { "body": [ {"op": "halt"} ] } }
 }
 </code></pre>
-<p>Note also that <code>crush run</code> and <code>crush-run run</code> accept only <code>.crush</code>, <code>.casm</code> (as
-<em>text assembly</em>) and <code>.cvm1</code>. Neither can execute IR JSON or <code>.casmb</code> directly; that
-needs the Rust API.</p>
+<!-- check: output -->
+<pre><code class="language-text">round-tripped 1 functions
+</code></pre>
+<p><code>crush run</code> and <code>crush-run run</code> take <code>.crush</code>, CAST (<code>.cast.json</code>, <code>.castb</code>), CASM
+IR JSON (<code>.casm</code>), assembly text (<code>.cvms</code>) and <code>.cvm1</code>, one extension per format
+(crush-ast #365, v0.10.0). Assembly text in a <code>.casm</code> file still runs, with a note
+asking you to rename it to <code>.cvms</code>.</p>
 <h2 id="cvm1-cvm1"><a class="header" href="#cvm1-cvm1">CVM1 (<code>.cvm1</code>)</a></h2>
 <p>The executable form: <code>CVM1</code> magic, a version byte, a JSON manifest, a constant
 pool and a flat code section, described byte by byte in
@@ -256,7 +257,7 @@ pool and a flat code section, described byte by byte in
 <pre><code class="language-bash">crushc add.crush -o add.cvm1     # or: crush build add.crush
 crush-run run add.cvm1
 </code></pre>
-<pre><code class="language-bash">crush-compile prog.casm -o prog.cvm1 --cap io.print --name prog   # text assembly -&gt; CVM1
+<pre><code class="language-bash">crush-compile prog.cvms -o prog.cvm1 --cap io.print --name prog   # text assembly -&gt; CVM1
 </code></pre>
 <h2 id="version-gates"><a class="header" href="#version-gates">Version gates</a></h2>
 <p>Every loader fails closed on an incompatible version, comparing the <strong>major</strong>
@@ -268,8 +269,8 @@ component only (minor bumps stay compatible):</p>
 </thead>
 <tbody>
 <tr><td>CASM IR</td><td><code>casm::CASM_VERSION = "1.0"</code></td><td><code>version</code> with major <code>1</code> (<code>"1.0"</code>, <code>"1.0.0"</code>, <code>"1.4"</code>)</td><td><code>version mismatch at casm boundary: expected 1.0, found 2.0</code></td></tr>
-<tr><td>CVM1</td><td><code>bytecode::VERSION = 2</code></td><td>version byte <code>1</code> or <code>2</code></td><td><code>UnsupportedVersion(n)</code></td></tr>
-<tr><td>CAST</td><td><code>crush_cast::CAST_VERSION = "0.1"</code></td><td><code>cast_version</code> with major <code>0</code></td><td><code>version mismatch at cast boundary: expected 0.1, found …</code></td></tr>
+<tr><td>CVM1</td><td><code>bytecode::VERSION = 3</code></td><td>version byte <code>1</code> to <code>3</code></td><td><code>UnsupportedVersion(n)</code></td></tr>
+<tr><td>CAST</td><td><code>crush_cast::CAST_VERSION = "0.1.0"</code></td><td><code>cast_version</code> with major <code>0</code></td><td><code>version mismatch at cast boundary: expected 0.1.0, found …</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -278,14 +279,10 @@ component only (minor bumps stay compatible):</p>
 <!-- check: runfail version mismatch at casm boundary: expected 1.0, found 0.1 -->
 <pre><code class="language-json">{ "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 </code></pre>
-<blockquote>
-<p><strong>Known inconsistency (since crush-ast <code>v0.3.9</code>, still in <code>bad81048</code>).</strong> <code>CAST_VERSION</code> is <code>"0.1"</code> but the
-Crush front end stamps the CAST it produces with <code>cast_version: "1.0.0"</code>. The
-versioned loader (<code>Program::deserialize</code>/<code>load</code>) therefore rejects the front end’s
-<em>own</em> output, while plain <code>serde_json</code> and <code>validate_json</code> accept it. Example
-programs in <code>examples/cast/</code> carry <code>"0.1.0"</code> and load fine. See
+<p>Every producer now writes <code>cast_version: "0.1.0"</code>, the front end included, so a
+CAST dump from the compiler loads again with the versioned loader (from <code>v0.3.9</code>
+through <code>v0.9.0</code> the front end stamped <code>"1.0.0"</code>, which that loader rejected). See
 <a href="../cast/index.html#serialization">CAST</a>.</p>
-</blockquote>
 <h2 id="rust-api"><a class="header" href="#rust-api">Rust API</a></h2>
 <pre class="playground"><code class="language-rust no_run">use casm::{Format, Program};
 

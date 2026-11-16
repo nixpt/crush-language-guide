@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/capabilities.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush programs can’t touch the outside world directly. Every interaction with the
 host — printing, reading a file, making an HTTP request, spawning a process,
@@ -326,7 +326,7 @@ program can use, and which flag grants each.</p>
 <p>With it, and with the filesystem confined to a directory:</p>
 <!-- check: runfail path escapes sandbox root -->
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:144" data-why="this example shows a run-time error" data-grants="fs" data-expect-error="path escapes sandbox root">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:144" data-why="uses `fs.read`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.read("../outside.txt"))
 </code></pre>
 </div>
@@ -336,8 +336,7 @@ absolute paths and <code>..</code> escapes are rejected. This is the one place t
 has a scope.</p>
 <h3 id="filesystem"><a class="header" href="#filesystem">Filesystem</a></h3>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:155" data-expect="0
-" data-grants="fs">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:155" data-why="uses `fs.exists`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(fs.exists("missing.txt"))
 </code></pre>
 </div>
@@ -360,9 +359,7 @@ has a scope.</p>
 </table>
 </div>
 <!-- check: flags --fs -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:173" data-expect="hello
-[a.txt]
-" data-grants="fs">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:173" data-why="uses `fs.list`, `fs.mkdir`, `fs.read`, `fs.write`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">fs.write("out.txt", "hello")
 print(fs.read("out.txt"))
 fs.mkdir("sub")
@@ -380,23 +377,52 @@ print(fs.list("sub"))
 <div class="crush-block" data-crush="host" data-src="crush/capabilities.md:190" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() &gt; 0)
-print(process.exec("echo", "hi"))
+let r = process.exec("echo", "hi")
+print(r.exit_code)
+print(str.trim(r.stdout))
 </code></pre>
 </div>
 
 <!-- check: output -->
 <pre><code class="language-text">null
 true
-{"exit_code":0,"stderr":"","stdout":"hi\n"}
+0
+hi
 </code></pre>
 <ul>
 <li><code>env.get(name)</code> → string, or <code>null</code> if unset.</li>
 <li><code>time.now()</code> Unix seconds; <code>time.now_ms()</code>; <code>time.now_iso()</code>; <code>time.sleep(ms)</code>
-(bounded by the wall-clock quota).</li>
+(bounded by the wall-clock budget, <code>--max-wall-ms</code>).</li>
 <li><code>process.exec(cmd, args)</code> — exactly <strong>two</strong> arguments (the command and one
-argument string) — returns a JSON string with <code>exit_code</code>, <code>stdout</code>, <code>stderr</code>.</li>
+argument string) — returns a map <code>{exit_code, stdout, stderr}</code> (crush-ast
+CRUSH-242; before 0.11 it was a JSON string). A command that cannot start is not
+an error: <code>exit_code</code> is <code>-1</code> and <code>stderr</code> says why.</li>
 <li><code>net.http_get(url)</code> / <code>net.http_post(url, body)</code> — response body as a string;
-size capped by <code>--net-max-response-bytes</code> (default 1 MiB).</li>
+size capped by <code>--net-max-response-bytes</code> (default 1 MiB). Each <code>net.*</code> verb takes
+an optional last argument <code>{timeout_ms: N}</code>; a request that takes longer fails
+with a catchable error (<code>… timed out after N ms</code>). <code>net.http_request(method, url, body, headers)</code> returns <code>{status, reason, headers, body}</code>, with the response
+header names lower-cased (crush-ast #509).</li>
+</ul>
+<!-- check: skip needs a local HTTP server -->
+<div class="crush-block" data-crush="none" data-src="crush/capabilities.md:221" data-why="not a standalone program: needs a local HTTP server">
+<pre><code class="language-crush">let r = net.http_request("GET", "http://127.0.0.1:47125/hi.txt", "", {})
+print(r.status)
+print(r.headers["content-type"])
+try {
+    print(net.http_get("http://127.0.0.1:47126/", {timeout_ms: 300}))
+} catch e {
+    print(e)
+}
+</code></pre>
+</div>
+
+<pre><code class="language-text">200
+text/plain
+error(net.http_get: net.http_get http://127.0.0.1:47126/: timed out after 300 ms)
+</code></pre>
+<p>(Run by hand at the pinned commit, with <code>python3 -m http.server 47125</code> serving a
+<code>hi.txt</code> and a listener on port 47126 that accepts and never answers.)</p>
+<ul>
 <li><code>crypto.sha256(data)</code>, <code>crypto.random(n)</code> (base64, <code>n ≤ 4096</code>).</li>
 </ul>
 <h3 id="raw-sockets-tcp"><a class="header" href="#raw-sockets-tcp">Raw sockets (<code>tcp.*</code>)</a></h3>
@@ -418,11 +444,16 @@ other hosts:</p>
 </div>
 <p>A URI is <code>tcp://IP:PORT</code> with a literal IP address (no host names). <code>tcp.listen</code>
 and <code>tcp.connect</code> return an integer id; <code>tcp.accept</code> blocks until a client
-connects. <code>tcp.send</code> takes text and returns the byte count; <code>tcp.recv</code> returns up
-to 16 KiB as text. This program is both ends of a conversation, so it needs both
+connects. <code>tcp.send</code> takes text (or bytes) and returns the byte count. <code>tcp.recv</code>
+returns what one read delivered, at most 16 KiB, as text; an incomplete UTF-8
+character at the end is held back and returned by the next call, so a message can
+arrive over several calls: loop until you have all of it (a delimiter, a length, or
+<code>""</code>, which <code>tcp.recv</code> returns only at end of stream). <code>tcp.recv</code> and <code>tcp.accept</code>
+take an optional <code>{timeout_ms: N}</code>; a timeout is a catchable error, and a timed-out
+<code>tcp.recv</code> loses nothing (crush-ast #512). This program is both ends of a conversation, so it needs both
 flags (the connect is queued by the kernel before <code>accept</code> takes it):</p>
 <!-- check: flags --tcp --tcp-listen -->
-<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:232" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:267" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
 <pre><code class="language-crush">let srv = tcp.listen("tcp://127.0.0.1:47123")
 let c = tcp.connect("tcp://127.0.0.1:47123")
 let s = tcp.accept(srv)
@@ -439,19 +470,46 @@ tcp.close(s)
 <pre><code class="language-text">ping
 pong
 </code></pre>
+<p>A <code>tcp.recv</code> that times out can be caught, and the data that arrives later is read
+by the next call:</p>
+<!-- check: flags --tcp --tcp-listen -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:289" data-why="uses `tcp.accept`, `tcp.close`, `tcp.connect`, `tcp.listen` …, which the in-browser runtime does not provide">
+<pre><code class="language-crush">let srv = tcp.listen("tcp://127.0.0.1:47124")
+let c = tcp.connect("tcp://127.0.0.1:47124")
+let s = tcp.accept(srv)
+try {
+    print(tcp.recv(s, {timeout_ms: 100}))
+} catch e {
+    print("caught: " + e)
+}
+tcp.send(c, "late")
+print(tcp.recv(s))
+tcp.close(c)
+print(tcp.recv(s) == "")
+tcp.close(s)
+</code></pre>
+</div>
+
+<!-- check: output -->
+<pre><code class="language-text">caught: error(tcp.recv: tcp.recv: timed out after 100 ms)
+late
+true
+</code></pre>
+<p>(The capability name appears twice in that message; it is crush-ast’s text as it
+stands.)</p>
 <p>Granting only <code>--tcp</code> is refused, naming what is missing:</p>
 <pre><code class="language-text">[capabilities] tcp.crush needs capabilities this run does not grant; nothing was run:
   --tcp-listen: tcp.accept, tcp.listen
 </code></pre>
 <p>A host capability that fails (missing file, refused connection, path escape)
-aborts the program with <code>[runtime] unknown capability: &lt;name&gt;: &lt;reason&gt;</code> — the
-“unknown capability” wording is misleading there, and the error is not
-catchable by <a href="control_flow.html#what-catch-does-not-catch"><code>try</code>/<code>catch</code></a>.</p>
+raises <code>[runtime] &lt;name&gt;: &lt;reason&gt;</code>, for example <code>[runtime] fs.read: fs.read missing.txt: No such file or directory (os error 2)</code>. Inside
+<a href="control_flow.html#what-catch-catches"><code>try</code>/<code>catch</code></a> it is caught like any other
+fault; outside one it ends the program.</p>
 <h2 id="declaring-what-a-program-uses-capabilities"><a class="header" href="#declaring-what-a-program-uses-capabilities">Declaring what a program uses: <code>@capabilities</code></a></h2>
 <p>A program can say up front which capabilities it may use beyond the ambient,
 effect-free built-ins (<code>io.print</code>, <code>str.*</code>, arrays, the standard library):</p>
 <!-- check: flags --time -->
-<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:268" data-expect="true
+<div class="crush-block" data-crush="run" data-src="crush/capabilities.md:334" data-expect="true
 " data-grants="time">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 let t = time.now_ms()
@@ -465,8 +523,8 @@ print(t &gt; 0)
 <p>Entries can be exact names (<code>fs.cat</code>), families (<code>fs</code>, <code>fs.*</code>) or scoped names
 (<code>fs.read:/var/log</code>). Using anything else is a compile error, so a reviewer only
 has to read that one line to know what the program can touch:</p>
-<!-- check: runfail not declared in @capabilities: env.get -->
-<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:284" data-why="this example shows a run-time error" data-expect-error="not declared in @capabilities: env.get">
+<!-- check: error -->
+<div class="crush-block" data-crush="fail" data-src="crush/capabilities.md:350" data-why="this example shows a compile error">
 <pre><code class="language-crush">@capabilities [time.now_ms]
 print(env.get("HOME"))
 </code></pre>
@@ -501,14 +559,28 @@ program with a <code>[runtime]</code> error:</p>
 <tr><th>Quota</th><th>Default</th><th>CLI flag</th></tr>
 </thead>
 <tbody>
-<tr><td>instructions</td><td>1,000,000</td><td><code>--max-steps</code></td></tr>
+<tr><td>instructions</td><td>1,000,000</td><td><code>--max-steps N</code>, or <code>--max-steps unlimited</code></td></tr>
 <tr><td>stack slots</td><td>4,096</td><td><code>--max-stack</code></td></tr>
 <tr><td>output bytes</td><td>1 MiB</td><td><code>--max-output</code></td></tr>
 <tr><td>call depth</td><td>256</td><td><code>--max-call-depth</code></td></tr>
-<tr><td>wall-clock per polyglot subprocess</td><td>30,000 ms</td><td>(set via <code>Quotas::max_wall_time_ms</code> when embedding)</td></tr>
+<tr><td>wall-clock time for the whole run</td><td>30,000 ms</td><td><code>--max-wall-ms N</code>, or <code>--max-wall-ms unlimited</code> for a long-lived program such as a server (crush-ast #510)</td></tr>
 </tbody>
 </table>
 </div>
+<p>The wall-clock budget covers the whole run, computation included, so lifting the
+step limit does not make a runaway loop run forever:</p>
+<!-- check: runfail wall-clock quota exceeded (200ms) -->
+<!-- check: flags --max-steps unlimited --max-wall-ms 200 -->
+<div class="crush-block" data-crush="host" data-src="crush/capabilities.md:398" data-why="needs a wall-clock budget (crush-web has no wall clock), which the in-browser runtime does not provide">
+<pre><code class="language-crush">let i = 0
+while true { i = i + 1 }
+</code></pre>
+</div>
+
+<p>A blocking capability such as <code>time.sleep</code> gets what is left of the budget.
+<code>--max-wall-ms 0</code> is a zero budget, not “no limit”: the run stops at the first
+clock check (the VM looks at the clock every 1,024 instructions) or the first
+blocking call, so only a very short program still finishes.</p>
 <p>Output printed before a run-time failure is kept: the program’s earlier lines
 appear, then the <code>[runtime]</code> error on standard error.</p>
 <h2 id="embedding-declaring-permissions"><a class="header" href="#embedding-declaring-permissions">Embedding: declaring permissions</a></h2>
@@ -523,7 +595,7 @@ names the capabilities it is allowed to call in its manifest — a list of names
 </code></pre>
 <p>A capability call whose name is not both <strong>registered</strong> by the host and <strong>listed</strong>
 in the program’s permissions is refused. See <a href="../getting-started.html">Getting Started</a>
-and <a href="../casm/structure.html">CASM structure</a>. For <code>.casm</code> text run with <code>crush-run</code>,
+and <a href="../casm/structure.html">CASM structure</a>. For assembly text (<code>.cvms</code>) run with <code>crush-run</code>,
 <code>--cap NAME</code> adds names to that list.</p>
 <p>There is no path or URL scoping in the manifest (<code>"fs.read": ["./data"]</code> is not a
 thing): scoping today is the host’s job — e.g. <code>--fs-root</code>.</p>

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/index.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p><strong>Crush</strong> is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -211,6 +211,25 @@ runs on a VM (<code>crush-vm</code>), with a faster VM, a JIT and ahead-of-time 
 also in the repository (<a href="engines.html">Engines, AOT and Walkers</a>). Walkers
 translate Python, JavaScript, Rust and other languages into the same CAST.</li>
 </ul>
+<h2 id="new-since-090"><a class="header" href="#new-since-090">New since 0.9.0</a></h2>
+<p>At the pinned commit (main after v0.11.2); each item links to its page.</p>
+<ul>
+<li><strong>Imports and packages.</strong> <code>import a.b [as x] [{ f }]</code> loads <code>.crush</code> files at
+compile time, through <code>-L</code>, <code>CRUSH_PATH</code> and crush-pkg dependencies; <code>pub fn</code> is
+accepted, not enforced yet; a struct or trait name declared in two files is a
+compile error. (<a href="modules.html">Modules</a>)</li>
+<li><strong><code>catch</code> catches run-time faults</strong>: division by zero, a bad index, a failing
+capability. (<a href="control_flow.html#what-catch-catches">Control Flow</a>)</li>
+<li><strong>Calls on any expression</strong> (<code>fs[0](1)</code>, <code>make()(2)</code>, <code>S { n: 3 }.size()</code>), the
+method form <code>a.pop()</code>, <code>regex.match</code> callable, exponent literals (<code>1.5e3</code>).
+(<a href="closures.html#calling-a-function-value">Closures</a>, <a href="types.html">Types</a>)</li>
+<li><strong><code>process.exec</code> returns a map</strong> <code>{exit_code, stdout, stderr}</code>.
+(<a href="capabilities.html#environment-time-processes-network">Capability System</a>)</li>
+<li><strong>Quotas and networking.</strong> <code>--max-wall-ms N|unlimited</code> bounds the whole run,
+<code>--max-steps unlimited</code>; <code>net.*</code> and <code>tcp.recv</code>/<code>tcp.accept</code> take
+<code>{timeout_ms}</code>; <code>net.http_request</code> returns response headers.
+(<a href="capabilities.html#resource-limits">Capability System</a>)</li>
+</ul>
 <h2 id="new-in-090"><a class="header" href="#new-in-090">New in 0.9.0</a></h2>
 <p>Each item links to the page that documents it (and every example there was run).</p>
 <ul>
@@ -232,7 +251,7 @@ v0.9.0 is the first release to have them. (<a href="../getting-started.html">Get
 <li><code>@bash</code> blocks can read Crush variables again, by <code>$name</code>. (<a href="polyglot.html#bash">Polyglot</a>)</li>
 </ul>
 <h2 id="hello-crush"><a class="header" href="#hello-crush">Hello, Crush</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:53" data-expect="Hello, Crush!
+<div class="crush-block" data-crush="run" data-src="crush/README.md:73" data-expect="Hello, Crush!
 ">
 <pre><code class="language-crush">print("Hello, Crush!")
 </code></pre>
@@ -246,7 +265,7 @@ v0.9.0 is the first release to have them. (<a href="../getting-started.html">Get
 <pre><code class="language-sh">crush run hello.crush
 </code></pre>
 <h2 id="a-taste"><a class="header" href="#a-taste">A taste</a></h2>
-<div class="crush-block" data-crush="run" data-src="crush/README.md:71" data-expect="far: 25
+<div class="crush-block" data-crush="run" data-src="crush/README.md:91" data-expect="far: 25
 ">
 <pre><code class="language-crush">struct Point { x: Int, y: Int }
 impl Point {
@@ -292,7 +311,7 @@ enforced.</li>
 <tr><td>Closures and function values</td><td>works on the VM; AOT refuses them by name</td></tr>
 <tr><td>Structs, <code>impl</code>, <code>trait</code>, <code>@kind</code>, struct patterns</td><td>works on the VM; AOT refuses method calls by name</td></tr>
 <tr><td><code>spawn</code> / <code>yield</code> / <code>await</code>, <code>parallel_map</code></td><td>works on the VM</td></tr>
-<tr><td><code>import</code> (multi-file programs)</td><td>not yet: CRUSH-110</td></tr>
+<tr><td><code>import</code> (multi-file programs), crush-pkg packages</td><td>works, resolved at compile time; <code>pub</code> is accepted on <code>fn</code> and not enforced yet (<a href="modules.html">Modules</a>)</td></tr>
 <tr><td>Capabilities, <code>@capabilities</code>, the standard library</td><td>works; the standard library is on by default</td></tr>
 <tr><td>Polyglot: Python, JavaScript (declared <code>-&gt;</code> outputs), Bash</td><td>works (host authority by default); <code>@bash</code> reads the Crush variables it names as <code>$name</code></td></tr>
 <tr><td>Polyglot sandbox</td><td>opt-in build, verified on Linux with <code>bwrap</code></td></tr>

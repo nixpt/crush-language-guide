@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-73e5c564.js"></script>
+        <script src="toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,8 +188,8 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.</p>
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (the commit in the repository’s
-<code>CRUSH_AST_COMMIT</code> file). 130 programs.</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (the commit in the repository’s
+<code>CRUSH_AST_COMMIT</code> file). 150 programs.</p>
 </blockquote>
 <div class="table-wrapper">
 <table>
@@ -200,20 +200,20 @@ observed by running one of these programs.</p>
 <tr><td><code>basics/</code></td><td style="text-align: right">13</td><td>literals (including hex and binary), <code>print</code> vs <code>io.print</code>, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords</td></tr>
 <tr><td><code>operators/</code></td><td style="text-align: right">10</td><td>arithmetic, comparison, <code>and</code>/<code>or</code>/<code>not</code>, short-circuit, string <code>+</code>, <code>|&gt;</code>, overflow, division by zero</td></tr>
 <tr><td><code>strings/</code></td><td style="text-align: right">8</td><td>indexing, <code>str.*</code>, <code>conv.chr</code>/<code>ord</code>, escapes, string and array slices (<code>s[a:b]</code>, <code>s[::step]</code>), string methods that don’t exist</td></tr>
-<tr><td><code>collections/</code></td><td style="text-align: right">11</td><td>arrays, <code>array.pop</code>, maps (insertion order, subscripts, iteration), <code>collections.*</code>, <code>json.*</code></td></tr>
+<tr><td><code>collections/</code></td><td style="text-align: right">11</td><td>arrays, <code>array.pop</code> and <code>a.pop()</code>, maps (insertion order, subscripts, iteration), <code>collections.*</code>, <code>json.*</code></td></tr>
 <tr><td><code>control-flow/</code></td><td style="text-align: right">9</td><td><code>if</code>, <code>while</code>/<code>break</code>/<code>continue</code>, ranges, <code>match</code> as expression and statement</td></tr>
 <tr><td><code>functions/</code></td><td style="text-align: right">5</td><td>definitions, arity checks, no defaults, top-level visibility, the call-depth quota</td></tr>
-<tr><td><code>closures/</code></td><td style="text-align: right">11</td><td>lambdas, function values, capture by reference, counters, loop capture, recursion</td></tr>
+<tr><td><code>closures/</code></td><td style="text-align: right">11</td><td>lambdas, function values, calling any expression, capture by reference, counters, loop capture, recursion</td></tr>
 <tr><td><code>structs/</code></td><td style="text-align: right">11</td><td>literals, sealing, equality, <code>impl</code>, traits, value semantics, C3, bound methods, constructors</td></tr>
 <tr><td><code>match/</code></td><td style="text-align: right">3</td><td>struct patterns, and their compile errors</td></tr>
-<tr><td><code>errors/</code></td><td style="text-align: right">6</td><td><code>try</code>/<code>catch</code>/<code>throw</code>, rethrow, what <code>catch</code> can’t catch, <code>result.*</code></td></tr>
-<tr><td><code>modules/</code></td><td style="text-align: right">2</td><td><code>import</code> (refused), <code>export</code></td></tr>
+<tr><td><code>errors/</code></td><td style="text-align: right">7</td><td><code>try</code>/<code>catch</code>/<code>throw</code>, rethrow, catching run-time faults, what <code>catch</code> can’t catch, <code>result.*</code></td></tr>
+<tr><td><code>modules/</code></td><td style="text-align: right">21</td><td>the <code>import</code> forms, <code>-L</code> and <code>CRUSH_PATH</code>, module rules and errors, structs across files, the struct/trait name clash, <code>pub</code> and <code>__</code>, <code>export</code></td></tr>
 <tr><td><code>capabilities/</code></td><td style="text-align: right">12</td><td>refusal before running, <code>--fs</code> and <code>--fs-root</code>, <code>@capabilities</code>, <code>io.read</code>, <code>sys.args</code>, <code>math.random</code></td></tr>
 <tr><td><code>polyglot/</code></td><td style="text-align: right">15</td><td><code>--polyglot</code>, <code>-&gt; outputs</code>, JavaScript, chaining, <code>use @lang</code>, isolation, errors, bash</td></tr>
 <tr><td><code>concurrency/</code></td><td style="text-align: right">7</td><td><code>spawn</code>/<code>yield</code>/<code>await</code>, <code>async fn</code>, <code>parallel_map</code> and its rules</td></tr>
 <tr><td><code>annotations/</code></td><td style="text-align: right">3</td><td>manifest annotations, <code>@wip</code>, <code>@capabilities</code></td></tr>
 <tr><td><code>ai-native/</code></td><td style="text-align: right">2</td><td>the refused <code>semantic_switch</code>, AI expressions not in source</td></tr>
-<tr><td><code>casm/</code></td><td style="text-align: right">2</td><td>running CASM text with <code>--cap</code></td></tr>
+<tr><td><code>casm/</code></td><td style="text-align: right">2</td><td>running assembly text (<code>.cvms</code>) with <code>--cap</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -225,12 +225,14 @@ observed by running one of these programs.</p>
 <tr><th>File</th><th>Meaning</th></tr>
 </thead>
 <tbody>
-<tr><td><code>NAME.crush</code> / <code>NAME.casm</code></td><td>the program; its first comment lines say what it shows</td></tr>
+<tr><td><code>NAME.crush</code> / <code>NAME.cvms</code></td><td>the program; its first comment lines say what it shows</td></tr>
 <tr><td><code>NAME.out</code></td><td>its exact standard output</td></tr>
 <tr><td><code>NAME.err</code></td><td>present when the program must <strong>fail</strong>: every line of it must appear in the error output</td></tr>
 <tr><td><code>NAME.flags</code></td><td>the <code>crush-run</code> flags it needs (<code>--polyglot</code>, <code>--fs --fs-root .</code>, …)</td></tr>
 <tr><td><code>NAME.stdin</code></td><td>what it reads from standard input (otherwise it reads end-of-file)</td></tr>
 <tr><td><code>NAME.needs</code></td><td>host programs it needs (<code>python3</code>, <code>node</code>); skipped, not failed, without them</td></tr>
+<tr><td><code>NAME.env</code></td><td>environment variables for the run, <code>NAME=value</code> per line (<code>CRUSH_PATH=shared</code>)</td></tr>
+<tr><td><code>NAME.files/</code></td><td>the other files the program needs, such as the modules it imports; copied next to it for the run, and not programs of their own</td></tr>
 </tbody>
 </table>
 </div>
@@ -244,6 +246,7 @@ changes and the corpus fails, which is the signal to update the guide.</p>
 </thead>
 <tbody>
 <tr><td><code>polyglot/header-comment-pitfall</code>: <code>//</code> on a block header → <code>Undefined variable</code></td><td><a href="https://github.com/nixpt/crush-ast/issues/266">#266</a></td></tr>
+<tr><td><code>modules/import-in-main-pitfall</code>: an <code>import</code> inside <code>fn main</code> is accepted (inside any other function it is refused)</td><td><a href="https://github.com/nixpt/crush-ast/issues/535">crush-ast#535</a></td></tr>
 </tbody>
 </table>
 </div>

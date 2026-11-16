@@ -1,0 +1,101 @@
+{
+ "meta": {
+  "title": "Modules, Packages and Visibility — The Crush Language Guide",
+  "description": "Generated from crush/modules.md of The Crush Language Guide (https://docs.crushlang.org/crush/modules.html). Edit the guide, not this file: it is regenerated on every build.",
+  "frontends": [
+   "crush"
+  ],
+  "author": "The Crush Language Guide",
+  "tags": {
+   "source": "crush/modules.md",
+   "guide_url": "https://docs.crushlang.org/crush/modules.html",
+   "generator": "scripts/build-notebooks.py"
+  }
+ },
+ "cells": [
+  {
+   "id": "crush-modules-md-1",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "# Modules, Packages and Visibility\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16). Every behaviour on this\n> page was run with that build. The programs live in the verified corpus,\n> [`examples/verified/modules/`](https://github.com/nixpt/crush-language-guide/tree/main/examples/verified/modules),\n> each with the modules it imports in a `NAME.files/` directory beside it, and\n> `scripts/verify-examples` re-runs them.\n\nA Crush program can be split over several files. `import` loads another `.crush`\nfile **at compile time** (crush-ast CRUSH-110): the compiler parses it and merges\nits definitions into the program before checking it, so imported functions are\nchecked like your own, and the capability check sees imported code exactly as if\nit were local. Nothing is loaded at run time, and no capability is involved.\n\nBecause an import needs a file to search from, it works when you compile or run a\nfile (`crush run`, `crush-run run`, `crushc`, `crush-debug`, the REPL from its\nworking directory). It does not work in the browser: the Run buttons in this book\ncompile a string, and an `import` there is refused with \"`import x` was not\nresolved: … this compile has no file path to search from\". The examples on this\npage are therefore shown, not runnable; their output is the corpus's.\n\n## The three forms\n\nGiven `geom.crush` and `util/strings.crush` next to the program:\n\n```crush\n// geom.crush\nfn area(w, h) { return w * h }\nfn scaled(x) { return __unit() * x }\nfn __unit() { return 10 }\n```\n\n```crush\n// util/strings.crush\nfn shout(s) { return str.to_upper(s) + \"!\" }\nfn twice(s) { return s + s }\n```\n\n```crush\nimport geom\nimport util.strings as s\nimport util.strings { twice }\nprint(geom.area(3, 4))\nprint(geom.scaled(2))\nprint(s.shout(\"hi\"))\nprint(twice(\"ab\"))\nlet f = geom.area\nprint(f(2, 5))\n```\n\n```text\n12\n20\nHI!\nabab\n10\n```\n\n| Form | Binds | Call |\n|---|---|---|\n| `import geom` | the qualifier `geom` (the last segment of the path) | `geom.area(3, 4)` |\n| `import util.strings` | the qualifier `strings`; loads `util/strings.crush` | `strings.shout(\"hi\")` |\n| `import util.strings as s` | the qualifier `s` instead | `s.shout(\"hi\")` |\n| `import util.strings { twice }` | the bare name `twice` (and the qualifier only when `as x` is also given) | `twice(\"ab\")` |\n\n`geom.area` without a call is a function value, as for a local function. Inside a\nmodule, a bare call finds the module's own functions first (`scaled` calls\n`__unit` above), then the module's own imports, then the built-ins and\ncapabilities.\n\n## What a module may contain\n\nA module is **definitions only**: `fn`, `struct`, `impl`, `trait` (with `@kind`),\nand `import`s of other modules. Its `main`, if it has one, is ignored. Any other\ntop-level statement is a compile error naming the file and line, so a module has\nno init code and there is no hidden init order. Write a function for a constant\n(`fn limit() { return 10 }`):\n\n```text\n[compile] state.crush:2:1: a top-level `let` in imported module `state`: a module may only define functions, structs, impls and traits, and import other Crush modules — it has no init code (move the statement into a function)\n```\n\n`export` is such a statement too: a module that contains `export f` is refused\n(`a top-level statement in imported module`). Exporting is not how modules work\nin Crush; see [Visibility](#visibility-and-pub) for what decides what another file\ncan call.\n\nImports go at the **top level** of a file. One inside a function is refused\n(`` `import` inside `fn f`: imports go at the top level of a file ``).\n\n> **Pitfall.** An `import` inside `fn main() { … }` is accepted and works at this\n> commit, although crush-ast's import design says imports inside a function are\n> refused. Don't rely on it; put imports at the top of the file. The corpus program\n> `modules/import-in-main-pitfall` records the current behaviour.\n\n## Where modules are found\n\n`import a.b` looks for `a/b.crush`, in this order; the first hit wins:\n\n1. the directory of the file that contains the `import`;\n2. each `-L DIR` (`--lib-path`) given to `crush-run`, `crushc`, `crush-debug` or\n   `crush-repl` (`crush run` and friends pass it on), in order;\n3. each directory in `CRUSH_PATH` (colon-separated).\n\nThere is no `a/b/mod.crush` form. A module that is not found is a compile error\nthat lists every directory searched:\n\n```text\n[compile] main.crush:1:1: `import consts`: module not found — no consts.crush in any of:\n  . (/home/me/proj)\n  libdir (/home/me/proj/libdir)\n```\n\n```bash\ncrush-run run -L lib main.crush             # lib/text/greet.crush for `import text.greet`\nCRUSH_PATH=shared crush-run run main.crush   # shared/consts.crush for `import consts`\n```\n\n(Corpus: `modules/lib-path`, `modules/crush-path`, `modules/import-not-found`.)\n\nEach file is loaded once per compile, so two modules that import a third share one\ncopy. Two modules that import each other are a compile error that shows the cycle\n(`import cycle: ca.crush → cb.crush → ca.crush`).\n\n## Errors that name the problem\n\nA name the module does not define lists what it does define (names starting with\n`__` are left out of the list):\n\n```text\n[compile] main.crush:5:7: `geom.perimeter`: module `geom` (geom.crush) defines no function `perimeter` (it defines: area, scaled)\n```\n\nA selectively imported name that collides with a function of the importing file\nis refused, naming both:\n\n```text\n[compile] main.crush:3:1: `import geom { area }` collides with `fn area` (line 4) of the same name in this file\n```\n\n## Structs across files\n\nA module's `struct`s and their methods work in the importer. Build values through\na function of the module: a struct **literal** is recognised only in the file that\ndeclares the struct, so `Rect { w: 1, h: 2 }` in the importer is\n`[compile] Undefined variable: Rect`.\n\n```crush\n// shapes.crush\nstruct Rect { w: Int, h: Int }\nimpl Rect {\n    fn area(self) { return self.w * self.h }\n}\nfn rect(w, h) { return Rect { w: w, h: h } }\n```\n\n```crush\nimport shapes\nlet r = shapes.rect(2, 3)\nprint(r)\nprint(r.area())\nr.w = 10\nprint(r.area())\n```\n\n```text\n{w: 2, h: 3}\n6\n30\n```\n\nFields are public: the importer can read and write them (`r.w = 10` above).\n\n### One namespace for struct and trait names\n\nFunction names are qualified by their module, but `struct` and `trait` names are\n**one global namespace** across all the files of a program. The same name declared\nin two files, whether two modules or a module and the file that imports it, is a\ncompile error that names both files (crush-ast #527):\n\n```crush\n// plane.crush\nstruct Point { x: Int, y: Int }\nfn origin() { return Point { x: 0, y: 0 } }\n```\n\n```crush\n// map.crush\nstruct Point { lat: Float, lon: Float }\nfn here() { return Point { lat: 27.7, lon: 85.3 } }\n```\n\n```crush\nimport plane\nimport map\nprint(plane.origin())\n```\n\n```text\n[compile] map.crush:1:1: struct `Point` is also declared in plane.crush:1:1: struct and trait names are one global namespace across imports, so two files cannot both declare `Point` (rename one; per-module Kinds are planned, #523)\n```\n\nBefore #527 this compiled, the later `Point` silently replaced the earlier one,\nand `plane.origin()` failed at run time. Rename one of the two. A redeclaration\ninside a single file is not covered by this rule. Per-module kind names are\nplanned (crush-ast #523).\n\n## Packages\n\n`crush-pkg` (crush-ast's package manager) builds a package from a `capsule.toml`.\n`crush-pkg new NAME` scaffolds an application, `crush-pkg new NAME --lib` a library\nwhose entry is `src/lib.crush`. A package lists its dependencies as\n`[[dependencies]]` rows with a `path` (a local directory) or a `git` source:\n\n```toml\n[capsule]\nname = \"app\"\nversion = \"0.1.0\"\nentry = \"src/main.crush\"\nlanguage = \"crush\"\n\n[[dependencies]]\nname = \"mathlib\"\npath = \"../mathlib\"\n```\n\nWhen the entry file has an `import`, every dependency, and the package itself,\ncan be imported **by name** (crush-ast CRUSH-367): `import mathlib` loads the\ndependency's entry file, and `import mathlib.extra` loads `extra.crush` in the\ndirectory of that entry. The entry's own directory (`src/`) is searched for the\npackage's other files, as for any file. A package name wins over a file of the same\nname on the search path.\n\n```crush\n// app/src/main.crush\nimport mathlib { greet }      // ../mathlib/src/lib.crush\nimport mathlib.extra          // ../mathlib/src/extra.crush\nimport util                   // src/util.crush\n\nfn main() {\n    print(greet(\"app\"))\n    print(extra.twice(21))\n    print(util.shout(\"ok\"))\n}\n```\n\n```text\n$ crush-pkg run\nbuilding app v0.1.0\n  resolved dep mathlib -> …/mathlib/src/lib.crush\n  …\nrunning app v0.1.0\nhello, app\n42\nok!\n```\n\nThis was run by hand at the pinned commit (the corpus runs `crush-run` only), with\n`mathlib/src/lib.crush` as `crush-pkg new mathlib --lib` writes it\n(`fn greet(who) { return \"hello, \" + who }`), `mathlib/src/extra.crush` defining\n`twice`, and `app/src/util.crush` defining `shout`. Package names resolve only\nthrough `crush-pkg`: `crush-run run src/main.crush` in the same directory says\n`` `import mathlib`: module not found ``. An entry file with no `import` at all is\nbuilt the older way, with the dependencies' entry files pasted into one source.\n\n## Visibility and `pub`\n\n**Today every function of a module can be imported**, by qualified call or by a\nselective import. Nothing is private.\n\n- A leading `__` is a naming convention for \"internal\". It hides the name from\n  the \"it defines: …\" lists in error messages, and that is all it does:\n  `geom.__unit()` and `import geom { __unit }` both work\n  (corpus `modules/private-convention`).\n- **`pub fn`** (and `pub async fn`) is accepted and **not enforced**: the parser\n  drops `pub`, so a function with `pub` and one without behave the same, in the\n  file that declares them and from another file (crush-ast #518):\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-modules-1",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "pub fn add(a, b) { return a + b }\nfn sub(a, b) { return a - b }\nprint(add(2, 3))\nprint(sub(2, 3))\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "runnable"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/modules.md:288",
+      "browser": "run",
+      "expect_output": "5\n-1\n"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-modules-md-3",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```crush\n// shapes.crush has `pub fn square(n)` and plain `fn cube(n)`\nimport shapes\nprint(shapes.square(3))\nprint(shapes.cube(2))\n```\n\n```text\n9\n8\n```\n\n- **`pub struct`** and **`pub trait`** do not parse yet. `pub` is not a keyword,\n  so the compiler reads a variable named `pub` and refuses the program:\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  },
+  {
+   "id": "crush-modules-2",
+   "kind": {
+    "type": "crush"
+   },
+   "source": "fn main() {\n    pub struct P { x: Int }\n    print(P { x: 1 })\n}\n",
+   "state": {
+    "status": "pending"
+   },
+   "meta": {
+    "tags": [
+     "guide",
+     "expected-failure"
+    ],
+    "extra": {
+     "guide": {
+      "src": "crush/modules.md:318",
+      "browser": "fail",
+      "why": "this example shows a compile error"
+     }
+    }
+   },
+   "outputs": []
+  },
+  {
+   "id": "crush-modules-md-5",
+   "kind": {
+    "type": "markdown"
+   },
+   "source": "```text\n[compile] Undefined variable: pub\n```\n\n  `pub trait Shape { … }` gives the same error. A field cannot be marked `pub`\n  either: `struct P { pub x: Int }` is a parse error (``Expected `}` but found `x` ``),\n  because `pub` is read as a field name with no type. `struct P { pub: Int }` is legal\n  and declares a field called `pub`.\n\n### What is planned\n\nThis is **planned work, not present behaviour**. crush-ast's visibility design\n(`docs/design/visibility-and-packages.md`) makes visibility per **package**:\n\n- without `pub`, a function is visible to every file of its own package; `pub`\n  exports it to other packages;\n- the first step (crush-ast #519) records `pub`, accepts `pub struct` and\n  `pub trait`, and makes a use of a non-`pub` function from another package a\n  **warning**, `W-VIS01`; a module with no `pub` anywhere stays all-public then;\n- the warning becomes an **error** before the 1.0 feature freeze of 2026-12-31\n  (crush-ast #524).\n\nSo: mark the functions other packages should call with `pub` now. It costs\nnothing today, and it is what the warning will check.\n\n## Remote imports and other forms\n\n`import @http \"…\"`, `import @git \"…\"`, `import @file \"…\"` and `use @mcp \"…\"` are\ncompile errors: they are not supported yet. `use @lang python \"math\"` is a\ndifferent thing that works: it writes `import math` into every later `@python`\nblock (see [Polyglot](https://docs.crushlang.org/crush/polyglot.html)). See [Import Styles](https://docs.crushlang.org/examples/imports.html)\nfor each form with its current result.\n",
+   "state": {
+    "status": "done"
+   },
+   "meta": {},
+   "outputs": []
+  }
+ ]
+}

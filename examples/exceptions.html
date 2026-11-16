@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -247,9 +247,10 @@ not found
 <li><code>throw expr</code> — the rest of the <code>try</code> body is skipped</li>
 <li>Output printed before the <code>throw</code> is kept (<code>5</code> above)</li>
 <li>Thrown values may be strings, numbers, or objects (<code>err.code</code>)</li>
-<li><code>catch</code> handles only values raised with <code>throw</code>. A VM fault such as
-<code>1 / 0</code>, a failed capability call, or a crashing polyglot block ends the program
-instead — see <a href="../crush/control_flow.html#what-catch-does-not-catch">Control Flow</a></li>
+<li><code>catch</code> also handles VM faults such as <code>1 / 0</code> and failed capability calls
+(the caught value prints as <code>error(&lt;message&gt;)</code>); a crashing polyglot block or an
+exhausted quota still ends the program — see
+<a href="../crush/control_flow.html#what-catch-catches">Control Flow</a></li>
 </ul>
 
                     </main>

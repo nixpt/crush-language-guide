@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -193,8 +193,7 @@ the first failure.</p>
 <div class="crush-block" data-crush="host" data-src="examples/build-pipeline.md:11" data-why="uses `process.exec`, which the in-browser runtime does not provide">
 <pre><code class="language-crush">// A tiny build pipeline: run each step as a process, stop at the first failure.
 fn run_tool(cmd: String, arg: String) -&gt; Int {
-    let raw = process.exec(cmd, arg)
-    let res = json.parse(raw)
+    let res = process.exec(cmd, arg)
     return res.exit_code
 }
 
@@ -234,9 +233,10 @@ pipeline stopped
 <p><strong>What this shows:</strong></p>
 <ul>
 <li><strong>Capability-gated side effects.</strong> <code>process.exec</code> only exists because of the
-<code>--process</code> flag; without it the program fails with <code>unknown capability: process.exec</code>.</li>
-<li><strong>Structured results.</strong> <code>process.exec(cmd, arg)</code> returns a JSON string with
-<code>exit_code</code>, <code>stdout</code> and <code>stderr</code>; <code>json.parse</code> turns it into an object.</li>
+<code>--process</code> flag; without it the program is refused before it runs, naming
+<code>--process: process.exec</code>.</li>
+<li><strong>Structured results.</strong> <code>process.exec(cmd, arg)</code> returns a map with
+<code>exit_code</code>, <code>stdout</code> and <code>stderr</code> (a JSON string before crush-ast 0.11).</li>
 <li><strong>Fail-fast.</strong> <code>step</code> returns the exit code, <code>main</code> breaks out of the loop on
 the first non-zero one.</li>
 <li><strong>Data-driven steps.</strong> The pipeline is an array of <code>[name, command, argument]</code>

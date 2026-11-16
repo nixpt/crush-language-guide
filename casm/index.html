@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -194,13 +194,15 @@ it comes from mixing them up:</p>
 </thead>
 <tbody>
 <tr><td><strong>CASM IR</strong> (JSON)</td><td>The compiler’s structured output: functions of JSON instructions, <code>{"op": "push_int", "value": 42}</code></td><td><code>.casm</code> JSON, or <code>.casmb</code> (MessagePack)</td><td>the <code>casm</code> crate (<code>casm::Program</code>)</td><td><code>compile_crush_to_casm</code> produces it; embedders load it with <code>casm::Program::load</code></td></tr>
-<tr><td><strong>CASM text</strong></td><td>A line-oriented assembly you can write by hand: <code>.func main</code> / <code>PUSH 42</code> / <code>CAP_CALL "io.print" 1</code></td><td><code>.casm</code></td><td><code>crush-vm</code>’s assembler</td><td><code>crushc --emit casm</code> prints it; <code>crush-run run x.casm</code> and <code>crush-compile</code> consume it</td></tr>
+<tr><td><strong>CASM text</strong> (CVM1 assembly)</td><td>A line-oriented assembly you can write by hand: <code>.func main</code> / <code>PUSH 42</code> / <code>CAP_CALL "io.print" 1</code></td><td><code>.cvms</code></td><td><code>crush-vm</code>’s assembler</td><td><code>crushc --emit cvms</code> prints it; <code>crush-run run x.cvms</code> and <code>crush-compile</code> consume it</td></tr>
 <tr><td><strong>CVM1</strong> (binary)</td><td>The bytecode the VM actually executes: magic <code>CVM1</code>, constant pool, flat code</td><td><code>.cvm1</code></td><td><code>crush-vm</code> (<code>bytecode.rs</code>)</td><td><code>crushc</code> writes it; <code>crush-run run x.cvm1</code> runs it</td></tr>
 </tbody>
 </table>
 </div>
-<p>(The extension <code>.casm</code> is shared by the JSON IR and the text assembly; the tools
-that read a file expect one of them — <code>crush-run</code> expects text.)</p>
+<p>(Up to crush-ast v0.9.0 the extension <code>.casm</code> was shared by the JSON IR and the
+text assembly. Since v0.10.0 (#365) <code>.casm</code> means the JSON IR and the text is
+<code>.cvms</code>; <code>crush-run</code> still runs text in a <code>.casm</code> file, with a note asking you to
+rename it. This guide’s text examples are labelled <code>casm</code> but are CVM1 assembly.)</p>
 <p>They fit together like this:</p>
 <pre><code> Crush source ──parse──▶ CAST (JSON AST) ──compile──▶ CASM IR (JSON) ──lower──▶ CASM text ──assemble──▶ CVM1 bytes ──▶ VM
                                                                       (crush_lang_sdk::compile::casm_to_vm)
@@ -234,7 +236,7 @@ debuggers only).</li>
 </ul>
 <h2 id="seeing-it-for-yourself"><a class="header" href="#seeing-it-for-yourself">Seeing it for yourself</a></h2>
 <p>Compile a small program to text assembly:</p>
-<div class="crush-block" data-crush="run" data-src="casm/README.md:55" data-expect="x = 5
+<div class="crush-block" data-crush="run" data-src="casm/README.md:57" data-expect="x = 5
 ">
 <pre><code class="language-crush">fn add(a, b) {
     return a + b

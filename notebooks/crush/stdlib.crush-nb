@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Standard Library\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nCrush's \"standard library\" is a set of **capabilities** — dotted functions such\nas `str.split` and `math.sqrt` — that the host registers. It is *not* a module\nsystem: there is no `import std.io`, and `import` does not load anything yet\n(crush-ast **CRUSH-110**). You call these functions by their full dotted name.\n\n## Turning it on\n\nIt is **on by default** (crush-ast CRUSH-113): the `stdlib` Cargo feature of\n`crush-lang-sdk` is a default feature, and `crush-run`/`crush run` register the\nlibrary without a flag, because these capabilities confer no authority. They are\npure computation and do no I/O; for files, network, time and processes see\n[Capability System](https://docs.crushlang.org/crush/capabilities.html).\n\n- `--stdlib` is still accepted, for compatibility, and changes nothing.\n- `--no-stdlib` leaves the library out. A program that uses it is then refused\n  before it runs, with `stdlib (default; --no-stdlib): str.to_upper`.\n- A build with `default-features = false` (an embedder can choose that) has no\n  library; `--stdlib` is then an error.\n\nArguments are positional and the arity is checked (`[runtime] str.replace takes 3\narg(s), got 2`). Note that some predicates return `1`/`0` rather than\n`true`/`false` (for example `str.starts_with`, `str.ends_with`, `regex.test`,\n`collections.includes`), while `str.contains` returns a `Bool`, so compare with\n`== 1` rather than assuming a `Bool`.\n\n## Strings — `str.*`\n\n| Function | Result |\n|---|---|\n| `str.split(s, delim)` | array of parts |\n| `str.join(array, delim)` | string |\n| `str.trim(s)`, `str.trim_start(s)`, `str.trim_end(s)` | string |\n| `str.replace(s, old, new)` | string |\n| `str.contains(s, sub)`, `str.starts_with(s, p)`, `str.ends_with(s, p)` | truthy |\n| `str.to_upper(s)`, `str.to_lower(s)` | string |\n| `str.pad_left(s, width, fill)`, `str.pad_right(s, width, fill)` | string |\n| `str.repeat(s, n)` | string |\n| `str.substring(s, start, end)` | string (`end` exclusive) |\n| `str.char_at(s, i)`, `str.index_of(s, sub)` | one-char string / index |\n| `str.format(template, value)` | the first `{}` replaced by `value` (exactly two arguments) |\n| `str.format(template, args)` | `{}` placeholders filled from `args` |\n\n`str.concat(...)` and `str.len(s)` are always available, even with `--no-stdlib`.\n",
+   "source": "# Standard Library\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16).\n\nCrush's \"standard library\" is a set of **capabilities** — dotted functions such\nas `str.split` and `math.sqrt` — that the host registers. It is *not* a module\nsystem: there is no `import std.io`, and `import` does not load anything yet\n(crush-ast **CRUSH-110**). You call these functions by their full dotted name.\n\n## Turning it on\n\nIt is **on by default** (crush-ast CRUSH-113): the `stdlib` Cargo feature of\n`crush-lang-sdk` is a default feature, and `crush-run`/`crush run` register the\nlibrary without a flag, because these capabilities confer no authority. They are\npure computation and do no I/O; for files, network, time and processes see\n[Capability System](https://docs.crushlang.org/crush/capabilities.html).\n\n- `--stdlib` is still accepted, for compatibility, and changes nothing.\n- `--no-stdlib` leaves the library out. A program that uses it is then refused\n  before it runs, with `stdlib (default; --no-stdlib): str.to_upper`.\n- A build with `default-features = false` (an embedder can choose that) has no\n  library; `--stdlib` is then an error.\n\nArguments are positional and the arity is checked (`[runtime] str.replace takes 3\narg(s), got 2`). Note that some predicates return `1`/`0` rather than\n`true`/`false` (for example `str.starts_with`, `str.ends_with`, `regex.test`,\n`collections.includes`), while `str.contains` returns a `Bool`, so compare with\n`== 1` rather than assuming a `Bool`.\n\n## Strings — `str.*`\n\n| Function | Result |\n|---|---|\n| `str.split(s, delim)` | array of parts |\n| `str.join(array, delim)` | string |\n| `str.trim(s)`, `str.trim_start(s)`, `str.trim_end(s)` | string |\n| `str.replace(s, old, new)` | string |\n| `str.contains(s, sub)`, `str.starts_with(s, p)`, `str.ends_with(s, p)` | truthy |\n| `str.to_upper(s)`, `str.to_lower(s)` | string |\n| `str.pad_left(s, width, fill)`, `str.pad_right(s, width, fill)` | string |\n| `str.repeat(s, n)` | string |\n| `str.substring(s, start, end)` | string (`end` exclusive) |\n| `str.char_at(s, i)`, `str.index_of(s, sub)` | one-char string / index |\n| `str.format(template, value)` | the first `{}` replaced by `value` (exactly two arguments) |\n| `str.format(template, args)` | `{}` placeholders filled from `args` |\n\n`str.concat(...)` and `str.len(s)` are always available, even with `--no-stdlib`.\n",
    "state": {
     "status": "done"
    },
@@ -306,7 +306,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "> **Known bug.** `regex.match` is registered but can't be called from source:\n> `match` is a keyword, so `regex.match(...)` is a parse error (`Expected field\n> name but found match`).\n",
+   "source": "`regex.match(pattern, s)` returns the whole match followed by the groups. (It used\nto be a parse error, because `match` is a keyword; since crush-ast CRUSH-394 a\nkeyword is accepted as a name after a dot.)\n",
    "state": {
     "status": "done"
    },
@@ -318,20 +318,20 @@
    "kind": {
     "type": "crush"
    },
-   "source": "fn main() {\n    print(regex.match(\"([a-z]+)([0-9]+)\", \"abc123\"))\n}\n",
+   "source": "print(regex.match(\"([a-z]+)([0-9]+)\", \"abc123\"))\n",
    "state": {
     "status": "pending"
    },
    "meta": {
     "tags": [
      "guide",
-     "expected-failure"
+     "runnable"
     ],
     "extra": {
      "guide": {
-      "src": "crush/stdlib.md:236",
-      "browser": "fail",
-      "why": "not implemented yet (GAP-KEYWORD-FIELD-NAMES); Run shows what happens today"
+      "src": "crush/stdlib.md:235",
+      "browser": "run",
+      "expect_output": "[abc123, abc, 123]\n"
      }
     }
    },
@@ -365,7 +365,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/stdlib.md:249",
+      "src": "crush/stdlib.md:253",
       "browser": "run",
       "expect_output": "5\n{ok: true, value: 5}\nfalse\nHello World!\n"
      }

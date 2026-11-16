@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -200,7 +200,7 @@ are taken from <code>crates/casm/src/lib.rs</code>, <code>crates/crush-vm/src/as
 <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><code>version</code></td><td>string</td><td>yes</td><td>CASM format version. The loader accepts any version whose <strong>major</strong> is <code>1</code> (<code>CASM_VERSION = "1.0"</code>); the Crush compiler writes <code>"1.0.0"</code>. Anything else is rejected at load time.</td></tr>
+<tr><td><code>version</code></td><td>string</td><td>yes</td><td>CASM format version. The loader accepts any version whose <strong>major</strong> is <code>1</code> (<code>CASM_VERSION = "1.0"</code>); the Crush compiler writes <code>"1.0"</code>. Anything else is rejected at load time.</td></tr>
 <tr><td><code>functions</code></td><td>object</td><td>yes</td><td>function name → function definition</td></tr>
 <tr><td><code>manifest</code></td><td>object</td><td>no</td><td><code>{"permissions": [capability names…]}</code>. Defaults to no permissions.</td></tr>
 <tr><td><code>lang</code></td><td>string</td><td>no</td><td>source-language hint (<code>"crush"</code>, <code>"python"</code>, …); informational</td></tr>
@@ -311,8 +311,9 @@ registered. When the Crush compiler lowers a program it adds every capability th
 code actually calls, so a manifest only matters when you write or edit IR by hand
 (or want to <em>restrict</em> a program).</p>
 <h2 id="the-text-assembly"><a class="header" href="#the-text-assembly">The text assembly</a></h2>
-<p>This is what <code>crushc --emit casm</code> prints and <code>crush-run run FILE.casm</code> /
-<code>crush-compile</code> read. One instruction per line:</p>
+<p>This is what <code>crushc --emit cvms</code> prints and <code>crush-run run FILE.cvms</code> /
+<code>crush-compile</code> read (<code>.cvms</code>, CVM1 assembly; up to v0.9.0 it was <code>.casm</code>, which
+<code>crush-run</code> still accepts with a note). One instruction per line:</p>
 <pre><code class="language-casm">; a comment (# also works)
 .func main              ; start of function "main"
     PUSH 40
@@ -346,21 +347,28 @@ anonymous routine starting at offset 0.</li>
 <!-- check: output -->
 <pre><code class="language-text">42
 </code></pre>
-<p><code>crush-run</code> does not infer permissions from a <code>.casm</code> file: pass the capabilities
-the program uses with <code>--cap</code> (e.g. <code>crush-run run prog.casm --cap io.print</code>).</p>
+<p><code>crush-run</code> does not infer permissions from assembly text: list them with <code>.cap NAME</code>
+lines (as <code>crushc --emit cvms</code> writes them), or pass the capabilities the program
+uses with <code>--cap</code> (e.g. <code>crush-run run prog.cvms --cap io.print</code>).</p>
 <h2 id="the-cvm1-binary"><a class="header" href="#the-cvm1-binary">The CVM1 binary</a></h2>
 <p><code>crushc x.crush -o x.cvm1</code> writes this layout (all multi-byte integers
 big-endian):</p>
 <pre><code> offset  size   field
       0     4   magic            "CVM1"
-      4     1   version          2   (versions 1 and 2 are accepted)
+      4     1   version          2, or 3 when a kind table follows (1 to 3 are accepted)
       5     2   manifest_len
       7     n   manifest         JSON: {"runtime", "permissions", "name"?, "functions"?, "entry"?}
             2   n_consts
             …   consts           n_consts × ( 2-byte length + UTF-8 bytes )
             4   code_len
             …   code             flat bytecode
+  (version 3 only)
+            1   kt_format        1, or 2 for a module that needs a newer COSM
+            4   kt_len
+            …   kind table       the program's kinds (structs, traits) as canonical COSM JSON
 </code></pre>
+<p>A program with no <code>struct</code> or <code>trait</code> is written as version 2, as before; one with
+kinds gets version 3 and the trailing kind table.</p>
 <p>The constant pool holds every string the code names: <code>PUSH_STR</code> literals, capability
 names and function names. A capability name or a string is limited to 65 535 bytes
 and the pool to 65 536 entries because indices are 16-bit. The <code>functions</code> table in

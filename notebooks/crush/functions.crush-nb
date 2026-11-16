@@ -18,7 +18,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "# Functions\n\n> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).\n\nThis chapter covers defining and calling functions. Named functions are\ntop-level declarations, and they are also **values**: you can store one in a\nvariable, pass it as an argument and return it. Lambdas and closures have their\nown chapter, [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n\n## Defining functions\n",
+   "source": "# Functions\n\n> Verified against crush-ast `7f3fef31` (main, 2026-11-16).\n\nThis chapter covers defining and calling functions. Named functions are\ntop-level declarations, and they are also **values**: you can store one in a\nvariable, pass it as an argument and return it. Lambdas and closures have their\nown chapter, [Closures and Function Values](https://docs.crushlang.org/crush/closures.html).\n\n## Defining functions\n",
    "state": {
     "status": "done"
    },
@@ -126,7 +126,7 @@
    "kind": {
     "type": "markdown"
    },
-   "source": "Mutual recursion works too. Recursion depth is capped by the VM's call-depth\nquota — **256 frames by default** (`--max-call-depth N` on `crush-run`); exceeding\nit ends the program with `call depth quota exceeded`. The other default quotas are\n1,000,000 instructions (`--max-steps`), a 4096-slot stack (`--max-stack`), 1 MiB of\noutput (`--max-output`), and a 30-second wall-clock limit per polyglot block.\n",
+   "source": "Mutual recursion works too. Recursion depth is capped by the VM's call-depth\nquota — **256 frames by default** (`--max-call-depth N` on `crush-run`); exceeding\nit ends the program with `call depth quota exceeded`. The other default quotas are\n1,000,000 instructions (`--max-steps`), a 4096-slot stack (`--max-stack`), 1 MiB of\noutput (`--max-output`), and a 30-second wall-clock budget for the whole run\n(`--max-wall-ms`).\n",
    "state": {
     "status": "done"
    },
@@ -149,7 +149,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:112",
+      "src": "crush/functions.md:113",
       "browser": "fail",
       "why": "this example shows a run-time error",
       "expect_error": "call depth quota exceeded"
@@ -186,7 +186,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:123",
+      "src": "crush/functions.md:124",
       "browser": "run",
       "expect_output": "42\n8\n"
      }
@@ -222,7 +222,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:143",
+      "src": "crush/functions.md:144",
       "browser": "run",
       "expect_output": "42\n5\n"
      }
@@ -258,7 +258,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:164",
+      "src": "crush/functions.md:165",
       "browser": "run",
       "expect_output": "11\n"
      }
@@ -294,7 +294,7 @@
     ],
     "extra": {
      "guide": {
-      "src": "crush/functions.md:185",
+      "src": "crush/functions.md:186",
       "browser": "run",
       "expect_output": "worker\nmain\n"
      }

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8411c17a.js";
+            window.path_to_searchindex_js = "../searchindex-1e90dcd6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-73e5c564.js"></script>
+        <script src="../toc-1f29af52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@
 <p class="crush-notebook-link"><a href="../notebooks/crush/stdlib.crush-nb" download="">Open as a notebook</a> <span>(<code>.crush-nb</code>, <a href="../notebooks.html">how to run it</a>)</span></p>
 
 <blockquote>
-<p>Verified against crush-ast <code>bad81048</code> (v0.9.0, 2026-10-31).</p>
+<p>Verified against crush-ast <code>7f3fef31</code> (main, 2026-11-16).</p>
 </blockquote>
 <p>Crush’s “standard library” is a set of <strong>capabilities</strong> — dotted functions such
 as <code>str.split</code> and <code>math.sqrt</code> — that the host registers. It is <em>not</em> a module
@@ -431,16 +431,18 @@ print(regex.split("[,;] *", "a, b;c"))
 a#b#
 [a, b, c]
 </code></pre>
-<blockquote>
-<p><strong>Known bug.</strong> <code>regex.match</code> is registered but can’t be called from source:
-<code>match</code> is a keyword, so <code>regex.match(...)</code> is a parse error (<code>Expected field name but found match</code>).</p>
-</blockquote>
-<!-- check: nyi GAP-KEYWORD-FIELD-NAMES -->
-<div class="crush-block" data-crush="fail" data-src="crush/stdlib.md:236" data-why="not implemented yet (GAP-KEYWORD-FIELD-NAMES); Run shows what happens today">
+<p><code>regex.match(pattern, s)</code> returns the whole match followed by the groups. (It used
+to be a parse error, because <code>match</code> is a keyword; since crush-ast CRUSH-394 a
+keyword is accepted as a name after a dot.)</p>
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:235" data-expect="[abc123, abc, 123]
+">
 <pre><code class="language-crush">print(regex.match("([a-z]+)([0-9]+)", "abc123"))
 </code></pre>
 </div>
 
+<!-- check: output -->
+<pre><code class="language-text">[abc123, abc, 123]
+</code></pre>
 <h2 id="other-families"><a class="header" href="#other-families">Other families</a></h2>
 <p>Also in the standard library: <code>bytes.*</code> (<code>from_string</code>, <code>to_string</code>, <code>len</code>,
 <code>slice</code>), <code>buffer.*</code> (<code>alloc</code>, <code>read</code>, <code>write</code>, <code>freeze</code>), <code>binary.read_*</code> /
@@ -448,7 +450,7 @@ a#b#
 <code>is_ok</code>, <code>unwrap</code> — results are plain <code>{ok, value}</code> objects), <code>text.sort</code>,
 <code>text.uniq</code>, <code>time.format</code>, <code>time.parse</code>, <code>env.os</code>, <code>env.arch</code>, and the <code>system.*</code>
 helpers implemented in Crush itself (<code>crates/crush-lang-sdk/sbl/</code>).</p>
-<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:249" data-expect="5
+<div class="crush-block" data-crush="run" data-src="crush/stdlib.md:253" data-expect="5
 {ok: true, value: 5}
 false
 Hello World!
