@@ -1,3 +1,5 @@
 null
 true
-{"exit_code":0,"stderr":"","stdout":"hi\n"}
+0
+hi
+true
