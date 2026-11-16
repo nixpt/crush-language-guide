@@ -17,7 +17,7 @@ panics, see scripts/mdbook-crush-run.py), its `.stdin` fed line by line, and the
               `compile error:` / `runtime error:` where crush-run prints
               `[compile]` / `[runtime]`; the messages are the same)
     refused   the browser refused loudly (a capability it cannot grant, e.g. --fs
-              or @python) where crush-run, given the flags, ran it
+              or @python, or an `import`, which has no files to load in a browser) where crush-run, given the flags, ran it
     known     fails loudly but differently, for a reason listed in KNOWN
     MISMATCH  anything else: the browser ran it and got a different result
 
@@ -33,7 +33,9 @@ BOOK = ROOT / "book"
 CORPUS = ROOT / "examples" / "verified"
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
 REFUSALS = ("nothing was run", "can't be granted in a browser", "capability (run with --polyglot",
-            "not supported by the in-browser JavaScript runtime", "not supported by the in-browser Python runtime")
+            "not supported by the in-browser JavaScript runtime", "not supported by the in-browser Python runtime",
+            # an `import`: the page compiles a string, so there are no files to load modules from
+            "this compile has no file path to search from")
 BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript", "python": "polyglot.python"}
 # Programs where the browser fails loudly, but differently from crush-run, and why.
 KNOWN = {}
