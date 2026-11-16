@@ -1,0 +1,10 @@
+// Not every fault is catchable: a polyglot block that raises still ends the
+// program (as do quota exhaustion and capability refusals), even inside try.
+try {
+    @python {
+raise ValueError("bad input")
+    }
+} catch e {
+    print("never reached")
+}
+print("never reached either")

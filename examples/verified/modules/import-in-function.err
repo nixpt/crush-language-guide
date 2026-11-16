@@ -1,0 +1,1 @@
+`import` inside `fn f`: imports go at the top level of a file

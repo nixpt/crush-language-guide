@@ -1,0 +1,4 @@
+// A module that is not found is a compile error listing every directory that
+// was searched: the program's own directory, then each -L, then CRUSH_PATH.
+import helpers
+print("never reached")

@@ -1,0 +1,8 @@
+// PITFALL: imports belong at the top level of a file, and one inside a function
+// is a compile error (`import` inside `fn f`: imports go at the top level of a
+// file). Inside `fn main` it is accepted and works, which contradicts crush-ast's
+// import-system design note. Put imports at the top level.
+fn main() {
+    import geom
+    print(geom.area(1, 2))
+}

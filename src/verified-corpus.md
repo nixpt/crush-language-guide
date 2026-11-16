@@ -6,28 +6,28 @@ one behaviour per program, each stored next to the exact output it produces. It 
 the evidence behind the chapters: every claim about the language was first
 observed by running one of these programs.
 
-> Verified against crush-ast `bad81048` (the commit in the repository's
-> `CRUSH_AST_COMMIT` file). 130 programs.
+> Verified against crush-ast `7f3fef31` (the commit in the repository's
+> `CRUSH_AST_COMMIT` file). 150 programs.
 
 | Area | Programs | Covers |
 |---|---:|---|
 | `basics/` | 13 | literals (including hex and binary), `print` vs `io.print`, semicolons, one-line expressions, comments, return values, scoping, annotations, Nepali keywords |
 | `operators/` | 10 | arithmetic, comparison, `and`/`or`/`not`, short-circuit, string `+`, `\|>`, overflow, division by zero |
 | `strings/` | 8 | indexing, `str.*`, `conv.chr`/`ord`, escapes, string and array slices (`s[a:b]`, `s[::step]`), string methods that don't exist |
-| `collections/` | 11 | arrays, `array.pop`, maps (insertion order, subscripts, iteration), `collections.*`, `json.*` |
+| `collections/` | 11 | arrays, `array.pop` and `a.pop()`, maps (insertion order, subscripts, iteration), `collections.*`, `json.*` |
 | `control-flow/` | 9 | `if`, `while`/`break`/`continue`, ranges, `match` as expression and statement |
 | `functions/` | 5 | definitions, arity checks, no defaults, top-level visibility, the call-depth quota |
-| `closures/` | 11 | lambdas, function values, capture by reference, counters, loop capture, recursion |
+| `closures/` | 11 | lambdas, function values, calling any expression, capture by reference, counters, loop capture, recursion |
 | `structs/` | 11 | literals, sealing, equality, `impl`, traits, value semantics, C3, bound methods, constructors |
 | `match/` | 3 | struct patterns, and their compile errors |
-| `errors/` | 6 | `try`/`catch`/`throw`, rethrow, what `catch` can't catch, `result.*` |
-| `modules/` | 2 | `import` (refused), `export` |
+| `errors/` | 7 | `try`/`catch`/`throw`, rethrow, catching run-time faults, what `catch` can't catch, `result.*` |
+| `modules/` | 21 | the `import` forms, `-L` and `CRUSH_PATH`, module rules and errors, structs across files, the struct/trait name clash, `pub` and `__`, `export` |
 | `capabilities/` | 12 | refusal before running, `--fs` and `--fs-root`, `@capabilities`, `io.read`, `sys.args`, `math.random` |
 | `polyglot/` | 15 | `--polyglot`, `-> outputs`, JavaScript, chaining, `use @lang`, isolation, errors, bash |
 | `concurrency/` | 7 | `spawn`/`yield`/`await`, `async fn`, `parallel_map` and its rules |
 | `annotations/` | 3 | manifest annotations, `@wip`, `@capabilities` |
 | `ai-native/` | 2 | the refused `semantic_switch`, AI expressions not in source |
-| `casm/` | 2 | running CASM text with `--cap` |
+| `casm/` | 2 | running assembly text (`.cvms`) with `--cap` |
 
 ## The files
 
@@ -35,12 +35,14 @@ For each program `NAME`:
 
 | File | Meaning |
 |---|---|
-| `NAME.crush` / `NAME.casm` | the program; its first comment lines say what it shows |
+| `NAME.crush` / `NAME.cvms` | the program; its first comment lines say what it shows |
 | `NAME.out` | its exact standard output |
 | `NAME.err` | present when the program must **fail**: every line of it must appear in the error output |
 | `NAME.flags` | the `crush-run` flags it needs (`--polyglot`, `--fs --fs-root .`, …) |
 | `NAME.stdin` | what it reads from standard input (otherwise it reads end-of-file) |
 | `NAME.needs` | host programs it needs (`python3`, `node`); skipped, not failed, without them |
+| `NAME.env` | environment variables for the run, `NAME=value` per line (`CRUSH_PATH=shared`) |
+| `NAME.files/` | the other files the program needs, such as the modules it imports; copied next to it for the run, and not programs of their own |
 
 Programs whose first line says **PITFALL** show behaviour that is wrong today and
 link the crush-ast issue: when the issue is fixed, the program's expected output
@@ -49,6 +51,7 @@ changes and the corpus fails, which is the signal to update the guide.
 | Pitfall | Issue |
 |---|---|
 | `polyglot/header-comment-pitfall`: `//` on a block header → `Undefined variable` | [#266](https://github.com/nixpt/crush-ast/issues/266) |
+| `modules/import-in-main-pitfall`: an `import` inside `fn main` is accepted (inside any other function it is refused) | [crush-ast#535](https://github.com/nixpt/crush-ast/issues/535) |
 
 ## Running it
 

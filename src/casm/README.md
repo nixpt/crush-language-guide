@@ -7,11 +7,13 @@ it comes from mixing them up:
 | Form | What it is | Extension | Defined in | Who produces / runs it |
 |---|---|---|---|---|
 | **CASM IR** (JSON) | The compiler's structured output: functions of JSON instructions, `{"op": "push_int", "value": 42}` | `.casm` JSON, or `.casmb` (MessagePack) | the `casm` crate (`casm::Program`) | `compile_crush_to_casm` produces it; embedders load it with `casm::Program::load` |
-| **CASM text** | A line-oriented assembly you can write by hand: `.func main` / `PUSH 42` / `CAP_CALL "io.print" 1` | `.casm` | `crush-vm`'s assembler | `crushc --emit casm` prints it; `crush-run run x.casm` and `crush-compile` consume it |
+| **CASM text** (CVM1 assembly) | A line-oriented assembly you can write by hand: `.func main` / `PUSH 42` / `CAP_CALL "io.print" 1` | `.cvms` | `crush-vm`'s assembler | `crushc --emit cvms` prints it; `crush-run run x.cvms` and `crush-compile` consume it |
 | **CVM1** (binary) | The bytecode the VM actually executes: magic `CVM1`, constant pool, flat code | `.cvm1` | `crush-vm` (`bytecode.rs`) | `crushc` writes it; `crush-run run x.cvm1` runs it |
 
-(The extension `.casm` is shared by the JSON IR and the text assembly; the tools
-that read a file expect one of them — `crush-run` expects text.)
+(Up to crush-ast v0.9.0 the extension `.casm` was shared by the JSON IR and the
+text assembly. Since v0.10.0 (#365) `.casm` means the JSON IR and the text is
+`.cvms`; `crush-run` still runs text in a `.casm` file, with a note asking you to
+rename it. This guide's text examples are labelled `casm` but are CVM1 assembly.)
 
 They fit together like this:
 

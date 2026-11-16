@@ -1,6 +1,6 @@
 # Control Flow
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 Crush has `if`/`else`, `while`, `for`, `break`/`continue`, a `match` expression,
 and `try`/`catch`/`throw`. Conditions are type-checked and must be `Bool`.
@@ -317,19 +317,48 @@ re-inner
 
 An uncaught `throw` ends the program with `[runtime] uncaught error: <value>`.
 
-### What `catch` does *not* catch
+### What `catch` catches
 
-`try`/`catch` handles values raised with `throw`. **Runtime faults from the VM or
-a host capability are not catchable**: division by zero, an out-of-range array
-index, a failing `fs.read`, or a polyglot block that raises all abort the
-program with a `[runtime]` error instead of reaching your `catch`.
+`try`/`catch` handles values raised with `throw`, and, since crush-ast
+CRUSH-393 (on main after v0.11.2), also **runtime faults**: division by zero, an out-of-range index, a
+runtime type error, a failing host capability (a missing file for `fs.read`, a
+network timeout). The caught value is an error value that prints as
+`error(<message>)`:
 
-<!-- check: nyi GAP-CATCH-RUNTIME-FAULTS -->
 ```crush
 try {
     print(1 / 0)
 } catch e {
-    print("caught")
+    print("caught: " + e)
+}
+try {
+    print([1][3])
+} catch e {
+    print(conv.type_of(e))
+}
+print("after")
+```
+
+<!-- check: output -->
+```text
+caught: error(division by zero)
+error
+after
+```
+
+Some failures are **not** catchable and still end the program even inside `try`:
+running out of a quota (`--max-steps`, `--max-stack`, `--max-output`,
+`--max-wall-ms`, call depth), a capability the run does not grant (refused before
+anything runs), `sys.exit`, an uncaught `throw`, and a polyglot block that raises:
+
+<!-- check: runfail instruction quota exceeded -->
+<!-- check: flags --max-steps 1000 -->
+```crush
+try {
+    let i = 0
+    while true { i = i + 1 }
+} catch e {
+    print("never reached")
 }
 ```
 

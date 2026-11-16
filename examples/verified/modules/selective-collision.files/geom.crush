@@ -1,0 +1,4 @@
+// geom.crush: a module is definitions only (fn, struct, impl, trait, import).
+fn area(w, h) { return w * h }
+fn scaled(x) { return __unit() * x }
+fn __unit() { return 10 }

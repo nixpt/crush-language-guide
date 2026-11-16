@@ -1,0 +1,7 @@
+// struct and trait names are one global namespace across the files of a
+// program: the same name declared in two files (two modules, or a module and
+// the importer) is a compile error naming both (crush-ast #527). Before it,
+// the later declaration silently replaced the earlier one.
+import plane
+import map
+print(plane.origin())

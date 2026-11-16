@@ -1,0 +1,3 @@
+// Two modules that import each other are a compile error showing the cycle.
+import ca
+print(ca.a1())

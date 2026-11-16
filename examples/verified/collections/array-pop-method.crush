@@ -1,3 +1,5 @@
-// The method form a.pop() is not a registered capability: refused before running.
+// a.pop() is the method form of array.pop(a): it removes and returns the last
+// element (crush-ast CRUSH-391).
 let a = [1, 2, 3]
 print(a.pop())
+print(a)

@@ -7,8 +7,9 @@ What scripts/verify-examples does for `crush-run`, for the book's Run button:
 every `.crush` program runs through the built book's own runtime
 (interactive/crush-run.js, `window.crushRun`), with the grants the page would
 give it for its `.flags` (`--polyglot` with only `@javascript` / `@python`
-blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` → env,
-`--fs` → fs, an empty in-memory directory; nothing else is grantable), its `.stdin` fed line by line, and the result compared with its
+blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` → env;
+nothing else is granted: `--fs` is off while crush-web's in-memory filesystem
+panics, see scripts/mdbook-crush-run.py), its `.stdin` fed line by line, and the result compared with its
 `.out` / `.err`:
 
     match     the browser printed exactly the `.out` (trailing whitespace ignored)
@@ -16,7 +17,7 @@ blocks → polyglot.javascript / polyglot.python, `--time` → time, `--env` →
               `compile error:` / `runtime error:` where crush-run prints
               `[compile]` / `[runtime]`; the messages are the same)
     refused   the browser refused loudly (a capability it cannot grant, e.g. --fs
-              or @python) where crush-run, given the flags, ran it
+              or @python, or an `import`, which has no files to load in a browser) where crush-run, given the flags, ran it
     known     fails loudly but differently, for a reason listed in KNOWN
     MISMATCH  anything else: the browser ran it and got a different result
 
@@ -32,7 +33,9 @@ BOOK = ROOT / "book"
 CORPUS = ROOT / "examples" / "verified"
 POLYGLOT = re.compile(r"@(python|javascript|js|bash|sh|rust|ruby|lua|go)\b")
 REFUSALS = ("nothing was run", "can't be granted in a browser", "capability (run with --polyglot",
-            "not supported by the in-browser JavaScript runtime", "not supported by the in-browser Python runtime")
+            "not supported by the in-browser JavaScript runtime", "not supported by the in-browser Python runtime",
+            # an `import`: the page compiles a string, so there are no files to load modules from
+            "this compile has no file path to search from")
 BROWSER_LANGS = {"javascript": "polyglot.javascript", "js": "polyglot.javascript", "python": "polyglot.python"}
 # Programs where the browser fails loudly, but differently from crush-run, and why.
 KNOWN = {}
@@ -70,8 +73,8 @@ def grants(flags, code):
         out.add("time")
     if "--env" in flags:
         out.add("env")
-    if "--fs" in flags:
-        out.add("fs")
+    # --fs is not granted: crush-web at the pinned commit panics when given the
+    # in-memory filesystem (see BROWSER_FLAGS in scripts/mdbook-crush-run.py).
     langs = set(POLYGLOT.findall(code))
     if "--polyglot" in flags and langs and langs <= set(BROWSER_LANGS):
         out |= {BROWSER_LANGS[lang] for lang in langs}
@@ -116,7 +119,8 @@ def main():
     if not (BOOK / "index.html").exists():
         sys.exit("book/ not built: run `mdbook build` first")
     roots = [Path(p).resolve() for p in a.paths] or [CORPUS]
-    progs = sorted(p for r in roots for p in ([r] if r.is_file() else r.rglob("*.crush")))
+    progs = sorted(p for r in roots for p in ([r] if r.is_file() else r.rglob("*.crush"))
+                   if not any(d.suffix == ".files" for d in p.parents))  # a program's modules
     rows, counts = [], {"match": 0, "refused": 0, "known": 0, "MISMATCH": 0}
     httpd, base = serve()
     try:

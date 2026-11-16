@@ -1,0 +1,3 @@
+pub fn square(n) { return n * n }
+fn cube(n) { return n * n * n }
+pub async fn later() { return 7 }

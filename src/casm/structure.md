@@ -18,7 +18,7 @@ are taken from `crates/casm/src/lib.rs`, `crates/crush-vm/src/assembler.rs` and
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `version` | string | yes | CASM format version. The loader accepts any version whose **major** is `1` (`CASM_VERSION = "1.0"`); the Crush compiler writes `"1.0.0"`. Anything else is rejected at load time. |
+| `version` | string | yes | CASM format version. The loader accepts any version whose **major** is `1` (`CASM_VERSION = "1.0"`); the Crush compiler writes `"1.0"`. Anything else is rejected at load time. |
 | `functions` | object | yes | function name → function definition |
 | `manifest` | object | no | `{"permissions": [capability names…]}`. Defaults to no permissions. |
 | `lang` | string | no | source-language hint (`"crush"`, `"python"`, …); informational |
@@ -137,8 +137,9 @@ code actually calls, so a manifest only matters when you write or edit IR by han
 
 ## The text assembly
 
-This is what `crushc --emit casm` prints and `crush-run run FILE.casm` /
-`crush-compile` read. One instruction per line:
+This is what `crushc --emit cvms` prints and `crush-run run FILE.cvms` /
+`crush-compile` read (`.cvms`, CVM1 assembly; up to v0.9.0 it was `.casm`, which
+`crush-run` still accepts with a note). One instruction per line:
 
 ```casm
 ; a comment (# also works)
@@ -178,8 +179,9 @@ done:                   ; a label is "name:" on its own line (or before an instr
 42
 ```
 
-`crush-run` does not infer permissions from a `.casm` file: pass the capabilities
-the program uses with `--cap` (e.g. `crush-run run prog.casm --cap io.print`).
+`crush-run` does not infer permissions from assembly text: list them with `.cap NAME`
+lines (as `crushc --emit cvms` writes them), or pass the capabilities the program
+uses with `--cap` (e.g. `crush-run run prog.cvms --cap io.print`).
 
 ## The CVM1 binary
 
@@ -189,14 +191,21 @@ big-endian):
 ```
  offset  size   field
       0     4   magic            "CVM1"
-      4     1   version          2   (versions 1 and 2 are accepted)
+      4     1   version          2, or 3 when a kind table follows (1 to 3 are accepted)
       5     2   manifest_len
       7     n   manifest         JSON: {"runtime", "permissions", "name"?, "functions"?, "entry"?}
             2   n_consts
             …   consts           n_consts × ( 2-byte length + UTF-8 bytes )
             4   code_len
             …   code             flat bytecode
+  (version 3 only)
+            1   kt_format        1, or 2 for a module that needs a newer COSM
+            4   kt_len
+            …   kind table       the program's kinds (structs, traits) as canonical COSM JSON
 ```
+
+A program with no `struct` or `trait` is written as version 2, as before; one with
+kinds gets version 3 and the trailing kind table.
 
 The constant pool holds every string the code names: `PUSH_STR` literals, capability
 names and function names. A capability name or a string is limited to 65 535 bytes

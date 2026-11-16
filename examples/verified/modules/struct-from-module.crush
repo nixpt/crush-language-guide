@@ -1,0 +1,9 @@
+// A module's structs and their methods work in the importer, but build the
+// values through a module function: a struct literal is recognised only in
+// the file that declares the struct (see struct-literal-from-module).
+import shapes
+let r = shapes.rect(2, 3)
+print(r)
+print(r.area())
+r.w = 10
+print(r.area())

@@ -1,0 +1,1 @@
+a top-level `let` in imported module `state`: a module may only define functions, structs, impls and traits, and import other Crush modules — it has no init code

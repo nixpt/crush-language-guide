@@ -10,9 +10,9 @@ version checks that gate loading. For the layouts themselves see
 | source | Crush text | `.crush` | you | `crushc`, `crush-run`, `crush run` |
 | CAST | JSON | `.cast.json` (any non-`.castb`/`.cbor` name) | walkers, agents, `casm`-side tools | `crush_cast::Program::{deserialize,load}`, `crush_frontend::compile_cast` |
 | CAST | CBOR | `.castb`, `.cbor` | `crush_cast::Program::save` | same |
-| CASM IR | JSON | `.casm` | `casm::Program::{serialize,save}` | `casm::Program::{deserialize,load}` |
-| CASM IR | MessagePack | `.casmb` | `casm::Program::{serialize,save}` | **see the bug note below** |
-| CASM text | assembly | `.casm` | `crushc --emit casm`, you | `crush-run run`, `crush-compile` |
+| CASM IR | JSON | `.casm` | `casm::Program::{serialize,save}`, `crushc --emit casm` | `casm::Program::{deserialize,load}`, `crush-run run`, `crush-compile` |
+| CASM IR | MessagePack | `.casmb` | `casm::Program::{serialize,save}` | `casm::Program::{deserialize,load}` |
+| CASM text | assembly | `.cvms` (`.casm` before v0.10.0) | `crushc --emit cvms`, you | `crush-run run`, `crush-compile` |
 | CVM1 | binary | `.cvm1` | `crushc -o`, `crush build`, `crush-compile` | `crush-run run`, `crush run`, `Runtime::run_blob` |
 
 ## CASM IR: JSON (`.casm`)
@@ -55,13 +55,11 @@ compiled program is verbose: the five-line `add` program in the
 followed by the program as MessagePack (via `rmp_serde`), and `save` marks the file
 executable on Unix. The reader skips a leading `#!` line.
 
-> **Known bug (since crush-ast `v0.3.9`, still in `bad81048`).** A `.casmb` file cannot be read back. The
-> writer emits MessagePack's compact array encoding but `Instruction` flattens its
-> operands into a map, so every load fails with `invalid type: sequence, expected a
-> map`. Until that is fixed, treat `.casmb` as write-only and ship `.cvm1`
-> instead. The block below fails exactly this way:
+A `.casmb` file can be read back (from crush-ast `v0.3.9` through `v0.11.2` every
+load failed with `invalid type: sequence, expected a map`; CRUSH-392 fixed it on
+main). This program is written as `.casmb` and loaded again:
 
-<!-- check: casmb-fails expected a map -->
+<!-- check: casmb-roundtrip -->
 <!-- check: casm-json -->
 ```json
 {
@@ -70,9 +68,15 @@ executable on Unix. The reader skips a leading `#!` line.
 }
 ```
 
-Note also that `crush run` and `crush-run run` accept only `.crush`, `.casm` (as
-*text assembly*) and `.cvm1`. Neither can execute IR JSON or `.casmb` directly; that
-needs the Rust API.
+<!-- check: output -->
+```text
+round-tripped 1 functions
+```
+
+`crush run` and `crush-run run` take `.crush`, CAST (`.cast.json`, `.castb`), CASM
+IR JSON (`.casm`), assembly text (`.cvms`) and `.cvm1`, one extension per format
+(crush-ast #365, v0.10.0). Assembly text in a `.casm` file still runs, with a note
+asking you to rename it to `.cvms`.
 
 ## CVM1 (`.cvm1`)
 
@@ -86,7 +90,7 @@ crush-run run add.cvm1
 ```
 
 ```bash
-crush-compile prog.casm -o prog.cvm1 --cap io.print --name prog   # text assembly -> CVM1
+crush-compile prog.cvms -o prog.cvm1 --cap io.print --name prog   # text assembly -> CVM1
 ```
 
 ## Version gates
@@ -97,8 +101,8 @@ component only (minor bumps stay compatible):
 | Format | Constant | Accepts | Error |
 |---|---|---|---|
 | CASM IR | `casm::CASM_VERSION = "1.0"` | `version` with major `1` (`"1.0"`, `"1.0.0"`, `"1.4"`) | `version mismatch at casm boundary: expected 1.0, found 2.0` |
-| CVM1 | `bytecode::VERSION = 2` | version byte `1` or `2` | `UnsupportedVersion(n)` |
-| CAST | `crush_cast::CAST_VERSION = "0.1"` | `cast_version` with major `0` | `version mismatch at cast boundary: expected 0.1, found …` |
+| CVM1 | `bytecode::VERSION = 3` | version byte `1` to `3` | `UnsupportedVersion(n)` |
+| CAST | `crush_cast::CAST_VERSION = "0.1.0"` | `cast_version` with major `0` | `version mismatch at cast boundary: expected 0.1.0, found …` |
 
 The old docs said `"version": "0.1"` for CASM; that is now rejected (major `0`).
 
@@ -108,12 +112,10 @@ The old docs said `"version": "0.1"` for CASM; that is now rejected (major `0`).
 { "version": "0.1", "functions": { "main": { "body": [ {"op": "halt"} ] } } }
 ```
 
-> **Known inconsistency (since crush-ast `v0.3.9`, still in `bad81048`).** `CAST_VERSION` is `"0.1"` but the
-> Crush front end stamps the CAST it produces with `cast_version: "1.0.0"`. The
-> versioned loader (`Program::deserialize`/`load`) therefore rejects the front end's
-> *own* output, while plain `serde_json` and `validate_json` accept it. Example
-> programs in `examples/cast/` carry `"0.1.0"` and load fine. See
-> [CAST](../cast/index.md#serialization).
+Every producer now writes `cast_version: "0.1.0"`, the front end included, so a
+CAST dump from the compiler loads again with the versioned loader (from `v0.3.9`
+through `v0.9.0` the front end stamped `"1.0.0"`, which that loader rejected). See
+[CAST](../cast/index.md#serialization).
 
 ## Rust API
 

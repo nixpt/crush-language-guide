@@ -1,0 +1,5 @@
+// A selectively imported name that collides with a function of the importing
+// file is a compile error naming both.
+import geom { area }
+fn area(a, b) { return 0 }
+print(area(1, 2))

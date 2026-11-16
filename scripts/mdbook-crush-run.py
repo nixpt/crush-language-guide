@@ -43,7 +43,7 @@ _spec = importlib.util.spec_from_file_location("check_examples", ROOT / "scripts
 checker = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checker)
 
-# What crush-web (crush-ast bad81048, src/play/pkg) handles itself: crush_vm::run's
+# What crush-web (crush-ast 7f3fef31, src/play/pkg) handles itself: crush_vm::run's
 # built-in capabilities plus the whole standard library (str.*, math.*, conv.*,
 # collections.*, json.*, ...: on by default since CRUSH-113), sys.args/sys.exit,
 # and io.read (the page asks the reader for each line).
@@ -104,10 +104,13 @@ def lang_bodies(code, lang):
         bodies.append(code[m.end():i - 1])
     return bodies
 # Host flags whose capabilities the browser can grant a run too: the clock (from
-# JavaScript's Date), the environment (empty in a browser, as under `env -i`) and
-# the filesystem (an empty in-memory directory of the run's own, answering as an
-# empty --fs-root does; the guide's --fs examples all start from one).
-BROWSER_FLAGS = {"--time": "time", "--env": "env", "--fs": "fs"}
+# JavaScript's Date) and the environment (empty in a browser, as under `env -i`).
+# The filesystem grant (an empty in-memory directory of the run's own) is off: in
+# the crush-web build of the pinned commit, granting `fs` panics before anything
+# runs (`RuntimeError: unreachable`: the in-memory filesystem reads the wall clock
+# with SystemTime::now, which wasm32-unknown-unknown does not have). Put
+# "--fs": "fs" back when crush-ast fixes it, and check-browser.mjs will confirm.
+BROWSER_FLAGS = {"--time": "time", "--env": "env"}
 # Namespaces each browser grant covers, as its crush-run flag does.
 GRANT_NAMESPACES = {"time": {"time"}, "env": {"env"}, "fs": {"fs", "file", "text"}}
 # Calls that report facts about the machine running the program. In a browser they
@@ -115,7 +118,8 @@ GRANT_NAMESPACES = {"time": {"time"}, "env": {"env"}, "fs": {"fs", "file", "text
 # cannot match the output the guide shows: it stays labelled as needing the host.
 MACHINE_FACTS = {"env.os", "env.arch", "env.home_dir", "env.all"}
 FLAG_WHY = {"--polyglot": "polyglot blocks", "--fs": "the filesystem", "--net": "the network",
-            "--tcp": "raw sockets", "--tcp-listen": "raw sockets", "--env": "the environment", "--time": "the clock", "--process": "processes"}
+            "--tcp": "raw sockets", "--tcp-listen": "raw sockets", "--env": "the environment", "--time": "the clock", "--process": "processes",
+            "--max-wall-ms": "a wall-clock budget (crush-web has no wall clock)"}
 
 
 def host_needs(d, code):

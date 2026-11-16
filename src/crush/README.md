@@ -1,6 +1,6 @@
 # Crush Overview
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 **Crush** is a small, capability-based scripting language with polyglot blocks,
 and the toolchain around it: a parser, a compiler to bytecode, a sandboxed VM,
@@ -26,6 +26,26 @@ when something doesn't.
   runs on a VM (`crush-vm`), with a faster VM, a JIT and ahead-of-time backends
   also in the repository ([Engines, AOT and Walkers](engines.md)). Walkers
   translate Python, JavaScript, Rust and other languages into the same CAST.
+
+## New since 0.9.0
+
+At the pinned commit (main after v0.11.2); each item links to its page.
+
+- **Imports and packages.** `import a.b [as x] [{ f }]` loads `.crush` files at
+  compile time, through `-L`, `CRUSH_PATH` and crush-pkg dependencies; `pub fn` is
+  accepted, not enforced yet; a struct or trait name declared in two files is a
+  compile error. ([Modules](modules.md))
+- **`catch` catches run-time faults**: division by zero, a bad index, a failing
+  capability. ([Control Flow](control_flow.md#what-catch-catches))
+- **Calls on any expression** (`fs[0](1)`, `make()(2)`, `S { n: 3 }.size()`), the
+  method form `a.pop()`, `regex.match` callable, exponent literals (`1.5e3`).
+  ([Closures](closures.md#calling-a-function-value), [Types](types.md))
+- **`process.exec` returns a map** `{exit_code, stdout, stderr}`.
+  ([Capability System](capabilities.md#environment-time-processes-network))
+- **Quotas and networking.** `--max-wall-ms N|unlimited` bounds the whole run,
+  `--max-steps unlimited`; `net.*` and `tcp.recv`/`tcp.accept` take
+  `{timeout_ms}`; `net.http_request` returns response headers.
+  ([Capability System](capabilities.md#resource-limits))
 
 ## New in 0.9.0
 
@@ -111,7 +131,7 @@ far: 25
 | Closures and function values | works on the VM; AOT refuses them by name |
 | Structs, `impl`, `trait`, `@kind`, struct patterns | works on the VM; AOT refuses method calls by name |
 | `spawn` / `yield` / `await`, `parallel_map` | works on the VM |
-| `import` (multi-file programs) | not yet: CRUSH-110 |
+| `import` (multi-file programs), crush-pkg packages | works, resolved at compile time; `pub` is accepted on `fn` and not enforced yet ([Modules](modules.md)) |
 | Capabilities, `@capabilities`, the standard library | works; the standard library is on by default |
 | Polyglot: Python, JavaScript (declared `->` outputs), Bash | works (host authority by default); `@bash` reads the Crush variables it names as `$name` |
 | Polyglot sandbox | opt-in build, verified on Linux with `bwrap` |

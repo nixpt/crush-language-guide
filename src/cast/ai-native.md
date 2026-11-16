@@ -1,6 +1,6 @@
 # AI-Native CAST
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 ## The doctrine
 
@@ -224,11 +224,13 @@ capability named `ai_native.<kind>`. What happens then depends on the host:
 {kind: query, echo: [{q: capital of France}], ok: true}
 ```
 
-- **An embedder that registers nothing** (`Runtime::new()`) gets `null` from every
-  AI opcode, silently (crush-ast
+- **An embedder that registers nothing** (`Runtime::new()`) gets a run-time error
+  from every AI opcode, naming the gate (crush-ast CRUSH-234; before `v0.11.0` the
+  opcode returned `null` silently,
   [#261](https://github.com/nixpt/crush-ast/issues/261)). So a statement such as
-  `GoalDeclaration` runs and does nothing:
+  `GoalDeclaration` stops the program:
 
+<!-- check: runfail capability denied by host: ai_native.goal_declaration -->
 <!-- check: cast-json -->
 ```json
 {
@@ -242,13 +244,13 @@ capability named `ai_native.<kind>`. What happens then depends on the host:
 }
 ```
 
-<!-- check: output -->
 ```text
-after the goal
+capability denied by host: ai_native.goal_declaration: AI op 'goal_declaration' not granted / no AI host registered (grant `ai_native` via HostCapsBuilder::ai_native(true) and register a provider)
 ```
 
-  and an expression such as `Query` evaluates to `null`:
+  and so does an expression such as `Query`:
 
+<!-- check: runfail capability denied by host: ai_native.query -->
 <!-- check: cast-json -->
 ```json
 {
@@ -261,11 +263,6 @@ after the goal
       "args": [ { "type": "Var", "name": "answer" } ] } }
   ] } }
 }
-```
-
-<!-- check: output -->
-```text
-null
 ```
 
 - **Three statements are refused.** `CapabilityDiscovery`, `AdaptationRequest` and

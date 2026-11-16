@@ -1,0 +1,5 @@
+// The rule covers traits, and a clash between a module and the file that
+// imports it. Inside one file a redeclaration keeps its old behaviour.
+import shapes
+trait Shape { fn perimeter(self) }
+print("never reached")

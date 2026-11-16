@@ -1,0 +1,5 @@
+// A field cannot be marked `pub`: `pub` is read as a field name with no type,
+// and the parser then expects `,` or `}` and finds `x`. (`struct P { pub: Int }`
+// is legal and declares a field called `pub`.)
+struct P { pub x: Int }
+print(1)

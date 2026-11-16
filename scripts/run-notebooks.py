@@ -18,6 +18,9 @@ scripts/build-notebooks.py):
                        judged failed (its label is wrong)
     markdown           skipped
 
+A runnable cell listed in KERNEL_LAGS (it uses crush-ast behaviour newer than the
+published kernel) that fails is reported as `lag`, not failed.
+
 The cell outputs come from the kernel's saved copy (get_state only has counts).
 Exit status is non-zero if any cell is judged failed. --markdown prints the
 per-notebook table as Markdown (for a PR body).
@@ -80,11 +83,36 @@ def cell_output(c):
     return "".join(text)
 
 
+# Runnable cells that use crush-ast behaviour newer than the published kernel
+# (KERNEL_VERSION in .github/workflows/gh-pages.yml is built on an older
+# crush-ast than CRUSH_AST_COMMIT): (page, a line of the cell) -> what is newer.
+# Such a cell is reported as `lag`, not failed, while it fails in the kernel;
+# one that passes is reported normally, so an entry left behind by a kernel bump
+# shows up in the -v output. Empty this list when a newer kernel is published.
+KERNEL_LAGS = {
+    ("crush/closures.md", "print(fs[0](1))"): "calling an expression (crush-ast CRUSH-363)",
+    ("crush/control_flow.md", "    print(1 / 0)"): "catch catches VM faults (crush-ast CRUSH-393)",
+    ("crush/stdlib.md", 'print(regex.match("([a-z]+)([0-9]+)", "abc123"))'): "regex.match callable (crush-ast CRUSH-394)",
+}
+
+
+def lag(c):
+    page = c["meta"]["extra"]["guide"]["src"].rsplit(":", 1)[0]
+    lines = c["source"].splitlines()
+    return next((why for (p, line), why in KERNEL_LAGS.items() if p == page and line in lines), None)
+
+
 def judge(c, status):
     """(verdict, category, note) for one crush cell; verdict in ok / failed / skipped."""
     g = c["meta"]["extra"]["guide"]
     tag = c["meta"]["tags"][1]
     err = status.get("message", "")
+    verdict = judge_tag(c, status, g, tag, err)
+    why = lag(c) if verdict[0] == "failed" and tag == "runnable" else None
+    return ("skipped", "lag", f"kernel predates {why}: {err[:80]}") if why else verdict
+
+
+def judge_tag(c, status, g, tag, err):
     if tag == "needs-host":
         if status["status"] == "error":
             return "skipped", "host", "refused: " + err[:90]
@@ -104,7 +132,7 @@ def judge(c, status):
     return "ok", "run", "output matches" if want is not None else "ran (the page shows no output)"
 
 
-COLS = ("run", "match", "fail", "host", "failed")
+COLS = ("run", "match", "fail", "host", "lag", "failed")
 
 
 def run_one(exe, nb_path):
@@ -121,7 +149,7 @@ def run_one(exe, nb_path):
             k.close()
         saved = json.loads(copy.read_text())
     states = {c["id"]: c["state"] for c in state["cells"]}
-    counts, notes = dict.fromkeys(COLS + ("run_total", "fail_total", "host_total"), 0), []
+    counts, notes = dict.fromkeys(COLS + ("run_total", "fail_total", "host_total", "lag_total"), 0), []
     for c in saved["cells"]:
         if c["kind"]["type"] != "crush":
             continue
@@ -129,8 +157,8 @@ def run_one(exe, nb_path):
         counts[cat + "_total"] += 1
         if verdict == "failed":
             counts["failed"] += 1
-        elif cat == "host":
-            counts["host"] += 1
+        elif cat in ("host", "lag"):
+            counts[cat] += 1
         else:
             counts[cat] += 1
             counts["match"] += note == "output matches"
@@ -148,7 +176,7 @@ def main():
     nbs = sorted(Path(a.dir).rglob("*.crush-nb"))
     if not nbs:
         sys.exit(f"no notebooks under {a.dir}: run scripts/build-notebooks.py first")
-    head = ("notebook", "runnable ok", "output = page", "expected failures", "host-only refused", "failed")
+    head = ("notebook", "runnable ok", "output = page", "expected failures", "host-only refused", "newer than the kernel", "failed")
     rows, total, failed_nbs, details = [], None, 0, []
     for nb in nbs:
         counts, notes = run_one(a.kernel, nb)
@@ -156,22 +184,22 @@ def main():
         failed_nbs += counts["failed"] > 0
         rows.append((nb.relative_to(a.dir).as_posix(), counts))
         for verdict, src, note in notes:
-            if verdict == "failed" or a.verbose or note.startswith("failed, but not"):
+            if verdict == "failed" or a.verbose or note.startswith(("failed, but not", "kernel predates")):
                 details.append(f"{verdict:7} {src}: {note}")
 
     def cells(c):
         return (f"{c['run']}/{c['run_total']}", f"{c['match']}", f"{c['fail']}/{c['fail_total']}",
-                f"{c['host']}/{c['host_total']}", f"{c['failed']}")
+                f"{c['host']}/{c['host_total']}", f"{c['lag']}", f"{c['failed']}")
     if a.markdown:
         print("| " + " | ".join(head) + " |")
         print("|" + "---|" + "---:|" * (len(head) - 1))
         for name, c in rows + [(f"**{len(nbs)} notebooks**", total)]:
             print("| " + " | ".join((name,) + cells(c)) + " |")
     else:
-        print(f"{head[0]:38} {'run ok':>7} {'= page':>7} {'fail ok':>8} {'host':>7} {'failed':>7}")
+        print(f"{head[0]:38} {'run ok':>7} {'= page':>7} {'fail ok':>8} {'host':>7} {'lag':>5} {'failed':>7}")
         for name, c in rows + [("total", total)]:
             r = cells(c)
-            print(f"{name:38} {r[0]:>7} {r[1]:>7} {r[2]:>8} {r[3]:>7} {r[4]:>7}")
+            print(f"{name:38} {r[0]:>7} {r[1]:>7} {r[2]:>8} {r[3]:>7} {r[4]:>5} {r[5]:>7}")
     if details:
         print()
         print("\n".join(details))

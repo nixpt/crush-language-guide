@@ -1,0 +1,2 @@
+import cb
+fn a1() { return 1 }

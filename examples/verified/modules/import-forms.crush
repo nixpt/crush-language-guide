@@ -1,0 +1,14 @@
+// The three import forms (crush-ast CRUSH-110). geom.crush and util/strings.crush
+// sit next to this file (see import-forms.files/).
+//   import geom                    binds the qualifier `geom`
+//   import util.strings as s       loads util/strings.crush, binds `s`
+//   import util.strings { twice }  binds the bare name `twice`
+import geom
+import util.strings as s
+import util.strings { twice }
+print(geom.area(3, 4))
+print(geom.scaled(2))
+print(s.shout("hi"))
+print(twice("ab"))
+let f = geom.area
+print(f(2, 5))

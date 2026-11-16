@@ -1,0 +1,3 @@
+// `pub trait` does not parse yet either, with the same error as `pub struct`.
+pub trait Shape { fn area(self) }
+print("never reached")

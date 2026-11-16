@@ -1,4 +1,8 @@
 // --env, --time and --process each switch on one group.
+// process.exec returns a map {exit_code, stdout, stderr} (crush-ast CRUSH-242).
 print(env.get("CRUSH_GUIDE_DEMO_UNSET"))
 print(time.now() > 0)
-print(process.exec("echo", "hi"))
+let r = process.exec("echo", "hi")
+print(r.exit_code)
+print(str.trim(r.stdout))
+print(r.stderr == "")

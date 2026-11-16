@@ -1,0 +1,5 @@
+// Calling a name the module does not define is a compile error that lists what
+// it does define. Names starting with __ are left out of that list (a convention:
+// they are still importable, see private-convention).
+import geom
+print(geom.perimeter(3, 4))

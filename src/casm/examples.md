@@ -1,14 +1,15 @@
 # CASM Examples
 
 Every program here is CASM **text assembly** — the form you can write by hand and run
-with `crush-run run FILE.casm --cap io.print` — and every one is executed by this
-guide's checker against crush-ast `bad81048`, with the output shown. The JSON IR is
+with `crush-run run FILE.cvms --cap io.print` (`.cvms` since crush-ast v0.10.0; a
+`.casm` file of text still runs, with a note to rename it) — and every one is executed by this
+guide's checker against crush-ast `7f3fef31`, with the output shown. The JSON IR is
 covered in [Program Structure](structure.md) and
 [Serialization](serialization.md). Opcode details are in the
 [Instruction Reference](instructions.md).
 
 All programs print with `CAP_CALL "io.print" N`, so run them with `--cap io.print`
-(a `.casm` file carries no permissions of its own).
+(an assembly file carries no permissions unless it has `.cap NAME` lines).
 
 ## 1. Hello, world
 
@@ -245,7 +246,7 @@ it ends the program with a `[runtime]` error.
 ## 8. Host capabilities
 
 File access needs the `--fs` flag **and** the capability in the manifest, so run
-this one as `crush-run run prog.casm --cap io.print --cap fs.exists --fs`:
+this one as `crush-run run prog.cvms --cap io.print --cap fs.exists --fs`:
 
 <!-- check: flags --cap fs.exists --fs -->
 ```casm

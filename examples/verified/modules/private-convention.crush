@@ -1,0 +1,7 @@
+// Every function of a module is importable today. A leading __ is only a
+// naming convention for "internal": it hides the name from error listings, but
+// geom.__unit() and import geom { __unit } both work.
+import geom
+import geom { __unit }
+print(geom.__unit())
+print(__unit())

@@ -1,6 +1,6 @@
 # Polyglot Programming
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31), with Python 3.14, Node 26 and
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16), with Python 3.14, Node 26 and
 > bash 5.3 on the host.
 
 A Crush program can embed code from other languages with `@language { ... }`
@@ -381,8 +381,8 @@ raise ValueError("x")
 ValueError: x
 ```
 
-A guest failure is **not** catchable with Crush `try`/`catch`
-([Control Flow](control_flow.md#what-catch-does-not-catch)). Handle expected
+A guest failure is **not** catchable with Crush `try`/`catch`, unlike a VM fault
+or a failing capability ([Control Flow](control_flow.md#what-catch-catches)). Handle expected
 failures inside the block (`try:` / `except:` in Python) and return a value that
 says what happened. Failures to *start* a sandboxed block — package resolution,
 missing `bwrap` — are reported separately as `sandbox setup failed`, so a
@@ -390,16 +390,18 @@ provisioning problem is never mistaken for a bug in your code.
 
 ## Timeouts
 
-Every block runs under a **wall-clock limit of 30 seconds** (`Quotas::max_wall_time_ms`,
-default `30_000`). At the deadline the interpreter's whole process group is killed
-and the program ends with:
+A block runs under the run's **wall-clock budget**: 30 seconds for the whole run by
+default (`--max-wall-ms`, `Quotas::max_wall_time_ms`), and a block gets what is
+left of it. At the deadline the interpreter's whole process group is killed and the
+program ends with:
 
 ```text
 [runtime] 'polyglot.python' exceeded its 30000ms wall-clock quota and was killed
 ```
 
-(crush-ast CRUSH-19.) The limit is a field of `Quotas`, so it is configurable
-when you embed the VM; `crush-run` doesn't expose a flag for it. In the sandboxed
+(crush-ast CRUSH-19; with `--max-wall-ms 500` the message says `499ms`, the time
+that was left when the block started.) `crush-run --max-wall-ms N|unlimited` sets
+the budget (crush-ast #510). In the sandboxed
 lane the limit also covers package provisioning. The instruction quota
 (`--max-steps`) does not apply to time spent inside a guest.
 

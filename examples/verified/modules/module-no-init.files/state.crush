@@ -1,0 +1,3 @@
+// a module cannot run code when it is loaded
+let counter = 0
+fn next() { return 1 }

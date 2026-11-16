@@ -61,14 +61,18 @@ and the cell kinds it does not run yet are described in the
 |  | Run button on the page | Notebook kernel | `crush-run` |
 |---|---|---|---|
 | Where it runs | your browser (crush-web, WebAssembly) | your machine | your machine |
-| Granted | `print`, the standard library and `io.read` (you type each line), plus what an example's **grants** label says: `@javascript`, `@python`, the filesystem (an empty in-memory directory), the clock, the (empty) environment | `print`, the standard library, `caison.parse`: what `crush run` grants with no flags | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
+| Granted | `print`, the standard library and `io.read` (you type each line), plus what an example's **grants** label says: `@javascript`, `@python`, the clock, the (empty) environment (the filesystem grant is off at the pinned commit, see [Running the Examples](running-examples.md#the-filesystem)) | `print`, the standard library, `caison.parse`: what `crush run` grants with no flags | the standard library, plus whatever its flags grant (`--fs`, `--polyglot`, …) |
 | `@python`/`@javascript`, filesystem | when the example's label grants them | refused | with the matching flag |
 | `@bash`, processes, network | refused | refused | with the matching flag |
 | Between examples | every run starts fresh | cells share a session | one program per file |
 
-The kernel is `crush-notebook-kernel` 0.3.0, built on crush-ast 0.9.0, the same
-release as this guide, so the 0.9.0 cells (slicing a string, `s[::-1]`, hex and binary
-literals) run in a notebook as they do on the page.
+The kernel is `crush-notebook-kernel` 0.3.0, built on crush-ast 0.9.0 (the newest
+published kernel), while the guide is verified against crush-ast `7f3fef31`, which is
+newer. Cells that use something added since 0.9.0 (catching run-time faults,
+`a.pop()`, calling any expression, `regex.match`, exponent literals,
+`process.exec`'s result map) behave in the notebook as in 0.9.0 until a kernel built
+on a newer crush-ast is published. The 0.3.0 kernel also predates imports
+(crush-ast 0.9.0 refused every `import`).
 
 The examples marked **needs the host** are refused in the notebook too, and so
 are the ones the page runs only because it grants them something (`@python`,

@@ -1,6 +1,6 @@
 # Debugging
 
-> Verified against crush-ast `bad81048` (v0.9.0, 2026-10-31).
+> Verified against crush-ast `7f3fef31` (main, 2026-11-16).
 
 `crush debug FILE` (the same program as `crush-debug FILE`) runs a program under a
 debugger: breakpoints by source line, single-stepping, watchpoints on a variable, and

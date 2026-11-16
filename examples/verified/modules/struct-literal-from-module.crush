@@ -1,0 +1,5 @@
+// A literal of a struct declared in another file does not parse in the
+// importer (crush-ast import-system.md, "Not yet"): use a constructor function.
+import shapes
+let r = Rect { w: 1, h: 2 }
+print(r)

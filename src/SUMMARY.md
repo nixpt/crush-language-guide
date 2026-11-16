@@ -17,6 +17,7 @@
 - [Functions](crush/functions.md)
 - [Closures and Function Values](crush/closures.md)
 - [Structs, Methods and Kinds](crush/structs.md)
+- [Modules, Packages and Visibility](crush/modules.md)
 - [Concurrency](crush/concurrency.md)
 - [Capability System](crush/capabilities.md)
 - [Polyglot Programming](crush/polyglot.md)

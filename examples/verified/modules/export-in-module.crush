@@ -1,0 +1,5 @@
+// A module has no top-level statements, and `export` is one: importing a file
+// that uses it is a compile error. Every function of a module is importable
+// without it.
+import exm
+print(exm.f())

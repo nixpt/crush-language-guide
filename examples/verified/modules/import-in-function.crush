@@ -1,0 +1,6 @@
+// An import inside a function is a compile error: imports go at the top level.
+fn f() {
+    import geom
+    return geom.area(2, 3)
+}
+print(f())
