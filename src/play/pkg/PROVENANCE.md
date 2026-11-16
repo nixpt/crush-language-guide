@@ -3,34 +3,33 @@
 Generated files. Do not edit by hand.
 
 `crush_web_bg.wasm` and `crush_web.js` are the browser build of the `crush-web`
-crate, taken **unmodified from the crush-ast release** rather than built locally:
+crate, **built locally** with `scripts/build-play-pkg` (there is no crush-ast
+release of this commit):
 
-- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) tag **`v0.9.0`**,
-  commit `bad8104818387f7ef791a518bca2503d88793e0b` (2026-10-31), the same commit the
-  guide's examples are verified against (`CRUSH_AST_COMMIT`). The files are from the
-  release asset `crush-web-0.9.0-pkg.tar.gz` (checked against the release's
-  `SHA256SUMS`; its `pkg/BUILD-INFO` carries the hashes below).
+- source: [nixpt/crush-ast](https://github.com/nixpt/crush-ast) commit
+  `7f3fef31ba7df65bb085cde8144c1a1abadec9fe` (main, 2026-11-16, after `v0.11.2`), the
+  same commit the guide's examples are verified against (`CRUSH_AST_COMMIT`).
 - features: the defaults (`stdlib`, `panic-hook`) plus **`polyglot-javascript`**
   and **`polyglot-python`**, so a granted `@javascript` / `@python` block gets
   Crush variables in and a typed value out, as with `crush-run --polyglot` (the
   page runs the block with `src/play/guest-js.js` (with `src/play/node-inspect.js`),
   or `src/play/guest-py.js` in Pyodide, `src/play/pyodide.json`; see
   `src/play/worker.js`)
-- toolchain (from BUILD-INFO): rustc 1.99.1 (2026-10-13) for `wasm32-unknown-unknown`
-  with crush-web's own release profile (`opt-level = "s"`, LTO, one codegen unit),
-  then `wasm-bindgen 0.2.126 --target web`, as crush-ast's `artifacts.yml` does. No
-  `wasm-opt` pass.
-- size: `crush_web_bg.wasm` is **9,702,572 bytes (2,480,083 gzipped)**. That is
-  2.8 MB more than the guide's own reproducible build of the previous commit
-  (6,869,494 bytes), and the whole difference is the 2,858,761-byte debugging `name`
-  section: the release workflow runs `wasm-bindgen` without `--remove-name-section`
-  (this guide's `scripts/build-play-pkg` passes it) and without local path remapping.
-  The code is the same; the page just downloads more. To get the smaller file,
-  rebuild with `scripts/build-play-pkg ../crush-ast` at the pinned commit.
-- sha256:
-  - `crush_web_bg.wasm` `3399a3863e30978430af46976e43c130dd973e3fab377faafb3a4c9c8272521e`
+- toolchain: rustc 1.100.0 for `wasm32-unknown-unknown` with crush-web's own release
+  profile (`opt-level = "s"`, LTO, one codegen unit), then `wasm-bindgen 0.2.126
+  --target web --remove-name-section`, local paths remapped. No `wasm-opt` pass.
+- size: `crush_web_bg.wasm` is **6,899,558 bytes (2,204,761 gzipped)**.
+- sha256 (the `.wasm` hash depends on the checkout path, see the script):
+  - `crush_web_bg.wasm` `278e9c1b746446f6d6f194a63ef1bb649dbae3f883410b6d21d35a5348928812`
   - `crush_web.js` `3f4c724d6ff16488d12b9ee2416fe4eb2164ed534eed2dd0817d3776bbcbd3be`
     (byte-identical to the previous build's glue)
+
+> **Known bug at this commit.** Granting this build the in-memory filesystem
+> (`fs`) panics before the program runs (`RuntimeError: unreachable`): crush-ast's
+> in-memory filesystem (CRUSH-240, since v0.11.0) reads the wall clock with
+> `SystemTime::now`, which `wasm32-unknown-unknown` does not provide. The book
+> therefore does not grant `fs` (`BROWSER_FLAGS` in `scripts/mdbook-crush-run.py`),
+> and `--fs` examples are labelled as needing the host.
 
 The book serves its own copy: the page fetches these files and hands them to the
 worker in its sandboxed iframe, which has no network of its own.

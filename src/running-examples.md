@@ -21,7 +21,7 @@ Edited code keeps the example's grants.
 
 The Run button uses **crush-web**, the WebAssembly build of the Crush VM that also
 powers the [playground](https://crushlang.org/playground/). It is the same compiler
-and VM as `crush-run` (the book's copy is built from crush-ast `bad81048`, the commit this guide is
+and VM as `crush-run` (the book's copy is built from crush-ast `7f3fef31`, the commit this guide is
 verified against), and it grants the same way:
 
 - **Always granted:** what `crush run` grants with no flags: `print` /
@@ -121,8 +121,15 @@ behaves like that `python3 -c` run:
 ## The filesystem
 
 Natively, `crush-run --fs` works on real files under `--fs-root`, and the guide's
-`--fs` examples are checked in an empty one. In the browser, a run granted the
-filesystem gets an **empty directory of its own, in memory**, which disappears
+`--fs` examples are checked in an empty one.
+
+> **Off at the pinned commit.** The book does not grant the filesystem right now,
+> so `--fs` examples are labelled as needing the host: the crush-web build of
+> crush-ast `7f3fef31` crashes before running anything when it is given the
+> in-memory filesystem (see `src/play/pkg/PROVENANCE.md`). What follows is how
+> the grant works when it is on.
+
+In the browser, a run granted the filesystem gets an **empty directory of its own, in memory**, which disappears
 when the run ends. The `fs.*` and `text.*` capabilities are the same code as
 natively, over that directory instead of the disk. They give the same results
 and the same errors (`No such file or directory (os error 2)`), and they keep
