@@ -7,7 +7,7 @@ Usage:
 Each program is a file under examples/verified/<area>/ with siblings that say
 what must happen when it runs:
 
-    name.crush | name.casm | name.cvm1   the program
+    name.crush | name.casm | name.cvms | name.cvm1   the program
     name.out     exact expected stdout (trailing whitespace ignored)
     name.err     the program must FAIL (non-zero exit), and its stdout+stderr
                  must contain every non-empty line of this file
@@ -16,10 +16,16 @@ what must happen when it runs:
                  io.read() sees EOF instead of hanging)
     name.needs   host programs that must be on PATH (e.g. `python3 node`); the
                  program is reported as skipped, not failed, when one is missing
+    name.env     environment variables for the run, one `NAME=value` per line
+                 (e.g. `CRUSH_PATH=lib`)
+    name.files/  a directory of other files the program needs (the modules it
+                 imports): its contents are copied next to the program. Files in
+                 it are not programs of their own.
 
 A program needs a .out, a .err, or both. Every program runs as
 `crush-run run <flags> --max-steps 50000000 <file>` in a fresh temporary
-directory holding a copy of the file, with a 60-second timeout.
+directory holding a copy of the file (and of its name.files/), with a 60-second
+timeout.
 
 --bless rewrites .out from the actual stdout of programs that exit 0 (and never
 creates a .err): only use it after reading the new output yourself.
@@ -32,7 +38,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS = ROOT / "examples" / "verified"
-EXTS = (".crush", ".casm", ".cvm1")
+EXTS = (".crush", ".casm", ".cvms", ".cvm1")
 
 
 def programs(paths):
@@ -41,7 +47,12 @@ def programs(paths):
         if r.is_file():
             yield r
         else:
-            yield from sorted(p for p in r.rglob("*") if p.suffix in EXTS)
+            yield from sorted(p for p in r.rglob("*") if p.suffix in EXTS and not in_files_dir(p))
+
+
+def in_files_dir(p):
+    """True for a support file inside some program's name.files/ directory."""
+    return any(d.suffix == ".files" for d in p.parents)
 
 
 def sidecar(prog, ext):
@@ -54,9 +65,19 @@ def run_one(prog, crush_run):
     stdin = sidecar(prog, ".stdin") or ""
     with tempfile.TemporaryDirectory(prefix="crush-verify-") as tmp:
         shutil.copy(prog, tmp)
-        cmd = [crush_run, "run", *flags, "--max-steps", "50000000", prog.name]
+        files = prog.with_suffix(".files")
+        if files.is_dir():
+            shutil.copytree(files, tmp, dirs_exist_ok=True)
+        env = dict(os.environ)
+        env.pop("CRUSH_PATH", None)  # only a name.env may set the import path
+        for line in (sidecar(prog, ".env") or "").splitlines():
+            if line.strip():
+                k, _, v = line.strip().partition("=")
+                env[k] = v
+        steps = [] if "--max-steps" in flags else ["--max-steps", "50000000"]  # a .flags may set its own
+        cmd = [crush_run, "run", *flags, *steps, prog.name]
         try:
-            p = subprocess.run(cmd, cwd=tmp, input=stdin, capture_output=True, text=True, timeout=60)
+            p = subprocess.run(cmd, cwd=tmp, input=stdin, capture_output=True, text=True, timeout=60, env=env)
             return p.returncode, p.stdout, p.stderr
         except subprocess.TimeoutExpired:
             return 124, "", "TIMEOUT after 60s"

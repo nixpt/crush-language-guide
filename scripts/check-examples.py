@@ -33,13 +33,15 @@ With --crush-ast DIR (a crush-ast checkout, with `buckets` beside it), the
 
 Other checked fences (all optional-directive blocks run the same way):
 
-    ```casm                          CVM1 text assembly: `crush-run run --cap io.print`
+    ```casm                          CVM1 text assembly, run as block.cvms: `crush-run run --cap io.print`
     <!-- check: casm-json -->        a ```json block: JSON CASM, loaded through
                                      casm::Program::deserialize, lowered and run
     <!-- check: cast-json -->        a ```json block: JSON CAST, validated, compiled, run
     <!-- check: cast-validate -->    a ```json block: JSON CAST that must validate, compile and lower (not run)
     <!-- check: cast-load-fails TEXT -->  JSON CAST that the version-gated loader rejects
     <!-- check: casmb-fails TEXT -->  JSON CASM whose .casmb (MessagePack) round trip fails
+    <!-- check: casmb-roundtrip -->  JSON CASM written as .casmb and read back (prints
+                                     `round-tripped N functions`)
     <!-- check: asm-ai -->           a ```casm block run with the ai_native.* stub gates on
     (the json forms need --crush-ast, like the rust blocks: they use a helper
     built from scripts/casm-check/main.rs against that checkout)
@@ -83,7 +85,7 @@ def extract(md: Path, text=None):
             lang = m.group(1)
             kind = lang if lang in ("crush", "casm") else None
             if lang == "json":
-                kind = next((k for k in ("casmb-fails", "cast-load-fails", "casm-json", "cast-json", "cast-validate") if k in pending), None)
+                kind = next((k for k in ("casmb-fails", "casmb-roundtrip", "cast-load-fails", "casm-json", "cast-json", "cast-validate") if k in pending), None)
             if kind:
                 last = {"file": md, "line": i + 2, "code": body, "d": pending, "expect": None, "kind": kind}
                 yield last
@@ -177,7 +179,7 @@ def check_assembly(block, bins, work):
     d, kind = block["d"], block["kind"]
     if "skip" in d:
         return "skipped", d["skip"]
-    src = work / ("block.casm" if kind == "casm" else "block.json")
+    src = work / ("block.cvms" if kind == "casm" else "block.json")  # CVM1 assembly text
     src.write_text(block["code"])
     if kind == "casm" and "asm-ai" not in d:
         flags = ["--cap", "io.print"] + d.get("flags", "").split()
@@ -185,7 +187,7 @@ def check_assembly(block, bins, work):
     else:
         if "casm-check" not in bins:
             return "skipped", "needs --crush-ast (json CASM/CAST helper)"
-        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-validate": "castvalidate", "cast-load-fails": "castload", "casmb-fails": "casmb"}[kind]
+        mode = "asm-ai" if kind == "casm" else {"casm-json": "casm", "cast-json": "cast", "cast-validate": "castvalidate", "cast-load-fails": "castload", "casmb-fails": "casmb", "casmb-roundtrip": "casmb"}[kind]
         rc, out, err = run([bins["casm-check"], mode, str(src)], work, 60)
     if kind in ("cast-load-fails", "casmb-fails"):
         want = d[kind]
@@ -219,7 +221,8 @@ def first_line(s):
 def runs_ok(block, bins, work, src):
     d = block["d"]
     flags = ["--stdlib", "--fs-root", str(work)] + d.get("flags", "").split()
-    return run([bins["crush-run"], "run", *flags, "--max-steps", "5000000", str(src)], work, 20, d.get("stdin", ""))
+    steps = [] if "--max-steps" in flags else ["--max-steps", "5000000"]  # a block may set its own
+    return run([bins["crush-run"], "run", *flags, *steps, str(src)], work, 20, d.get("stdin", ""))
 
 
 def check(block, bins, tmp):
