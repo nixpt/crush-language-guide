@@ -1,0 +1,76 @@
+@caison { version: "1.0" }
+
+schema: "milestones/1"
+
+project: {
+  name: "crush-language-guide"
+  kind: "docs"
+  lifecycle: "active" @verified { at: "2026-11-18", by: "altair" }
+  lifecycle_since: "2026-10-07"
+  home: "zorro"
+  ticket_prefix: "GUIDE"
+  summary: "the Crush language guide: every example verified against a pinned crush-ast in CI, runnable in the browser (play) and as notebooks; pinned to crush-ast 7f3fef31 with a Modules chapter since 2026-11-16"
+  north_star: "a guide whose every code block is checked against the toolchain it documents, and that tracks crush-ast through 1.0"
+  stewards: ["altair"]
+  evidence: {
+    default_branch: "main"
+  }
+}
+
+milestones: [
+  {
+    id: "G1"
+    title: "verified guide (examples through the real pipeline, polyglot chapter, sync to 0.3.9)"
+    status: "done" @verified { at: "2026-11-18", by: "altair" }
+    done_at: "2026-10-07"
+    tickets: ["GUIDE-1", "GUIDE-2", "GUIDE-3"]
+    done_when: [
+      { claim: "merged as PR #1", check: { kind: "merged", pr: "1" } },
+      { claim: "part 2 merged as PR #2", check: { kind: "merged", pr: "2" } },
+    ]
+  },
+  {
+    id: "G2"
+    title: "runnable guide: browser Run/Edit and every chapter as a notebook"
+    status: "done" @verified { at: "2026-11-18", by: "altair" }
+    done_at: "2026-10-30"
+    tickets: ["GUIDE-4", "GUIDE-5"]
+    done_when: [
+      { claim: "Run / Edit on every browser-runnable block (PR #4)", check: { kind: "merged", pr: "4" } },
+      { claim: "chapters as crush-notebooks (PR #5)", check: { kind: "merged", pr: "5" } },
+      "play runs @python (Pyodide), @javascript and --fs examples in the browser (PRs #8-#13)",
+    ]
+  },
+  {
+    id: "G3"
+    title: "CI-verified corpus, synced to crush-ast 0.9.0"
+    status: "done" @verified { at: "2026-11-18", by: "altair" }
+    done_at: "2026-10-31"
+    tickets: ["GUIDE-6"]
+    done_when: [
+      { claim: "verified corpus + CI (PR #7)", check: { kind: "merged", pr: "7" } },
+      { claim: "sync with crush-ast 0.9.0 (PR #15)", check: { kind: "merged", pr: "15" } },
+    ]
+  },
+  {
+    id: "G4"
+    title: "Modules chapter and re-pin to crush-ast 7f3fef31"
+    status: "done" @verified { at: "2026-11-18", by: "altair" }
+    done_at: "2026-11-16"
+    done_when: [
+      { claim: "merged as PR #17", check: { kind: "merged", pr: "17" } },
+    ]
+    notes: "issue #16; notebooks kernel still 0.3.0 (built on crush-ast 0.9.0), newer cells are reported as lag"
+  },
+  {
+    id: "G5"
+    title: "track the 1.0 freeze: pub sweep (crush-ast V2 #520) and the freeze-release re-pin"
+    status: "next" @verified { at: "2026-11-18", by: "altair" }
+    depends_on: ["crush-ast:VIS"]
+    done_when: [
+      "guide examples carry pub where crush-ast V2 (#520) asks, and pass --deny-legacy-visibility",
+      "re-pinned to the freeze release; notebooks kernel rebuilt on it (no lag cells)",
+      "stable vs experimental surfaces labelled as RELEASE-1.0-CRITERIA §1.2 says",
+    ]
+  },
+]
