@@ -240,7 +240,8 @@ end:
 recovered from: disk full
 ```
 
-A capability that is not registered, or a type error, is **not** catchable this way:
+A capability that is not registered or not granted, or one that fails (such as `fs.read` of a
+missing file), is **not** catchable this way:
 it ends the program with a `[runtime]` error.
 
 ## 8. Host capabilities

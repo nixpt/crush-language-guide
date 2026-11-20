@@ -321,8 +321,9 @@ An uncaught `throw` ends the program with `[runtime] uncaught error: <value>`.
 
 `try`/`catch` handles values raised with `throw`, and, since crush-ast
 CRUSH-393 (on main after v0.11.2), also **runtime faults**: division by zero, an out-of-range index, a
-runtime type error, a failing host capability (a missing file for `fs.read`, a
-network timeout). The caught value is an error value that prints as
+runtime type error, and a capability's own **timeout** (`tcp.recv`, `tcp.accept`
+and `net.*` with `{timeout_ms: N}`; the message is `<cap>: timed out after N ms`,
+so the program can retry). The caught value is an error value that prints as
 `error(<message>)`:
 
 ```crush
@@ -347,9 +348,12 @@ after
 ```
 
 Some failures are **not** catchable and still end the program even inside `try`:
-running out of a quota (`--max-steps`, `--max-stack`, `--max-output`,
-`--max-wall-ms`, call depth), a capability the run does not grant (refused before
-anything runs), `sys.exit`, an uncaught `throw`, and a polyglot block that raises:
+running out of a quota or the wall-clock budget (`--max-steps`, `--max-stack`,
+`--max-output`, `--max-wall-ms`, call depth), a capability the run does not grant
+(refused before anything runs), a granted capability that fails or is refused
+(`fs.read` of a missing file, a sandbox refusal, a bad option: crush-ast #464,
+which reversed the earlier behaviour, so check first, e.g. with `fs.exists`),
+`sys.exit`, an uncaught `throw`, and a polyglot block that raises:
 
 <!-- check: runfail instruction quota exceeded -->
 <!-- check: flags --max-steps 1000 -->

@@ -57,7 +57,7 @@ not found
 - `throw expr` — the rest of the `try` body is skipped
 - Output printed before the `throw` is kept (`5` above)
 - Thrown values may be strings, numbers, or objects (`err.code`)
-- `catch` also handles VM faults such as `1 / 0` and failed capability calls
-  (the caught value prints as `error(<message>)`); a crashing polyglot block or an
-  exhausted quota still ends the program — see
+- `catch` also handles VM faults such as `1 / 0` and a capability's own timeout
+  (the caught value prints as `error(<message>)`); a failing capability call, a
+  crashing polyglot block or an exhausted quota still ends the program — see
   [Control Flow](../crush/control_flow.md#what-catch-catches)

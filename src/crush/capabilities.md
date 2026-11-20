@@ -321,9 +321,11 @@ Granting only `--tcp` is refused, naming what is missing:
 
 A host capability that fails (missing file, refused connection, path escape)
 raises `[runtime] <name>: <reason>`, for example `[runtime] fs.read: fs.read
-missing.txt: No such file or directory (os error 2)`. Inside
-[`try`/`catch`](control_flow.md#what-catch-catches) it is caught like any other
-fault; outside one it ends the program.
+missing.txt: No such file or directory (os error 2)`. That ends the program: a
+failing or refused capability is **not** caught by
+[`try`/`catch`](control_flow.md#what-catch-catches) (crush-ast #464), so check
+first (`fs.exists` before `fs.read`). The one catchable capability error is a
+capability's own `timeout_ms` firing (`<cap>: timed out after N ms`).
 
 ## Declaring what a program uses: `@capabilities`
 

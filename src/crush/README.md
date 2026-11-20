@@ -35,8 +35,8 @@ At the pinned commit (main after v0.11.2); each item links to its page.
   compile time, through `-L`, `CRUSH_PATH` and crush-pkg dependencies; `pub fn` is
   accepted, not enforced yet; a struct or trait name declared in two files is a
   compile error. ([Modules](modules.md))
-- **`catch` catches run-time faults**: division by zero, a bad index, a failing
-  capability. ([Control Flow](control_flow.md#what-catch-catches))
+- **`catch` catches run-time faults**: division by zero, a bad index, a capability's
+  own timeout (a failing capability is fatal). ([Control Flow](control_flow.md#what-catch-catches))
 - **Calls on any expression** (`fs[0](1)`, `make()(2)`, `S { n: 3 }.size()`), the
   method form `a.pop()`, `regex.match` callable, exponent literals (`1.5e3`).
   ([Closures](closures.md#calling-a-function-value), [Types](types.md))
