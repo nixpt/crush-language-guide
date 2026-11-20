@@ -382,7 +382,7 @@ ValueError: x
 ```
 
 A guest failure is **not** catchable with Crush `try`/`catch`, unlike a VM fault
-or a failing capability ([Control Flow](control_flow.md#what-catch-catches)). Handle expected
+such as `1 / 0` ([Control Flow](control_flow.md#what-catch-catches)). Handle expected
 failures inside the block (`try:` / `except:` in Python) and return a value that
 says what happened. Failures to *start* a sandboxed block — package resolution,
 missing `bwrap` — are reported separately as `sandbox setup failed`, so a
